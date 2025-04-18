@@ -15,7 +15,7 @@ class EcommerceApp extends StatelessWidget {
       child: MaterialApp(
         theme: ThemeData(scaffoldBackgroundColor: Colors.white),
         debugShowCheckedModeBanner: false,
-        initialRoute: Routes.reviewScreen,
+        initialRoute: Routes.navBar,
         onGenerateRoute: appRouter.generateRoute,
       ),
     );

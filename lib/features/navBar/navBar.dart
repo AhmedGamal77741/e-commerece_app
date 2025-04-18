@@ -1,18 +1,25 @@
+import 'package:ecommerece_app/features/review/ui/review_screen.dart';
 import 'package:flutter/material.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class NavBar extends StatefulWidget {
+  const NavBar({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<NavBar> createState() => _NavBarState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _NavBarState extends State<NavBar> {
 
     int _selectedIndex = 0;
 
-  final List<Widget> widgetOptions = const [
-    HomeScreen(),
+  final List<Widget> widgetOptions =  [
+    ReviewScreen(),
+        ReviewScreen(),
+
+    ReviewScreen(),
+
+ReviewScreen(),
+ReviewScreen(),
 
   ];
 
@@ -25,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      body: widgetOptions.elementAt(_selectedIndex),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
         showSelectedLabels: true,
@@ -32,6 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
   selectedItemColor: Colors.black, // Same as unselected color
   unselectedItemColor: Colors.grey[400],
+  selectedLabelStyle: TextStyle(fontSize: 10),
+  unselectedLabelStyle: TextStyle(fontSize: 10),
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: ImageIcon(AssetImage(
