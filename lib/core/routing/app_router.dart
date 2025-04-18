@@ -1,5 +1,5 @@
 import 'package:ecommerece_app/core/routing/routes.dart';
-import 'package:ecommerece_app/features/navBar/navBar.dart';
+import 'package:ecommerece_app/features/navBar/nav_bar.dart';
 import 'package:ecommerece_app/features/login/login.dart';
 import 'package:ecommerece_app/features/review/ui/review_screen.dart';
 import 'package:flutter/material.dart';
