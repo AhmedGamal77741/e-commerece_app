@@ -1,3 +1,4 @@
+import 'package:ecommerece_app/features/cart/cart.dart';
 import 'package:ecommerece_app/features/home/home_screen.dart';
 import 'package:ecommerece_app/features/review/ui/review_screen.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +16,7 @@ class _NavBarState extends State<NavBar> {
   final List<Widget> widgetOptions = [
     HomeScreen(),
     ReviewScreen(),
-    ReviewScreen(),
+    Cart(),
     ReviewScreen(),
     ReviewScreen(),
   ];
