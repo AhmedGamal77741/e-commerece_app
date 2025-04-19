@@ -1,5 +1,6 @@
 import 'package:ecommerece_app/features/cart/cart.dart';
 import 'package:ecommerece_app/features/home/home_screen.dart';
+import 'package:ecommerece_app/features/mypage/ui/my_page_screen.dart';
 import 'package:ecommerece_app/features/review/ui/review_screen.dart';
 import 'package:ecommerece_app/features/shop/shop.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +20,7 @@ class _NavBarState extends State<NavBar> {
     Shop(),
     Cart(),
     ReviewScreen(),
-    ReviewScreen(),
+    MyPageScreen(),
   ];
 
   void _onItemTapped(int index) {

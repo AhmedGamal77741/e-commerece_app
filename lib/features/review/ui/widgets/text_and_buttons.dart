@@ -6,7 +6,9 @@ import 'package:ecommerece_app/core/widgets/black_text_button.dart';
 import 'package:flutter/material.dart';
 
 class TextAndButtons extends StatelessWidget {
-  const TextAndButtons({super.key});
+  final String txt;
+  final VoidCallback func;
+  const TextAndButtons({super.key, required this.txt, required this.func});
 
   @override
   Widget build(BuildContext context) {
@@ -34,9 +36,9 @@ class TextAndButtons extends StatelessWidget {
             ),
             horizontalSpace(5),
             BlackTextButton(
-              txt: 'Cancel',
+              txt: txt,
               style: TextStyles.abeezee12px400wW,
-              func: () {},
+              func: func,
             ),
           ],
         ),

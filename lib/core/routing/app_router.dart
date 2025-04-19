@@ -6,6 +6,7 @@ import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/notifications.dart';
 import 'package:ecommerece_app/features/navBar/nav_bar.dart';
 import 'package:ecommerece_app/features/login/login.dart';
+import 'package:ecommerece_app/features/review/ui/exchange_or_refund.dart';
 import 'package:ecommerece_app/features/review/ui/review_screen.dart';
 import 'package:ecommerece_app/features/review/ui/track_order.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
@@ -37,6 +38,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => ItemDetails());
       case Routes.trackorder:
         return MaterialPageRoute(builder: (_) => const TrackOrder());
+      case Routes.exchangeOrRefund:
+        return MaterialPageRoute(builder: (_) => const ExchangeOrRefund());
       default:
         return MaterialPageRoute(
           builder:

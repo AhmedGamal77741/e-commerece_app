@@ -10,4 +10,5 @@ class Routes {
   static const String itemDetailsScreen = '/itemDetailsScreen';
   static const String navBar = '/';
   static const String trackorder = '/trackorder';
+  static const String exchangeOrRefund = '/exchangeOrRefund';
 }
