@@ -3,7 +3,6 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:ecommerece_app/features/review/ui/widgets/text_and_buttons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -30,26 +29,40 @@ class _ShoppingCartState extends State<ShoppingCart> {
                   width: 90.w,
                   height: 90.h,
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pang2Chocolate',
-                      style: TextStyles.abeezee14px400wP600,
-                    ),
-                    verticalSpace(5),
-                    Text(
-                      'Dark Marshmallow 6 pieces',
-                      style: TextStyles.abeezee13px400wPblack,
-                    ),
-                    verticalSpace(3),
+                Padding(
+                  padding: EdgeInsets.only(left: 10.w),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pang2Chocolate',
+                        style: TextStyles.abeezee14px400wP600,
+                      ),
+                      verticalSpace(5),
+                      Text(
+                        'Dark Marshmallow 6 pieces',
+                        style: TextStyles.abeezee13px400wPblack,
+                      ),
+                      verticalSpace(3),
 
-                    Text(
-                      'Option : 2 pieces  tom(wed) Arrival Expected',
-                      style: TextStyles.abeezee11px400wP600,
-                    ),
-                    Text('12,000 KRW', style: TextStyles.abeezee13px400wPblack),
-                  ],
+                      Row(
+                        children: [
+                          Text(
+                            'Quantity : 1  ',
+                            style: TextStyles.abeezee11px400wP600,
+                          ),
+                          Text(
+                            'Tom (Wed) Expected ',
+                            style: TextStyles.abeezee11px400wP600,
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '12,000 KRW',
+                        style: TextStyles.abeezee13px400wPblack,
+                      ),
+                    ],
+                  ),
                 ),
 
                 Spacer(),

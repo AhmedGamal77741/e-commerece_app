@@ -13,7 +13,13 @@ class EcommerceApp extends StatelessWidget {
       designSize: const Size(428, 926),
       minTextAdapt: true,
       child: MaterialApp(
-        theme: ThemeData(scaffoldBackgroundColor: Colors.white),
+        theme: ThemeData(
+          scaffoldBackgroundColor: Colors.white,
+          unselectedWidgetColor: Colors.grey, // Unselected circle color
+          radioTheme: RadioThemeData(
+            fillColor: WidgetStateColor.resolveWith((states) => Colors.black),
+          ),
+        ),
         debugShowCheckedModeBanner: false,
         initialRoute: Routes.navBar,
         onGenerateRoute: appRouter.generateRoute,

@@ -8,6 +8,8 @@ import 'package:ecommerece_app/features/navBar/nav_bar.dart';
 import 'package:ecommerece_app/features/login/login.dart';
 import 'package:ecommerece_app/features/review/ui/review_screen.dart';
 import 'package:ecommerece_app/features/review/ui/track_order.dart';
+import 'package:ecommerece_app/features/shop/item_details.dart';
+import 'package:ecommerece_app/features/shop/shop_search.dart';
 import 'package:flutter/material.dart';
 
 class AppRouter {
@@ -29,6 +31,10 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const PlaceOrder());
       case Routes.orderCompleteScreen:
         return MaterialPageRoute(builder: (_) => const OrderComplete());
+      case Routes.shopSearchScreen:
+        return MaterialPageRoute(builder: (_) => const ShopSearch());
+      case Routes.itemDetailsScreen:
+        return MaterialPageRoute(builder: (_) => ItemDetails());
       case Routes.trackorder:
         return MaterialPageRoute(builder: (_) => const TrackOrder());
       default:

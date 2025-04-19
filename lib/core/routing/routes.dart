@@ -6,6 +6,8 @@ class Routes {
   static const String addPostScreen = '/addPostScreen';
   static const String placeOrderScreen = '/placeOrderScreen';
   static const String orderCompleteScreen = '/orderCompleteScreen';
+  static const String shopSearchScreen = '/shopSearchScreen';
+  static const String itemDetailsScreen = '/itemDetailsScreen';
   static const String navBar = '/';
   static const String trackorder = '/trackorder';
 }

@@ -32,172 +32,163 @@ class _CommentsState extends State<Comments> {
                 ),
               ),
             ),
-            child: SizedBox(
-              width: 393.w,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 20.h,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    clipBehavior: Clip.antiAlias,
-                    decoration: ShapeDecoration(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 14.w,
-                            vertical: 8.h,
-                          ),
-                          decoration: BoxDecoration(color: Colors.white),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Copy Link',
-                                style: TextStyle(
-                                  color: const Color(0xFF343434),
-                                  fontSize: 16.sp,
-                                  fontFamily: 'ABeeZee',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.40.h,
-                                ),
-                              ),
-                              ImageIcon(
-                                AssetImage('assets/icon=link.png'),
-                                size: 20.sp,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 14.w,
-                            vertical: 8.h,
-                          ),
-                          decoration: BoxDecoration(color: Colors.white),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                child: Text(
-                                  'Not Interested',
-                                  style: TextStyle(
-                                    color: const Color(0xFF343434),
-                                    fontSize: 16.sp,
-                                    fontFamily: 'ABeeZee',
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.40.h,
-                                  ),
-                                ),
-                              ),
-                              ImageIcon(
-                                AssetImage('assets/icon=no_interest.png'),
-                                size: 20.sp,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 20.h,
+              children: [
+                Container(
+                  width: double.infinity,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: ShapeDecoration(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  Container(
-                    width: double.infinity,
-                    clipBehavior: Clip.antiAlias,
-                    decoration: ShapeDecoration(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 14.w,
+                          vertical: 8.h,
+                        ),
+                        decoration: BoxDecoration(color: Colors.white),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Copy Link',
+                              style: TextStyle(
+                                color: const Color(0xFF343434),
+                                fontSize: 16.sp,
+                                fontFamily: 'ABeeZee',
+                                fontWeight: FontWeight.w400,
+                                height: 1.40.h,
+                              ),
+                            ),
+                            ImageIcon(
+                              AssetImage('assets/icon=link.png'),
+                              size: 20.sp,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 14.w,
-                            vertical: 8.h,
-                          ),
-                          decoration: BoxDecoration(color: Colors.white),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                child: Text(
-                                  'Block',
-                                  style: TextStyle(
-                                    color: const Color(0xFFDA3A48),
-                                    fontSize: 16.sp,
-                                    fontFamily: 'ABeeZee',
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.40.h,
-                                  ),
-                                ),
-                              ),
-                              ImageIcon(
-                                AssetImage('assets/person_off.png'),
-                                size: 20.sp,
-                                color: const Color(0xFFDA3A48),
-                              ),
-                            ],
-                          ),
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 14.w,
+                          vertical: 8.h,
                         ),
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 14.w,
-                            vertical: 8.h,
-                          ),
-                          decoration: BoxDecoration(color: Colors.white),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                child: Text(
-                                  'Report',
-                                  style: TextStyle(
-                                    color: const Color(0xFFDA3A48),
-                                    fontSize: 16.sp,
-                                    fontFamily: 'ABeeZee',
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.40.h,
-                                  ),
-                                ),
+                        decoration: BoxDecoration(color: Colors.white),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Not Interested',
+                              style: TextStyle(
+                                color: const Color(0xFF343434),
+                                fontSize: 16.sp,
+                                fontFamily: 'ABeeZee',
+                                fontWeight: FontWeight.w400,
+                                height: 1.40.h,
                               ),
-                              ImageIcon(
-                                AssetImage('assets/report.png'),
-                                size: 20.sp,
-                                color: const Color(0xFFDA3A48),
-                              ),
-                            ],
-                          ),
+                            ),
+                            ImageIcon(
+                              AssetImage('assets/icon=no_interest.png'),
+                              size: 20.sp,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: ShapeDecoration(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                ],
-              ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 14.w,
+                          vertical: 8.h,
+                        ),
+                        decoration: BoxDecoration(color: Colors.white),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Block',
+                              style: TextStyle(
+                                color: const Color(0xFFDA3A48),
+                                fontSize: 16.sp,
+                                fontFamily: 'ABeeZee',
+                                fontWeight: FontWeight.w400,
+                                height: 1.40.h,
+                              ),
+                            ),
+                            ImageIcon(
+                              AssetImage('assets/person_off.png'),
+                              size: 20.sp,
+                              color: const Color(0xFFDA3A48),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 14.w,
+                          vertical: 8.h,
+                        ),
+                        decoration: BoxDecoration(color: Colors.white),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Report',
+                              style: TextStyle(
+                                color: const Color(0xFFDA3A48),
+                                fontSize: 16.sp,
+                                fontFamily: 'ABeeZee',
+                                fontWeight: FontWeight.w400,
+                                height: 1.40.h,
+                              ),
+                            ),
+                            ImageIcon(
+                              AssetImage('assets/report.png'),
+                              size: 20.sp,
+                              color: const Color(0xFFDA3A48),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
     );
@@ -212,58 +203,55 @@ class _CommentsState extends State<Comments> {
             Expanded(
               child: ListView(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Flexible(
-                        child: Padding(
-                          padding: EdgeInsets.only(top: 20.h),
-                          child: Container(
-                            width: 56.w,
-                            height: 55.h,
-                            decoration: ShapeDecoration(
-                              image: DecorationImage(
-                                image: NetworkImage(
-                                  "https://placehold.co/56x55.png",
+                  Padding(
+                    padding: EdgeInsets.only(right: 10.w),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Flexible(
+                          child: Padding(
+                            padding: EdgeInsets.only(top: 20.h),
+                            child: Container(
+                              width: 56.w,
+                              height: 55.h,
+                              decoration: ShapeDecoration(
+                                image: DecorationImage(
+                                  image: NetworkImage(
+                                    "https://placehold.co/56x55.png",
+                                  ),
+                                  fit: BoxFit.cover,
                                 ),
-                                fit: BoxFit.cover,
+                                shape: OvalBorder(),
                               ),
-                              shape: OvalBorder(),
                             ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        flex: 4,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          spacing: 10.h,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                SizedBox(
-                                  width: 172.w,
-                                  height: 17.h,
-                                  child: Text(
+                        Expanded(
+                          flex: 4,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            spacing: 10.h,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
                                     'stedis.kr',
                                     style: TextStyles.abeezee16px400wPblack,
                                   ),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.more_horiz),
-                                  onPressed: () {
-                                    _showBottomSheet(context);
-                                  },
-                                ),
-                              ],
-                            ),
-                            SizedBox(
-                              width: 339.w,
-                              child: Text(
+                                  IconButton(
+                                    icon: Icon(Icons.more_horiz),
+                                    onPressed: () {
+                                      _showBottomSheet(context);
+                                    },
+                                  ),
+                                ],
+                              ),
+                              Text(
                                 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. Phasellus hendrerit et libero vitae malesuada. Sed tempus nisi vitae justo elementum elementum. ',
                                 style: TextStyle(
                                   color: const Color(0xFF343434),
@@ -274,28 +262,25 @@ class _CommentsState extends State<Comments> {
                                   letterSpacing: -0.09.w,
                                 ),
                               ),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              spacing: 10.w,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 4.w,
-                                  children: [
-                                    InkWell(
-                                      onTap: () {
-                                        setState(() {
-                                          liked = !liked;
-                                        });
-                                      },
-                                      child: SizedBox(
-                                        width: 22.w,
-                                        height: 22.h,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                spacing: 10.w,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    spacing: 4.w,
+                                    children: [
+                                      InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            liked = !liked;
+                                          });
+                                        },
                                         child: ImageIcon(
                                           AssetImage(
                                             liked
@@ -306,11 +291,7 @@ class _CommentsState extends State<Comments> {
                                               liked ? Colors.red : Colors.black,
                                         ),
                                       ),
-                                    ),
-                                    SizedBox(
-                                      width: 25,
-                                      height: 22,
-                                      child: Text(
+                                      Text(
                                         '40',
                                         style: TextStyle(
                                           color: const Color(0xFF343434),
@@ -320,26 +301,19 @@ class _CommentsState extends State<Comments> {
                                           height: 1.40,
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 4,
-                                  children: [
-                                    SizedBox(
-                                      width: 22.w,
-                                      height: 22.h,
-                                      child: ImageIcon(
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    spacing: 4,
+                                    children: [
+                                      ImageIcon(
                                         AssetImage("assets/icon=comment.png"),
                                       ),
-                                    ),
-                                    SizedBox(
-                                      width: 25,
-                                      height: 22,
-                                      child: Text(
+                                      Text(
                                         '36',
                                         style: TextStyle(
                                           color: const Color(0xFF343434),
@@ -349,15 +323,15 @@ class _CommentsState extends State<Comments> {
                                           height: 1.40,
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   Divider(height: 50.h),
                   Row(
@@ -403,11 +377,7 @@ class _CommentsState extends State<Comments> {
                           onTap: () {
                             context.pop();
                           },
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: Icon(Icons.close),
-                          ),
+                          child: Icon(Icons.close),
                         ),
                       ),
                     ],
@@ -434,24 +404,25 @@ class _CommentsState extends State<Comments> {
                       ),
                       Expanded(
                         flex: 4,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          spacing: 10.h,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '@happyStudent',
-                                  style: TextStyles.abeezee16px400wPblack,
-                                ),
-                              ],
-                            ),
-                            SizedBox(
-                              width: 339.w,
-                              child: Text(
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 10.w),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            spacing: 10.h,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '@happyStudent',
+                                    style: TextStyles.abeezee16px400wPblack,
+                                  ),
+                                ],
+                              ),
+                              Text(
                                 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. Phasellus hendrerit et libero vitae malesuada. Sed tempus nisi vitae justo elementum elementum. ',
                                 style: TextStyle(
                                   color: const Color(0xFF343434),
@@ -462,28 +433,25 @@ class _CommentsState extends State<Comments> {
                                   letterSpacing: -0.09.w,
                                 ),
                               ),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              spacing: 10.w,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 4.w,
-                                  children: [
-                                    InkWell(
-                                      onTap: () {
-                                        setState(() {
-                                          liked = !liked;
-                                        });
-                                      },
-                                      child: SizedBox(
-                                        width: 22.w,
-                                        height: 22.h,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                spacing: 10.w,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    spacing: 4.w,
+                                    children: [
+                                      InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            liked = !liked;
+                                          });
+                                        },
                                         child: ImageIcon(
                                           AssetImage(
                                             liked
@@ -494,11 +462,7 @@ class _CommentsState extends State<Comments> {
                                               liked ? Colors.red : Colors.black,
                                         ),
                                       ),
-                                    ),
-                                    SizedBox(
-                                      width: 25,
-                                      height: 22,
-                                      child: Text(
+                                      Text(
                                         '40',
                                         style: TextStyle(
                                           color: const Color(0xFF343434),
@@ -508,12 +472,12 @@ class _CommentsState extends State<Comments> {
                                           height: 1.40,
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],

@@ -1,6 +1,7 @@
 import 'package:ecommerece_app/features/cart/cart.dart';
 import 'package:ecommerece_app/features/home/home_screen.dart';
 import 'package:ecommerece_app/features/review/ui/review_screen.dart';
+import 'package:ecommerece_app/features/shop/shop.dart';
 import 'package:flutter/material.dart';
 
 class NavBar extends StatefulWidget {
@@ -15,7 +16,7 @@ class _NavBarState extends State<NavBar> {
 
   final List<Widget> widgetOptions = [
     HomeScreen(),
-    ReviewScreen(),
+    Shop(),
     Cart(),
     ReviewScreen(),
     ReviewScreen(),

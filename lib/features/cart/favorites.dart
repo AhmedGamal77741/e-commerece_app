@@ -24,23 +24,34 @@ class _CartFavoritesState extends State<CartFavorites> {
             width: 90.w,
             height: 90.h,
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Pang2Chocolate', style: TextStyles.abeezee14px400wP600),
-              verticalSpace(5),
-              Text(
-                'Dark Marshmallow 6 pieces',
-                style: TextStyles.abeezee13px400wPblack,
-              ),
-              verticalSpace(3),
+          Padding(
+            padding: EdgeInsets.only(left: 10.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Pang2Chocolate', style: TextStyles.abeezee14px400wP600),
+                verticalSpace(5),
+                Text(
+                  'Dark Marshmallow 6 pieces',
+                  style: TextStyles.abeezee13px400wPblack,
+                ),
+                verticalSpace(3),
 
-              Text(
-                'Option : 2 pieces  tom(wed) Arrival Expected',
-                style: TextStyles.abeezee11px400wP600,
-              ),
-              Text('12,000 KRW', style: TextStyles.abeezee13px400wPblack),
-            ],
+                Row(
+                  children: [
+                    Text(
+                      'Tom (Wed) Expected  ',
+                      style: TextStyles.abeezee11px400wP600,
+                    ),
+                    Text(
+                      'Ship today: 1 p.m. today',
+                      style: TextStyles.abeezee11px400wP600,
+                    ),
+                  ],
+                ),
+                Text('12,000 KRW', style: TextStyles.abeezee13px400wPblack),
+              ],
+            ),
           ),
 
           Spacer(),
