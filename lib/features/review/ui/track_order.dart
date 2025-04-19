@@ -1,6 +1,9 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/review/ui/widgets/delivery_status.dart';
+import 'package:ecommerece_app/features/review/ui/widgets/delivery_text_row.dart';
+import 'package:ecommerece_app/features/review/ui/widgets/table_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -16,7 +19,7 @@ class TrackOrder extends StatelessWidget {
         centerTitle: true,
       ),
       body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+        padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
         child: Center(
           child: Column(
             children: [
@@ -25,44 +28,11 @@ class TrackOrder extends StatelessWidget {
                 style: TextStyles.abeezee20px400wPblack,
               ),
               verticalSpace(40),
-              Row(
-                children: [
-                  Container(
-                    width: 90.w,
-                    height: 110.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: ColorsManager.primary300,
-                    ),
-                  ),
-                  Container(
-                    width: 60.w,
-                    height: 20.h,
-                    decoration: BoxDecoration(color: ColorsManager.primary300),
-                  ),
-                  Container(
-                    width: 90.w,
-                    height: 110.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: ColorsManager.primary300,
-                    ),
-                  ),
-                  Container(
-                    width: 60.w,
-                    height: 20.h,
-                    decoration: BoxDecoration(color: ColorsManager.primary300),
-                  ),
-                  Container(
-                    width: 90.w,
-                    height: 110.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: ColorsManager.primary300,
-                    ),
-                  ),
-                ],
-              ),
+              DeliveryStatus(),
+              verticalSpace(10),
+              DeliveryTextRow(),
+              verticalSpace(30),
+              TableContainer(),
             ],
           ),
         ),
