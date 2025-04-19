@@ -86,25 +86,17 @@ class _AddPostState extends State<AddPost> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       spacing: 15.h,
                       children: [
-                        SizedBox(
-                          width: 172.w,
-                          height: 17.h,
-                          child: Text(
-                            'pang2chocolate',
-                            style: TextStyles.abeezee16px400wPblack,
-                          ),
+                        Text(
+                          'pang2chocolate',
+                          style: TextStyles.abeezee16px400wPblack,
                         ),
-                        SizedBox(
-                          width: 172.w,
-                          height: 17.h,
-                          child: Text(
-                            'Any Updates?',
-                            style: TextStyle(
-                              color: const Color(0xFF5F5F5F),
-                              fontSize: 13.sp,
-                              fontFamily: 'ABeeZee',
-                              fontWeight: FontWeight.w400,
-                            ),
+                        Text(
+                          'Any Updates?',
+                          style: TextStyle(
+                            color: const Color(0xFF5F5F5F),
+                            fontSize: 13.sp,
+                            fontFamily: 'ABeeZee',
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                         ImageIcon(

@@ -268,25 +268,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             spacing: 10.h,
                             children: [
-                              SizedBox(
-                                width: 172.w,
-                                height: 17.h,
-                                child: Text(
-                                  'pang2chocolate',
-                                  style: TextStyles.abeezee16px400wPblack,
-                                ),
+                              Text(
+                                'pang2chocolate',
+                                style: TextStyles.abeezee16px400wPblack,
                               ),
-                              SizedBox(
-                                width: 172.w,
-                                height: 17.h,
-                                child: Text(
-                                  'How was your day today?',
-                                  style: TextStyle(
-                                    color: const Color(0xFF5F5F5F),
-                                    fontSize: 13.sp,
-                                    fontFamily: 'ABeeZee',
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                              Text(
+                                'How was your day today?',
+                                style: TextStyle(
+                                  color: const Color(0xFF5F5F5F),
+                                  fontSize: 13.sp,
+                                  fontFamily: 'ABeeZee',
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ],
@@ -332,13 +324,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              SizedBox(
-                                width: 172.w,
-                                height: 17.h,
-                                child: Text(
-                                  'stedis.kr',
-                                  style: TextStyles.abeezee16px400wPblack,
-                                ),
+                              Text(
+                                'stedis.kr',
+                                style: TextStyles.abeezee16px400wPblack,
                               ),
                               IconButton(
                                 icon: Icon(Icons.more_horiz),
@@ -348,18 +336,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
-                          SizedBox(
-                            width: 339.w,
-                            child: Text(
-                              'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. Phasellus hendrerit et libero vitae malesuada. Sed tempus nisi vitae justo elementum elementum. ',
-                              style: TextStyle(
-                                color: const Color(0xFF343434),
-                                fontSize: 16,
-                                fontFamily: 'ABeeZee',
-                                fontWeight: FontWeight.w400,
-                                height: 1.40.h,
-                                letterSpacing: -0.09.w,
-                              ),
+                          Text(
+                            'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. Phasellus hendrerit et libero vitae malesuada. Sed tempus nisi vitae justo elementum elementum. ',
+                            style: TextStyle(
+                              color: const Color(0xFF343434),
+                              fontSize: 16,
+                              fontFamily: 'ABeeZee',
+                              fontWeight: FontWeight.w400,
+                              height: 1.40.h,
+                              letterSpacing: -0.09.w,
                             ),
                           ),
                           Row(
