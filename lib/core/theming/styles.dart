@@ -41,4 +41,19 @@ class TextStyles {
     fontWeight: FontWeight.w400,
     color: ColorsManager.primary600,
   );
+  static final TextStyle abeezee11px400wP600 = _textStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w400,
+    color: ColorsManager.primary600,
+  );
+  static final TextStyle abeezee13px400wPblack = _textStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: ColorsManager.primaryblack,
+  );
+  static final TextStyle abeezee12px400wW = _textStyle(
+    color: ColorsManager.white,
+    fontSize: 12.sp,
+    fontWeight: FontWeight.w400,
+  );
 }

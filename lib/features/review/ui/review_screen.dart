@@ -1,5 +1,6 @@
 import 'package:ecommerece_app/core/widgets/tab_app_bar.dart';
 import 'package:ecommerece_app/features/review/ui/leave_review.dart';
+import 'package:ecommerece_app/features/review/ui/order_history.dart';
 import 'package:flutter/material.dart';
 
 class ReviewScreen extends StatelessWidget {
@@ -15,9 +16,7 @@ class ReviewScreen extends StatelessWidget {
           firstTab: 'Leave a Review',
           secondTab: 'Order history',
         ),
-        body: TabBarView(
-          children: [LeaveReview(), Center(child: Text('data'))],
-        ),
+        body: TabBarView(children: [LeaveReview(), OrderHistory()]),
       ),
     );
   }

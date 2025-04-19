@@ -1,8 +1,8 @@
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/core/widgets/black_text_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class RatingAndComplete extends StatelessWidget {
   const RatingAndComplete({super.key});
@@ -27,18 +27,10 @@ class RatingAndComplete extends StatelessWidget {
           },
         ),
         Spacer(),
-        TextButton(
-          onPressed: () {},
-          style: TextButton.styleFrom(
-            backgroundColor: ColorsManager.primaryblack,
-            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-          child: Text('Compelete', style: TextStyles.abeezee14px400wW),
+        BlackTextButton(
+          txt: 'Compelete',
+          func: () {},
+          style: TextStyles.abeezee14px400wW,
         ),
       ],
     );

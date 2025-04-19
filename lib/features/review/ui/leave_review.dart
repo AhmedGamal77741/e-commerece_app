@@ -1,7 +1,7 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/review/ui/widgets/avatar_and_title.dart';
+import 'package:ecommerece_app/features/review/ui/widgets/img_and_text.dart';
 import 'package:ecommerece_app/features/review/ui/widgets/rating_and_complete.dart';
 import 'package:ecommerece_app/features/review/ui/widgets/rep_filed.dart';
 import 'package:flutter/material.dart';
@@ -23,14 +23,7 @@ class LeaveReview extends StatelessWidget {
             verticalSpace(10),
             RepField(),
             verticalSpace(10),
-            Row(
-              children: [
-                Image.asset('assets/image_icon.png', width: 17.w, height: 17.h),
-                horizontalSpace(3),
-                Text('사진 첨부', style: TextStyles.abeezee16px400wP600),
-              ],
-            ),
-
+            ImgAndTxt(),
             Divider(color: ColorsManager.primary600),
           ],
         ),
