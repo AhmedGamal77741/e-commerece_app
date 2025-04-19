@@ -1,4 +1,6 @@
+import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/review/ui/widgets/text_and_buttons.dart';
@@ -94,7 +96,9 @@ class _ShoppingCartState extends State<ShoppingCart> {
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  context.pushNamed(Routes.placeOrderScreen);
+                },
                 style: TextButton.styleFrom(
                   backgroundColor: const Color(0xFF121212), // Background color
                   foregroundColor: Colors.white, // Text color

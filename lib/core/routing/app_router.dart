@@ -1,4 +1,6 @@
 import 'package:ecommerece_app/core/routing/routes.dart';
+import 'package:ecommerece_app/features/cart/order_complete.dart';
+import 'package:ecommerece_app/features/cart/place_order.dart';
 import 'package:ecommerece_app/features/home/add_post.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/notifications.dart';
@@ -23,6 +25,10 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const Notifications());
       case Routes.addPostScreen:
         return MaterialPageRoute(builder: (_) => const AddPost());
+      case Routes.placeOrderScreen:
+        return MaterialPageRoute(builder: (_) => const PlaceOrder());
+      case Routes.orderCompleteScreen:
+        return MaterialPageRoute(builder: (_) => const OrderComplete());
       case Routes.trackorder:
         return MaterialPageRoute(builder: (_) => const TrackOrder());
       default:
