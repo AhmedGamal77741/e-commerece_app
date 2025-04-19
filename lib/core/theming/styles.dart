@@ -56,4 +56,9 @@ class TextStyles {
     fontSize: 12.sp,
     fontWeight: FontWeight.w400,
   );
+  static final TextStyle abeezee20px400wPblack = _textStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w400,
+    color: ColorsManager.primaryblack,
+  );
 }

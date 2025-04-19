@@ -30,7 +30,7 @@ class _NotificationsState extends State<Notifications> {
             ],
           ),
         ),
-        body: Container(
+        body: SizedBox(
           width: 420.w,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -39,7 +39,7 @@ class _NotificationsState extends State<Notifications> {
             spacing: 20.h,
             children: [
               verticalSpace(5),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -75,7 +75,7 @@ class _NotificationsState extends State<Notifications> {
                   ],
                 ),
               ),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -98,7 +98,7 @@ class _NotificationsState extends State<Notifications> {
                   ],
                 ),
               ),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

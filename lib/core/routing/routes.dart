@@ -5,4 +5,5 @@ class Routes {
   static const String notificationsScreen = '/notificationsScreen';
   static const String addPostScreen = '/addPostScreen';
   static const String navBar = '/';
+  static const String trackorder = '/trackorder';
 }

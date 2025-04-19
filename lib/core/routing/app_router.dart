@@ -5,6 +5,7 @@ import 'package:ecommerece_app/features/home/notifications.dart';
 import 'package:ecommerece_app/features/navBar/nav_bar.dart';
 import 'package:ecommerece_app/features/login/login.dart';
 import 'package:ecommerece_app/features/review/ui/review_screen.dart';
+import 'package:ecommerece_app/features/review/ui/track_order.dart';
 import 'package:flutter/material.dart';
 
 class AppRouter {
@@ -22,6 +23,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const Notifications());
       case Routes.addPostScreen:
         return MaterialPageRoute(builder: (_) => const AddPost());
+      case Routes.trackorder:
+        return MaterialPageRoute(builder: (_) => const TrackOrder());
       default:
         return MaterialPageRoute(
           builder:
