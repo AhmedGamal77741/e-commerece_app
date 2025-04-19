@@ -5,20 +5,21 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? imgUrl;
   final String firstTab;
-  final String secondTab;
+  final String? secondTab;
   @override
   Size get preferredSize => Size.fromHeight(kToolbarHeight + 48.h);
   const TabAppBar({
     super.key,
     this.imgUrl,
     required this.firstTab,
-    required this.secondTab,
+    this.secondTab,
   });
 
   @override
   Widget build(BuildContext context) {
     return imgUrl == null
         ? AppBar(
+          toolbarHeight: 130.h,
           backgroundColor: ColorsManager.white,
           title: TabBar(
             labelStyle: TextStyle(
@@ -33,7 +34,10 @@ class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
             unselectedLabelColor: ColorsManager.primary600,
             indicatorSize: TabBarIndicatorSize.tab,
             indicatorColor: ColorsManager.primaryblack,
-            tabs: [Tab(text: firstTab), Tab(text: secondTab)],
+            tabs:
+                secondTab == null
+                    ? [Tab(text: firstTab)]
+                    : [Tab(text: firstTab), Tab(text: secondTab)],
           ),
         )
         : AppBar(
@@ -53,7 +57,10 @@ class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
             unselectedLabelColor: ColorsManager.primary600,
             indicatorSize: TabBarIndicatorSize.tab,
             indicatorColor: ColorsManager.primaryblack,
-            tabs: [Tab(text: firstTab), Tab(text: secondTab)],
+            tabs:
+                secondTab == null
+                    ? [Tab(text: firstTab)]
+                    : [Tab(text: firstTab), Tab(text: secondTab)],
           ),
         );
   }
