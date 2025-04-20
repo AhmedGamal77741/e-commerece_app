@@ -60,7 +60,8 @@ class FirebaseUserRepo {
         email: myUser.email,
         password: password,
       );
-
+      await user.user!.updateDisplayName(myUser.name);
+      await user.user!.updatePhotoURL(myUser.url);
       myUser.userId = user.user!.uid;
       try {
         await usersCollection

@@ -3,6 +3,7 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/tab_app_bar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -14,6 +15,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final currentUser = FirebaseAuth.instance.currentUser;
   bool liked = false;
   void _showBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -269,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             spacing: 10.h,
                             children: [
                               Text(
-                                'pang2chocolate',
+                                currentUser!.displayName.toString(),
                                 style: TextStyles.abeezee16px400wPblack,
                               ),
                               Text(
@@ -304,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           decoration: ShapeDecoration(
                             image: DecorationImage(
                               image: NetworkImage(
-                                "https://placehold.co/56x55.png",
+                                currentUser!.photoURL.toString(),
                               ),
                               fit: BoxFit.cover,
                             ),
@@ -327,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'stedis.kr',
+                                  currentUser!.displayName.toString(),
                                   style: TextStyles.abeezee16px400wPblack,
                                 ),
                                 IconButton(
