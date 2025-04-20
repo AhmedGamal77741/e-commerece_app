@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
-Future<String> uploadImageToImgBB() async {
+Future<String?> uploadImageToImgBB() async {
   final XFile? image = await ImagePicker().pickImage(
     source: ImageSource.gallery,
   );
-  if (image == null) return "";
+  if (image == null) return null;
 
   final bytes = await File(image.path).readAsBytes();
   final base64Image = base64Encode(bytes);

@@ -10,9 +10,15 @@ import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class SignupScreen extends StatelessWidget {
+class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
+  @override
+  State<SignupScreen> createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends State<SignupScreen> {
+  String imgUrl = "";
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -42,13 +48,26 @@ class SignupScreen extends StatelessWidget {
                         Spacer(),
                         InkWell(
                           onTap: () async {
-                            print(await uploadImageToImgBB());
+                            imgUrl = await uploadImageToImgBB();
+                            setState(() {});
                           },
-                          child: Image.asset(
-                            'assets/mypage_avatar.png',
-                            height: 55.h,
-                            width: 56.w,
-                          ),
+                          child:
+                              imgUrl.isEmpty
+                                  ? Image.asset(
+                                    'assets/mypage_avatar.png',
+                                    height: 55.h,
+                                    width: 56.w,
+                                  )
+                                  : ClipOval(
+                                    child: Image.network(
+                                      imgUrl,
+                                      height: 55.h,
+                                      width: 56.w,
+                                      fit:
+                                          BoxFit
+                                              .cover, // Ensures proper filling
+                                    ),
+                                  ),
                         ),
                       ],
                     ),
