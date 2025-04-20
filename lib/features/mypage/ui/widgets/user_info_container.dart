@@ -7,7 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class UserInfoContainer extends StatelessWidget {
-  const UserInfoContainer({super.key});
+  final passwordController = TextEditingController();
+  final emailController = TextEditingController();
+  final nameController = TextEditingController();
+  UserInfoContainer({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -35,12 +38,35 @@ class UserInfoContainer extends StatelessWidget {
                 ),
               ],
             ),
-            UnderlineTextField(txt: 'pang2chocolate', type: TextInputType.name),
+            UnderlineTextField(
+              controller: nameController,
+              hintText: 'Name',
+              obscureText: false,
+              keyboardType: TextInputType.name,
+              validator: (val) {
+                if (val!.isEmpty) {
+                  return 'Please fill in this field';
+                } else if (val.length > 30) {
+                  return 'Name too long';
+                }
+                return null;
+              },
+            ),
             verticalSpace(20),
             Text('User ID', style: TextStyles.abeezee16px400wPblack),
             UnderlineTextField(
-              txt: '+82 10-XXXX-XXXX',
-              type: TextInputType.number,
+              controller: nameController,
+              hintText: 'Name',
+              obscureText: false,
+              keyboardType: TextInputType.name,
+              validator: (val) {
+                if (val!.isEmpty) {
+                  return 'Please fill in this field';
+                } else if (val.length > 30) {
+                  return 'Name too long';
+                }
+                return null;
+              },
             ),
             verticalSpace(20),
             Text('Password', style: TextStyles.abeezee16px400wPblack),
@@ -55,8 +81,18 @@ class UserInfoContainer extends StatelessWidget {
               ],
             ),
             UnderlineTextField(
-              txt: 'Alphanumeric combinations',
-              type: TextInputType.visiblePassword,
+              controller: nameController,
+              hintText: 'Name',
+              obscureText: false,
+              keyboardType: TextInputType.name,
+              validator: (val) {
+                if (val!.isEmpty) {
+                  return 'Please fill in this field';
+                } else if (val.length > 30) {
+                  return 'Name too long';
+                }
+                return null;
+              },
             ),
           ],
         ),

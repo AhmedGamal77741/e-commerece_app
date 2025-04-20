@@ -3,9 +3,9 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:ecommerece_app/core/widgets/black_text_button.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -18,7 +18,15 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final passwordController = TextEditingController();
+  final emailController = TextEditingController();
+  final nameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  IconData iconPassword = Icons.visibility;
+  bool obscurePassword = true;
+  bool signUpRequired = false;
   String imgUrl = "";
+  final fireBaseRepo = FirebaseUserRepo();
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -36,68 +44,108 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Nickname',
-                          style: TextStyles.abeezee16px400wPblack,
-                        ),
-                        Spacer(),
-                        InkWell(
-                          onTap: () async {
-                            imgUrl = await uploadImageToImgBB();
-                            setState(() {});
-                          },
-                          child:
-                              imgUrl.isEmpty
-                                  ? Image.asset(
-                                    'assets/mypage_avatar.png',
-                                    height: 55.h,
-                                    width: 56.w,
-                                  )
-                                  : ClipOval(
-                                    child: Image.network(
-                                      imgUrl,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Nickname',
+                            style: TextStyles.abeezee16px400wPblack,
+                          ),
+                          Spacer(),
+                          InkWell(
+                            onTap: () async {
+                              imgUrl = await uploadImageToImgBB();
+                              setState(() {});
+                            },
+                            child:
+                                imgUrl.isEmpty
+                                    ? Image.asset(
+                                      'assets/mypage_avatar.png',
                                       height: 55.h,
                                       width: 56.w,
-                                      fit:
-                                          BoxFit
-                                              .cover, // Ensures proper filling
+                                    )
+                                    : ClipOval(
+                                      child: Image.network(
+                                        imgUrl,
+                                        height: 55.h,
+                                        width: 56.w,
+                                        fit:
+                                            BoxFit
+                                                .cover, // Ensures proper filling
+                                      ),
                                     ),
-                                  ),
+                          ),
+                        ],
+                      ),
+                      UnderlineTextField(
+                        controller: nameController,
+                        hintText: 'Enter Your Name',
+                        obscureText: false,
+                        keyboardType: TextInputType.name,
+                        validator: (val) {
+                          if (val!.isEmpty) {
+                            return 'Please fill in this field';
+                          } else if (val.length > 30) {
+                            return 'Name too long';
+                          }
+                          return null;
+                        },
+                      ),
+                      verticalSpace(20),
+                      Text('E-mail', style: TextStyles.abeezee16px400wPblack),
+                      UnderlineTextField(
+                        controller: emailController,
+                        hintText: 'Enter Your Email',
+                        obscureText: false,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (val) {
+                          if (val!.isEmpty) {
+                            return 'Please fill in this field';
+                          } else if (!RegExp(
+                            r'^[\w-\.]+@([\w-]+.)+[\w-]{2,4}$',
+                          ).hasMatch(val)) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
+                      verticalSpace(20),
+                      Text('Password', style: TextStyles.abeezee16px400wPblack),
+                      UnderlineTextField(
+                        controller: passwordController,
+                        hintText: 'Password',
+                        obscureText: obscurePassword,
+                        keyboardType: TextInputType.visiblePassword,
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              obscurePassword = !obscurePassword;
+                              if (obscurePassword) {
+                                iconPassword = Icons.visibility_off;
+                              } else {
+                                iconPassword = Icons.visibility;
+                              }
+                            });
+                          },
+                          icon: Icon(iconPassword),
                         ),
-                      ],
-                    ),
-                    UnderlineTextField(
-                      txt: 'pang2chocolate',
-                      type: TextInputType.name,
-                    ),
-                    verticalSpace(20),
-                    Text('User ID', style: TextStyles.abeezee16px400wPblack),
-                    UnderlineTextField(
-                      txt: '+82 10-XXXX-XXXX',
-                      type: TextInputType.number,
-                    ),
-                    verticalSpace(20),
-                    Text('Password', style: TextStyles.abeezee16px400wPblack),
-                    Row(
-                      children: [
-                        Spacer(),
-                        BlackTextButton(
-                          txt: 'complete',
-                          func: () {},
-                          style: TextStyles.abeezee14px400wW,
-                        ),
-                      ],
-                    ),
-                    UnderlineTextField(
-                      txt: 'Alphanumeric combinations',
-                      type: TextInputType.visiblePassword,
-                    ),
-                  ],
+                        validator: (val) {
+                          if (val!.isEmpty) {
+                            return 'Please fill in this field';
+                          } else if (!RegExp(
+                            r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~`)\%\-(_+=;:,.<>/?"[{\]}\|^]).{8,}$',
+                          ).hasMatch(val)) {
+                            return 'Please enter a valid password';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -140,8 +188,15 @@ class _SignupScreenState extends State<SignupScreen> {
             verticalSpace(40),
             WideTextButton(
               txt: 'Sign up',
-              func: () {
-                context.pushReplacementNamed(Routes.navBar);
+              func: () async {
+                if (_formKey.currentState!.validate()) {
+                  MyUser myUser = MyUser.empty;
+                  myUser.email = emailController.text;
+                  myUser.name = nameController.text;
+                  myUser.url = imgUrl;
+                  await fireBaseRepo.signUp(myUser, passwordController.text);
+                  context.pushReplacementNamed(Routes.navBar);
+                }
               },
               color: ColorsManager.primaryblack,
               txtColor: ColorsManager.white,

@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class RefundBody extends StatelessWidget {
-  const RefundBody({super.key});
+  final passwordController = TextEditingController();
+  final emailController = TextEditingController();
+  final nameController = TextEditingController();
+  RefundBody({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -61,13 +64,52 @@ class RefundBody extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Account Number', style: TextStyles.abeezee16px400wPblack),
-                UnderlineTextField(txt: 'Enter', type: TextInputType.number),
+                UnderlineTextField(
+                  controller: nameController,
+                  hintText: 'Name',
+                  obscureText: false,
+                  keyboardType: TextInputType.name,
+                  validator: (val) {
+                    if (val!.isEmpty) {
+                      return 'Please fill in this field';
+                    } else if (val.length > 30) {
+                      return 'Name too long';
+                    }
+                    return null;
+                  },
+                ),
                 verticalSpace(15),
                 Text('Account Number', style: TextStyles.abeezee16px400wPblack),
-                UnderlineTextField(txt: 'Enter', type: TextInputType.number),
+                UnderlineTextField(
+                  controller: nameController,
+                  hintText: 'Name',
+                  obscureText: false,
+                  keyboardType: TextInputType.name,
+                  validator: (val) {
+                    if (val!.isEmpty) {
+                      return 'Please fill in this field';
+                    } else if (val.length > 30) {
+                      return 'Name too long';
+                    }
+                    return null;
+                  },
+                ),
                 verticalSpace(15),
                 Text('Account Owner', style: TextStyles.abeezee16px400wPblack),
-                UnderlineTextField(txt: 'Enter', type: TextInputType.number),
+                UnderlineTextField(
+                  controller: nameController,
+                  hintText: 'Name',
+                  obscureText: false,
+                  keyboardType: TextInputType.name,
+                  validator: (val) {
+                    if (val!.isEmpty) {
+                      return 'Please fill in this field';
+                    } else if (val.length > 30) {
+                      return 'Name too long';
+                    }
+                    return null;
+                  },
+                ),
               ],
             ),
           ),

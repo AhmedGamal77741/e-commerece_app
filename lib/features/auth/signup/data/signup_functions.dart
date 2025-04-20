@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
@@ -22,5 +25,37 @@ Future<String> uploadImageToImgBB() async {
     return jsonData['data']['url'];
   } else {
     throw Exception('Failed to upload: ${response.body}');
+  }
+}
+
+class FirebaseUserRepo {
+  final FirebaseAuth _firebaseAuth;
+
+  final usersCollection = FirebaseFirestore.instance.collection('users');
+
+  FirebaseUserRepo({FirebaseAuth? firebaseAuth})
+    : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
+
+  Future<MyUser> signUp(MyUser myUser, String password) async {
+    try {
+      UserCredential user = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: myUser.email,
+        password: password,
+      );
+
+      myUser.userId = user.user!.uid;
+      try {
+        await usersCollection
+            .doc(myUser.userId)
+            .set(myUser.toEntity().toDocument());
+      } catch (e) {
+        // log(e.toString());
+        rethrow;
+      }
+      return myUser;
+    } catch (e) {
+      // log(e.toString());
+      rethrow;
+    }
   }
 }
