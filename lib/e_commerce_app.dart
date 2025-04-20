@@ -21,7 +21,7 @@ class EcommerceApp extends StatelessWidget {
           ),
         ),
         debugShowCheckedModeBanner: false,
-        initialRoute: Routes.navBar,
+        initialRoute: Routes.authScreen,
         onGenerateRoute: appRouter.generateRoute,
       ),
     );

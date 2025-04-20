@@ -8,7 +8,9 @@ class Routes {
   static const String orderCompleteScreen = '/orderCompleteScreen';
   static const String shopSearchScreen = '/shopSearchScreen';
   static const String itemDetailsScreen = '/itemDetailsScreen';
-  static const String navBar = '/';
+  static const String navBar = '/navBar';
   static const String trackorder = '/trackorder';
   static const String exchangeOrRefund = '/exchangeOrRefund';
+  static const String cancelSubscription = '/cancelSubscription';
+  static const String authScreen = '/';
 }

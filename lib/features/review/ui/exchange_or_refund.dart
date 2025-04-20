@@ -71,7 +71,12 @@ class _ExchangeOrRefundState extends State<ExchangeOrRefund> {
                 verticalSpace(50),
                 isRefund ? RefundBody() : ExchangeBody(),
                 verticalSpace(50),
-                WideTextButton(txt: 'Request', func: () {}),
+                WideTextButton(
+                  txt: 'Request',
+                  color: ColorsManager.primary500,
+                  txtColor: ColorsManager.white,
+                  func: () {},
+                ),
               ],
             ),
           ),

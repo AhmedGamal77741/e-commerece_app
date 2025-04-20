@@ -1,3 +1,5 @@
+import 'package:ecommerece_app/core/helpers/extensions.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +28,9 @@ class UserOptionsContainer extends StatelessWidget {
                 'Cancel Membership Subscription',
                 style: TextStyles.abeezee16px400wPblack,
               ),
-              onTap: () {},
+              onTap: () {
+                context.pushNamed(Routes.cancelSubscription);
+              },
             ),
             Divider(color: ColorsManager.primary100),
             InkWell(

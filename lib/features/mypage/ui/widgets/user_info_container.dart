@@ -46,7 +46,6 @@ class UserInfoContainer extends StatelessWidget {
             Text('Password', style: TextStyles.abeezee16px400wPblack),
             Row(
               children: [
-                verticalSpace(2),
                 Spacer(),
                 BlackTextButton(
                   txt: 'complete',
