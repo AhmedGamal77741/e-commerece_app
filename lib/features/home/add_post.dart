@@ -1,6 +1,7 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -12,14 +13,36 @@ class AddPost extends StatefulWidget {
 }
 
 class _AddPostState extends State<AddPost> {
+  String imgUrl = "";
+  TextEditingController _textController = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
         floatingActionButton: ElevatedButton(
-          onPressed: () {},
+          onPressed: () async {
+            if (_textController.text.isEmpty && imgUrl.isEmpty) return;
+
+            try {
+              await uploadPost(text: _textController.text, imgUrl: imgUrl);
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Success')));
+              Navigator.pop(context); // Close after posting
+            } catch (e) {
+              print(e.toString());
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to post: ${e.toString()}')),
+              );
+            }
+          },
+
           style: ElevatedButton.styleFrom(
-            backgroundColor: ColorsManager.primary200,
+            backgroundColor:
+                _textController.text.isEmpty && imgUrl.isEmpty
+                    ? ColorsManager.primary200
+                    : Colors.black,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(30), // Circular edges
             ),
@@ -90,8 +113,25 @@ class _AddPostState extends State<AddPost> {
                           'pang2chocolate',
                           style: TextStyles.abeezee16px400wPblack,
                         ),
-                        Text(
-                          'Any Updates?',
+                        TextField(
+                          controller: _textController,
+                          onChanged: (value) {
+                            setState(() {}); // Handle text changes
+                          },
+                          decoration: InputDecoration(
+                            hintText: 'Any Updates?', // Placeholder text
+                            border: InputBorder.none, // Removes all borders
+                            contentPadding:
+                                EdgeInsets.zero, // Removes default padding
+                            isDense: true, // Reduces vertical padding
+                            hintStyle: TextStyle(
+                              // Matches your text style
+                              color: const Color(0xFF5F5F5F),
+                              fontSize: 13.sp,
+                              fontFamily: 'ABeeZee',
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
                           style: TextStyle(
                             color: const Color(0xFF5F5F5F),
                             fontSize: 13.sp,
@@ -99,9 +139,27 @@ class _AddPostState extends State<AddPost> {
                             fontWeight: FontWeight.w400,
                           ),
                         ),
-                        ImageIcon(
-                          AssetImage('assets/image_icon.png'),
-                          size: 17.sp,
+                        InkWell(
+                          onTap: () async {
+                            imgUrl = await uploadImageToImgBB();
+                            setState(() {});
+                          },
+                          child:
+                              imgUrl.isEmpty
+                                  ? SizedBox(
+                                    width: 17.w,
+                                    height: 17.h,
+                                    child: ImageIcon(
+                                      AssetImage('assets/image_icon.png'),
+                                      size: 17.sp,
+                                    ),
+                                  )
+                                  : Image.network(
+                                    imgUrl,
+                                    height: 272.h,
+                                    width: 200.w,
+                                    fit: BoxFit.cover,
+                                  ),
                         ),
                       ],
                     ),
