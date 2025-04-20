@@ -488,41 +488,50 @@ class _CommentsState extends State<Comments> {
 
             Container(
               height: 60.h,
-              padding: EdgeInsets.symmetric(vertical: 10.0.h),
+              padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 15.w),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // First child is enter comment text input
+                  // Comment icon
+                  Icon(
+                    Icons.comment,
+                    color: ColorsManager.primary600,
+                    size: 24.sp,
+                  ),
+                  SizedBox(width: 10.w),
+
+                  // Comment input field
                   Expanded(
                     flex: 4,
-                    child: Padding(
-                      padding: EdgeInsets.only(left: 15.0.w),
-                      child: TextFormField(
-                        decoration: InputDecoration(
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: ColorsManager.primary600,
-                            ),
+                    child: TextFormField(
+                      decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 10.h,
+                        ),
+                        labelText: "Add comment",
+                        labelStyle: TextStyles.abeezee16px400wP600,
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: ColorsManager.primary600,
                           ),
-                          labelText: "Add comment",
-                          labelStyle: TextStyles.abeezee16px400wP600,
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: ColorsManager.primary600,
-                            ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: ColorsManager.primary600,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  // Second child is button
-                  Expanded(
-                    child: IconButton(
-                      icon: Icon(Icons.send),
-                      color: ColorsManager.primary600,
-                      iconSize: 25.0.sp,
-                      onPressed: () {},
-                    ),
+                  SizedBox(width: 10.w),
+
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints(),
+                    icon: Icon(Icons.send),
+                    color: ColorsManager.primary600,
+                    iconSize: 25.sp,
+                    onPressed: () {},
                   ),
                 ],
               ),

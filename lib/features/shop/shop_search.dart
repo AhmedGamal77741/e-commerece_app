@@ -26,7 +26,10 @@ class _ShopSearchState extends State<ShopSearch> {
         title: TextField(
           decoration: InputDecoration(
             hintText: 'Search...',
-            contentPadding: EdgeInsets.all(12),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 12.w,
+              vertical: 5.h,
+            ),
             border: OutlineInputBorder(
               // Default border
               borderSide: BorderSide(color: Colors.grey),

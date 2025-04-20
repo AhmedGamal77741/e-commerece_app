@@ -515,14 +515,6 @@ class _ItemDetailsState extends State<ItemDetails> {
             Expanded(
               child: TextButton(
                 onPressed: () {},
-                child: Text(
-                  'Add to Cart',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontFamily: 'ABeeZee',
-                    fontSize: 18.sp,
-                  ),
-                ),
                 style: TextButton.styleFrom(
                   backgroundColor: ColorsManager.white,
                   padding: EdgeInsets.symmetric(
@@ -536,20 +528,20 @@ class _ItemDetailsState extends State<ItemDetails> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
+                child: Text(
+                  'Add to Cart',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontFamily: 'ABeeZee',
+                    fontSize: 18.sp,
+                  ),
+                ),
               ),
             ),
             SizedBox(width: 16),
             Expanded(
               child: TextButton(
                 onPressed: () {},
-                child: Text(
-                  'Order now',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'ABeeZee',
-                    fontSize: 18.sp,
-                  ),
-                ),
                 style: TextButton.styleFrom(
                   backgroundColor: ColorsManager.primaryblack,
                   padding: EdgeInsets.symmetric(
@@ -560,6 +552,14 @@ class _ItemDetailsState extends State<ItemDetails> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                child: Text(
+                  'Order now',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'ABeeZee',
+                    fontSize: 18.sp,
                   ),
                 ),
               ),

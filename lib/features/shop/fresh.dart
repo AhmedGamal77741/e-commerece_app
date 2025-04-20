@@ -22,10 +22,13 @@ class _FreshState extends State<Fresh> {
         onPressed: () {
           context.pushNamed(Routes.shopSearchScreen);
         },
-        child: Icon(Icons.search, color: Colors.white),
         elevation: 0,
         backgroundColor: Colors.black,
-        shape: CircleBorder(), // Explicit circular shape
+        shape: CircleBorder(),
+        child: Icon(
+          Icons.search,
+          color: Colors.white,
+        ), // Explicit circular shape
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 12.w),
