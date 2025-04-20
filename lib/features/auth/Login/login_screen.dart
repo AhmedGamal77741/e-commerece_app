@@ -1,20 +1,32 @@
-import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
+import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
+
   final emailController = TextEditingController();
-  final nameController = TextEditingController();
 
-  LoginScreen({super.key});
+  IconData iconPassword = Icons.visibility;
 
+  bool obsecurepassword = true;
+
+  final _formKey = GlobalKey<FormState>();
+
+  String? _errorMsg;
+  final fireBaseRepo = FirebaseUserRepo();
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -32,50 +44,81 @@ class LoginScreen extends StatelessWidget {
               ),
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    verticalSpace(20),
-                    Text('User ID', style: TextStyles.abeezee16px400wPblack),
-                    UnderlineTextField(
-                      controller: nameController,
-                      hintText: 'Name',
-                      obscureText: false,
-                      keyboardType: TextInputType.name,
-                      validator: (val) {
-                        if (val!.isEmpty) {
-                          return 'Please fill in this field';
-                        } else if (val.length > 30) {
-                          return 'Name too long';
-                        }
-                        return null;
-                      },
-                    ),
-                    verticalSpace(20),
-                    Text('Password', style: TextStyles.abeezee16px400wPblack),
-                    UnderlineTextField(
-                      controller: nameController,
-                      hintText: 'Name',
-                      obscureText: false,
-                      keyboardType: TextInputType.name,
-                      validator: (val) {
-                        if (val!.isEmpty) {
-                          return 'Please fill in this field';
-                        } else if (val.length > 30) {
-                          return 'Name too long';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      verticalSpace(20),
+                      Text('Email', style: TextStyles.abeezee16px400wPblack),
+                      UnderlineTextField(
+                        controller: emailController,
+                        hintText: 'Email',
+                        obscureText: false,
+                        keyboardType: TextInputType.emailAddress,
+                        errorMsg: _errorMsg,
+                        validator: (val) {
+                          if (val!.isEmpty) {
+                            return 'Please fill in this field';
+                          } else if (!RegExp(
+                            r'^[\w-\.]+@([\w-]+.)+[\w-]{2,4}$',
+                          ).hasMatch(val)) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
+                      verticalSpace(20),
+                      Text('Password', style: TextStyles.abeezee16px400wPblack),
+                      UnderlineTextField(
+                        controller: passwordController,
+                        hintText: 'Password',
+                        obscureText: obsecurepassword,
+                        keyboardType: TextInputType.visiblePassword,
+                        errorMsg: _errorMsg,
+                        validator: (val) {
+                          if (val!.isEmpty) {
+                            return 'Please fill in this field';
+                          } else if (!RegExp(
+                            r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~`)\%\-(_+=;:,.<>/?"[{\]}\|^]).{8,}$',
+                          ).hasMatch(val)) {
+                            return 'Please enter a valid password';
+                          }
+                          return null;
+                        },
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              obsecurepassword = !obsecurepassword;
+                              if (obsecurepassword) {
+                                iconPassword = Icons.visibility_off;
+                              } else {
+                                iconPassword = Icons.visibility;
+                              }
+                            });
+                          },
+                          icon: Icon(iconPassword),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
             verticalSpace(30),
             WideTextButton(
               txt: 'Sign in',
-              func: () {
-                context.pushReplacementNamed(Routes.navBar);
+              func: () async {
+                try {
+                  await fireBaseRepo.signIn(
+                    emailController.text,
+                    passwordController.text,
+                  );
+                } catch (e) {
+                  setState(() {
+                    _errorMsg = e.toString();
+                  });
+                }
               },
               color: ColorsManager.primaryblack,
               txtColor: ColorsManager.white,

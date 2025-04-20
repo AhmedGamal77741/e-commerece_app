@@ -1,5 +1,5 @@
 import 'package:ecommerece_app/core/routing/app_router.dart';
-import 'package:ecommerece_app/core/routing/routes.dart';
+import 'package:ecommerece_app/landing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -21,8 +21,8 @@ class EcommerceApp extends StatelessWidget {
           ),
         ),
         debugShowCheckedModeBanner: false,
-        initialRoute: Routes.authScreen,
         onGenerateRoute: appRouter.generateRoute,
+        home: const LandingScreen(),
       ),
     );
   }

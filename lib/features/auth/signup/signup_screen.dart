@@ -195,7 +195,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   myUser.name = nameController.text;
                   myUser.url = imgUrl;
                   await fireBaseRepo.signUp(myUser, passwordController.text);
-                  context.pushReplacementNamed(Routes.navBar);
                 }
               },
               color: ColorsManager.primaryblack,

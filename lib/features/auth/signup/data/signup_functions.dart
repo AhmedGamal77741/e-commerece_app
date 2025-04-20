@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_entity.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:rxdart/rxdart.dart';
 
 Future<String> uploadImageToImgBB() async {
   final XFile? image = await ImagePicker().pickImage(
@@ -36,6 +38,22 @@ class FirebaseUserRepo {
   FirebaseUserRepo({FirebaseAuth? firebaseAuth})
     : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
+  Stream<MyUser?> get user {
+    return _firebaseAuth.authStateChanges().flatMap((firebaseUser) async* {
+      if (firebaseUser == null) {
+        yield MyUser.empty;
+      } else {
+        yield await usersCollection
+            .doc(firebaseUser.uid)
+            .get()
+            .then(
+              (val) =>
+                  MyUser.fromEntity(MyUserEntity.fromDocument(val.data()!)),
+            );
+      }
+    });
+  }
+
   Future<MyUser> signUp(MyUser myUser, String password) async {
     try {
       UserCredential user = await _firebaseAuth.createUserWithEmailAndPassword(
@@ -53,6 +71,18 @@ class FirebaseUserRepo {
         rethrow;
       }
       return myUser;
+    } catch (e) {
+      // log(e.toString());
+      rethrow;
+    }
+  }
+
+  Future<void> signIn(String email, String password) async {
+    try {
+      await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
     } catch (e) {
       // log(e.toString());
       rethrow;
