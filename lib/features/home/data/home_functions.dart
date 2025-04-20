@@ -1,9 +1,45 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_entity.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+Future<MyUserEntity> getUser(String userId) async {
+  try {
+    final doc = await _firestore.collection('users').doc(userId).get();
+    if (doc.exists) {
+      return MyUserEntity.fromDocument(doc.data()!);
+    }
+    return MyUserEntity(userId: "", email: "", name: "", url: "");
+  } catch (e) {
+    print('Error fetching user: $e');
+    throw e;
+  }
+}
+
+Future<void> toggleLike(DocumentSnapshot post) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return;
+
+  final postRef = FirebaseFirestore.instance.collection('posts').doc(post.id);
+  final likedBy = List<String>.from(post['likedBy'] ?? []);
+
+  if (likedBy.contains(userId)) {
+    await postRef.update({
+      'likes': FieldValue.increment(-1),
+      'likedBy': FieldValue.arrayRemove([userId]),
+    });
+  } else {
+    await postRef.update({
+      'likes': FieldValue.increment(1),
+      'likedBy': FieldValue.arrayUnion([userId]),
+    });
+  }
+}
 
 Future<void> uploadPost({required String text, required String imgUrl}) async {
   try {
@@ -23,6 +59,7 @@ Future<void> uploadPost({required String text, required String imgUrl}) async {
       'likes': 0,
       'comments': 0,
       'createdAt': FieldValue.serverTimestamp(),
+      'likedBy': [],
     });
 
     print('Post uploaded successfully!');

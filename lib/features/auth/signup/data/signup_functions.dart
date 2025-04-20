@@ -62,6 +62,7 @@ class FirebaseUserRepo {
       );
 
       myUser.userId = user.user!.uid;
+
       try {
         // await user.user!.updateDisplayName(myUser.name);
         // await user.user!.updatePhotoURL(myUser.url);
