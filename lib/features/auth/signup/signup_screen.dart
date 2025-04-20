@@ -6,6 +6,7 @@ import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/black_text_button.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
+import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -39,10 +40,15 @@ class SignupScreen extends StatelessWidget {
                           style: TextStyles.abeezee16px400wPblack,
                         ),
                         Spacer(),
-                        Image.asset(
-                          'assets/mypage_avatar.png',
-                          height: 55.h,
-                          width: 56.w,
+                        InkWell(
+                          onTap: () async {
+                            print(await uploadImageToImgBB());
+                          },
+                          child: Image.asset(
+                            'assets/mypage_avatar.png',
+                            height: 55.h,
+                            width: 56.w,
+                          ),
                         ),
                       ],
                     ),
