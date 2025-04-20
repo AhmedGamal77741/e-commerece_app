@@ -54,16 +54,17 @@ class FirebaseUserRepo {
     });
   }
 
-  Future<MyUser> signUp(MyUser myUser, String password) async {
+  Future signUp(MyUser myUser, String password) async {
     try {
       UserCredential user = await _firebaseAuth.createUserWithEmailAndPassword(
         email: myUser.email,
         password: password,
       );
-      await user.user!.updateDisplayName(myUser.name);
-      await user.user!.updatePhotoURL(myUser.url);
+
       myUser.userId = user.user!.uid;
       try {
+        // await user.user!.updateDisplayName(myUser.name);
+        // await user.user!.updatePhotoURL(myUser.url);
         await usersCollection
             .doc(myUser.userId)
             .set(myUser.toEntity().toDocument());
@@ -71,22 +72,24 @@ class FirebaseUserRepo {
         // log(e.toString());
         rethrow;
       }
+      await user.user!.updateDisplayName(myUser.name);
+      await user.user!.updatePhotoURL(myUser.url);
       return myUser;
     } catch (e) {
-      // log(e.toString());
-      rethrow;
+      return null;
     }
   }
 
-  Future<void> signIn(String email, String password) async {
+  Future signIn(String email, String password) async {
     try {
-      await _firebaseAuth.signInWithEmailAndPassword(
+      var result = await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      var user = result.user;
+      return user;
     } catch (e) {
-      // log(e.toString());
-      rethrow;
+      return null;
     }
   }
 }

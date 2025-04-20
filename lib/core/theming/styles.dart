@@ -66,4 +66,9 @@ class TextStyles {
     fontSize: 23.sp,
     fontWeight: FontWeight.w400,
   );
+  static final TextStyle abeezee16px400wPred = _textStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    color: ColorsManager.red,
+  );
 }

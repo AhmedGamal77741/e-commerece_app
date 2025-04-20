@@ -26,6 +26,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
   String? _errorMsg;
+
+  String error = '';
   final fireBaseRepo = FirebaseUserRepo();
   @override
   Widget build(BuildContext context) {
@@ -106,18 +108,21 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             verticalSpace(30),
+            Text(error, style: TextStyles.abeezee16px400wPred),
             WideTextButton(
               txt: 'Sign in',
               func: () async {
-                try {
-                  await fireBaseRepo.signIn(
+                if (_formKey.currentState!.validate()) {
+                  dynamic result = await fireBaseRepo.signIn(
                     emailController.text,
                     passwordController.text,
                   );
-                } catch (e) {
-                  setState(() {
-                    _errorMsg = e.toString();
-                  });
+
+                  if (result == null) {
+                    setState(() {
+                      error = 'invaid mail or password';
+                    });
+                  }
                 }
               },
               color: ColorsManager.primaryblack,

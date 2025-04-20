@@ -1,6 +1,4 @@
-import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
@@ -26,6 +24,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool obscurePassword = true;
   bool signUpRequired = false;
   String imgUrl = "";
+  String error = '';
   final fireBaseRepo = FirebaseUserRepo();
   @override
   Widget build(BuildContext context) {
@@ -88,7 +87,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         keyboardType: TextInputType.name,
                         validator: (val) {
                           if (val!.isEmpty) {
-                            return 'Please fill in this field';
+                            return 'Enter Yout Name';
                           } else if (val.length > 30) {
                             return 'Name too long';
                           }
@@ -150,6 +149,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ),
             verticalSpace(30),
+            Text(error, style: TextStyles.abeezee16px400wPred),
             Container(
               decoration: ShapeDecoration(
                 color: ColorsManager.white,
@@ -194,7 +194,15 @@ class _SignupScreenState extends State<SignupScreen> {
                   myUser.email = emailController.text;
                   myUser.name = nameController.text;
                   myUser.url = imgUrl;
-                  await fireBaseRepo.signUp(myUser, passwordController.text);
+                  var result = await fireBaseRepo.signUp(
+                    myUser,
+                    passwordController.text,
+                  );
+                  if (result == null) {
+                    setState(() {
+                      error = "Email Already in use";
+                    });
+                  }
                 }
               },
               color: ColorsManager.primaryblack,
