@@ -115,8 +115,8 @@ class _ShopSearchState extends State<ShopSearch> {
                 itemBuilder: (context, index) {
                   final product = _filteredProducts[index];
                   return ListTile(
-                    title: Text(product['productName	']),
-                    subtitle: Text('${product['price	']} KRW'),
+                    title: Text(product['productName']),
+                    subtitle: Text('${product['price']} KRW'),
                     leading: Image.network(
                       product['imgUrl'],
                       width: 50.w,
@@ -135,16 +135,17 @@ class _ShopSearchState extends State<ShopSearch> {
                               (context) => ItemDetails(
                                 data: {
                                   'imgUrl': product['imgUrl'],
-                                  'sellerName': product['sellerName	'],
-                                  'price': product['price	'],
+                                  'sellerName': product['sellerName'],
+                                  'price': product['price'],
                                   'product_id': product['product_id'],
-                                  'freeShipping': product['freeShipping	'],
+                                  'freeShipping': product['freeShipping'],
                                   'meridiem': product['meridiem'],
-                                  'baselinehour': product['baselinehour	'],
-                                  'productName': product['productName	'],
+                                  'baselinehour': product['baselinetime'],
+                                  'productName': product['productName'],
                                   'instructions': product['instructions'],
                                   'stock': product['stock'],
                                   'likes': liked,
+                                  'imgUrls': product['imgUrls'],
                                 },
                               ),
                         ),
