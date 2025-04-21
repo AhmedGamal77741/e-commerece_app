@@ -1,6 +1,8 @@
-import 'package:ecommerece_app/core/helpers/extensions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/shop/fav_fnc.dart';
+import 'package:ecommerece_app/features/shop/item_details.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -12,6 +14,50 @@ class ShopSearch extends StatefulWidget {
 }
 
 class _ShopSearchState extends State<ShopSearch> {
+  TextEditingController _searchController = TextEditingController();
+  List<DocumentSnapshot> _allProducts = [];
+  List<DocumentSnapshot> _filteredProducts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProducts();
+  }
+
+  // Fetch all products from Firestore
+  void _fetchProducts() async {
+    final querySnapshot =
+        await FirebaseFirestore.instance.collection('products').get();
+    setState(() {
+      _allProducts = querySnapshot.docs;
+      _filteredProducts =
+          _allProducts; // Initialize filtered list with all products
+    });
+  }
+
+  // Search functionality
+  void _searchProduct(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredProducts =
+            _allProducts; // Show all products if search is cleared
+      });
+    } else {
+      final filtered =
+          _allProducts
+              .where(
+                (product) => product['productName	']
+                    .toString()
+                    .toLowerCase()
+                    .contains(query.toLowerCase()),
+              )
+              .toList();
+      setState(() {
+        _filteredProducts = filtered; // Update filtered products list
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,30 +69,29 @@ class _ShopSearchState extends State<ShopSearch> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: ColorsManager.primary600),
           onPressed: () {
-            context.pop();
+            Navigator.pop(context); // Going back
           },
         ),
-        title: SizedBox(
-          height: 31.h,
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search...',
-              hintStyle: TextStyles.abeezee13px400wPblack,
-              border: OutlineInputBorder(
-                // Default border
-                borderSide: BorderSide(color: ColorsManager.primary600),
-                borderRadius: BorderRadius.zero, // Rectangular
-              ),
-              focusedBorder: OutlineInputBorder(
-                // Border when selected
-                borderSide: BorderSide(color: ColorsManager.primary600),
-                borderRadius: BorderRadius.zero,
-              ),
-              enabledBorder: OutlineInputBorder(
-                // Border when not selected
-                borderSide: BorderSide(color: ColorsManager.primary600),
-                borderRadius: BorderRadius.zero,
-              ),
+        title: TextField(
+          controller: _searchController,
+          onChanged: _searchProduct,
+          decoration: InputDecoration(
+            hintText: 'Search...',
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 12.w,
+              vertical: 5.h,
+            ),
+            border: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey),
+              borderRadius: BorderRadius.zero,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey),
+              borderRadius: BorderRadius.zero,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey),
+              borderRadius: BorderRadius.zero,
             ),
           ),
         ),
@@ -58,30 +103,58 @@ class _ShopSearchState extends State<ShopSearch> {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              "Best product",
-              style: TextStyle(
-                fontFamily: 'ABeeZee',
-                fontSize: 26.sp,
-                color: ColorsManager.primary600,
+      body:
+          _filteredProducts.isEmpty
+              ? Center(
+                child: CircularProgressIndicator(),
+              ) // Show loading indicator
+              : _filteredProducts.isEmpty && _searchController.text.isNotEmpty
+              ? Center(
+                child: Text('No results found'),
+              ) // Show no results message
+              : ListView.builder(
+                itemCount: _filteredProducts.length,
+                itemBuilder: (context, index) {
+                  final product = _filteredProducts[index];
+                  return ListTile(
+                    title: Text(product['productName	']),
+                    subtitle: Text('${product['price	']} KRW'),
+                    leading: Image.network(
+                      product['imgUrl'],
+                      width: 50.w,
+                      height: 50.h,
+                      fit: BoxFit.cover,
+                    ),
+                    onTap: () async {
+                      bool liked = await isProductInFavorites(
+                        FirebaseAuth.instance.currentUser?.uid ?? '',
+                        product['product_id'],
+                      );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => ItemDetails(
+                                data: {
+                                  'imgUrl': product['imgUrl'],
+                                  'sellerName': product['sellerName	'],
+                                  'price': product['price	'],
+                                  'product_id': product['product_id'],
+                                  'freeShipping': product['freeShipping	'],
+                                  'meridiem': product['meridiem'],
+                                  'baselinehour': product['baselinehour	'],
+                                  'productName': product['productName	'],
+                                  'instructions': product['instructions'],
+                                  'stock': product['stock'],
+                                  'likes': liked,
+                                },
+                              ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
-            ),
-            Text(
-              "Low price",
-              style: TextStyle(
-                fontFamily: 'ABeeZee',
-                fontSize: 26.sp,
-                color: ColorsManager.primary600,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

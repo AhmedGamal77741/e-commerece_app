@@ -32,8 +32,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const OrderComplete());
       case Routes.shopSearchScreen:
         return MaterialPageRoute(builder: (_) => const ShopSearch());
-      case Routes.itemDetailsScreen:
-        return MaterialPageRoute(builder: (_) => ItemDetails());
+      // case Routes.itemDetailsScreen:
+      //   return MaterialPageRoute(builder: (_) => ItemDetails());
       case Routes.trackorder:
         return MaterialPageRoute(builder: (_) => const TrackOrder());
       case Routes.exchangeOrRefund:

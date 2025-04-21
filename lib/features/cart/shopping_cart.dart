@@ -1,8 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/cart/delete_func.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -21,60 +26,109 @@ class _ShoppingCartState extends State<ShoppingCart> {
         Expanded(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Image.asset(
-                  'assets/product_image_order.png',
-                  width: 90.w,
-                  height: 90.h,
-                ),
-                Padding(
-                  padding: EdgeInsets.only(left: 10.w),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Pang2Chocolate',
-                        style: TextStyles.abeezee14px400wP600,
-                      ),
-                      verticalSpace(5),
-                      Text(
-                        'Dark Marshmallow 6 pieces',
-                        style: TextStyles.abeezee13px400wPblack,
-                      ),
-                      verticalSpace(3),
+            child: StreamBuilder(
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(FirebaseAuth.instance.currentUser?.uid ?? '')
+                      .collection('cart')
+                      .snapshots(),
+              builder: (context, cartSnapshot) {
+                if (cartSnapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                final cartDocs = cartSnapshot.data!.docs;
 
-                      Row(
-                        children: [
-                          Text(
-                            'Quantity : 1  ',
-                            style: TextStyles.abeezee11px400wP600,
-                          ),
-                          Text(
-                            'Tom (Wed) Expected ',
-                            style: TextStyles.abeezee11px400wP600,
-                          ),
-                        ],
-                      ),
-                      Text(
-                        '12,000 KRW',
-                        style: TextStyles.abeezee13px400wPblack,
-                      ),
-                    ],
-                  ),
-                ),
+                return ListView.separated(
+                  separatorBuilder: (context, index) {
+                    if (index == cartDocs.length - 1) {
+                      return SizedBox.shrink();
+                    }
+                    return Divider();
+                  },
+                  itemCount: cartDocs.length,
+                  itemBuilder: (ctx, index) {
+                    final cartData = cartDocs[index].data();
+                    final productId = cartData['product_id'];
 
-                Spacer(),
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.close,
-                    color: ColorsManager.primary600,
-                    size: 18,
-                  ),
-                ),
-              ],
+                    return FutureBuilder<DocumentSnapshot>(
+                      future:
+                          FirebaseFirestore.instance
+                              .collection('products')
+                              .doc(productId)
+                              .get(),
+                      builder: (context, productSnapshot) {
+                        if (!productSnapshot.hasData) {
+                          return ListTile(title: Text('Loading...'));
+                        }
+                        final productData =
+                            productSnapshot.data!.data()
+                                as Map<String, dynamic>;
+
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Image.network(
+                              productData['imgUrl'],
+                              width: 90.w,
+                              height: 90.h,
+                              fit: BoxFit.cover,
+                            ),
+                            Padding(
+                              padding: EdgeInsets.only(left: 10.w),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    productData['sellerName	'],
+                                    style: TextStyles.abeezee14px400wP600,
+                                  ),
+                                  verticalSpace(5),
+                                  Text(
+                                    productData['productName	'],
+                                    style: TextStyles.abeezee13px400wPblack,
+                                  ),
+                                  verticalSpace(3),
+
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Quantity : ${cartData['quantity'].toString()}  ',
+                                        style: TextStyles.abeezee11px400wP600,
+                                      ),
+                                      Text(
+                                        '${getArrivalDay(productData['meridiem'], productData['baselinehour	'])} ',
+                                        style: TextStyles.abeezee11px400wP600,
+                                      ),
+                                    ],
+                                  ),
+
+                                  Text(
+                                    '${(productData['price	'] * cartData['quantity']).toString()} KRW',
+                                    style: TextStyles.abeezee13px400wPblack,
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            Spacer(),
+                            IconButton(
+                              onPressed: () async {
+                                await deleteCartItem(cartDocs[index].id);
+                              },
+                              icon: Icon(
+                                Icons.close,
+                                color: ColorsManager.primary600,
+                                size: 18,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                );
+              },
             ),
           ),
         ),
@@ -98,8 +152,10 @@ class _ShoppingCartState extends State<ShoppingCart> {
                   ),
                 ),
               ),
+
               Text(
-                '12,000 KRW',
+                'KRW',
+
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 18.sp,

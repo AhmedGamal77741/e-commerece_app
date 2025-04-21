@@ -21,7 +21,7 @@ class _CartState extends State<Cart> {
           firstTab: 'Shopping Cart',
           secondTab: 'Favorites',
         ),
-        body: TabBarView(children: [ShoppingCart(), CartFavorites()]),
+        body: TabBarView(children: [ShoppingCart(), FavoritesScreen()]),
       ),
     );
   }

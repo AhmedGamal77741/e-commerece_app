@@ -1,29 +1,38 @@
+import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/shop/cart_func.dart';
+import 'package:ecommerece_app/features/shop/fav_fnc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class ItemDetails extends StatefulWidget {
-  ItemDetails({super.key});
-  final List<String> imageUrls = [
-    'https://placehold.co/428x428px.png',
-    'https://placehold.co/428x428px.png',
-    'https://placehold.co/428x428px.png',
-    'https://placehold.co/428x428px.png',
-    'https://placehold.co/428x428px.png',
-  ];
+  final Map<String, dynamic> data;
+
+  const ItemDetails({super.key, required this.data});
+
   @override
   State<ItemDetails> createState() => _ItemDetailsState();
 }
 
 class _ItemDetailsState extends State<ItemDetails> {
+  late Map<String, dynamic> productData;
+  late bool liked = false;
+  @override
+  void initState() {
+    super.initState();
+    productData = widget.data;
+    liked = productData['liked'] ?? false;
+  }
+
   final PageController _pageController = PageController();
   int _currentPage = 0;
   String? _selectedOption; // Stores the selected value
-  bool liked = false;
+
   final List<String> _options = ['Option 1', 'Option 2', 'Option 3'];
   @override
   void dispose() {
@@ -33,6 +42,14 @@ class _ItemDetailsState extends State<ItemDetails> {
 
   @override
   Widget build(BuildContext context) {
+    final List<String> imageUrls = [
+      productData['imgUrl'],
+      productData['imgUrl'],
+      productData['imgUrl'],
+      productData['imgUrl'],
+      productData['imgUrl'],
+    ];
+
     return Scaffold(
       body: ListView(
         children: [
@@ -42,12 +59,12 @@ class _ItemDetailsState extends State<ItemDetails> {
               children: [
                 PageView.builder(
                   controller: _pageController,
-                  itemCount: widget.imageUrls.length,
+                  itemCount: imageUrls.length,
                   onPageChanged:
                       (index) => setState(() => _currentPage = index),
                   itemBuilder:
                       (context, index) => Image.network(
-                        widget.imageUrls[index],
+                        imageUrls[index],
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Placeholder(), // Fallback
                       ),
@@ -64,7 +81,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       child: Center(
                         child: SmoothPageIndicator(
                           controller: _pageController,
-                          count: widget.imageUrls.length,
+                          count: imageUrls.length,
                           effect: ScrollingDotsEffect(
                             activeDotColor: Colors.black,
                             dotColor: Colors.grey,
@@ -91,7 +108,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                     spacing: 10.h,
                     children: [
                       Text(
-                        'Pang2Chocolate',
+                        productData['sellerName'],
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 14.sp,
@@ -101,7 +118,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         ),
                       ),
                       Text(
-                        'Dark marshmallow 6 pieces',
+                        productData['productName'],
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 16.sp,
@@ -111,7 +128,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         ),
                       ),
                       Text(
-                        'Tomorrow(Wed) Expected - Free Shipping',
+                        '${getArrivalDay(productData['meridiem'], productData['baselinehour'])} - ${productData['freeShipping'] == true ? 'Free Shipping' : 'Shipping Charges Apply'}',
                         style: TextStyle(
                           color: const Color(0xFF747474),
                           fontSize: 14.sp,
@@ -134,11 +151,30 @@ class _ItemDetailsState extends State<ItemDetails> {
                 ),
                 Flexible(
                   child: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        liked = !liked;
-                      });
-                    },
+                    onPressed:
+                        liked
+                            ? () async {
+                              await removeProductFromFavorites(
+                                userId:
+                                    FirebaseAuth.instance.currentUser?.uid ??
+                                    '',
+                                productId: productData['product_id'],
+                              );
+                              setState(() {
+                                liked = !liked;
+                              });
+                            }
+                            : () async {
+                              await addProductToFavorites(
+                                userId:
+                                    FirebaseAuth.instance.currentUser?.uid ??
+                                    '',
+                                productId: productData['product_id'],
+                              );
+                              setState(() {
+                                liked = !liked;
+                              });
+                            },
                     icon: ImageIcon(
                       AssetImage('assets/grey_007m.png'),
                       color: liked ? Colors.black : Colors.grey,
@@ -165,13 +201,15 @@ class _ItemDetailsState extends State<ItemDetails> {
                   Row(
                     children: [
                       Radio<String>(
-                        value: '1 Quantity',
+                        value: '1',
                         groupValue: _selectedOption,
                         onChanged:
                             (value) => setState(() => _selectedOption = value),
                       ),
                       Flexible(
-                        child: Text('1 Quantity 12,000KRW (1 piece 12,000)'),
+                        child: Text(
+                          '1 Quantity ${productData['price']} KRW (1 piece ${productData['price']})',
+                        ),
                       ),
                     ],
                   ),
@@ -180,13 +218,15 @@ class _ItemDetailsState extends State<ItemDetails> {
                   Row(
                     children: [
                       Radio<String>(
-                        value: '2 Quantity',
+                        value: '2',
                         groupValue: _selectedOption,
                         onChanged:
                             (value) => setState(() => _selectedOption = value),
                       ),
                       Flexible(
-                        child: Text('2 Quantity 22,000KRW (1 piece 11,000)'),
+                        child: Text(
+                          '2 Quantity ${productData['price']} KRW (2 piece ${productData['price'] * 2})',
+                        ),
                       ),
                     ],
                   ),
@@ -194,13 +234,15 @@ class _ItemDetailsState extends State<ItemDetails> {
                   Row(
                     children: [
                       Radio<String>(
-                        value: '4 Quantity',
+                        value: '4',
                         groupValue: _selectedOption,
                         onChanged:
                             (value) => setState(() => _selectedOption = value),
                       ),
                       Flexible(
-                        child: Text('4 Quantity 40,000KRW (1 piece 10,000)'),
+                        child: Text(
+                          '4 Quantity ${productData['price']} KRW (4 piece ${productData['price'] * 4})',
+                        ),
                       ),
                     ],
                   ),
@@ -247,7 +289,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          'Store in Fridge - Consume within 1 year after purchase',
+                          productData['instructions'],
                           style: TextStyle(
                             color: const Color(0xFF747474),
                             fontSize: 14.sp,
@@ -280,7 +322,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          ' 1 p.m.',
+                          ' ${productData['baselinehour']} ${productData['meridiem']}',
                           style: TextStyle(
                             color: const Color(0xFF747474),
                             fontSize: 14.sp,
@@ -314,7 +356,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          '87',
+                          productData['stock'].toString(),
                           style: TextStyle(
                             color: const Color(0xFF747474),
                             fontSize: 14.sp,
@@ -514,7 +556,21 @@ class _ItemDetailsState extends State<ItemDetails> {
           children: [
             Expanded(
               child: TextButton(
-                onPressed: () {},
+                onPressed: () async {
+                  await addProductAsNewEntryToCart(
+                    userId: FirebaseAuth.instance.currentUser?.uid ?? '',
+                    productId: productData['product_id'],
+                    quantity: int.parse(_selectedOption ?? '1'),
+                  );
+
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(
+                  //     builder:
+                  //         (context) => ShoppingCart(data: {'price': price}),
+                  //   ),
+                  // );
+                },
                 style: TextButton.styleFrom(
                   backgroundColor: ColorsManager.white,
                   padding: EdgeInsets.symmetric(
