@@ -28,7 +28,7 @@ class RefundBody extends StatelessWidget {
             children: [
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 25.h),
-                child: Text('Reason', style: TextStyles.abeezee16px400wPblack),
+                child: Text('이유', style: TextStyles.abeezee16px400wPblack),
               ),
               Divider(color: ColorsManager.primary100),
               TextFormField(
@@ -36,7 +36,7 @@ class RefundBody extends StatelessWidget {
                 minLines: 4,
                 keyboardType: TextInputType.multiline,
                 decoration: InputDecoration(
-                  hintText: "Enter",
+                  hintText: "입장하다",
                   hintStyle: TextStyles.abeezee16px400wP600,
                   contentPadding: EdgeInsets.all(12),
                   border: InputBorder.none,
@@ -63,49 +63,49 @@ class RefundBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Account Number', style: TextStyles.abeezee16px400wPblack),
+                Text('계좌 번호', style: TextStyles.abeezee16px400wPblack),
                 UnderlineTextField(
                   controller: nameController,
-                  hintText: 'Name',
+                  hintText: '이름',
                   obscureText: false,
                   keyboardType: TextInputType.name,
                   validator: (val) {
                     if (val!.isEmpty) {
-                      return 'Please fill in this field';
+                      return '이 필드를 작성해 주세요';
                     } else if (val.length > 30) {
-                      return 'Name too long';
+                      return '이름이 너무 깁니다';
                     }
                     return null;
                   },
                 ),
                 verticalSpace(15),
-                Text('Account Number', style: TextStyles.abeezee16px400wPblack),
+                Text('계좌 번호', style: TextStyles.abeezee16px400wPblack),
                 UnderlineTextField(
                   controller: nameController,
-                  hintText: 'Name',
+                  hintText: '이름',
                   obscureText: false,
                   keyboardType: TextInputType.name,
                   validator: (val) {
                     if (val!.isEmpty) {
-                      return 'Please fill in this field';
+                      return '이 필드를 작성해 주세요';
                     } else if (val.length > 30) {
-                      return 'Name too long';
+                      return '이름이 너무 깁니다';
                     }
                     return null;
                   },
                 ),
                 verticalSpace(15),
-                Text('Account Owner', style: TextStyles.abeezee16px400wPblack),
+                Text('계좌 소유자', style: TextStyles.abeezee16px400wPblack),
                 UnderlineTextField(
                   controller: nameController,
-                  hintText: 'Name',
+                  hintText: '이름',
                   obscureText: false,
                   keyboardType: TextInputType.name,
                   validator: (val) {
                     if (val!.isEmpty) {
-                      return 'Please fill in this field';
+                      return '이 필드를 작성해 주세요';
                     } else if (val.length > 30) {
-                      return 'Name too long';
+                      return '이름이 너무 깁니다';
                     }
                     return null;
                   },

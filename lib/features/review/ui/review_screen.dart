@@ -13,8 +13,8 @@ class ReviewScreen extends StatelessWidget {
       child: Scaffold(
         appBar: TabAppBar(
           imgUrl: 'rev_icon.png',
-          firstTab: 'Leave a Review',
-          secondTab: 'Order history',
+          firstTab: '리뷰 남기기',
+          secondTab: '주문 내역',
         ),
         body: TabBarView(children: [LeaveReview(), OrderHistory()]),
       ),

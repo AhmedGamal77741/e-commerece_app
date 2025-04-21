@@ -52,10 +52,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       verticalSpace(20),
-                      Text('Email', style: TextStyles.abeezee16px400wPblack),
+                      Text('이메일', style: TextStyles.abeezee16px400wPblack),
                       UnderlineTextField(
                         controller: emailController,
-                        hintText: 'Email',
+                        hintText: '이메일',
                         obscureText: false,
                         keyboardType: TextInputType.emailAddress,
                         errorMsg: _errorMsg,
@@ -65,26 +65,26 @@ class _LoginScreenState extends State<LoginScreen> {
                           } else if (!RegExp(
                             r'^[\w-\.]+@([\w-]+.)+[\w-]{2,4}$',
                           ).hasMatch(val)) {
-                            return 'Please enter a valid email';
+                            return '유효한 이메일을 입력해 주세요';
                           }
                           return null;
                         },
                       ),
                       verticalSpace(20),
-                      Text('Password', style: TextStyles.abeezee16px400wPblack),
+                      Text('비밀번호', style: TextStyles.abeezee16px400wPblack),
                       UnderlineTextField(
                         controller: passwordController,
-                        hintText: 'Password',
+                        hintText: '비밀번호',
                         obscureText: obsecurepassword,
                         keyboardType: TextInputType.visiblePassword,
                         errorMsg: _errorMsg,
                         validator: (val) {
                           if (val!.isEmpty) {
-                            return 'Please fill in this field';
+                            return '이 필드를 작성해 주세요';
                           } else if (!RegExp(
                             r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~`)\%\-(_+=;:,.<>/?"[{\]}\|^]).{8,}$',
                           ).hasMatch(val)) {
-                            return 'Please enter a valid password';
+                            return '유효한 비밀번호를 입력해 주세요';
                           }
                           return null;
                         },
@@ -110,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
             verticalSpace(30),
             Text(error, style: TextStyles.abeezee16px400wPred),
             WideTextButton(
-              txt: 'Sign in',
+              txt: '로그인',
               func: () async {
                 if (_formKey.currentState!.validate()) {
                   dynamic result = await fireBaseRepo.signIn(
@@ -120,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   if (result == null) {
                     setState(() {
-                      error = 'invaid mail or password';
+                      error = '잘못된 이메일 또는 비밀번호';
                     });
                   }
                 }

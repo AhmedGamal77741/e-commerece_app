@@ -13,8 +13,8 @@ class MyPageScreen extends StatelessWidget {
       child: Scaffold(
         appBar: TabAppBar(
           imgUrl: 'mypage_icon.png',
-          firstTab: 'My Story',
-          secondTab: 'My Page',
+          firstTab: '내 이야기',
+          secondTab: '내 페이지',
         ),
         body: TabBarView(children: [MyStory(), MyPage()]),
       ),

@@ -18,8 +18,8 @@ class _CartState extends State<Cart> {
       child: Scaffold(
         appBar: TabAppBar(
           imgUrl: '003m.png',
-          firstTab: 'Shopping Cart',
-          secondTab: 'Favorites',
+          firstTab: '쇼핑 카트',
+          secondTab: '즐겨찾기',
         ),
         body: TabBarView(children: [ShoppingCart(), FavoritesScreen()]),
       ),

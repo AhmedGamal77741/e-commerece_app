@@ -52,7 +52,7 @@ class _NavBarState extends State<NavBar> {
               ),
               size: 21,
             ),
-            label: 'Home',
+            label: '집',
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(
@@ -63,7 +63,7 @@ class _NavBarState extends State<NavBar> {
               ),
               size: 21,
             ),
-            label: 'Shop',
+            label: '상점',
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(
@@ -74,7 +74,7 @@ class _NavBarState extends State<NavBar> {
               ),
               size: 21,
             ),
-            label: 'Cart',
+            label: '장바구니',
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(
@@ -85,7 +85,7 @@ class _NavBarState extends State<NavBar> {
               ),
               size: 21,
             ),
-            label: 'Orders',
+            label: '주문',
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(
@@ -96,7 +96,7 @@ class _NavBarState extends State<NavBar> {
               ),
               size: 21,
             ),
-            label: 'My Page',
+            label: '내 페이지',
           ),
         ],
         currentIndex: _selectedIndex,

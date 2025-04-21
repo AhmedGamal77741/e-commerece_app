@@ -19,9 +19,9 @@ class TableContainer extends StatelessWidget {
       child: Column(
         children: [
           TbaleTextRow(
-            firstElment: 'Time',
-            secondElment: 'Current\nLocation',
-            thirdElment: 'Status',
+            firstElment: '시간',
+            secondElment: '현재\n위치',
+            thirdElment: '상태',
             style: TextStyles.abeezee16px400wPblack,
           ),
           Divider(color: ColorsManager.primary100),

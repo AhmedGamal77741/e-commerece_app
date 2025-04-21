@@ -76,7 +76,7 @@ class _ShopSearchState extends State<ShopSearch> {
           controller: _searchController,
           onChanged: _searchProduct,
           decoration: InputDecoration(
-            hintText: 'Search...',
+            hintText: '검색...',
             contentPadding: EdgeInsets.symmetric(
               horizontal: 12.w,
               vertical: 5.h,
@@ -109,9 +109,7 @@ class _ShopSearchState extends State<ShopSearch> {
                 child: CircularProgressIndicator(),
               ) // Show loading indicator
               : _filteredProducts.isEmpty && _searchController.text.isNotEmpty
-              ? Center(
-                child: Text('No results found'),
-              ) // Show no results message
+              ? Center(child: Text('결과가 없습니다')) // Show no results message
               : ListView.builder(
                 itemCount: _filteredProducts.length,
                 itemBuilder: (context, index) {

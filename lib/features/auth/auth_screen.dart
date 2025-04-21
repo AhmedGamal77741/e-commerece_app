@@ -13,8 +13,8 @@ class AuthScreen extends StatelessWidget {
       child: Scaffold(
         appBar: TabAppBar(
           imgUrl: 'mypage_icon.png',
-          firstTab: 'Sign in',
-          secondTab: 'Sign up',
+          firstTab: '로그인',
+          secondTab: '가입하기',
         ),
         body: TabBarView(children: [LoginScreen(), SignupScreen()]),
       ),

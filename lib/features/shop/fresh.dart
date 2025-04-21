@@ -44,7 +44,7 @@ class _FreshState extends State<Fresh> {
                   .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+              return Center(child: Text('오류: ${snapshot.error}'));
             }
 
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -52,7 +52,7 @@ class _FreshState extends State<Fresh> {
             }
 
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(child: Text('No products yet'));
+              return const Center(child: Text('아직 제품이 없습니다'));
             }
 
             final products = snapshot.data!.docs;
@@ -76,13 +76,13 @@ class _FreshState extends State<Fresh> {
                             (context) => ItemDetails(
                               data: {
                                 'imgUrl': data['imgUrl'],
-                                'sellerName': data['sellerName	'],
-                                'price': data['price	'],
+                                'sellerName': data['sellerName'],
+                                'price': data['price'],
                                 'product_id': data['product_id'],
-                                'freeShipping': data['freeShipping	'],
+                                'freeShipping': data['freeShipping'],
                                 'meridiem': data['meridiem'],
-                                'baselinehour': data['baselinehour	'],
-                                'productName': data['productName	'],
+                                'baselinehour': data['baselineTime'],
+                                'productName': data['productName'],
                                 'instructions': data['instructions'],
                                 'stock': data['stock'],
                                 'likes': liked,
@@ -108,26 +108,26 @@ class _FreshState extends State<Fresh> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                data['sellerName	'],
+                                data['sellerName'],
                                 style: TextStyles.abeezee14px400wP600,
                               ),
                               verticalSpace(5),
                               Text(
-                                data['productName	'],
+                                data['productName'],
                                 style: TextStyles.abeezee13px400wPblack,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               verticalSpace(3),
                               Text(
-                                '${data['price	'] ?? '0'} KRW',
+                                '${data['price'] ?? '0'} KRW',
                                 style: TextStyles.abeezee13px400wPblack,
                               ),
                               verticalSpace(2),
                               Text(
-                                data['freeShipping	'] == true
-                                    ? 'Free Shipping'
-                                    : 'Shipping Charges Apply',
+                                data['freeShipping'] == true
+                                    ? '무료 배송'
+                                    : '배송료가 부과됩니다',
                                 style: TextStyles.abeezee11px400wP600,
                               ),
                               verticalSpace(4),

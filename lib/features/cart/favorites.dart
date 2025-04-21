@@ -51,7 +51,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               .get(),
                       builder: (context, productSnapshot) {
                         if (!productSnapshot.hasData) {
-                          return ListTile(title: Text('Loading...'));
+                          return ListTile(title: Text('로딩 중...'));
                         }
                         final productData =
                             productSnapshot.data!.data()

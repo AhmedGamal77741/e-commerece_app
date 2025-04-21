@@ -16,10 +16,7 @@ class AvatarAndTitle extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Pang2Chocolate', style: TextStyles.abeezee14px400wP600),
-            Text(
-              'Dark Marshmallow 6 pieces',
-              style: TextStyles.abeezee16px400wPblack,
-            ),
+            Text('다크 마시멜로 6개', style: TextStyles.abeezee16px400wPblack),
           ],
         ),
       ],

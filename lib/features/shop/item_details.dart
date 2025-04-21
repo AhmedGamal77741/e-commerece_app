@@ -42,13 +42,7 @@ class _ItemDetailsState extends State<ItemDetails> {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> imageUrls = [
-      productData['imgUrl'],
-      productData['imgUrl'],
-      productData['imgUrl'],
-      productData['imgUrl'],
-      productData['imgUrl'],
-    ];
+    final List<dynamic> imageUrls = productData['imgUrls'];
 
     return Scaffold(
       body: ListView(
@@ -128,7 +122,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         ),
                       ),
                       Text(
-                        '${getArrivalDay(productData['meridiem'], productData['baselinehour'])} - ${productData['freeShipping'] == true ? 'Free Shipping' : 'Shipping Charges Apply'}',
+                        '${getArrivalDay(productData['meridiem'], productData['baselinehour'])} - ${productData['freeShipping'] == true ? '무료 배송' : '배송료가 부과됩니다'}',
                         style: TextStyle(
                           color: const Color(0xFF747474),
                           fontSize: 14.sp,
@@ -208,7 +202,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          '1 Quantity ${productData['price']} KRW (1 piece ${productData['price']})',
+                          '1 수량 ${productData['price']} KRW (1 조각 ${productData['price']})',
                         ),
                       ),
                     ],
@@ -225,7 +219,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          '2 Quantity ${productData['price']} KRW (2 piece ${productData['price'] * 2})',
+                          '2 수량 ${productData['price']} KRW (2 조각 ${productData['price'] * 2})',
                         ),
                       ),
                     ],
@@ -241,7 +235,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          '4 Quantity ${productData['price']} KRW (4 piece ${productData['price'] * 4})',
+                          '4 수량 ${productData['price']} KRW (4 조각 ${productData['price'] * 4})',
                         ),
                       ),
                     ],
@@ -277,7 +271,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                     children: [
                       Flexible(
                         child: Text(
-                          'Insturctions on purchase',
+                          '구매 안내',
                           style: TextStyle(
                             color: const Color(0xFF121212),
                             fontSize: 16.sp,
@@ -310,7 +304,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                     children: [
                       Flexible(
                         child: Text(
-                          'Order before to start delivery today',
+                          '오늘 배송을 시작하려면 미리 주문하세요',
                           style: TextStyle(
                             color: const Color(0xFF121212),
                             fontSize: 16.sp,
@@ -344,7 +338,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                     children: [
                       Flexible(
                         child: Text(
-                          'Left in Stock',
+                          '재고 남음',
                           style: TextStyle(
                             color: const Color(0xFF121212),
                             fontSize: 16.sp,
@@ -420,7 +414,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                           ),
                         ),
                         onRatingUpdate: (rating) {
-                          print("Rating is: $rating");
+                          print("평점은: $rating");
                         },
                       ),
                       Text("(1,740)", style: TextStyles.abeezee14px400wP600),
@@ -535,7 +529,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                   ),
                   verticalSpace(5),
                   Text(
-                    'Show all',
+                    '모두 보기',
                     style: TextStyle(
                       color: const Color(0xFF747474),
                       fontSize: 14.sp,
@@ -585,7 +579,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                   ),
                 ),
                 child: Text(
-                  'Add to Cart',
+                  '장바구니에 추가',
                   style: TextStyle(
                     color: Colors.black,
                     fontFamily: 'ABeeZee',
@@ -611,7 +605,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                   ),
                 ),
                 child: Text(
-                  'Order now',
+                  '지금 주문하기',
                   style: TextStyle(
                     color: Colors.white,
                     fontFamily: 'ABeeZee',

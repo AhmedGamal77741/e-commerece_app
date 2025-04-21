@@ -24,7 +24,7 @@ class TrackOrder extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                'Estimated Arrival 3/27 (Thursday)',
+                '예상 도착일 3/27 (목요일)',
                 style: TextStyles.abeezee20px400wPblack,
               ),
               verticalSpace(40),

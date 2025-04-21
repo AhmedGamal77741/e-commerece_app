@@ -10,17 +10,17 @@ class DeliveryTextRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Order\n Complete',
+          '주문\n 완료',
           style: TextStyles.abeezee16px400wPblack,
           textAlign: TextAlign.center,
         ),
         Text(
-          'On Delivery',
+          '배송 중',
           style: TextStyles.abeezee16px400wPblack,
           textAlign: TextAlign.center,
         ),
         Text(
-          'Delievery\nCompelete',
+          '배송\n 완료',
           style: TextStyles.abeezee16px400wP600,
           textAlign: TextAlign.center,
         ),

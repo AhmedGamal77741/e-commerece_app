@@ -57,7 +57,7 @@ void showPostMenu(BuildContext context, String postId) {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
-                              'Copy Link',
+                              '링크 복사',
                               style: TextStyle(
                                 color: const Color(0xFF343434),
                                 fontSize: 16.sp,
@@ -95,7 +95,7 @@ void showPostMenu(BuildContext context, String postId) {
                             children: [
                               SizedBox(
                                 child: Text(
-                                  'Not Interested',
+                                  '관심 없음',
                                   style: TextStyle(
                                     color: const Color(0xFF343434),
                                     fontSize: 16.sp,
@@ -143,7 +143,7 @@ void showPostMenu(BuildContext context, String postId) {
                           children: [
                             SizedBox(
                               child: Text(
-                                'Block',
+                                '차단',
                                 style: TextStyle(
                                   color: const Color(0xFFDA3A48),
                                   fontSize: 16.sp,
@@ -175,7 +175,7 @@ void showPostMenu(BuildContext context, String postId) {
                           children: [
                             SizedBox(
                               child: Text(
-                                'Report',
+                                '신고',
                                 style: TextStyle(
                                   color: const Color(0xFFDA3A48),
                                   fontSize: 16.sp,

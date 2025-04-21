@@ -59,7 +59,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                               .get(),
                       builder: (context, productSnapshot) {
                         if (!productSnapshot.hasData) {
-                          return ListTile(title: Text('Loading...'));
+                          return ListTile(title: Text('로딩 중...'));
                         }
                         final productData =
                             productSnapshot.data!.data()
@@ -93,7 +93,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                   Row(
                                     children: [
                                       Text(
-                                        'Quantity : ${cartData['quantity'].toString()}  ',
+                                        '수량 : ${cartData['quantity'].toString()}  ',
                                         style: TextStyles.abeezee11px400wP600,
                                       ),
                                       Text(
@@ -142,7 +142,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
               Padding(
                 padding: EdgeInsets.only(left: 40.w, right: 70.w),
                 child: Text(
-                  'Total : ',
+                  '합계 : ',
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 18.sp,
@@ -183,7 +183,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                   elevation: 0, // Remove shadow
                 ),
                 child: Text(
-                  'Place Order',
+                  '주문하기',
                   style: TextStyle(
                     color: const Color(0xFFF5F5F5),
                     fontSize: 16.sp,

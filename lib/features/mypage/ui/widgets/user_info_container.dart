@@ -77,7 +77,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
             children: [
               Row(
                 children: [
-                  Text('Nickname', style: TextStyles.abeezee16px400wPblack),
+                  Text('닉네임', style: TextStyles.abeezee16px400wPblack),
                   Spacer(),
                   InkWell(
                     onTap: () async {
@@ -104,28 +104,28 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
               ),
               UnderlineTextField(
                 controller: nameController,
-                hintText: 'Name',
+                hintText: '이름',
                 obscureText: false,
                 keyboardType: TextInputType.name,
                 validator: (val) {
                   if (val!.isEmpty) {
-                    return 'Please fill in this field';
+                    return '이 필드를 입력해 주세요';
                   } else if (val.length > 30) {
-                    return 'Name too long';
+                    return '이름이 너무 깁니다';
                   }
                   return null;
                 },
               ),
               verticalSpace(20),
-              Text('User ID', style: TextStyles.abeezee16px400wPblack),
+              Text('사용자 ID', style: TextStyles.abeezee16px400wPblack),
               UnderlineTextField(
                 controller: nameController,
-                hintText: 'Name',
+                hintText: '이름',
                 obscureText: false,
                 keyboardType: TextInputType.name,
                 validator: (val) {
                   if (val!.isEmpty) {
-                    return 'Please fill in this field';
+                    return '이 필드를 입력해 주세요';
                   } else if (val.length > 30) {
                     return 'Name too long';
                   }
@@ -133,12 +133,12 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                 },
               ),
               verticalSpace(20),
-              Text('Password', style: TextStyles.abeezee16px400wPblack),
+              Text('비밀번호', style: TextStyles.abeezee16px400wPblack),
               Row(
                 children: [
                   Spacer(),
                   BlackTextButton(
-                    txt: 'complete',
+                    txt: '완료',
                     func: () {},
                     style: TextStyles.abeezee14px400wW,
                   ),
@@ -146,14 +146,14 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
               ),
               UnderlineTextField(
                 controller: nameController,
-                hintText: 'Name',
+                hintText: '이름',
                 obscureText: false,
                 keyboardType: TextInputType.name,
                 validator: (val) {
                   if (val!.isEmpty) {
-                    return 'Please fill in this field';
+                    return '이 필드를 입력해 주세요';
                   } else if (val.length > 30) {
-                    return 'Name too long';
+                    return '이름이 너무 깁니다';
                   }
                   return null;
                 },

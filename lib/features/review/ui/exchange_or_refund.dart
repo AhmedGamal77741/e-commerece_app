@@ -38,7 +38,7 @@ class _ExchangeOrRefundState extends State<ExchangeOrRefund> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ReqButton(
-                      txt: 'Refund',
+                      txt: '환불',
                       color:
                           isRefund
                               ? ColorsManager.primaryblack
@@ -53,7 +53,7 @@ class _ExchangeOrRefundState extends State<ExchangeOrRefund> {
                     ),
                     horizontalSpace(20),
                     ReqButton(
-                      txt: 'Exchange',
+                      txt: '교환',
                       color:
                           isRefund
                               ? ColorsManager.primary500
@@ -72,7 +72,7 @@ class _ExchangeOrRefundState extends State<ExchangeOrRefund> {
                 isRefund ? RefundBody() : ExchangeBody(),
                 verticalSpace(50),
                 WideTextButton(
-                  txt: 'Request',
+                  txt: '요청',
                   color: ColorsManager.primary500,
                   txtColor: ColorsManager.white,
                   func: () {},

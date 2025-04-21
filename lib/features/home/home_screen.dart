@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return DefaultTabController(
       length: 1,
       child: Scaffold(
-        appBar: TabAppBar(firstTab: 'Recommendations'),
+        appBar: TabAppBar(firstTab: '추천'),
         body: TabBarView(
           children: [
             _isLoading
@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: TextStyles.abeezee16px400wPblack,
                                   ),
                                   Text(
-                                    'How was your day today?',
+                                    '오늘 하루 어땠어요?',
                                     style: TextStyle(
                                       color: const Color(0xFF5F5F5F),
                                       fontSize: 13.sp,

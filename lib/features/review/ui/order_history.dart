@@ -23,7 +23,7 @@ class OrderHistory extends StatelessWidget {
                 width: 113.w,
                 height: 113.h,
               ),
-              TextAndButtons(txt: 'Cancel', func: () {}),
+              TextAndButtons(txt: '취소', func: () {}),
 
               Spacer(),
               IconButton(
@@ -47,7 +47,7 @@ class OrderHistory extends StatelessWidget {
                 height: 113.h,
               ),
               TextAndButtons(
-                txt: 'Exchange ·Refund ',
+                txt: '교환 · 환불',
                 func: () {
                   context.pushNamed(Routes.exchangeOrRefund);
                 },

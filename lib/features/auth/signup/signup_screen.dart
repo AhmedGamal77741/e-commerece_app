@@ -50,10 +50,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            'Nickname',
-                            style: TextStyles.abeezee16px400wPblack,
-                          ),
+                          Text('닉네임', style: TextStyles.abeezee16px400wPblack),
                           Spacer(),
                           InkWell(
                             onTap: () async {
@@ -82,38 +79,38 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       UnderlineTextField(
                         controller: nameController,
-                        hintText: 'Enter Your Name',
+                        hintText: '이름을 입력하세요',
                         obscureText: false,
                         keyboardType: TextInputType.name,
                         validator: (val) {
                           if (val!.isEmpty) {
-                            return 'Enter Yout Name';
+                            return '이름을 입력하세요';
                           } else if (val.length > 30) {
-                            return 'Name too long';
+                            return '이름이 너무 깁니다';
                           }
                           return null;
                         },
                       ),
                       verticalSpace(20),
-                      Text('E-mail', style: TextStyles.abeezee16px400wPblack),
+                      Text('이메일', style: TextStyles.abeezee16px400wPblack),
                       UnderlineTextField(
                         controller: emailController,
-                        hintText: 'Enter Your Email',
+                        hintText: '이메일을 입력하세요',
                         obscureText: false,
                         keyboardType: TextInputType.emailAddress,
                         validator: (val) {
                           if (val!.isEmpty) {
-                            return 'Please fill in this field';
+                            return '이 필드를 작성해 주세요';
                           } else if (!RegExp(
                             r'^[\w-\.]+@([\w-]+.)+[\w-]{2,4}$',
                           ).hasMatch(val)) {
-                            return 'Please enter a valid email';
+                            return '유효한 이메일을 입력해 주세요';
                           }
                           return null;
                         },
                       ),
                       verticalSpace(20),
-                      Text('Password', style: TextStyles.abeezee16px400wPblack),
+                      Text('비밀번호', style: TextStyles.abeezee16px400wPblack),
                       UnderlineTextField(
                         controller: passwordController,
                         hintText: 'Password',
@@ -134,11 +131,11 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         validator: (val) {
                           if (val!.isEmpty) {
-                            return 'Please fill in this field';
+                            return '이 필드를 작성해 주세요';
                           } else if (!RegExp(
                             r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~`)\%\-(_+=;:,.<>/?"[{\]}\|^]).{8,}$',
                           ).hasMatch(val)) {
-                            return 'Please enter a valid password';
+                            return '유효한 비밀번호를 입력해 주세요';
                           }
                           return null;
                         },
@@ -163,23 +160,17 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Monthly Subscription',
-                      style: TextStyles.abeezee16px400wPblack,
-                    ),
+                    Text('월간 구독', style: TextStyles.abeezee16px400wPblack),
                     Text('3,000 KRW', style: TextStyles.abeezee14px400wP600),
                     Divider(color: ColorsManager.primary100),
                     Text('Benefits', style: TextStyles.abeezee16px400wPblack),
                     Text(
-                      'Free shipping for all products, Free return,\nMembership Community, Guaranteed lowest price ',
+                      '모든 제품 무료 배송, 무료 반품,\n회원 커뮤니티, 최저가 보장 ',
                       style: TextStyles.abeezee14px400wP600,
                     ),
                     Divider(color: ColorsManager.primary100),
-                    Text('Payment', style: TextStyles.abeezee16px400wPblack),
-                    Text(
-                      'Enter Payment Detail',
-                      style: TextStyles.abeezee14px400wP600,
-                    ),
+                    Text('결제', style: TextStyles.abeezee16px400wPblack),
+                    Text('결제 정보를 입력하세요', style: TextStyles.abeezee14px400wP600),
                     Divider(color: ColorsManager.primary100),
                   ],
                 ),
@@ -187,7 +178,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
             verticalSpace(40),
             WideTextButton(
-              txt: 'Sign up',
+              txt: '가입하기',
               func: () async {
                 if (_formKey.currentState!.validate()) {
                   MyUser myUser = MyUser.empty;
@@ -200,7 +191,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   );
                   if (result == null) {
                     setState(() {
-                      error = "Email Already in use";
+                      error = "이미 사용 중인 이메일입니다";
                     });
                   }
                 }

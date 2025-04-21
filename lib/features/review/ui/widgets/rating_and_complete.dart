@@ -28,7 +28,7 @@ class RatingAndComplete extends StatelessWidget {
         ),
         Spacer(),
         BlackTextButton(
-          txt: 'Compelete',
+          txt: '완료하다',
           func: () {},
           style: TextStyles.abeezee14px400wW,
         ),

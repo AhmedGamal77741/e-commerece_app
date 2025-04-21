@@ -23,7 +23,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
             onPressed: () => Navigator.pop(context),
             icon: Icon(Icons.arrow_back_ios),
           ),
-          title: Text("Place Order", style: TextStyle(fontFamily: 'ABeeZee')),
+          title: Text("주문하기", style: TextStyle(fontFamily: 'ABeeZee')),
         ),
         body: Padding(
           padding: EdgeInsets.only(left: 15.w, top: 20.h, right: 15.w),
@@ -56,7 +56,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Delivery Address',
+                            '배송지 주소',
                             style: TextStyle(
                               color: const Color(0xFF121212),
                               fontSize: 16.sp,
@@ -68,7 +68,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                         ),
                         Flexible(
                           child: Text(
-                            'Default Address: ',
+                            '기본 주소: ',
                             style: TextStyle(
                               color: const Color(0xFF747474),
                               fontSize: 14.sp,
@@ -89,7 +89,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Delivery Instructions',
+                            '배송 지침',
                             style: TextStyle(
                               color: const Color(0xFF121212),
                               fontSize: 16.sp,
@@ -101,41 +101,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                         ),
                         Flexible(
                           child: Text(
-                            'In front of the door',
-                            style: TextStyle(
-                              color: const Color(0xFF747474),
-                              fontSize: 14.sp,
-                              fontFamily: 'ABeeZee',
-                              fontWeight: FontWeight.w400,
-                              height: 1.40.h,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Divider(),
-
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      spacing: 12.h,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'Payment',
-                            style: TextStyle(
-                              color: const Color(0xFF121212),
-                              fontSize: 16.sp,
-                              fontFamily: 'ABeeZee',
-                              fontWeight: FontWeight.w400,
-                              height: 1.40.h,
-                            ),
-                          ),
-                        ),
-                        Flexible(
-                          child: Text(
-                            'Naver Pay (Quick Payment)',
+                            '문 앞에',
                             style: TextStyle(
                               color: const Color(0xFF747474),
                               fontSize: 14.sp,
@@ -157,7 +123,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Cash Receipt',
+                            '지불',
                             style: TextStyle(
                               color: const Color(0xFF121212),
                               fontSize: 16.sp,
@@ -169,7 +135,41 @@ class _PlaceOrderState extends State<PlaceOrder> {
                         ),
                         Flexible(
                           child: Text(
-                            'Cash Receipt Infomation',
+                            '네이버 페이 (빠른 결제)',
+                            style: TextStyle(
+                              color: const Color(0xFF747474),
+                              fontSize: 14.sp,
+                              fontFamily: 'ABeeZee',
+                              fontWeight: FontWeight.w400,
+                              height: 1.40.h,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Divider(),
+
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 12.h,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '현금 영수증',
+                            style: TextStyle(
+                              color: const Color(0xFF121212),
+                              fontSize: 16.sp,
+                              fontFamily: 'ABeeZee',
+                              fontWeight: FontWeight.w400,
+                              height: 1.40.h,
+                            ),
+                          ),
+                        ),
+                        Flexible(
+                          child: Text(
+                            '현금 영수증 정보',
                             style: TextStyle(
                               color: const Color(0xFF747474),
                               fontSize: 14.sp,
@@ -211,7 +211,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Order details',
+                            '주문 내역',
                             style: TextStyle(
                               color: const Color(0xFF121212),
                               fontSize: 16.sp,
@@ -223,7 +223,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                         ),
                         Flexible(
                           child: Text(
-                            'Dark Chocolates / option: 3 pieces / Quantity: 2 pieces',
+                            '다크 초콜릿 / 옵션: 3개 / 수량: 2개',
                             style: TextStyle(
                               color: const Color(0xFF747474),
                               fontSize: 14.sp,
@@ -255,7 +255,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Dark Chocolates / option: 1 pieces / Quantity: 1 pieces',
+                            '다크 초콜릿 / 옵션: 1개 / 수량: 1개',
                             style: TextStyle(
                               color: const Color(0xFF747474),
                               fontSize: 14.sp,
@@ -288,7 +288,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Dark Chocolates / option: 2 pieces / Quantity: 2 pieces',
+                            '다크 초콜릿 / 옵션: 2개 / 수량: 2개',
                             style: TextStyle(
                               color: const Color(0xFF747474),
                               fontSize: 14.sp,
@@ -361,7 +361,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                   elevation: 0, // Remove shadow
                 ),
                 child: Text(
-                  'Place Order',
+                  '주문하기',
                   style: TextStyle(
                     color: const Color(0xFFF5F5F5),
                     fontSize: 18.sp,

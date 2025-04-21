@@ -56,13 +56,13 @@ class _AddPostState extends State<AddPost> {
               await uploadPost(text: _textController.text, imgUrl: imgUrl);
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(SnackBar(content: Text('Success')));
+              ).showSnackBar(SnackBar(content: Text('성공')));
               Navigator.pop(context); // Close after posting
             } catch (e) {
               print(e.toString());
 
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to post: ${e.toString()}')),
+                SnackBar(content: Text('게시물 게시에 실패했습니다: ${e.toString()}')),
               );
             }
           },
@@ -81,7 +81,7 @@ class _AddPostState extends State<AddPost> {
             ), // Width/height
             elevation: 0,
           ),
-          child: Text("Post", style: TextStyle(color: Colors.white)),
+          child: Text("게시", style: TextStyle(color: Colors.white)),
         ),
         appBar: AppBar(
           titleSpacing: 0,
@@ -96,7 +96,7 @@ class _AddPostState extends State<AddPost> {
                 icon: Icon(Icons.arrow_back_ios),
               ),
               Text(
-                "Today’s Story",
+                "오늘의 이야기",
                 style: TextStyle(
                   color: const Color(0xFF121212),
                   fontSize: 16,
@@ -153,7 +153,7 @@ class _AddPostState extends State<AddPost> {
                                   setState(() {}); // Handle text changes
                                 },
                                 decoration: InputDecoration(
-                                  hintText: 'Any Updates?', // Placeholder text
+                                  hintText: '업데이트 있나요?', // Placeholder text
                                   border:
                                       InputBorder.none, // Removes all borders
                                   contentPadding:

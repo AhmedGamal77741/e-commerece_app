@@ -16,19 +16,13 @@ class TextAndButtons extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Pang2Chocolate', style: TextStyles.abeezee11px400wP600),
-        Text(
-          'Dark Marshmallow 6 pieces',
-          style: TextStyles.abeezee13px400wPblack,
-        ),
-        Text(
-          'Option : 2 pieces  tom(wed) Arrival Expected',
-          style: TextStyles.abeezee11px400wP600,
-        ),
+        Text('다크 마시멜로 6개', style: TextStyles.abeezee13px400wPblack),
+        Text('옵션: 2개 내일(수) 도착 예상', style: TextStyles.abeezee11px400wP600),
         Text('12,000 KRW', style: TextStyles.abeezee13px400wPblack),
         Row(
           children: [
             BlackTextButton(
-              txt: 'Track Order',
+              txt: '주문 추적',
               style: TextStyles.abeezee12px400wW,
               func: () {
                 context.pushNamed(Routes.trackorder);

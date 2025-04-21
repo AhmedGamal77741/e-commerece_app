@@ -12,7 +12,7 @@ class RepField extends StatelessWidget {
       minLines: 7,
       keyboardType: TextInputType.multiline,
       decoration: InputDecoration(
-        hintText: "Send Review (3days left)",
+        hintText: "리뷰 보내기 (3일 남음)",
         hintStyle: TextStyles.abeezee16px400wP600,
         contentPadding: EdgeInsets.all(12),
         border: OutlineInputBorder(

@@ -73,7 +73,7 @@ class _CommentsState extends State<Comments> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to add comment: $e')));
+      ).showSnackBar(SnackBar(content: Text('댓글 추가에 실패했습니다: $e')));
     } finally {
       setState(() {
         _isSubmitting = false;
@@ -116,7 +116,7 @@ class _CommentsState extends State<Comments> {
                           spacing: 10,
                           children: [
                             Text(
-                              'Comments',
+                              '댓글',
                               style: TextStyle(
                                 color: const Color(0xFF121212),
                                 fontSize: 16,
@@ -173,7 +173,7 @@ class _CommentsState extends State<Comments> {
                           child: Padding(
                             padding: EdgeInsets.all(16.h),
                             child: Text(
-                              'No comments yet. Be the first to comment!',
+                              '아직 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!',
                               style: TextStyle(
                                 color: Colors.grey,
                                 fontSize: 14.sp,
@@ -231,7 +231,7 @@ class _CommentsState extends State<Comments> {
                           horizontal: 12.w,
                           vertical: 10.h,
                         ),
-                        labelText: "Add comment",
+                        labelText: "댓글 추가",
                         labelStyle: TextStyles.abeezee16px400wP600,
                         border: OutlineInputBorder(
                           borderSide: BorderSide(

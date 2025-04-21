@@ -33,7 +33,7 @@ class _OrderCompleteState extends State<OrderComplete> {
             elevation: 0, // Remove shadow
           ),
           child: Text(
-            'Order Complete',
+            '주문 완료',
             style: TextStyle(
               color: const Color(0xFFF5F5F5),
               fontSize: 18.sp,

@@ -21,7 +21,7 @@ class ExchangeBody extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 25.h),
-            child: Text('Reason', style: TextStyles.abeezee16px400wPblack),
+            child: Text('이유', style: TextStyles.abeezee16px400wPblack),
           ),
           Divider(color: ColorsManager.primary100),
           TextFormField(
@@ -29,7 +29,7 @@ class ExchangeBody extends StatelessWidget {
             minLines: 4,
             keyboardType: TextInputType.multiline,
             decoration: InputDecoration(
-              hintText: "Enter",
+              hintText: "입장하다",
               hintStyle: TextStyles.abeezee16px400wP600,
               contentPadding: EdgeInsets.all(12),
               border: InputBorder.none,
