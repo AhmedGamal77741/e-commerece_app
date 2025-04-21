@@ -8,7 +8,6 @@ class MyUser {
   String name;
 
   String url;
-
   MyUser({
     required this.userId,
     required this.email,

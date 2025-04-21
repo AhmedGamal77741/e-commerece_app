@@ -81,6 +81,7 @@ Future<void> uploadPost({required String text, required String imgUrl}) async {
       'comments': 0,
       'createdAt': FieldValue.serverTimestamp(),
       'likedBy': [],
+      'notInterestedBy': [],
     });
 
     print('Post uploaded successfully!');

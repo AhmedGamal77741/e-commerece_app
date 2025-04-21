@@ -147,7 +147,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           if (postIds.isEmpty) {
                             return Center(child: CircularProgressIndicator());
                           }
-
                           return ListView.separated(
                             separatorBuilder: (context, index) {
                               // Don't add a divider after the last item
@@ -160,7 +159,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             itemCount: postIds.length,
                             itemBuilder: (context, index) {
                               final postId = postIds[index];
+                              final postData = Provider.of<PostsProvider>(
+                                context,
+                                listen: false,
+                              ).getPost(postId);
+                              final notInterestedBy = List<String>.from(
+                                postData!['notInterestedBy'] ?? [],
+                              );
 
+                              if (notInterestedBy.contains(
+                                currentUser!.userId,
+                              )) {
+                                return SizedBox.shrink();
+                              }
                               return PostItem(
                                 postId: postId,
                                 fromComments: false,

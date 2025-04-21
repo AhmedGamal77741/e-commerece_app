@@ -1,8 +1,12 @@
+import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
+import 'package:ecommerece_app/features/home/data/home_functions.dart';
+import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
-void showPostMenu(BuildContext context) {
+void showPostMenu(BuildContext context, String postId) {
   showModalBottomSheet(
     context: context,
     builder:
@@ -69,35 +73,44 @@ void showPostMenu(BuildContext context) {
                           ],
                         ),
                       ),
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 14.w,
-                          vertical: 8.h,
-                        ),
-                        decoration: BoxDecoration(color: Colors.white),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              child: Text(
-                                'Not Interested',
-                                style: TextStyle(
-                                  color: const Color(0xFF343434),
-                                  fontSize: 16.sp,
-                                  fontFamily: 'ABeeZee',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.40.h,
+                      InkWell(
+                        onTap: () async {
+                          /*                           await Provider.of<PostsProvider>(
+                            context,
+                            listen: false,
+                          ).addToNotInterested(postId);
+                          context.pop(); */
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 14.w,
+                            vertical: 8.h,
+                          ),
+                          decoration: BoxDecoration(color: Colors.white),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                child: Text(
+                                  'Not Interested',
+                                  style: TextStyle(
+                                    color: const Color(0xFF343434),
+                                    fontSize: 16.sp,
+                                    fontFamily: 'ABeeZee',
+                                    fontWeight: FontWeight.w400,
+                                    height: 1.40.h,
+                                  ),
                                 ),
                               ),
-                            ),
-                            ImageIcon(
-                              AssetImage('assets/icon=no_interest.png'),
-                              size: 20.sp,
-                            ),
-                          ],
+                              ImageIcon(
+                                AssetImage('assets/icon=no_interest.png'),
+                                size: 20.sp,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],

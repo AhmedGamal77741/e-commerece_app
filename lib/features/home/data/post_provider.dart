@@ -94,6 +94,28 @@ class PostsProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> addToNotInterested(String postId) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      final postRef = FirebaseFirestore.instance
+          .collection('posts')
+          .doc(postId);
+
+      // Use FieldValue.arrayUnion to add the user ID to the array
+      // without duplicates
+      await postRef.update({
+        'notInterestedBy': FieldValue.arrayUnion([currentUser!.uid]),
+      });
+
+      print('Added ${currentUser.uid} to notInterestedBy for post $postId');
+      notifyListeners();
+    } catch (e) {
+      print('Error adding to notInterestedBy: $e');
+      throw e; // Re-throw if you want to handle the error in the calling code
+    }
+  }
+
   // Listen to comments for a specific post in real-time
   void listenToComments(String postId) {
     _firestore

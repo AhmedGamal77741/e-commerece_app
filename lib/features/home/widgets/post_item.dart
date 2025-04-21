@@ -93,7 +93,8 @@ class PostItem extends StatelessWidget {
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.more_horiz),
-                                    onPressed: () => showPostMenu(context),
+                                    onPressed:
+                                        () => showPostMenu(context, postId),
                                   ),
                                 ],
                               ),
