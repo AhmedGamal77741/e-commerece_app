@@ -20,8 +20,6 @@ class UserInfoContainer extends StatefulWidget {
 class _UserInfoContainerState extends State<UserInfoContainer> {
   final passwordController = TextEditingController();
 
-  final emailController = TextEditingController();
-
   final nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   IconData iconPassword = Icons.visibility;
@@ -117,7 +115,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                 },
               ),
               verticalSpace(20),
-              Text('사용자 ID', style: TextStyles.abeezee16px400wPblack),
+              /*               Text('사용자 ID', style: TextStyles.abeezee16px400wPblack),
               UnderlineTextField(
                 controller: nameController,
                 hintText: '이름',
@@ -132,28 +130,46 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                   return null;
                 },
               ),
-              verticalSpace(20),
+              verticalSpace(20), */
               Text('비밀번호', style: TextStyles.abeezee16px400wPblack),
               Row(
                 children: [
                   Spacer(),
                   BlackTextButton(
                     txt: '완료',
-                    func: () {},
+                    func: () async {
+                      if (_formKey.currentState!.validate()) {
+                        MyUser myUser = MyUser.empty;
+                        myUser.email = currentUser!.email;
+                        myUser.name = nameController.text;
+                        myUser.url = imgUrl;
+                        var result = await fireBaseRepo.updateUser(
+                          myUser,
+                          passwordController.text,
+                        );
+                        if (result == null) {
+                          setState(() {
+                            error = "이미 사용 중인 이메일입니다";
+                          });
+                        }
+                      }
+                    },
                     style: TextStyles.abeezee14px400wW,
                   ),
                 ],
               ),
               UnderlineTextField(
-                controller: nameController,
-                hintText: '이름',
+                controller: passwordController,
+                hintText: '완료',
                 obscureText: false,
                 keyboardType: TextInputType.name,
                 validator: (val) {
                   if (val!.isEmpty) {
-                    return '이 필드를 입력해 주세요';
-                  } else if (val.length > 30) {
-                    return '이름이 너무 깁니다';
+                    return '이 필드를 작성해 주세요';
+                  } else if (!RegExp(
+                    r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~`)\%\-(_+=;:,.<>/?"[{\]}\|^]).{8,}$',
+                  ).hasMatch(val)) {
+                    return '유효한 비밀번호를 입력해 주세요';
                   }
                   return null;
                 },

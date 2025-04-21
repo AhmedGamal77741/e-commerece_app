@@ -54,6 +54,20 @@ class FirebaseUserRepo {
     });
   }
 
+  Future updateUser(MyUser myUser, String password) async {
+    try {
+      await usersCollection
+          .doc(myUser.userId)
+          .update(myUser.toEntity().toDocument());
+      await FirebaseAuth.instance.currentUser!.updatePassword(password);
+    } catch (e) {
+      // log(e.toString());
+      rethrow;
+    }
+
+    return myUser;
+  }
+
   Future signUp(MyUser myUser, String password) async {
     try {
       UserCredential user = await _firebaseAuth.createUserWithEmailAndPassword(
