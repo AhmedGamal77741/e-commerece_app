@@ -30,8 +30,8 @@ class _NotificationsState extends State<Notifications> {
             ],
           ),
         ),
-        body: SizedBox(
-          width: 420.w,
+        body: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 5.w),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.start,
@@ -39,87 +39,72 @@ class _NotificationsState extends State<Notifications> {
             spacing: 20.h,
             children: [
               verticalSpace(5),
-              SizedBox(
-                width: double.infinity,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 420.w,
-                      child: Text(
-                        'user X and 2 other replied on my post',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 20.sp,
-                          fontFamily: 'ABeeZee',
-                          fontWeight: FontWeight.w400,
-                          height: 1.40.h,
-                        ),
-                      ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'user X and 2 other replied on my post',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 20.sp,
+                      fontFamily: 'ABeeZee',
+                      fontWeight: FontWeight.w400,
+                      height: 1.40.h,
                     ),
-                    SizedBox(
-                      width: 420.w,
-                      child: Text(
-                        'reply : Lorem ipsum dolor sit amet, consectetur adipiscing elit. ',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 20.sp,
-                          fontFamily: 'ABeeZee',
-                          fontWeight: FontWeight.w400,
-                          height: 1.40.h,
-                        ),
-                      ),
+                  ),
+                  Text(
+                    'reply : Lorem ipsum dolor sit amet, consectetur adipiscing elit. ',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 20.sp,
+                      fontFamily: 'ABeeZee',
+                      fontWeight: FontWeight.w400,
+                      height: 1.40.h,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              SizedBox(
-                width: double.infinity,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 420.w,
-                      child: Text(
-                        'user X and 1,324 others liked my post',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 20.sp,
-                          fontFamily: 'ABeeZee',
-                          fontWeight: FontWeight.w400,
-                          height: 1.40.h,
-                        ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 420.w,
+                    child: Text(
+                      'user X and 1,324 others liked my post',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 20.sp,
+                        fontFamily: 'ABeeZee',
+                        fontWeight: FontWeight.w400,
+                        height: 1.40.h,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              SizedBox(
-                width: double.infinity,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 420.w,
-                      child: Text(
-                        'user X and 2 others liked my post',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 20.sp,
-                          fontFamily: 'ABeeZee',
-                          fontWeight: FontWeight.w400,
-                          height: 1.40.h,
-                        ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 420.w,
+                    child: Text(
+                      'user X and 2 others liked my post',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 20.sp,
+                        fontFamily: 'ABeeZee',
+                        fontWeight: FontWeight.w400,
+                        height: 1.40.h,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),

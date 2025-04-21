@@ -107,6 +107,10 @@ class _AddPostState extends State<AddPost> {
               ),
             ],
           ),
+          bottom: PreferredSize(
+            preferredSize: Size.fromHeight(4.0.h),
+            child: Container(color: ColorsManager.primary100, height: 1.0.h),
+          ),
         ),
         body:
             _isLoading
@@ -133,73 +137,63 @@ class _AddPostState extends State<AddPost> {
                         ),
                         Expanded(
                           flex: 4,
-                          child: SizedBox(
-                            width: 172.w,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              spacing: 15.h,
-                              children: [
-                                Text(
-                                  'pang2chocolate',
-                                  style: TextStyles.abeezee16px400wPblack,
-                                ),
-                                TextField(
-                                  controller: _textController,
-                                  onChanged: (value) {
-                                    setState(() {}); // Handle text changes
-                                  },
-                                  decoration: InputDecoration(
-                                    hintText:
-                                        'Any Updates?', // Placeholder text
-                                    border:
-                                        InputBorder.none, // Removes all borders
-                                    contentPadding:
-                                        EdgeInsets
-                                            .zero, // Removes default padding
-                                    isDense: true, // Reduces vertical padding
-                                    hintStyle: TextStyle(
-                                      // Matches your text style
-                                      color: const Color(0xFF5F5F5F),
-                                      fontSize: 13.sp,
-                                      fontFamily: 'ABeeZee',
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                  style: TextStyle(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            spacing: 15.h,
+                            children: [
+                              Text(
+                                currentUser!.name,
+                                style: TextStyles.abeezee16px400wPblack,
+                              ),
+                              TextField(
+                                controller: _textController,
+                                onChanged: (value) {
+                                  setState(() {}); // Handle text changes
+                                },
+                                decoration: InputDecoration(
+                                  hintText: 'Any Updates?', // Placeholder text
+                                  border:
+                                      InputBorder.none, // Removes all borders
+                                  contentPadding:
+                                      EdgeInsets
+                                          .zero, // Removes default padding
+                                  isDense: true, // Reduces vertical padding
+                                  hintStyle: TextStyle(
+                                    // Matches your text style
                                     color: const Color(0xFF5F5F5F),
                                     fontSize: 13.sp,
                                     fontFamily: 'ABeeZee',
                                     fontWeight: FontWeight.w400,
                                   ),
                                 ),
-                                InkWell(
-                                  onTap: () async {
-                                    imgUrl = await uploadImageToImgBB();
-                                    setState(() {});
-                                  },
-                                  child:
-                                      imgUrl.isEmpty
-                                          ? SizedBox(
-                                            width: 17.w,
-                                            height: 17.h,
-                                            child: ImageIcon(
-                                              AssetImage(
-                                                'assets/image_icon.png',
-                                              ),
-                                              size: 17.sp,
-                                            ),
-                                          )
-                                          : Image.network(
-                                            imgUrl,
-                                            height: 272.h,
-                                            width: 200.w,
-                                            fit: BoxFit.cover,
-                                          ),
+                                style: TextStyle(
+                                  color: const Color(0xFF5F5F5F),
+                                  fontSize: 13.sp,
+                                  fontFamily: 'ABeeZee',
+                                  fontWeight: FontWeight.w400,
                                 ),
-                              ],
-                            ),
+                              ),
+                              InkWell(
+                                onTap: () async {
+                                  imgUrl = await uploadImageToImgBB();
+                                  setState(() {});
+                                },
+                                child:
+                                    imgUrl.isEmpty
+                                        ? ImageIcon(
+                                          AssetImage('assets/image_icon.png'),
+                                          size: 17.sp,
+                                        )
+                                        : Image.network(
+                                          imgUrl,
+                                          height: 272.h,
+                                          width: 200.w,
+                                          fit: BoxFit.cover,
+                                        ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

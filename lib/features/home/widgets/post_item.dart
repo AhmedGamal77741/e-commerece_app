@@ -49,9 +49,16 @@ class PostItem extends StatelessWidget {
                     Flexible(
                       child: Padding(
                         padding: EdgeInsets.only(top: 20.h),
-                        child: CircleAvatar(
-                          radius: 28,
-                          backgroundImage: NetworkImage(myuser.url),
+                        child: Container(
+                          width: 56.w,
+                          height: 55.h,
+                          decoration: ShapeDecoration(
+                            image: DecorationImage(
+                              image: NetworkImage(myuser.url.toString()),
+                              fit: BoxFit.cover,
+                            ),
+                            shape: OvalBorder(),
+                          ),
                         ),
                       ),
                     ),

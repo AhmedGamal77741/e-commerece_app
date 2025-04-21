@@ -1,8 +1,14 @@
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
+import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
+import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class MyStory extends StatefulWidget {
   const MyStory({super.key});
@@ -12,142 +18,67 @@ class MyStory extends StatefulWidget {
 }
 
 class _MyStoryState extends State<MyStory> {
+  MyUser? currentUser = MyUser(userId: "", email: "", name: "", url: "");
   bool liked = false;
+  bool _isLoading = true;
+
+  void initState() {
+    super.initState();
+    Provider.of<PostsProvider>(context, listen: false).startListening();
+
+    _loadData(); // Call the async function when widget initializes
+  }
+
+  // Async function that uses await
+  Future<void> _loadData() async {
+    try {
+      currentUser = await FirebaseUserRepo().user.first;
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print(e);
+      throw e;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Flexible(
-          child: Padding(
-            padding: EdgeInsets.only(top: 20.h),
-            child: Container(
-              width: 56.w,
-              height: 55.h,
-              decoration: ShapeDecoration(
-                image: DecorationImage(
-                  image: NetworkImage("https://placehold.co/56x55.png"),
-                  fit: BoxFit.cover,
-                ),
-                shape: OvalBorder(),
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 4,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 10.h,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('stedis.kr', style: TextStyles.abeezee16px400wPblack),
-                  IconButton(icon: Icon(Icons.more_horiz), onPressed: () {}),
-                ],
-              ),
-              Text(
-                'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. Phasellus hendrerit et libero vitae malesuada. Sed tempus nisi vitae justo elementum elementum. ',
-                style: TextStyle(
-                  color: const Color(0xFF343434),
-                  fontSize: 16,
-                  fontFamily: 'ABeeZee',
-                  fontWeight: FontWeight.w400,
-                  height: 1.40.h,
-                  letterSpacing: -0.09.w,
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 10.w,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 4.w,
-                    children: [
-                      InkWell(
-                        onTap: () {
-                          setState(() {
-                            liked = !liked;
-                          });
-                        },
-                        child: SizedBox(
-                          width: 22.w,
-                          height: 22.h,
-                          child: ImageIcon(
-                            AssetImage(
-                              liked
-                                  ? "assets/icon=like,status=off (1).png"
-                                  : "assets/icon=like,status=off.png",
-                            ),
-                            color: liked ? Colors.red : Colors.black,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 25,
-                        height: 22,
-                        child: Text(
-                          '40',
-                          style: TextStyle(
-                            color: const Color(0xFF343434),
-                            fontSize: 14,
-                            fontFamily: 'ABeeZee',
-                            fontWeight: FontWeight.w400,
-                            height: 1.40,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 4,
-                    children: [
-                      InkWell(
-                        onTap: () {
-                          // context.pushNamed(Routes.commentsScreen);
-                        },
-                        child: SizedBox(
-                          width: 22.w,
-                          height: 22.h,
-                          child: ImageIcon(
-                            AssetImage("assets/icon=comment.png"),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 25,
-                        height: 22,
-                        child: Text(
-                          '36',
-                          style: TextStyle(
-                            color: const Color(0xFF343434),
-                            fontSize: 14,
-                            fontFamily: 'ABeeZee',
-                            fontWeight: FontWeight.w400,
-                            height: 1.40,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    return _isLoading
+        ? Center(child: CircularProgressIndicator(color: Colors.black))
+        : Selector<PostsProvider, List<String>>(
+          selector: (_, provider) => provider.postIds,
+          builder: (context, postIds, child) {
+            if (postIds.isEmpty) {
+              return Center(child: CircularProgressIndicator());
+            }
+
+            return ListView.separated(
+              separatorBuilder: (context, index) {
+                // Don't add a divider after the last item
+                if (index == postIds.length - 1) {
+                  return SizedBox.shrink();
+                }
+                return Divider(color: ColorsManager.primary100);
+              },
+
+              itemCount: postIds.length,
+              itemBuilder: (context, index) {
+                final postId = postIds[index];
+                final postData = Provider.of<PostsProvider>(
+                  context,
+                  listen: false,
+                ).getPost(postId);
+                if (postData!['userId'] != currentUser!.userId) {
+                  return SizedBox.shrink();
+                }
+                return PostItem(postId: postId, fromComments: false);
+              },
+            );
+          },
+        );
   }
 }

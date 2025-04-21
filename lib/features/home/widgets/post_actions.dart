@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -86,7 +87,14 @@ class _PostActionsState extends State<PostActions> {
           spacing: 4,
           children: [
             InkWell(
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Comments(postId: widget.postId),
+                  ),
+                );
+              },
               child: SizedBox(
                 width: 22.w,
                 height: 22.h,

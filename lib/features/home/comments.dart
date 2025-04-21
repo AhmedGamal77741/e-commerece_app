@@ -2,6 +2,8 @@ import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/models/comment_model.dart';
 import 'package:ecommerece_app/features/home/widgets/comment_item.dart';
@@ -22,11 +24,35 @@ class _CommentsState extends State<Comments> {
   bool liked = false;
   final TextEditingController _commentController = TextEditingController();
   bool _isSubmitting = false;
-
+  MyUser? currentUser = MyUser(userId: "", email: "", name: "", url: "");
+  bool _isLoading = true;
   @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  void initState() {
+    super.initState();
+    Provider.of<PostsProvider>(context, listen: false).startListening();
+
+    _loadData(); // Call the async function when widget initializes
+  }
+
+  // Async function that uses await
+  Future<void> _loadData() async {
+    try {
+      currentUser = await FirebaseUserRepo().user.first;
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print(e);
+      throw e;
+    }
   }
 
   Future<void> _submitComment() async {
@@ -100,7 +126,10 @@ class _CommentsState extends State<Comments> {
                               ),
                             ),
                             Text(
-                              '77',
+                              postsProvider
+                                  .getComments(widget.postId)
+                                  .length
+                                  .toString(),
                               style: TextStyle(
                                 color: const Color(0xFF5F5F5F),
                                 fontSize: 16,
@@ -179,10 +208,16 @@ class _CommentsState extends State<Comments> {
               child: Row(
                 children: [
                   // Comment icon
-                  Icon(
-                    Icons.comment,
-                    color: ColorsManager.primary600,
-                    size: 24.sp,
+                  Container(
+                    width: 30.w,
+                    height: 30.h,
+                    decoration: ShapeDecoration(
+                      image: DecorationImage(
+                        image: NetworkImage(currentUser!.url.toString()),
+                        fit: BoxFit.cover,
+                      ),
+                      shape: OvalBorder(),
+                    ),
                   ),
                   SizedBox(width: 10.w),
 
