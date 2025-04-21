@@ -116,7 +116,7 @@ class _MyStoryState extends State<MyStory> {
                     children: [
                       InkWell(
                         onTap: () {
-                          context.pushNamed(Routes.commentsScreen);
+                          // context.pushNamed(Routes.commentsScreen);
                         },
                         child: SizedBox(
                           width: 22.w,

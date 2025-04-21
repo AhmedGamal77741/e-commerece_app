@@ -1,4 +1,5 @@
 import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
+import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ecommerece_app/core/routing/app_router.dart';
@@ -12,8 +13,11 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(
-    Provider<FirebaseUserRepo>(
-      create: (_) => FirebaseUserRepo(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => PostsProvider()),
+        Provider<FirebaseUserRepo>(create: (_) => FirebaseUserRepo()),
+      ],
       child: EcommerceApp(appRouter: AppRouter()),
     ),
   );

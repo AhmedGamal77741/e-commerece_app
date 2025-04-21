@@ -21,24 +21,45 @@ Future<MyUserEntity> getUser(String userId) async {
   }
 }
 
-Future<void> toggleLike(DocumentSnapshot post) async {
-  final userId = FirebaseAuth.instance.currentUser?.uid;
-  if (userId == null) return;
+Future<void> addComment(String postId, String text) async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser == null) return;
 
-  final postRef = FirebaseFirestore.instance.collection('posts').doc(post.id);
-  final likedBy = List<String>.from(post['likedBy'] ?? []);
+  // Get user data
+  final userDoc =
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
 
-  if (likedBy.contains(userId)) {
-    await postRef.update({
-      'likes': FieldValue.increment(-1),
-      'likedBy': FieldValue.arrayRemove([userId]),
-    });
-  } else {
-    await postRef.update({
-      'likes': FieldValue.increment(1),
-      'likedBy': FieldValue.arrayUnion([userId]),
-    });
-  }
+  final userData = userDoc.data() ?? {};
+
+  // Create comment
+  final commentRef =
+      FirebaseFirestore.instance
+          .collection('posts')
+          .doc(postId)
+          .collection('comments')
+          .doc();
+
+  // Update comment count in post
+  final postRef = FirebaseFirestore.instance.collection('posts').doc(postId);
+
+  // Use a batch to ensure both operations succeed or fail together
+  final batch = FirebaseFirestore.instance.batch();
+
+  batch.set(commentRef, {
+    'userId': currentUser.uid,
+    'text': text,
+    'createdAt': FieldValue.serverTimestamp(),
+    'likes': 0,
+    'userImage': userData['url'] ?? currentUser.photoURL,
+    'userName': userData['name'] ?? currentUser.displayName,
+  });
+
+  batch.update(postRef, {'comments': FieldValue.increment(1)});
+
+  await batch.commit();
 }
 
 Future<void> uploadPost({required String text, required String imgUrl}) async {

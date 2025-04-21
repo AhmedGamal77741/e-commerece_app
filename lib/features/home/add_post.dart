@@ -1,6 +1,9 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart'
+    as sp;
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -14,7 +17,33 @@ class AddPost extends StatefulWidget {
 
 class _AddPostState extends State<AddPost> {
   String imgUrl = "";
+  MyUser? currentUser = MyUser(userId: "", email: "", name: "", url: "");
   TextEditingController _textController = TextEditingController();
+  bool _isLoading = true;
+
+  void initState() {
+    super.initState();
+
+    _loadData(); // Call the async function when widget initializes
+  }
+
+  // Async function that uses await
+  Future<void> _loadData() async {
+    try {
+      currentUser = await sp.FirebaseUserRepo().user.first;
+      print(currentUser!.userId);
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print(e);
+      throw e;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -79,96 +108,104 @@ class _AddPostState extends State<AddPost> {
             ],
           ),
         ),
-        body: Column(
-          children: [
-            verticalSpace(20),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Flexible(
-                  child: Container(
-                    width: 56.w,
-                    height: 55.h,
-                    decoration: ShapeDecoration(
-                      image: DecorationImage(
-                        image: NetworkImage("https://placehold.co/56x55.png"),
-                        fit: BoxFit.cover,
-                      ),
-                      shape: OvalBorder(),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 4,
-                  child: SizedBox(
-                    width: 172.w,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
+        body:
+            _isLoading
+                ? Center(child: CircularProgressIndicator(color: Colors.black))
+                : Column(
+                  children: [
+                    verticalSpace(20),
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      spacing: 15.h,
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        Text(
-                          'pang2chocolate',
-                          style: TextStyles.abeezee16px400wPblack,
-                        ),
-                        TextField(
-                          controller: _textController,
-                          onChanged: (value) {
-                            setState(() {}); // Handle text changes
-                          },
-                          decoration: InputDecoration(
-                            hintText: 'Any Updates?', // Placeholder text
-                            border: InputBorder.none, // Removes all borders
-                            contentPadding:
-                                EdgeInsets.zero, // Removes default padding
-                            isDense: true, // Reduces vertical padding
-                            hintStyle: TextStyle(
-                              // Matches your text style
-                              color: const Color(0xFF5F5F5F),
-                              fontSize: 13.sp,
-                              fontFamily: 'ABeeZee',
-                              fontWeight: FontWeight.w400,
+                        Flexible(
+                          child: Container(
+                            width: 56.w,
+                            height: 55.h,
+                            decoration: ShapeDecoration(
+                              image: DecorationImage(
+                                image: NetworkImage(currentUser!.url),
+                                fit: BoxFit.cover,
+                              ),
+                              shape: OvalBorder(),
                             ),
                           ),
-                          style: TextStyle(
-                            color: const Color(0xFF5F5F5F),
-                            fontSize: 13.sp,
-                            fontFamily: 'ABeeZee',
-                            fontWeight: FontWeight.w400,
-                          ),
                         ),
-                        InkWell(
-                          onTap: () async {
-                            imgUrl = await uploadImageToImgBB();
-                            setState(() {});
-                          },
-                          child:
-                              imgUrl.isEmpty
-                                  ? SizedBox(
-                                    width: 17.w,
-                                    height: 17.h,
-                                    child: ImageIcon(
-                                      AssetImage('assets/image_icon.png'),
-                                      size: 17.sp,
+                        Expanded(
+                          flex: 4,
+                          child: SizedBox(
+                            width: 172.w,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              spacing: 15.h,
+                              children: [
+                                Text(
+                                  'pang2chocolate',
+                                  style: TextStyles.abeezee16px400wPblack,
+                                ),
+                                TextField(
+                                  controller: _textController,
+                                  onChanged: (value) {
+                                    setState(() {}); // Handle text changes
+                                  },
+                                  decoration: InputDecoration(
+                                    hintText:
+                                        'Any Updates?', // Placeholder text
+                                    border:
+                                        InputBorder.none, // Removes all borders
+                                    contentPadding:
+                                        EdgeInsets
+                                            .zero, // Removes default padding
+                                    isDense: true, // Reduces vertical padding
+                                    hintStyle: TextStyle(
+                                      // Matches your text style
+                                      color: const Color(0xFF5F5F5F),
+                                      fontSize: 13.sp,
+                                      fontFamily: 'ABeeZee',
+                                      fontWeight: FontWeight.w400,
                                     ),
-                                  )
-                                  : Image.network(
-                                    imgUrl,
-                                    height: 272.h,
-                                    width: 200.w,
-                                    fit: BoxFit.cover,
                                   ),
+                                  style: TextStyle(
+                                    color: const Color(0xFF5F5F5F),
+                                    fontSize: 13.sp,
+                                    fontFamily: 'ABeeZee',
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () async {
+                                    imgUrl = await uploadImageToImgBB();
+                                    setState(() {});
+                                  },
+                                  child:
+                                      imgUrl.isEmpty
+                                          ? SizedBox(
+                                            width: 17.w,
+                                            height: 17.h,
+                                            child: ImageIcon(
+                                              AssetImage(
+                                                'assets/image_icon.png',
+                                              ),
+                                              size: 17.sp,
+                                            ),
+                                          )
+                                          : Image.network(
+                                            imgUrl,
+                                            height: 272.h,
+                                            width: 200.w,
+                                            fit: BoxFit.cover,
+                                          ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

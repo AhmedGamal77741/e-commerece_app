@@ -2,11 +2,17 @@ import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:ecommerece_app/features/home/models/comment_model.dart';
+import 'package:ecommerece_app/features/home/widgets/comment_item.dart';
+import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class Comments extends StatefulWidget {
-  const Comments({super.key});
+  const Comments({super.key, required this.postId});
+  final String postId;
 
   @override
   State<Comments> createState() => _CommentsState();
@@ -14,188 +20,50 @@ class Comments extends StatefulWidget {
 
 class _CommentsState extends State<Comments> {
   bool liked = false;
+  final TextEditingController _commentController = TextEditingController();
+  bool _isSubmitting = false;
 
-  void _showBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder:
-          (context) => Container(
-            height: 233.h,
-            padding: EdgeInsets.all(16),
-            clipBehavior: Clip.antiAlias,
-            decoration: ShapeDecoration(
-              color: ColorsManager.primary50,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 20.h,
-              children: [
-                Container(
-                  width: double.infinity,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: ShapeDecoration(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 14.w,
-                          vertical: 8.h,
-                        ),
-                        decoration: BoxDecoration(color: Colors.white),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Copy Link',
-                              style: TextStyle(
-                                color: const Color(0xFF343434),
-                                fontSize: 16.sp,
-                                fontFamily: 'ABeeZee',
-                                fontWeight: FontWeight.w400,
-                                height: 1.40.h,
-                              ),
-                            ),
-                            ImageIcon(
-                              AssetImage('assets/icon=link.png'),
-                              size: 20.sp,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 14.w,
-                          vertical: 8.h,
-                        ),
-                        decoration: BoxDecoration(color: Colors.white),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Not Interested',
-                              style: TextStyle(
-                                color: const Color(0xFF343434),
-                                fontSize: 16.sp,
-                                fontFamily: 'ABeeZee',
-                                fontWeight: FontWeight.w400,
-                                height: 1.40.h,
-                              ),
-                            ),
-                            ImageIcon(
-                              AssetImage('assets/icon=no_interest.png'),
-                              size: 20.sp,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: double.infinity,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: ShapeDecoration(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 14.w,
-                          vertical: 8.h,
-                        ),
-                        decoration: BoxDecoration(color: Colors.white),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Block',
-                              style: TextStyle(
-                                color: const Color(0xFFDA3A48),
-                                fontSize: 16.sp,
-                                fontFamily: 'ABeeZee',
-                                fontWeight: FontWeight.w400,
-                                height: 1.40.h,
-                              ),
-                            ),
-                            ImageIcon(
-                              AssetImage('assets/person_off.png'),
-                              size: 20.sp,
-                              color: const Color(0xFFDA3A48),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 14.w,
-                          vertical: 8.h,
-                        ),
-                        decoration: BoxDecoration(color: Colors.white),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Report',
-                              style: TextStyle(
-                                color: const Color(0xFFDA3A48),
-                                fontSize: 16.sp,
-                                fontFamily: 'ABeeZee',
-                                fontWeight: FontWeight.w400,
-                                height: 1.40.h,
-                              ),
-                            ),
-                            ImageIcon(
-                              AssetImage('assets/report.png'),
-                              size: 20.sp,
-                              color: const Color(0xFFDA3A48),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-    );
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitComment() async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await Provider.of<PostsProvider>(
+        context,
+        listen: false,
+      ).addComment(widget.postId, text);
+
+      _commentController.clear();
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to add comment: $e')));
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final postsProvider = Provider.of<PostsProvider>(context, listen: false);
+    // Load comments if not already loaded
+    if (postsProvider.getComments(widget.postId).isEmpty &&
+        !postsProvider.isLoadingComments(widget.postId)) {
+      // Start listening to comments for this post
+      postsProvider.listenToComments(widget.postId);
+    }
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -205,133 +73,7 @@ class _CommentsState extends State<Comments> {
                 children: [
                   Padding(
                     padding: EdgeInsets.only(right: 10.w),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Flexible(
-                          child: Padding(
-                            padding: EdgeInsets.only(top: 20.h),
-                            child: Container(
-                              width: 56.w,
-                              height: 55.h,
-                              decoration: ShapeDecoration(
-                                image: DecorationImage(
-                                  image: NetworkImage(
-                                    "https://placehold.co/56x55.png",
-                                  ),
-                                  fit: BoxFit.cover,
-                                ),
-                                shape: OvalBorder(),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 4,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            spacing: 10.h,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'stedis.kr',
-                                    style: TextStyles.abeezee16px400wPblack,
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.more_horiz),
-                                    onPressed: () {
-                                      _showBottomSheet(context);
-                                    },
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. Phasellus hendrerit et libero vitae malesuada. Sed tempus nisi vitae justo elementum elementum. ',
-                                style: TextStyle(
-                                  color: const Color(0xFF343434),
-                                  fontSize: 16,
-                                  fontFamily: 'ABeeZee',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.40.h,
-                                  letterSpacing: -0.09.w,
-                                ),
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                spacing: 10.w,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    spacing: 4.w,
-                                    children: [
-                                      InkWell(
-                                        onTap: () {
-                                          setState(() {
-                                            liked = !liked;
-                                          });
-                                        },
-                                        child: ImageIcon(
-                                          AssetImage(
-                                            liked
-                                                ? "assets/icon=like,status=off (1).png"
-                                                : "assets/icon=like,status=off.png",
-                                          ),
-                                          color:
-                                              liked ? Colors.red : Colors.black,
-                                        ),
-                                      ),
-                                      Text(
-                                        '40',
-                                        style: TextStyle(
-                                          color: const Color(0xFF343434),
-                                          fontSize: 14,
-                                          fontFamily: 'ABeeZee',
-                                          fontWeight: FontWeight.w400,
-                                          height: 1.40,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    spacing: 4,
-                                    children: [
-                                      ImageIcon(
-                                        AssetImage("assets/icon=comment.png"),
-                                      ),
-                                      Text(
-                                        '36',
-                                        style: TextStyle(
-                                          color: const Color(0xFF343434),
-                                          fontSize: 14,
-                                          fontFamily: 'ABeeZee',
-                                          fontWeight: FontWeight.w400,
-                                          height: 1.40,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: PostItem(postId: widget.postId, fromComments: true),
                   ),
                   Divider(height: 50.h),
                   Row(
@@ -383,104 +125,49 @@ class _CommentsState extends State<Comments> {
                     ],
                   ),
                   verticalSpace(30),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Flexible(
-                        child: Container(
-                          width: 56.w,
-                          height: 55.h,
-                          decoration: ShapeDecoration(
-                            image: DecorationImage(
-                              image: NetworkImage(
-                                "https://placehold.co/56x55.png",
+                  Selector<PostsProvider, List<Comment>>(
+                    selector:
+                        (_, provider) => provider.getComments(widget.postId),
+                    builder: (context, comments, child) {
+                      if (postsProvider.isLoadingComments(widget.postId) &&
+                          comments.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.h),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+
+                      if (comments.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.h),
+                            child: Text(
+                              'No comments yet. Be the first to comment!',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 14.sp,
+                                fontFamily: 'ABeeZee',
                               ),
-                              fit: BoxFit.cover,
                             ),
-                            shape: OvalBorder(),
                           ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 4,
-                        child: Padding(
-                          padding: EdgeInsets.only(right: 10.w),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            spacing: 10.h,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '@happyStudent',
-                                    style: TextStyles.abeezee16px400wPblack,
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. Phasellus hendrerit et libero vitae malesuada. Sed tempus nisi vitae justo elementum elementum. ',
-                                style: TextStyle(
-                                  color: const Color(0xFF343434),
-                                  fontSize: 16,
-                                  fontFamily: 'ABeeZee',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.40.h,
-                                  letterSpacing: -0.09.w,
-                                ),
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                spacing: 10.w,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    spacing: 4.w,
-                                    children: [
-                                      InkWell(
-                                        onTap: () {
-                                          setState(() {
-                                            liked = !liked;
-                                          });
-                                        },
-                                        child: ImageIcon(
-                                          AssetImage(
-                                            liked
-                                                ? "assets/icon=like,status=off (1).png"
-                                                : "assets/icon=like,status=off.png",
-                                          ),
-                                          color:
-                                              liked ? Colors.red : Colors.black,
-                                        ),
-                                      ),
-                                      Text(
-                                        '40',
-                                        style: TextStyle(
-                                          color: const Color(0xFF343434),
-                                          fontSize: 14,
-                                          fontFamily: 'ABeeZee',
-                                          fontWeight: FontWeight.w400,
-                                          height: 1.40,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                        );
+                      }
+
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: comments.length,
+                        itemBuilder: (context, index) {
+                          final comment = comments[index];
+                          return CommentItem(
+                            comment: comment,
+                            postId: widget.postId,
+                          );
+                        },
+                      );
+                    },
                   ),
                 ],
               ),
@@ -503,6 +190,7 @@ class _CommentsState extends State<Comments> {
                   Expanded(
                     flex: 4,
                     child: TextFormField(
+                      controller: _commentController,
                       decoration: InputDecoration(
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 12.w,
@@ -531,7 +219,7 @@ class _CommentsState extends State<Comments> {
                     icon: Icon(Icons.send),
                     color: ColorsManager.primary600,
                     iconSize: 25.sp,
-                    onPressed: () {},
+                    onPressed: _isSubmitting ? null : _submitComment,
                   ),
                 ],
               ),

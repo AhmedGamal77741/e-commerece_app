@@ -21,8 +21,7 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const NavBar());
       case Routes.reviewScreen:
         return MaterialPageRoute(builder: (_) => const ReviewScreen());
-      case Routes.commentsScreen:
-        return MaterialPageRoute(builder: (_) => const Comments());
+
       case Routes.notificationsScreen:
         return MaterialPageRoute(builder: (_) => const Notifications());
       case Routes.addPostScreen:

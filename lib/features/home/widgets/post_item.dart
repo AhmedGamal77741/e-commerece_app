@@ -2,115 +2,137 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_entity.dart';
+import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
+import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:ecommerece_app/features/home/models/comment_model.dart';
 import 'package:ecommerece_app/features/home/widgets/post_actions.dart';
 import 'package:ecommerece_app/features/home/widgets/show_post_options.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
-Widget buildPostItem(DocumentSnapshot post, BuildContext context) {
-  final data = post.data() as Map<String, dynamic>;
-  print(data['userId']);
-  return FutureBuilder<MyUserEntity>(
-    future: getUser(data['userId']),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return _buildPostSkeleton(); // Return a loading placeholder
-      }
+class PostItem extends StatelessWidget {
+  final String postId;
+  final bool fromComments;
 
-      if (snapshot.hasError || !snapshot.hasData) {
-        return _buildErrorPost(); // Return an error widget
-      }
+  const PostItem({Key? key, required this.postId, required this.fromComments})
+    : super(key: key);
 
-      final myuser = snapshot.data!; // Now you have the user data
-      print(myuser.name);
-      return Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // User Avatar
-              Flexible(
-                child: Padding(
-                  padding: EdgeInsets.only(top: 20.h),
-                  child: Container(
-                    width: 56.w,
-                    height: 55.h,
-                    decoration: ShapeDecoration(
-                      image: DecorationImage(
-                        image: NetworkImage(myuser.url),
-                        fit: BoxFit.cover,
+  @override
+  Widget build(BuildContext context) {
+    // Use Selector to only rebuild this widget when this specific post changes
+    return Selector<PostsProvider, Map<String, dynamic>?>(
+      selector: (_, provider) => provider.getPost(postId),
+      builder: (context, postData, child) {
+        if (postData == null) {
+          return SizedBox.shrink(); // Post doesn't exist
+        }
+
+        return FutureBuilder<MyUserEntity>(
+          future: getUser(postData['userId']),
+          builder: (context, snapshot) {
+            if (snapshot.hasError || !snapshot.hasData) {
+              return _buildPostSkeleton();
+            }
+
+            final myuser = snapshot.data!;
+
+            return Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // User Avatar
+                    Flexible(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 20.h),
+                        child: CircleAvatar(
+                          radius: 28,
+                          backgroundImage: NetworkImage(myuser.url),
+                        ),
                       ),
-                      shape: OvalBorder(),
                     ),
-                  ),
-                ),
-              ),
 
-              // Post Content
-              Expanded(
-                flex: 4,
-                child: Padding(
-                  padding: EdgeInsets.only(right: 10.w),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header with menu
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            myuser.name,
-                            style: TextStyles.abeezee16px400wPblack,
+                    // Post Content
+                    Expanded(
+                      flex: 4,
+                      child: InkWell(
+                        onTap: () {
+                          if (!fromComments) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => Comments(postId: postId),
+                              ),
+                            );
+                          }
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 10.w),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header with menu
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    myuser.name,
+                                    style: TextStyles.abeezee16px400wPblack,
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.more_horiz),
+                                    onPressed: () => showPostMenu(context),
+                                  ),
+                                ],
+                              ),
+
+                              // Post Text
+                              if (postData['text'].toString().isNotEmpty)
+                                Text(
+                                  postData['text'],
+                                  style: TextStyle(
+                                    color: const Color(0xFF343434),
+                                    fontSize: 16.sp,
+                                    fontFamily: 'ABeeZee',
+                                    fontWeight: FontWeight.w400,
+                                    height: 1.40.h,
+                                    letterSpacing: -0.09.w,
+                                  ),
+                                ),
+                              verticalSpace(5),
+                              // Post Image
+                              if (postData['imgUrl'].isNotEmpty)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    postData['imgUrl'],
+                                    width: 200.w,
+                                    height: 272.h,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              verticalSpace(5),
+                              // Like/Comment Buttons
+                              PostActions(postId: postId, postData: postData),
+                            ],
                           ),
-                          IconButton(
-                            icon: Icon(Icons.more_horiz),
-                            onPressed:
-                                () => showPostMenu(context /* post.id */),
-                          ),
-                        ],
+                        ),
                       ),
-
-                      // Post Text
-                      if (data['text'].toString().isNotEmpty)
-                        Text(
-                          data['text'],
-                          style: TextStyle(
-                            color: const Color(0xFF343434),
-                            fontSize: 16.sp,
-                            fontFamily: 'ABeeZee',
-                            fontWeight: FontWeight.w400,
-                            height: 1.40.h,
-                            letterSpacing: -0.09.w,
-                          ),
-                        ),
-                      verticalSpace(5),
-                      // Post Image
-                      if (data['imgUrl'].isNotEmpty)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            data['imgUrl'],
-                            width: 200.w,
-                            height: 272.h,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      verticalSpace(5),
-                      // Like/Comment Buttons
-                      buildPostActions(post),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ],
-      );
-    },
-  );
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 Widget _buildPostSkeleton() {
