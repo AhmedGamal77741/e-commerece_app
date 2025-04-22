@@ -1,6 +1,9 @@
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-String getArrivalDay(String meridiem, int baseHour) {
+Future<String> getArrivalDay(String meridiem, int baseHour) async {
+  await initializeDateFormatting('ko_KR'); // Load Korean date formatting
+
   meridiem = meridiem.toUpperCase();
 
   if (meridiem.isEmpty || baseHour < 1 || baseHour > 12) {
@@ -28,12 +31,15 @@ String getArrivalDay(String meridiem, int baseHour) {
   int baseOffset = now24 < baseline24 ? 1 : 2;
 
   int weekday = now.weekday;
-  bool isWeekend = (weekday == DateTime.friday || weekday == DateTime.saturday);
+  bool isWeekend = (weekday == DateTime.sunday || weekday == DateTime.saturday);
 
   int totalOffset = baseOffset + (isWeekend ? 2 : 0);
 
   DateTime arrivalDate = now.add(Duration(days: totalOffset));
-  String dayName = DateFormat('EEEE').format(arrivalDate);
+  String dayName = DateFormat(
+    'EEEE',
+    'ko_KR',
+  ).format(arrivalDate); // Korean day name
 
-  return "Arrives on $dayName";
+  return "도착일: $dayName"; // Output in Korean
 }

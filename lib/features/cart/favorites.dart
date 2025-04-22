@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/features/shop/fav_fnc.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -94,7 +95,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 await removeProductFromFavorites(
                                   userId:
                                       FirebaseAuth.instance.currentUser!.uid,
-                                  productId: productId,
+                                  productId: productData['product_id'],
                                 );
                               },
                               icon: Icon(Icons.close, size: 18),
@@ -112,30 +113,31 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       ],
     );
   }
-
-  // Function to remove a product from favorites
-  Future<void> removeProductFromFavorites({
-    required String userId,
-    required String productId,
-  }) async {
-    final favoritesRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('favorites');
-
-    // Query for the product that matches the productId
-    final querySnapshot =
-        await favoritesRef.where('product_id', isEqualTo: productId).get();
-
-    // Check if the product exists in favorites
-    if (querySnapshot.docs.isNotEmpty) {
-      // Loop through all documents found (should be only one)
-      for (var doc in querySnapshot.docs) {
-        // Delete the document
-        await doc.reference.delete();
-      }
-    } else {
-      print("Product not found in favorites.");
-    }
-  }
 }
+  // Function to remove a product from favorites
+//   Future<void> removeProductFromFavorites({
+//     required String userId,
+//     required String productId,
+//   }) async {
+//     final favoritesRef = FirebaseFirestore.instance
+//         .collection('users')
+//         .doc(userId)
+//         .collection('favorites');
+
+//     // Query for the product that matches the productId
+//     final querySnapshot =
+//         await favoritesRef.where('product_id', isEqualTo: productId).get();
+
+//     // Check if the product exists in favorites
+//     if (querySnapshot.docs.isNotEmpty) {
+//       // Loop through all documents found (should be only one)
+//       for (var doc in querySnapshot.docs) {
+//         // Delete the document
+//         await doc.reference.delete();
+//       }
+//     } else {
+//       print("Product not found in favorites.");
+//     }
+//   }
+// }
+  

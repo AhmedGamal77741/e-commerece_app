@@ -42,7 +42,7 @@ class _ItemDetailsState extends State<ItemDetails> {
 
   @override
   Widget build(BuildContext context) {
-    final List<dynamic> imageUrls = productData['imgUrls'];
+    final List<dynamic> imageUrls = productData['imgUrls'] ?? [];
 
     return Scaffold(
       body: ListView(
@@ -51,18 +51,20 @@ class _ItemDetailsState extends State<ItemDetails> {
             height: 428.h,
             child: Stack(
               children: [
-                PageView.builder(
-                  controller: _pageController,
-                  itemCount: imageUrls.length,
-                  onPageChanged:
-                      (index) => setState(() => _currentPage = index),
-                  itemBuilder:
-                      (context, index) => Image.network(
-                        imageUrls[index],
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Placeholder(), // Fallback
-                      ),
-                ),
+                if (imageUrls.isNotEmpty)
+                  PageView.builder(
+                    controller: _pageController,
+                    itemCount: imageUrls.length,
+                    onPageChanged:
+                        (index) => setState(() => _currentPage = index),
+                    itemBuilder:
+                        (context, index) => Image.network(
+                          imageUrls[index],
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (_, __, ___) => Placeholder(), // Fallback
+                        ),
+                  ),
 
                 // Indicator with gradient background
                 Positioned.fill(
@@ -122,7 +124,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         ),
                       ),
                       Text(
-                        '${getArrivalDay(productData['meridiem'], productData['baselinehour'])} - ${productData['freeShipping'] == true ? '무료 배송' : '배송료가 부과됩니다'}',
+                        '${productData['arrivalDay']} - ${productData['freeShipping'] == true ? '무료 배송' : '배송료가 부과됩니다'}',
                         style: TextStyle(
                           color: const Color(0xFF747474),
                           fontSize: 14.sp,

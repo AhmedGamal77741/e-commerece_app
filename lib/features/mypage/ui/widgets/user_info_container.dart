@@ -167,7 +167,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                   if (val!.isEmpty) {
                     return '이 필드를 작성해 주세요';
                   } else if (!RegExp(
-                    r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~`)\%\-(_+=;:,.<>/?"[{\]}\|^]).{8,}$',
+                    r'^(?=.*[A-Za-z])(?=.*\d).{8,}$',
                   ).hasMatch(val)) {
                     return '유효한 비밀번호를 입력해 주세요';
                   }

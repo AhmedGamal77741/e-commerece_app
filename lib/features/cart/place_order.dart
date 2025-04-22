@@ -12,6 +12,10 @@ class PlaceOrder extends StatefulWidget {
 }
 
 class _PlaceOrderState extends State<PlaceOrder> {
+  final deliveryAddressController = TextEditingController();
+  final deliveryInstructionsController = TextEditingController();
+  final cashReceiptController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -26,7 +30,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
           title: Text("주문하기", style: TextStyle(fontFamily: 'ABeeZee')),
         ),
         body: Padding(
-          padding: EdgeInsets.only(left: 15.w, top: 20.h, right: 15.w),
+          padding: EdgeInsets.only(left: 15.w, top: 30.h, right: 15.w),
           child: ListView(
             children: [
               Container(

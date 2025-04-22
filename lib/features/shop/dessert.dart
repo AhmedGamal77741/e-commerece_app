@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
@@ -74,6 +75,10 @@ class _DessertState extends State<Dessert> {
                       productData: data,
                       userId: FirebaseAuth.instance.currentUser?.uid ?? '',
                     );
+                    String arrivalTime = await getArrivalDay(
+                      data['meridiem'],
+                      data['baselineTime'],
+                    );
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -85,13 +90,12 @@ class _DessertState extends State<Dessert> {
                                 'price': data['price'],
                                 'product_id': data['product_id'],
                                 'freeShipping': data['freeShipping'],
-                                'meridiem': data['meridiem'],
-                                'baselinehour': data['baselineTime'],
                                 'productName': data['productName'],
                                 'instructions': data['instructions'],
                                 'stock': data['stock'],
                                 'likes': liked,
                                 'imgUrls': data['imgUrls'],
+                                'arrivalDay': arrivalTime,
                               },
                             ),
                       ),
@@ -144,12 +148,32 @@ class _DessertState extends State<Dessert> {
                                 style: TextStyles.abeezee13px400wPblack,
                               ),
                               verticalSpace(2),
-                              Text(
-                                data['freeShipping'] == true
-                                    ? '무료 배송'
-                                    : '배송료가 부과됩니다',
-                                style: TextStyles.abeezee11px400wP600,
+                              FutureBuilder<String>(
+                                future: getArrivalDay(
+                                  data['meridiem'],
+                                  data['baselineTime'],
+                                ),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return Text(
+                                      '로딩 중...',
+                                      style: TextStyles.abeezee11px400wP600,
+                                    );
+                                  }
+                                  if (snapshot.hasError) {
+                                    return Text(
+                                      '오류 발생',
+                                      style: TextStyles.abeezee11px400wP600,
+                                    );
+                                  }
+                                  return Text(
+                                    '${snapshot.data} . ${data['freeShipping'] == true ? '무료 배송' : '배송료가 부과됩니다'} ',
+                                    style: TextStyles.abeezee11px400wP600,
+                                  );
+                                },
                               ),
+
                               verticalSpace(4),
                             ],
                           ),

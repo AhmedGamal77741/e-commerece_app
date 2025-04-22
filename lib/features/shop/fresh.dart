@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
@@ -65,9 +66,14 @@ class _FreshState extends State<Fresh> {
 
                 return InkWell(
                   onTap: () async {
+                    print(data);
                     bool liked = isFavoritedByUser(
                       productData: data,
                       userId: FirebaseAuth.instance.currentUser?.uid ?? '',
+                    );
+                    String arrivalTime = await getArrivalDay(
+                      data['meridiem'],
+                      data['baselineTime'],
                     );
                     Navigator.push(
                       context,
@@ -80,16 +86,30 @@ class _FreshState extends State<Fresh> {
                                 'price': data['price'],
                                 'product_id': data['product_id'],
                                 'freeShipping': data['freeShipping'],
-                                'meridiem': data['meridiem'],
-                                'baselinehour': data['baselineTime'],
                                 'productName': data['productName'],
                                 'instructions': data['instructions'],
                                 'stock': data['stock'],
                                 'likes': liked,
+                                'imgUrls': data['imgUrls'],
+                                'arrivalDay': arrivalTime,
                               },
                             ),
                       ),
                     );
+
+                    // context.pushNamed(
+                    //   Routes.itemDetailsScreen,
+                    //   arguments: {
+                    // 'imgUrl': data['imgUrl'],
+                    // 'sellerName': data['sellerName	'],
+                    // 'price': data['price	'],
+                    // 'product_id': data['product_id'],
+                    // 'freeShipping': data['freeShipping	'],
+                    // 'meridiem': data['meridiem'],
+                    // 'baselinehour': data['baselinehour	'],
+                    // 'productName': data['productName	'],
+                    //   },
+                    // );
                   },
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 8.h),

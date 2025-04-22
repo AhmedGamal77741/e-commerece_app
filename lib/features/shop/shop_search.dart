@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/shop/fav_fnc.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
@@ -128,6 +129,11 @@ class _ShopSearchState extends State<ShopSearch> {
                         productData: product.data() as Map<String, dynamic>,
                         userId: FirebaseAuth.instance.currentUser?.uid ?? '',
                       );
+
+                      String arrivalTime = await getArrivalDay(
+                        product['meridiem'],
+                        product['baselineTime'],
+                      );
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -146,6 +152,7 @@ class _ShopSearchState extends State<ShopSearch> {
                                   'stock': product['stock'],
                                   'likes': liked,
                                   'imgUrls': product['imgUrls'],
+                                  'arrivalDay': arrivalTime,
                                 },
                               ),
                         ),

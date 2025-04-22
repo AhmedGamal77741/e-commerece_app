@@ -124,9 +124,36 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                         '수량 : ${cartData['quantity'].toString()}  ',
                                         style: TextStyles.abeezee11px400wP600,
                                       ),
-                                      Text(
-                                        '${getArrivalDay(productData['meridiem'], productData['baselineTime'])} ',
-                                        style: TextStyles.abeezee11px400wP600,
+                                      FutureBuilder<String>(
+                                        future: getArrivalDay(
+                                          productData['meridiem'],
+                                          productData['baselineTime'],
+                                        ),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState ==
+                                              ConnectionState.waiting) {
+                                            return Text(
+                                              '로딩 중...',
+                                              style:
+                                                  TextStyles
+                                                      .abeezee11px400wP600,
+                                            );
+                                          }
+                                          if (snapshot.hasError) {
+                                            return Text(
+                                              '오류 발생',
+                                              style:
+                                                  TextStyles
+                                                      .abeezee11px400wP600,
+                                            );
+                                          }
+
+                                          return Text(
+                                            '${snapshot.data} ',
+                                            style:
+                                                TextStyles.abeezee11px400wP600,
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),
