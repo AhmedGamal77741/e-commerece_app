@@ -70,9 +70,9 @@ class _DessertState extends State<Dessert> {
                 return InkWell(
                   onTap: () async {
                     print(data);
-                    bool liked = await isProductInFavorites(
-                      FirebaseAuth.instance.currentUser?.uid ?? '',
-                      data['product_id'],
+                    bool liked = isFavoritedByUser(
+                      productData: data,
+                      userId: FirebaseAuth.instance.currentUser?.uid ?? '',
                     );
                     Navigator.push(
                       context,

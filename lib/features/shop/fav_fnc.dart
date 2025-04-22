@@ -4,57 +4,65 @@ Future<void> addProductToFavorites({
   required String userId,
   required String productId,
 }) async {
-  final favoritesRef = FirebaseFirestore.instance
+  final firestore = FirebaseFirestore.instance;
+
+  // 1. Reference to the user's favorites subcollection
+  final favoritesRef = firestore
       .collection('users')
       .doc(userId)
       .collection('favorites');
 
+  // 2. Reference to the product document
+  final productRef = firestore.collection('products').doc(productId);
+
+  // 3. Add product to user's favorites
   final newDocRef = favoritesRef.doc();
   await newDocRef.set({'favorite_id': newDocRef.id, 'product_id': productId});
+
+  // 4. Add userId to favBy array in the product document
+  await productRef.update({
+    'favBy': FieldValue.arrayUnion([userId]),
+  });
+}
+
+bool isFavoritedByUser({
+  required Map<String, dynamic> productData,
+  required String userId,
+}) {
+  final List<dynamic> favByList = productData['favBy'] ?? [];
+  return favByList.contains(userId);
 }
 
 Future<void> removeProductFromFavorites({
   required String userId,
   required String productId,
 }) async {
-  final favoritesRef = FirebaseFirestore.instance
+  final firestore = FirebaseFirestore.instance;
+
+  // 1. Reference to the user's favorites subcollection
+  final favoritesRef = firestore
       .collection('users')
       .doc(userId)
       .collection('favorites');
 
-  // Query for the product that matches the productId
+  // 2. Reference to the product document
+  final productRef = firestore.collection('products').doc(productId);
+
+  // 3. Query for the product that matches the productId
   final querySnapshot =
       await favoritesRef.where('product_id', isEqualTo: productId).get();
 
-  // Check if the product exists in favorites
   if (querySnapshot.docs.isNotEmpty) {
-    // Loop through all documents found (should be only one)
     for (var doc in querySnapshot.docs) {
-      // Delete the document
+      // Delete the document from user's favorites
       await doc.reference.delete();
     }
+
+    // 4. Remove userId from the favBy array in the product document
+    await productRef.update({
+      'favBy': FieldValue.arrayRemove([userId]),
+    });
   } else {
     print("Product not found in favorites.");
-  }
-}
-
-Future<bool> isProductInFavorites(String userId, String productId) async {
-  try {
-    // Reference to the user's favorites collection in Firestore
-    final favsRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('favorites');
-
-    // Query to check if the product exists in the user's favorites
-    final querySnapshot =
-        await favsRef.where('product_id', isEqualTo: productId).get();
-
-    // If the query returns at least one document, the product is in favorites
-    return querySnapshot.docs.isNotEmpty;
-  } catch (e) {
-    // Handle error
-    print("Error checking favorite product: $e");
-    return false;
   }
 }

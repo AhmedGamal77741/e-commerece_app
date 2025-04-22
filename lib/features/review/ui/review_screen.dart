@@ -9,14 +9,10 @@ class ReviewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 1,
       child: Scaffold(
-        appBar: TabAppBar(
-          imgUrl: 'rev_icon.png',
-          firstTab: '리뷰 남기기',
-          secondTab: '주문 내역',
-        ),
-        body: TabBarView(children: [LeaveReview(), OrderHistory()]),
+        appBar: TabAppBar(imgUrl: 'rev_icon.png', firstTab: '주문 내역'),
+        body: TabBarView(children: [OrderHistory()]),
       ),
     );
   }

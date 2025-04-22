@@ -26,7 +26,7 @@ class _ItemDetailsState extends State<ItemDetails> {
   void initState() {
     super.initState();
     productData = widget.data;
-    liked = productData['liked'] ?? false;
+    liked = productData['likes'];
   }
 
   final PageController _pageController = PageController();
@@ -369,178 +369,178 @@ class _ItemDetailsState extends State<ItemDetails> {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.w),
 
-            child: Container(
-              padding: EdgeInsets.only(
-                left: 15.w,
-                top: 15.h,
-                bottom: 15.h,
-                right: 15.w,
-              ),
+            // child: Container(
+            //   padding: EdgeInsets.only(
+            //     left: 15.w,
+            //     top: 15.h,
+            //     bottom: 15.h,
+            //     right: 15.w,
+            //   ),
 
-              decoration: ShapeDecoration(
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(width: 0.27, color: const Color(0xFF747474)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                spacing: 10.h,
-                children: [
-                  Row(
-                    children: [
-                      RatingBar(
-                        ignoreGestures: true,
-                        itemSize: 20.sp,
-                        maxRating: 5,
-                        minRating: 0,
-                        initialRating: 3.5,
-                        allowHalfRating: true,
-                        ratingWidget: RatingWidget(
-                          full: Icon(
-                            Icons.star,
-                            color: ColorsManager.primaryblack,
-                          ),
-                          half: Icon(
-                            Icons.star_half,
-                            color: ColorsManager.primaryblack,
-                          ),
-                          empty: Icon(
-                            Icons.star_border,
-                            color: ColorsManager.primary300,
-                          ),
-                        ),
-                        onRatingUpdate: (rating) {
-                          print("평점은: $rating");
-                        },
-                      ),
-                      Text("(1,740)", style: TextStyles.abeezee14px400wP600),
-                    ],
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Flexible(
-                        child: Image.asset(
-                          'assets/product_image_order.png',
-                          width: 105.w,
-                          height: 105.h,
-                        ),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: Padding(
-                          padding: EdgeInsets.only(left: 10.w),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. ',
-                                style: TextStyles.abeezee16px400wPblack,
-                              ),
+            //   decoration: ShapeDecoration(
+            //     color: Colors.white,
+            //     shape: RoundedRectangleBorder(
+            //       side: BorderSide(width: 0.27, color: const Color(0xFF747474)),
+            //       borderRadius: BorderRadius.circular(12),
+            //     ),
+            //   ),
+            //   child: Column(
+            //     mainAxisSize: MainAxisSize.min,
+            //     mainAxisAlignment: MainAxisAlignment.start,
+            //     crossAxisAlignment: CrossAxisAlignment.center,
+            //     spacing: 10.h,
+            //     children: [
+            //       Row(
+            //         children: [
+            //           RatingBar(
+            //             ignoreGestures: true,
+            //             itemSize: 20.sp,
+            //             maxRating: 5,
+            //             minRating: 0,
+            //             initialRating: 3.5,
+            //             allowHalfRating: true,
+            //             ratingWidget: RatingWidget(
+            //               full: Icon(
+            //                 Icons.star,
+            //                 color: ColorsManager.primaryblack,
+            //               ),
+            //               half: Icon(
+            //                 Icons.star_half,
+            //                 color: ColorsManager.primaryblack,
+            //               ),
+            //               empty: Icon(
+            //                 Icons.star_border,
+            //                 color: ColorsManager.primary300,
+            //               ),
+            //             ),
+            //             onRatingUpdate: (rating) {
+            //               print("평점은: $rating");
+            //             },
+            //           ),
+            //           Text("(1,740)", style: TextStyles.abeezee14px400wP600),
+            //         ],
+            //       ),
+            //       Row(
+            //         crossAxisAlignment: CrossAxisAlignment.start,
+            //         children: [
+            //           Flexible(
+            //             child: Image.asset(
+            //               'assets/product_image_order.png',
+            //               width: 105.w,
+            //               height: 105.h,
+            //             ),
+            //           ),
+            //           Expanded(
+            //             flex: 2,
+            //             child: Padding(
+            //               padding: EdgeInsets.only(left: 10.w),
+            //               child: Column(
+            //                 crossAxisAlignment: CrossAxisAlignment.start,
+            //                 children: [
+            //                   Text(
+            //                     'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. ',
+            //                     style: TextStyles.abeezee16px400wPblack,
+            //                   ),
 
-                              RatingBar(
-                                ignoreGestures: true,
-                                itemSize: 20.sp,
-                                maxRating: 5,
-                                minRating: 0,
-                                initialRating: 4,
-                                allowHalfRating: true,
-                                ratingWidget: RatingWidget(
-                                  full: Icon(
-                                    Icons.star,
-                                    color: ColorsManager.primaryblack,
-                                  ),
-                                  half: Icon(
-                                    Icons.star_half,
-                                    color: ColorsManager.primaryblack,
-                                  ),
-                                  empty: Icon(
-                                    Icons.star_border,
-                                    color: ColorsManager.primary300,
-                                  ),
-                                ),
-                                onRatingUpdate: (rating) {
-                                  print("Rating is: $rating");
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  verticalSpace(5),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Flexible(
-                        child: Image.asset(
-                          'assets/product_image_order.png',
-                          width: 105.w,
-                          height: 105.h,
-                        ),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: Padding(
-                          padding: EdgeInsets.only(left: 10.w),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. ',
-                                style: TextStyles.abeezee16px400wPblack,
-                              ),
+            //                   RatingBar(
+            //                     ignoreGestures: true,
+            //                     itemSize: 20.sp,
+            //                     maxRating: 5,
+            //                     minRating: 0,
+            //                     initialRating: 4,
+            //                     allowHalfRating: true,
+            //                     ratingWidget: RatingWidget(
+            //                       full: Icon(
+            //                         Icons.star,
+            //                         color: ColorsManager.primaryblack,
+            //                       ),
+            //                       half: Icon(
+            //                         Icons.star_half,
+            //                         color: ColorsManager.primaryblack,
+            //                       ),
+            //                       empty: Icon(
+            //                         Icons.star_border,
+            //                         color: ColorsManager.primary300,
+            //                       ),
+            //                     ),
+            //                     onRatingUpdate: (rating) {
+            //                       print("Rating is: $rating");
+            //                     },
+            //                   ),
+            //                 ],
+            //               ),
+            //             ),
+            //           ),
+            //         ],
+            //       ),
+            //       verticalSpace(5),
+            //       Row(
+            //         crossAxisAlignment: CrossAxisAlignment.start,
+            //         children: [
+            //           Flexible(
+            //             child: Image.asset(
+            //               'assets/product_image_order.png',
+            //               width: 105.w,
+            //               height: 105.h,
+            //             ),
+            //           ),
+            //           Expanded(
+            //             flex: 2,
+            //             child: Padding(
+            //               padding: EdgeInsets.only(left: 10.w),
+            //               child: Column(
+            //                 crossAxisAlignment: CrossAxisAlignment.start,
+            //                 children: [
+            //                   Text(
+            //                     'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. ',
+            //                     style: TextStyles.abeezee16px400wPblack,
+            //                   ),
 
-                              RatingBar(
-                                ignoreGestures: true,
-                                itemSize: 20.sp,
-                                maxRating: 5,
-                                minRating: 0,
-                                initialRating: 4,
-                                allowHalfRating: true,
-                                ratingWidget: RatingWidget(
-                                  full: Icon(
-                                    Icons.star,
-                                    color: ColorsManager.primaryblack,
-                                  ),
-                                  half: Icon(
-                                    Icons.star_half,
-                                    color: ColorsManager.primaryblack,
-                                  ),
-                                  empty: Icon(
-                                    Icons.star_border,
-                                    color: ColorsManager.primary300,
-                                  ),
-                                ),
-                                onRatingUpdate: (rating) {
-                                  print("Rating is: $rating");
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  verticalSpace(5),
-                  Text(
-                    '모두 보기',
-                    style: TextStyle(
-                      color: const Color(0xFF747474),
-                      fontSize: 14.sp,
-                      fontFamily: 'ABeeZee',
-                      fontWeight: FontWeight.w400,
-                      height: 1.40.h,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            //                   RatingBar(
+            //                     ignoreGestures: true,
+            //                     itemSize: 20.sp,
+            //                     maxRating: 5,
+            //                     minRating: 0,
+            //                     initialRating: 4,
+            //                     allowHalfRating: true,
+            //                     ratingWidget: RatingWidget(
+            //                       full: Icon(
+            //                         Icons.star,
+            //                         color: ColorsManager.primaryblack,
+            //                       ),
+            //                       half: Icon(
+            //                         Icons.star_half,
+            //                         color: ColorsManager.primaryblack,
+            //                       ),
+            //                       empty: Icon(
+            //                         Icons.star_border,
+            //                         color: ColorsManager.primary300,
+            //                       ),
+            //                     ),
+            //                     onRatingUpdate: (rating) {
+            //                       print("Rating is: $rating");
+            //                     },
+            //                   ),
+            //                 ],
+            //               ),
+            //             ),
+            //           ),
+            //         ],
+            //       ),
+            //       verticalSpace(5),
+            //       Text(
+            //         '모두 보기',
+            //         style: TextStyle(
+            //           color: const Color(0xFF747474),
+            //           fontSize: 14.sp,
+            //           fontFamily: 'ABeeZee',
+            //           fontWeight: FontWeight.w400,
+            //           height: 1.40.h,
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
           ),
         ],
       ),

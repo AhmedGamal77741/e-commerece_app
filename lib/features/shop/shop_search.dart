@@ -124,9 +124,9 @@ class _ShopSearchState extends State<ShopSearch> {
                       fit: BoxFit.cover,
                     ),
                     onTap: () async {
-                      bool liked = await isProductInFavorites(
-                        FirebaseAuth.instance.currentUser?.uid ?? '',
-                        product['product_id'],
+                      bool liked = isFavoritedByUser(
+                        productData: product.data() as Map<String, dynamic>,
+                        userId: FirebaseAuth.instance.currentUser?.uid ?? '',
                       );
                       Navigator.push(
                         context,
@@ -140,7 +140,7 @@ class _ShopSearchState extends State<ShopSearch> {
                                   'product_id': product['product_id'],
                                   'freeShipping': product['freeShipping'],
                                   'meridiem': product['meridiem'],
-                                  'baselinehour': product['baselinetime'],
+                                  'baselinehour': product['baselineTime'],
                                   'productName': product['productName'],
                                   'instructions': product['instructions'],
                                   'stock': product['stock'],
