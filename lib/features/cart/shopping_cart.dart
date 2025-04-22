@@ -19,6 +19,34 @@ class ShoppingCart extends StatefulWidget {
 }
 
 class _ShoppingCartState extends State<ShoppingCart> {
+  // Function to calculate total cart price
+  Future<int> calculateCartTotal(List<QueryDocumentSnapshot> cartDocs) async {
+    int total = 0;
+
+    for (final cartDoc in cartDocs) {
+      final cartData = cartDoc.data() as Map<String, dynamic>;
+      final productId = cartData['product_id'];
+
+      try {
+        final productSnapshot =
+            await FirebaseFirestore.instance
+                .collection('products')
+                .doc(productId)
+                .get();
+
+        if (productSnapshot.exists) {
+          final productData = productSnapshot.data() as Map<String, dynamic>;
+          total +=
+              (productData['price'] as int) * (cartData['quantity'] as int);
+        }
+      } catch (e) {
+        debugPrint('Error calculating price for product $productId: $e');
+      }
+    }
+
+    return total;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -132,69 +160,91 @@ class _ShoppingCartState extends State<ShoppingCart> {
             ),
           ),
         ),
-        Container(
-          width: 428.w,
-          height: 50.h,
-          decoration: BoxDecoration(color: Colors.white),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Padding(
-                padding: EdgeInsets.only(left: 40.w, right: 70.w),
-                child: Text(
-                  '합계 : ',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 18.sp,
-                    fontFamily: 'ABeeZee',
-                    fontWeight: FontWeight.w400,
-                    height: 1.40.h,
+        StreamBuilder<QuerySnapshot>(
+          stream:
+              FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(FirebaseAuth.instance.currentUser?.uid ?? '')
+                  .collection('cart')
+                  .snapshots(),
+          builder: (context, cartSnapshot) {
+            if (!cartSnapshot.hasData || cartSnapshot.data!.docs.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            return FutureBuilder<int>(
+              future: calculateCartTotal(cartSnapshot.data!.docs),
+              builder: (context, totalSnapshot) {
+                return Container(
+                  width: 428.w,
+                  height: 50.h,
+                  decoration: BoxDecoration(color: Colors.white),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(left: 40.w, right: 70.w),
+                        child: Text(
+                          '합계 : ',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 18.sp,
+                            fontFamily: 'ABeeZee',
+                            fontWeight: FontWeight.w400,
+                            height: 1.40.h,
+                          ),
+                        ),
+                      ),
+                      totalSnapshot.hasData
+                          ? Text(
+                            '${totalSnapshot.data} KRW',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 18.sp,
+                              fontFamily: 'ABeeZee',
+                              fontWeight: FontWeight.w400,
+                              height: 1.40.h,
+                            ),
+                          )
+                          : CircularProgressIndicator(),
+                      TextButton(
+                        onPressed: () {
+                          context.pushNamed(Routes.placeOrderScreen);
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color(
+                            0xFF121212,
+                          ), // Background color
+                          foregroundColor: Colors.white, // Text color
+                          minimumSize: Size(102.w, 26.h), // Exact dimensions
+                          padding: EdgeInsets.zero, // Remove default padding
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(
+                              width: 1,
+                              color: const Color(0xFF121212),
+                            ), // Border
+                            borderRadius: BorderRadius.circular(
+                              8,
+                            ), // Corner radius
+                          ),
+                          elevation: 0, // Remove shadow
+                        ),
+                        child: Text(
+                          '주문하기',
+                          style: TextStyle(
+                            color: const Color(0xFFF5F5F5),
+                            fontSize: 16.sp,
+                            fontFamily: 'ABeeZee',
+                            fontWeight: FontWeight.w400,
+                            height: 1.40.h,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-
-              Text(
-                'KRW',
-
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 18.sp,
-                  fontFamily: 'ABeeZee',
-                  fontWeight: FontWeight.w400,
-                  height: 1.40.h,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  context.pushNamed(Routes.placeOrderScreen);
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: const Color(0xFF121212), // Background color
-                  foregroundColor: Colors.white, // Text color
-                  minimumSize: Size(102.w, 26.h), // Exact dimensions
-                  padding: EdgeInsets.zero, // Remove default padding
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                      width: 1,
-                      color: const Color(0xFF121212),
-                    ), // Border
-                    borderRadius: BorderRadius.circular(8), // Corner radius
-                  ),
-                  elevation: 0, // Remove shadow
-                ),
-                child: Text(
-                  '주문하기',
-                  style: TextStyle(
-                    color: const Color(0xFFF5F5F5),
-                    fontSize: 16.sp,
-                    fontFamily: 'ABeeZee',
-                    fontWeight: FontWeight.w400,
-                    height: 1.40.h,
-                  ),
-                ),
-              ),
-            ],
-          ),
+                );
+              },
+            );
+          },
         ),
       ],
     );

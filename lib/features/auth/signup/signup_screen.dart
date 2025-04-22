@@ -23,7 +23,7 @@ class _SignupScreenState extends State<SignupScreen> {
   IconData iconPassword = Icons.visibility;
   bool obscurePassword = true;
   bool signUpRequired = false;
-  String imgUrl = "";
+  String imgUrl = '';
   String error = '';
   final fireBaseRepo = FirebaseUserRepo();
   @override
@@ -184,7 +184,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   MyUser myUser = MyUser.empty;
                   myUser.email = emailController.text;
                   myUser.name = nameController.text;
-                  myUser.url = imgUrl;
+                  imgUrl.isEmpty
+                      ? myUser.url =
+                          "https://i.ibb.co/6kmLx2D/mypage-avatar.png"
+                      : myUser.url = imgUrl;
+
                   var result = await fireBaseRepo.signUp(
                     myUser,
                     passwordController.text,
