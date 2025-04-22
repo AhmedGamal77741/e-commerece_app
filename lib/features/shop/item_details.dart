@@ -1,5 +1,7 @@
 import 'package:ecommerece_app/core/helpers/basetime.dart';
+import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/shop/cart_func.dart';
@@ -593,7 +595,14 @@ class _ItemDetailsState extends State<ItemDetails> {
             SizedBox(width: 16),
             Expanded(
               child: TextButton(
-                onPressed: () {},
+                onPressed: () async {
+                  await addProductAsNewEntryToCart(
+                    userId: FirebaseAuth.instance.currentUser?.uid ?? '',
+                    productId: productData['product_id'],
+                    quantity: int.parse(_selectedOption ?? '1'),
+                  );
+                  context.pushNamed(Routes.placeOrderScreen);
+                },
                 style: TextButton.styleFrom(
                   backgroundColor: ColorsManager.primaryblack,
                   padding: EdgeInsets.symmetric(
