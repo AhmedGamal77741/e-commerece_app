@@ -72,12 +72,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    productData['sellerName	'],
+                                    productData['sellerName'],
                                     style: TextStyle(fontSize: 14),
                                   ),
                                   SizedBox(height: 5),
                                   Text(
-                                    productData['productName	'],
+                                    productData['productName'],
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: Colors.black,
