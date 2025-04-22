@@ -56,15 +56,7 @@ class _MyStoryState extends State<MyStory> {
               return Center(child: CircularProgressIndicator());
             }
 
-            return ListView.separated(
-              separatorBuilder: (context, index) {
-                // Don't add a divider after the last item
-                if (index == postIds.length - 1) {
-                  return SizedBox.shrink();
-                }
-                return Divider(color: ColorsManager.primary100);
-              },
-
+            return ListView.builder(
               itemCount: postIds.length,
               itemBuilder: (context, index) {
                 final postId = postIds[index];
@@ -75,7 +67,12 @@ class _MyStoryState extends State<MyStory> {
                 if (postData!['userId'] != currentUser!.userId) {
                   return SizedBox.shrink();
                 }
-                return PostItem(postId: postId, fromComments: false);
+                return Column(
+                  children: [
+                    if (index != 0) Divider(color: ColorsManager.primary100),
+                    PostItem(postId: postId, fromComments: false),
+                  ],
+                );
               },
             );
           },
