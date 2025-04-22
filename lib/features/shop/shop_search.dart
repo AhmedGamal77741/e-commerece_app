@@ -46,7 +46,7 @@ class _ShopSearchState extends State<ShopSearch> {
       final filtered =
           _allProducts
               .where(
-                (product) => product['productName	']
+                (product) => product['productName']
                     .toString()
                     .toLowerCase()
                     .contains(query.toLowerCase()),
