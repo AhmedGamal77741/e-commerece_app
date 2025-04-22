@@ -80,12 +80,12 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    productData['sellerName	'],
+                                    productData['sellerName'],
                                     style: TextStyles.abeezee14px400wP600,
                                   ),
                                   verticalSpace(5),
                                   Text(
-                                    productData['productName	'],
+                                    productData['productName'],
                                     style: TextStyles.abeezee13px400wPblack,
                                   ),
                                   verticalSpace(3),
@@ -97,14 +97,14 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                         style: TextStyles.abeezee11px400wP600,
                                       ),
                                       Text(
-                                        '${getArrivalDay(productData['meridiem'], productData['baselinehour	'])} ',
+                                        '${getArrivalDay(productData['meridiem'], productData['baselineTime'])} ',
                                         style: TextStyles.abeezee11px400wP600,
                                       ),
                                     ],
                                   ),
 
                                   Text(
-                                    '${(productData['price	'] * cartData['quantity']).toString()} KRW',
+                                    '${(productData['price'] * cartData['quantity']).toString()} KRW',
                                     style: TextStyles.abeezee13px400wPblack,
                                   ),
                                 ],
