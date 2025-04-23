@@ -144,7 +144,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                   }
 
                                   return Text(
-                                    '${snapshot.data} ',
+                                    '${snapshot.data} 도착예정',
                                     style: TextStyles.abeezee14px400wP600,
                                   );
                                 },

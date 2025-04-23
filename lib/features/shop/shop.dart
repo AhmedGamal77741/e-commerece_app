@@ -257,7 +257,6 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              verticalSpace(3),
                               Text(
                                 '${p.price ?? '0'} 원',
                                 style: TextStyles.abeezee16px400wPblack,
@@ -283,7 +282,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                                     );
                                   }
                                   return Text(
-                                    '${snapshot.data} . ${p.freeShipping == true ? '무료 배송' : '배송료가 부과됩니다'} ',
+                                    '${snapshot.data} 도착예정 · ${p.freeShipping == true ? '무료배송' : '배송료가 부과됩니다'} ',
                                     style: TextStyles.abeezee14px400wP600,
                                   );
                                 },

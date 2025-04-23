@@ -140,7 +140,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                           }
 
                                           return Text(
-                                            '${snapshot.data} ',
+                                            '${snapshot.data} 도착예정',
                                             style:
                                                 TextStyles.abeezee16px400wP600,
                                           );
