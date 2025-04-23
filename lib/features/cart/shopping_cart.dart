@@ -84,11 +84,14 @@ class _ShoppingCartState extends State<ShoppingCart> {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Image.network(
-                              productData['imgUrl'],
-                              width: 105.w,
-                              height: 105.h,
-                              fit: BoxFit.cover,
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                productData['imgUrl'],
+                                width: 106.w,
+                                height: 106.h,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                             Padding(
                               padding: EdgeInsets.only(left: 10.w),
@@ -102,7 +105,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                   verticalSpace(5),
                                   Text(
                                     productData['productName'],
-                                    style: TextStyles.abeezee13px400wPblack,
+                                    style: TextStyles.abeezee16px400wPblack,
                                   ),
                                   verticalSpace(3),
 
@@ -132,14 +135,14 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                               '오류 발생',
                                               style:
                                                   TextStyles
-                                                      .abeezee11px400wP600,
+                                                      .abeezee14px400wP600,
                                             );
                                           }
 
                                           return Text(
                                             '${snapshot.data} ',
                                             style:
-                                                TextStyles.abeezee11px400wP600,
+                                                TextStyles.abeezee16px400wP600,
                                           );
                                         },
                                       ),
