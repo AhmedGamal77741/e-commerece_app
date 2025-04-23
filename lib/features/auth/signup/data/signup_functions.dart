@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_entity.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:rxdart/rxdart.dart';
@@ -14,7 +16,15 @@ Future<String> uploadImageToImgBB() async {
   );
   if (image == null) return "";
 
-  final bytes = await File(image.path).readAsBytes();
+  Uint8List bytes;
+  if (kIsWeb) {
+    // On web, use image.readAsBytes() directly
+    bytes = await image.readAsBytes();
+  } else {
+    // On mobile, File is available
+    bytes = await image.readAsBytes(); // no need for dart:io File
+  }
+
   final base64Image = base64Encode(bytes);
 
   final response = await http.post(

@@ -2,7 +2,7 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 Future<String> getArrivalDay(String meridiem, int baseHour) async {
-  await initializeDateFormatting('ko_KR'); // Load Korean date formatting
+  await initializeDateFormatting('ko_KR');
 
   meridiem = meridiem.toUpperCase();
 
@@ -36,10 +36,32 @@ Future<String> getArrivalDay(String meridiem, int baseHour) async {
   int totalOffset = baseOffset + (isWeekend ? 2 : 0);
 
   DateTime arrivalDate = now.add(Duration(days: totalOffset));
-  String dayName = DateFormat(
-    'EEEE',
-    'ko_KR',
-  ).format(arrivalDate); // Korean day name
+  int daysDifference = arrivalDate.difference(now).inDays;
 
-  return "도착일: $dayName"; // Output in Korean
+  // Map for weekday abbreviation
+  const weekdayAbbrMap = {
+    DateTime.monday: '월',
+    DateTime.tuesday: '화',
+    DateTime.wednesday: '수',
+    DateTime.thursday: '목',
+    DateTime.friday: '금',
+    DateTime.saturday: '토',
+    DateTime.sunday: '일',
+  };
+
+  String result;
+
+  if (daysDifference == 1) {
+    result = "내일(${weekdayAbbrMap[arrivalDate.weekday]})";
+  } else if (daysDifference == 2) {
+    result = "모레(${weekdayAbbrMap[arrivalDate.weekday]})";
+  } else {
+    String dayName = DateFormat(
+      'EEEE',
+      'ko_KR',
+    ).format(arrivalDate); // e.g., 금요일
+    result = "도착일: $dayName";
+  }
+
+  return result;
 }

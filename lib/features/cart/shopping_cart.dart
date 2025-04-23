@@ -110,7 +110,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                     children: [
                                       Text(
                                         '수량 : ${cartData['quantity'].toString()}  ',
-                                        style: TextStyles.abeezee11px400wP600,
+                                        style: TextStyles.abeezee14px400wP600,
                                       ),
                                       FutureBuilder<String>(
                                         future: getArrivalDay(
@@ -124,7 +124,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                               '로딩 중...',
                                               style:
                                                   TextStyles
-                                                      .abeezee11px400wP600,
+                                                      .abeezee14px400wP600,
                                             );
                                           }
                                           if (snapshot.hasError) {
@@ -236,7 +236,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                               0xFF121212,
                             ), // Background color
                             foregroundColor: Colors.white, // Text color
-                            minimumSize: Size(63.w, 50.h), // Exact dimensions
+                            minimumSize: Size(70.w, 40.h), // Exact dimensions
                             padding: EdgeInsets.zero, // Remove default padding
                             shape: RoundedRectangleBorder(
                               side: BorderSide(

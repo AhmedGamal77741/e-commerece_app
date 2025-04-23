@@ -327,7 +327,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          ' ${widget.product.baselineTime} ${widget.product.meridiem == 'AM' ? '오전' : '오후 '}',
+                          '${widget.product.meridiem == 'AM' ? '오전' : '오후 '} ${widget.product.baselineTime} 시',
                           style: TextStyle(
                             color: const Color(0xFF747474),
                             fontSize: 14.sp,
