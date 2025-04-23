@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/basetime.dart';
+import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/shop/fav_fnc.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
@@ -16,8 +17,8 @@ class ShopSearch extends StatefulWidget {
 
 class _ShopSearchState extends State<ShopSearch> {
   TextEditingController _searchController = TextEditingController();
-  List<DocumentSnapshot> _allProducts = [];
-  List<DocumentSnapshot> _filteredProducts = [];
+  List<Product> _allProducts = [];
+  List<Product> _filteredProducts = [];
 
   @override
   void initState() {
@@ -30,7 +31,11 @@ class _ShopSearchState extends State<ShopSearch> {
     final querySnapshot =
         await FirebaseFirestore.instance.collection('products').get();
     setState(() {
-      _allProducts = querySnapshot.docs;
+      _allProducts =
+          querySnapshot.docs.map((doc) {
+            return Product.fromMap(doc.data());
+          }).toList();
+
       _filteredProducts =
           _allProducts; // Initialize filtered list with all products
     });
@@ -47,7 +52,7 @@ class _ShopSearchState extends State<ShopSearch> {
       final filtered =
           _allProducts
               .where(
-                (product) => product['productName']
+                (product) => product.productName
                     .toString()
                     .toLowerCase()
                     .contains(query.toLowerCase()),
@@ -116,44 +121,31 @@ class _ShopSearchState extends State<ShopSearch> {
                 itemBuilder: (context, index) {
                   final product = _filteredProducts[index];
                   return ListTile(
-                    title: Text(product['productName']),
-                    subtitle: Text('${product['price']} KRW'),
+                    title: Text(product.productName),
+                    subtitle: Text('${product.price} KRW'),
                     leading: Image.network(
-                      product['imgUrl'],
+                      product.imgUrl!,
                       width: 50.w,
                       height: 50.h,
                       fit: BoxFit.cover,
                     ),
                     onTap: () async {
                       bool liked = isFavoritedByUser(
-                        productData: product.data() as Map<String, dynamic>,
+                        p: product,
                         userId: FirebaseAuth.instance.currentUser?.uid ?? '',
                       );
 
                       String arrivalTime = await getArrivalDay(
-                        product['meridiem'],
-                        product['baselineTime'],
+                        product.meridiem,
+                        product.baselineTime,
                       );
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder:
                               (context) => ItemDetails(
-                                data: {
-                                  'imgUrl': product['imgUrl'],
-                                  'sellerName': product['sellerName'],
-                                  'price': product['price'],
-                                  'product_id': product['product_id'],
-                                  'freeShipping': product['freeShipping'],
-                                  'meridiem': product['meridiem'],
-                                  'baselinehour': product['baselineTime'],
-                                  'productName': product['productName'],
-                                  'instructions': product['instructions'],
-                                  'stock': product['stock'],
-                                  'likes': liked,
-                                  'imgUrls': product['imgUrls'],
-                                  'arrivalDay': arrivalTime,
-                                },
+                                product: product,
+                                arrivalDay: arrivalTime,
                               ),
                         ),
                       );

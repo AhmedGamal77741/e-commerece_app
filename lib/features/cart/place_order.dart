@@ -182,7 +182,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                           .doc(FirebaseAuth.instance.currentUser?.uid ?? '')
                           .collection('cart')
                           .snapshots(),
-                  builder: (context, cartSnapshot) {
+                  builder: (context6, cartSnapshot) {
                     if (cartSnapshot.connectionState ==
                         ConnectionState.waiting) {
                       return Center(child: CircularProgressIndicator());
@@ -192,7 +192,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                     return ListView.separated(
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
-                      separatorBuilder: (context, index) {
+                      separatorBuilder: (context5, index) {
                         if (index == cartDocs.length - 1) {
                           return SizedBox.shrink();
                         }
@@ -209,7 +209,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                   .collection('products')
                                   .doc(productId)
                                   .get(),
-                          builder: (context, productSnapshot) {
+                          builder: (context4, productSnapshot) {
                             if (!productSnapshot.hasData) {
                               return ListTile(title: Text('로딩 중...'));
                             }
@@ -235,7 +235,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                 ),
 
                                 Text(
-                                  '${(productData['price'] * cartData['quantity']).toString()} KRW',
+                                  '${(cartData['price']).toString()} KRW',
                                   style: TextStyle(
                                     color: const Color(0xFF747474),
                                     fontSize: 14.sp,
@@ -261,14 +261,14 @@ class _PlaceOrderState extends State<PlaceOrder> {
                         .doc(FirebaseAuth.instance.currentUser?.uid ?? '')
                         .collection('cart')
                         .snapshots(),
-                builder: (context, cartSnapshot) {
+                builder: (context3, cartSnapshot) {
                   if (!cartSnapshot.hasData ||
                       cartSnapshot.data!.docs.isEmpty) {
                     return const SizedBox.shrink();
                   }
                   return FutureBuilder<int>(
                     future: calculateCartTotal(cartSnapshot.data!.docs),
-                    builder: (context, totalSnapshot) {
+                    builder: (context2, totalSnapshot) {
                       return Column(
                         mainAxisAlignment: MainAxisAlignment.center,
 
@@ -354,11 +354,10 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                 for (var doc in cartSnapshot.docs) {
                                   await doc.reference.delete();
                                   mounted;
-
-                                  context.pushReplacementNamed(
-                                    Routes.orderCompleteScreen,
-                                  );
                                 }
+                                context.pushReplacementNamed(
+                                  Routes.orderCompleteScreen,
+                                );
                               } catch (e) {
                                 print('Failed to place order: $e');
                               }
@@ -385,22 +384,11 @@ Future<int> calculateCartTotal(List<QueryDocumentSnapshot> cartDocs) async {
 
   for (final cartDoc in cartDocs) {
     final cartData = cartDoc.data() as Map<String, dynamic>;
-    final productId = cartData['product_id'];
+    final price = cartData['price'];
 
     try {
-      final productSnapshot =
-          await FirebaseFirestore.instance
-              .collection('products')
-              .doc(productId)
-              .get();
-
-      if (productSnapshot.exists) {
-        final productData = productSnapshot.data() as Map<String, dynamic>;
-        total += (productData['price'] as int) * (cartData['quantity'] as int);
-      }
-    } catch (e) {
-      debugPrint('Error calculating price for product $productId: $e');
-    }
+      total += price as int;
+    } catch (e) {}
   }
 
   return total;

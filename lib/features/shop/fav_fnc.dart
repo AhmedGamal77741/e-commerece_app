@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/core/models/product_model.dart';
 
 Future<void> addProductToFavorites({
   required String userId,
@@ -25,12 +26,8 @@ Future<void> addProductToFavorites({
   });
 }
 
-bool isFavoritedByUser({
-  required Map<String, dynamic> productData,
-  required String userId,
-}) {
-  final List<dynamic> favByList = productData['favBy'] ?? [];
-  return favByList.contains(userId);
+bool isFavoritedByUser({required Product p, required String userId}) {
+  return p.favBy.contains(userId);
 }
 
 Future<void> removeProductFromFavorites({

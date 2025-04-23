@@ -1,6 +1,7 @@
 import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
+import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
@@ -13,29 +14,36 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class ItemDetails extends StatefulWidget {
-  final Map<String, dynamic> data;
-
-  const ItemDetails({super.key, required this.data});
+  final Product product;
+  final String arrivalDay;
+  const ItemDetails({
+    super.key,
+    required this.product,
+    required this.arrivalDay,
+  });
 
   @override
   State<ItemDetails> createState() => _ItemDetailsState();
 }
 
 class _ItemDetailsState extends State<ItemDetails> {
-  late Map<String, dynamic> productData;
+  late List<PricePoint> _options = widget.product.pricePoints;
+
   late bool liked = false;
   @override
   void initState() {
     super.initState();
-    productData = widget.data;
-    liked = productData['likes'];
+
+    liked = isFavoritedByUser(
+      p: widget.product,
+      userId: FirebaseAuth.instance.currentUser!.uid,
+    );
   }
 
   final PageController _pageController = PageController();
   int _currentPage = 0;
   String? _selectedOption; // Stores the selected value
 
-  final List<String> _options = ['Option 1', 'Option 2', 'Option 3'];
   @override
   void dispose() {
     _pageController.dispose();
@@ -44,7 +52,7 @@ class _ItemDetailsState extends State<ItemDetails> {
 
   @override
   Widget build(BuildContext context) {
-    final List<dynamic> imageUrls = productData['imgUrls'] ?? [];
+    final List<dynamic> imageUrls = widget.product.imgUrls ?? [];
 
     return Scaffold(
       body: ListView(
@@ -95,8 +103,9 @@ class _ItemDetailsState extends State<ItemDetails> {
             ),
           ),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 30.h),
+            padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 14.h),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Flexible(
@@ -106,7 +115,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                     spacing: 10.h,
                     children: [
                       Text(
-                        productData['sellerName'],
+                        widget.product.sellerName,
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 14.sp,
@@ -116,7 +125,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         ),
                       ),
                       Text(
-                        productData['productName'],
+                        widget.product.productName,
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 16.sp,
@@ -126,7 +135,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         ),
                       ),
                       Text(
-                        '${productData['arrivalDay']} - ${productData['freeShipping'] == true ? '무료 배송' : '배송료가 부과됩니다'}',
+                        '${widget.arrivalDay} - ${widget.product.freeShipping == true ? '무료 배송' : '배송료가 부과됩니다'}',
                         style: TextStyle(
                           color: const Color(0xFF747474),
                           fontSize: 14.sp,
@@ -138,55 +147,57 @@ class _ItemDetailsState extends State<ItemDetails> {
                     ],
                   ),
                 ),
-                Flexible(
-                  child: IconButton(
-                    onPressed: () {},
-                    icon: ImageIcon(
-                      AssetImage('assets/grey_006m.png'),
-                      color: liked ? Colors.black : Colors.grey,
+                Spacer(),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {},
+                      icon: ImageIcon(
+                        AssetImage('assets/grey_006m.png'),
+                        size: 32.sp,
+                        color: liked ? Colors.black : Colors.grey,
+                      ),
                     ),
-                  ),
-                ),
-                Flexible(
-                  child: IconButton(
-                    onPressed:
-                        liked
-                            ? () async {
-                              await removeProductFromFavorites(
-                                userId:
-                                    FirebaseAuth.instance.currentUser?.uid ??
-                                    '',
-                                productId: productData['product_id'],
-                              );
-                              setState(() {
-                                liked = !liked;
-                              });
-                            }
-                            : () async {
-                              await addProductToFavorites(
-                                userId:
-                                    FirebaseAuth.instance.currentUser?.uid ??
-                                    '',
-                                productId: productData['product_id'],
-                              );
-                              setState(() {
-                                liked = !liked;
-                              });
-                            },
-                    icon: ImageIcon(
-                      AssetImage('assets/grey_007m.png'),
-                      color: liked ? Colors.black : Colors.grey,
+                    IconButton(
+                      onPressed:
+                          liked
+                              ? () async {
+                                await removeProductFromFavorites(
+                                  userId:
+                                      FirebaseAuth.instance.currentUser?.uid ??
+                                      '',
+                                  productId: widget.product.product_id,
+                                );
+                                setState(() {
+                                  liked = !liked;
+                                });
+                              }
+                              : () async {
+                                await addProductToFavorites(
+                                  userId:
+                                      FirebaseAuth.instance.currentUser?.uid ??
+                                      '',
+                                  productId: widget.product.product_id,
+                                );
+                                setState(() {
+                                  liked = !liked;
+                                });
+                              },
+                      icon: ImageIcon(
+                        AssetImage('assets/grey_007m.png'),
+                        size: 32.sp,
+
+                        color: liked ? Colors.black : Colors.grey,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
           ),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12),
             child: Container(
-              padding: EdgeInsets.only(left: 15.w, top: 15.h, bottom: 15.h),
-
               decoration: ShapeDecoration(
                 color: Colors.white,
                 shape: RoundedRectangleBorder(
@@ -196,54 +207,50 @@ class _ItemDetailsState extends State<ItemDetails> {
               ),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Radio<String>(
-                        value: '1',
-                        groupValue: _selectedOption,
-                        onChanged:
-                            (value) => setState(() => _selectedOption = value),
-                      ),
-                      Flexible(
-                        child: Text(
-                          '1 수량 ${productData['price']} KRW (1 조각 ${productData['price']})',
-                        ),
-                      ),
-                    ],
-                  ),
-                  Divider(),
+                  ...widget.product.pricePoints.asMap().entries.map((entry) {
+                    int index = entry.key;
+                    PricePoint pricePoint = entry.value;
+                    double perUnit = pricePoint.price / pricePoint.quantity;
+                    return Column(
+                      children: [
+                        RadioListTile<String>(
+                          title: Row(
+                            children: [
+                              Text(
+                                '${pricePoint.quantity}개 ${pricePoint.price}원 ',
+                                style: TextStyle(
+                                  fontFamily: 'ABeeZee',
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 16.sp,
+                                  height: 1.4.h,
+                                ),
+                              ),
+                              Text(
+                                '(1개 ${perUnit}원)',
+                                style: TextStyle(
+                                  fontFamily: 'ABeeZee',
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 14.sp,
+                                  height: 1.4.h,
+                                ),
+                              ),
+                            ],
+                          ),
 
-                  Row(
-                    children: [
-                      Radio<String>(
-                        value: '2',
-                        groupValue: _selectedOption,
-                        onChanged:
-                            (value) => setState(() => _selectedOption = value),
-                      ),
-                      Flexible(
-                        child: Text(
-                          '2 수량 ${productData['price']} KRW (2 조각 ${productData['price'] * 2})',
+                          value: index.toString(),
+                          groupValue:
+                              _selectedOption, // This should be an int to match the index
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedOption = value;
+                            });
+                          },
                         ),
-                      ),
-                    ],
-                  ),
-                  Divider(),
-                  Row(
-                    children: [
-                      Radio<String>(
-                        value: '4',
-                        groupValue: _selectedOption,
-                        onChanged:
-                            (value) => setState(() => _selectedOption = value),
-                      ),
-                      Flexible(
-                        child: Text(
-                          '4 수량 ${productData['price']} KRW (4 조각 ${productData['price'] * 4})',
-                        ),
-                      ),
-                    ],
-                  ),
+                        if (index < widget.product.pricePoints.length - 1)
+                          Divider(),
+                      ],
+                    );
+                  }).toList(),
                 ],
               ),
             ),
@@ -287,7 +294,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          productData['instructions'],
+                          widget.product.instructions,
                           style: TextStyle(
                             color: const Color(0xFF747474),
                             fontSize: 14.sp,
@@ -320,7 +327,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          ' ${productData['baselinehour']} ${productData['meridiem']}',
+                          ' ${widget.product.baselineTime} ${widget.product.meridiem}',
                           style: TextStyle(
                             color: const Color(0xFF747474),
                             fontSize: 14.sp,
@@ -354,7 +361,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          productData['stock'].toString(),
+                          widget.product.stock.toString(),
                           style: TextStyle(
                             color: const Color(0xFF747474),
                             fontSize: 14.sp,
@@ -557,10 +564,19 @@ class _ItemDetailsState extends State<ItemDetails> {
                 onPressed: () async {
                   await addProductAsNewEntryToCart(
                     userId: FirebaseAuth.instance.currentUser?.uid ?? '',
-                    productId: productData['product_id'],
-                    quantity: int.parse(_selectedOption ?? '1'),
+                    productId: widget.product.product_id,
+                    quantity:
+                        widget
+                            .product
+                            .pricePoints[int.parse(_selectedOption ?? '1')]
+                            .quantity,
+                    price:
+                        widget
+                            .product
+                            .pricePoints[int.parse(_selectedOption ?? '1')]
+                            .price,
                   );
-
+                  context.pop();
                   // Navigator.push(
                   //   context,
                   //   MaterialPageRoute(
@@ -598,8 +614,17 @@ class _ItemDetailsState extends State<ItemDetails> {
                 onPressed: () async {
                   await addProductAsNewEntryToCart(
                     userId: FirebaseAuth.instance.currentUser?.uid ?? '',
-                    productId: productData['product_id'],
-                    quantity: int.parse(_selectedOption ?? '1'),
+                    productId: widget.product.product_id,
+                    quantity:
+                        widget
+                            .product
+                            .pricePoints[int.parse(_selectedOption ?? '1')]
+                            .quantity,
+                    price:
+                        widget
+                            .product
+                            .pricePoints[int.parse(_selectedOption ?? '1')]
+                            .price,
                   );
                   context.pushNamed(Routes.placeOrderScreen);
                 },

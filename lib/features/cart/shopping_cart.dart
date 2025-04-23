@@ -25,23 +25,11 @@ class _ShoppingCartState extends State<ShoppingCart> {
 
     for (final cartDoc in cartDocs) {
       final cartData = cartDoc.data() as Map<String, dynamic>;
-      final productId = cartData['product_id'];
+      final price = cartData['price'];
 
       try {
-        final productSnapshot =
-            await FirebaseFirestore.instance
-                .collection('products')
-                .doc(productId)
-                .get();
-
-        if (productSnapshot.exists) {
-          final productData = productSnapshot.data() as Map<String, dynamic>;
-          total +=
-              (productData['price'] as int) * (cartData['quantity'] as int);
-        }
-      } catch (e) {
-        debugPrint('Error calculating price for product $productId: $e');
-      }
+        total += (price as int);
+      } catch (e) {}
     }
 
     return total;
@@ -159,7 +147,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                   ),
 
                                   Text(
-                                    '${(productData['price'] * cartData['quantity']).toString()} KRW',
+                                    '${cartData['price']} KRW',
                                     style: TextStyles.abeezee13px400wPblack,
                                   ),
                                 ],

@@ -170,8 +170,13 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     Divider(color: ColorsManager.primary100),
                     Text('결제', style: TextStyles.abeezee16px400wPblack),
-                    Text('결제 정보를 입력하세요', style: TextStyles.abeezee14px400wP600),
-                    Divider(color: ColorsManager.primary100),
+                    UnderlineTextField(
+                      controller: passwordController,
+                      hintText: '결제 정보를 입력하세요',
+                      obscureText: false,
+                      keyboardType: TextInputType.name,
+                    ),
+                    /* Text('결제 정보를 입력하세요', style: TextStyles.abeezee14px400wP600), */
                   ],
                 ),
               ),
