@@ -82,7 +82,7 @@ class _ShopState extends State<Shop> {
       length: _categories.length,
       child: Scaffold(
         appBar: AppBar(
-          toolbarHeight: 130.h,
+          toolbarHeight: 70.h,
           backgroundColor: ColorsManager.white,
           title: TabBar(
             labelStyle: TextStyle(
