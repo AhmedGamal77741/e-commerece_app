@@ -19,6 +19,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final passwordController = TextEditingController();
   final emailController = TextEditingController();
   final nameController = TextEditingController();
+  final paymentInfoController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   IconData iconPassword = Icons.visibility;
   bool obscurePassword = true;
@@ -171,7 +172,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     Divider(color: ColorsManager.primary100),
                     Text('결제', style: TextStyles.abeezee16px400wPblack),
                     UnderlineTextField(
-                      controller: passwordController,
+                      controller: paymentInfoController,
                       hintText: '결제 정보를 입력하세요',
                       obscureText: false,
                       keyboardType: TextInputType.name,
