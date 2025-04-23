@@ -24,14 +24,14 @@ class UserOptionsContainer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
-              child: Text('회원 구독 취소', style: TextStyles.abeezee16px400wPblack),
+              child: Text('멤버십 해지', style: TextStyles.abeezee16px400wPblack),
               onTap: () {
                 context.pushNamed(Routes.cancelSubscription);
               },
             ),
             Divider(color: ColorsManager.primary100),
             InkWell(
-              child: Text('고객 도움 센터', style: TextStyles.abeezee16px400wPblack),
+              child: Text('고객센터', style: TextStyles.abeezee16px400wPblack),
               onTap: () {},
             ),
           ],

@@ -153,7 +153,7 @@ class _AddPostState extends State<AddPost> {
                                   setState(() {}); // Handle text changes
                                 },
                                 decoration: InputDecoration(
-                                  hintText: '업데이트 있나요?', // Placeholder text
+                                  hintText: '새로운 소식이 있나요?', // Placeholder text
                                   border:
                                       InputBorder.none, // Removes all borders
                                   contentPadding:

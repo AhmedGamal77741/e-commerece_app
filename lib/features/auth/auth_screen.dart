@@ -14,7 +14,7 @@ class AuthScreen extends StatelessWidget {
         appBar: TabAppBar(
           imgUrl: 'mypage_icon.png',
           firstTab: '로그인',
-          secondTab: '가입하기',
+          secondTab: '회원가입',
         ),
         body: TabBarView(children: [LoginScreen(), SignupScreen()]),
       ),

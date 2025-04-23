@@ -52,10 +52,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       verticalSpace(20),
-                      Text('이메일', style: TextStyles.abeezee16px400wPblack),
+                      Text('아이디', style: TextStyles.abeezee16px400wPblack),
                       UnderlineTextField(
                         controller: emailController,
-                        hintText: '이메일',
+                        hintText: '전화번호',
                         obscureText: false,
                         keyboardType: TextInputType.emailAddress,
                         errorMsg: _errorMsg,
@@ -74,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text('비밀번호', style: TextStyles.abeezee16px400wPblack),
                       UnderlineTextField(
                         controller: passwordController,
-                        hintText: '비밀번호',
+                        hintText: '영문,숫자 조합',
                         obscureText: obsecurepassword,
                         keyboardType: TextInputType.visiblePassword,
                         errorMsg: _errorMsg,

@@ -102,7 +102,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
               ),
               UnderlineTextField(
                 controller: nameController,
-                hintText: '이름',
+                hintText: '팽이마켓',
                 obscureText: false,
                 keyboardType: TextInputType.name,
                 validator: (val) {
@@ -160,7 +160,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
               ),
               UnderlineTextField(
                 controller: passwordController,
-                hintText: '완료',
+                hintText: '영문,숫자 조합',
                 obscureText: false,
                 keyboardType: TextInputType.name,
                 validator: (val) {

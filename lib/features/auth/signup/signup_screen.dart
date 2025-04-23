@@ -80,7 +80,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       UnderlineTextField(
                         controller: nameController,
-                        hintText: '이름을 입력하세요',
+                        hintText: '팽이마켓',
                         obscureText: false,
                         keyboardType: TextInputType.name,
                         validator: (val) {
@@ -114,7 +114,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       Text('비밀번호', style: TextStyles.abeezee16px400wPblack),
                       UnderlineTextField(
                         controller: passwordController,
-                        hintText: '영문, 숫자 포함 8자 이상',
+                        hintText: '영문,숫자 조합 8자 이상',
                         obscureText: obscurePassword,
                         keyboardType: TextInputType.visiblePassword,
                         suffixIcon: IconButton(
@@ -161,19 +161,19 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('월간 구독', style: TextStyles.abeezee16px400wPblack),
-                    Text('3,000 KRW', style: TextStyles.abeezee14px400wP600),
+                    Text('월 회비', style: TextStyles.abeezee16px400wPblack),
+                    Text('3,000원', style: TextStyles.abeezee14px400wP600),
                     Divider(color: ColorsManager.primary100),
-                    Text('Benefits', style: TextStyles.abeezee16px400wPblack),
+                    Text('혜택', style: TextStyles.abeezee16px400wPblack),
                     Text(
-                      '모든 제품 무료 배송, 무료 반품,\n회원 커뮤니티, 최저가 보장 ',
+                      '전제품 무료배송, 무료반품 , 멤버십 커뮤니티 이용, 최저가 \n 상품 구매 ',
                       style: TextStyles.abeezee14px400wP600,
                     ),
                     Divider(color: ColorsManager.primary100),
                     Text('결제', style: TextStyles.abeezee16px400wPblack),
                     UnderlineTextField(
                       controller: paymentInfoController,
-                      hintText: '결제 정보를 입력하세요',
+                      hintText: '결제수단 등록',
                       obscureText: false,
                       keyboardType: TextInputType.name,
                     ),

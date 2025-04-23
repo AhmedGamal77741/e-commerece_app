@@ -14,7 +14,7 @@ class MyPageScreen extends StatelessWidget {
         appBar: TabAppBar(
           imgUrl: 'mypage_icon.png',
           firstTab: '내 이야기',
-          secondTab: '내 페이지',
+          secondTab: '마이페이지',
         ),
         body: TabBarView(children: [MyStory(), MyPage()]),
       ),

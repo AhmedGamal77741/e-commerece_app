@@ -1,10 +1,6 @@
-import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/features/home/data/home_functions.dart';
-import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
 
 void showPostMenu(BuildContext context, String postId) {
   showModalBottomSheet(
@@ -175,7 +171,7 @@ void showPostMenu(BuildContext context, String postId) {
                           children: [
                             SizedBox(
                               child: Text(
-                                '신고',
+                                '신고하기',
                                 style: TextStyle(
                                   color: const Color(0xFFDA3A48),
                                   fontSize: 16.sp,

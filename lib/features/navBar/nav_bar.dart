@@ -52,7 +52,7 @@ class _NavBarState extends State<NavBar> {
               ),
               size: 21,
             ),
-            label: '집',
+            label: '홈',
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(
@@ -85,7 +85,7 @@ class _NavBarState extends State<NavBar> {
               ),
               size: 21,
             ),
-            label: '주문',
+            label: '주문내역',
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(
@@ -96,7 +96,7 @@ class _NavBarState extends State<NavBar> {
               ),
               size: 21,
             ),
-            label: '내 페이지',
+            label: '내페이지',
           ),
         ],
         currentIndex: _selectedIndex,

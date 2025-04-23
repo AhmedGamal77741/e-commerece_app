@@ -26,7 +26,7 @@ class _NotificationsState extends State<Notifications> {
                 onPressed: () => Navigator.pop(context),
                 icon: Icon(Icons.arrow_back_ios),
               ),
-              Text("Notifications", style: TextStyle(fontFamily: 'ABeeZee')),
+              Text("알림", style: TextStyle(fontFamily: 'ABeeZee')),
             ],
           ),
         ),
@@ -45,7 +45,7 @@ class _NotificationsState extends State<Notifications> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'user X and 2 other replied on my post',
+                    '00님 외  2명이 내 이야기에 댓글을 남겼습니다',
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 20.sp,
@@ -55,7 +55,7 @@ class _NotificationsState extends State<Notifications> {
                     ),
                   ),
                   Text(
-                    'reply : Lorem ipsum dolor sit amet, consectetur adipiscing elit. ',
+                    '댓글 : 꿀팁 공유 감사합니다 오늘 하루도 화이팅! ',
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 20.sp,
@@ -74,7 +74,7 @@ class _NotificationsState extends State<Notifications> {
                   SizedBox(
                     width: 420.w,
                     child: Text(
-                      'user X and 1,324 others liked my post',
+                      '00님 외 1,324명이 내 이야기에 좋아요를 눌렀습니다',
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 20.sp,
@@ -94,7 +94,7 @@ class _NotificationsState extends State<Notifications> {
                   SizedBox(
                     width: 420.w,
                     child: Text(
-                      'user X and 2 others liked my post',
+                      '00님 외 2명이 내 이야기에 좋아요를 눌렀습니다',
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 20.sp,

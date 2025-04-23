@@ -12,7 +12,7 @@ class CancelSubscription extends StatefulWidget {
   State<CancelSubscription> createState() => _CancelSubscriptionState();
 }
 
-List<String> options = ['비싼 구독료', '쇼핑 시간 단축', '찾고 있는 상품을 찾을 수 없음', '기타'];
+List<String> options = ['월 회비가 비쌈', '최근 쇼핑 횟수가 줄었음', '살만한 물건이 없음', '기타'];
 
 class _CancelSubscriptionState extends State<CancelSubscription> {
   String currentOption = options[0];
@@ -24,8 +24,13 @@ class _CancelSubscriptionState extends State<CancelSubscription> {
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text('왜 떠나는지 알려주세요', style: TextStyles.abeezee20px400wPblack),
+              Text(
+                '서비스 개선을 위해\n해지하는 이유를 알려주세요',
+                textAlign: TextAlign.center,
+                style: TextStyles.abeezee20px400wPblack,
+              ),
               verticalSpace(30),
               ListTile(
                 title: Text(
@@ -89,7 +94,7 @@ class _CancelSubscriptionState extends State<CancelSubscription> {
               ),
               verticalSpace(30),
               WideTextButton(
-                txt: '구독 취소n',
+                txt: '로그인',
                 color: Colors.white,
                 txtColor: ColorsManager.primaryblack,
                 func: () {},

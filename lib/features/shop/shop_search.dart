@@ -122,7 +122,7 @@ class _ShopSearchState extends State<ShopSearch> {
                   final product = _filteredProducts[index];
                   return ListTile(
                     title: Text(product.productName),
-                    subtitle: Text('${product.price} KRW'),
+                    subtitle: Text('${product.price} 원'),
                     leading: Image.network(
                       product.imgUrl!,
                       width: 50.w,

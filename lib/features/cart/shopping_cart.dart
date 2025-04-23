@@ -86,8 +86,8 @@ class _ShoppingCartState extends State<ShoppingCart> {
                           children: [
                             Image.network(
                               productData['imgUrl'],
-                              width: 90.w,
-                              height: 90.h,
+                              width: 105.w,
+                              height: 105.h,
                               fit: BoxFit.cover,
                             ),
                             Padding(
@@ -147,7 +147,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                   ),
 
                                   Text(
-                                    '${cartData['price']} KRW',
+                                    '${cartData['price']} 원',
                                     style: TextStyles.abeezee13px400wPblack,
                                   ),
                                 ],
@@ -199,7 +199,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                       Padding(
                         padding: EdgeInsets.only(left: 40.w, right: 70.w),
                         child: Text(
-                          '합계 : ',
+                          '총 금액: ',
                           style: TextStyle(
                             color: Colors.black,
                             fontSize: 18.sp,
@@ -209,48 +209,55 @@ class _ShoppingCartState extends State<ShoppingCart> {
                           ),
                         ),
                       ),
+                      Spacer(),
                       totalSnapshot.hasData
-                          ? Text(
-                            '${totalSnapshot.data} KRW',
+                          ? Padding(
+                            padding: EdgeInsets.only(right: 10.w),
+                            child: Text(
+                              '${totalSnapshot.data} 원',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 18.sp,
+                                fontFamily: 'ABeeZee',
+                                fontWeight: FontWeight.w400,
+                                height: 1.40.h,
+                              ),
+                            ),
+                          )
+                          : CircularProgressIndicator(),
+                      Padding(
+                        padding: EdgeInsets.only(right: 20.w),
+                        child: TextButton(
+                          onPressed: () {
+                            context.pushNamed(Routes.placeOrderScreen);
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: const Color(
+                              0xFF121212,
+                            ), // Background color
+                            foregroundColor: Colors.white, // Text color
+                            minimumSize: Size(63.w, 50.h), // Exact dimensions
+                            padding: EdgeInsets.zero, // Remove default padding
+                            shape: RoundedRectangleBorder(
+                              side: BorderSide(
+                                width: 1,
+                                color: const Color(0xFF121212),
+                              ), // Border
+                              borderRadius: BorderRadius.circular(
+                                11,
+                              ), // Corner radius
+                            ),
+                            elevation: 0, // Remove shadow
+                          ),
+                          child: Text(
+                            '구매',
                             style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 18.sp,
+                              color: const Color(0xFFF5F5F5),
+                              fontSize: 16.sp,
                               fontFamily: 'ABeeZee',
                               fontWeight: FontWeight.w400,
                               height: 1.40.h,
                             ),
-                          )
-                          : CircularProgressIndicator(),
-                      TextButton(
-                        onPressed: () {
-                          context.pushNamed(Routes.placeOrderScreen);
-                        },
-                        style: TextButton.styleFrom(
-                          backgroundColor: const Color(
-                            0xFF121212,
-                          ), // Background color
-                          foregroundColor: Colors.white, // Text color
-                          minimumSize: Size(102.w, 26.h), // Exact dimensions
-                          padding: EdgeInsets.zero, // Remove default padding
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(
-                              width: 1,
-                              color: const Color(0xFF121212),
-                            ), // Border
-                            borderRadius: BorderRadius.circular(
-                              8,
-                            ), // Corner radius
-                          ),
-                          elevation: 0, // Remove shadow
-                        ),
-                        child: Text(
-                          '주문하기',
-                          style: TextStyle(
-                            color: const Color(0xFFF5F5F5),
-                            fontSize: 16.sp,
-                            fontFamily: 'ABeeZee',
-                            fontWeight: FontWeight.w400,
-                            height: 1.40.h,
                           ),
                         ),
                       ),

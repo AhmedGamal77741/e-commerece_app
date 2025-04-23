@@ -1,13 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
-import 'package:ecommerece_app/features/cart/delete_func.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -35,7 +32,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
             onPressed: () => Navigator.pop(context),
             icon: Icon(Icons.arrow_back_ios),
           ),
-          title: Text("주문하기", style: TextStyle(fontFamily: 'ABeeZee')),
+          title: Text("주문 결제", style: TextStyle(fontFamily: 'ABeeZee')),
         ),
         body: Padding(
           padding: EdgeInsets.only(left: 15.w, top: 30.h, right: 15.w),
@@ -62,7 +59,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                     spacing: 16.h,
                     children: [
                       Text(
-                        '배송지 주소',
+                        '베송지',
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 16.sp,
@@ -73,7 +70,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       ),
                       UnderlineTextField(
                         controller: deliveryAddressController,
-                        hintText: '이름을 입력하세요',
+                        hintText: '기본 배송지 : ',
                         obscureText: false,
                         keyboardType: TextInputType.text,
                         validator: (val) {
@@ -87,7 +84,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       ),
 
                       Text(
-                        '배송 지침',
+                        '배송 요청사항',
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 16.sp,
@@ -98,7 +95,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       ),
                       UnderlineTextField(
                         controller: deliveryInstructionsController,
-                        hintText: '이름을 입력하세요',
+                        hintText: '문앞',
                         obscureText: false,
                         keyboardType: TextInputType.text,
                         validator: (val) {
@@ -112,7 +109,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       ),
 
                       Text(
-                        '지불',
+                        '결제',
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 16.sp,
@@ -122,7 +119,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                         ),
                       ),
                       Text(
-                        '네이버 페이 (빠른 결제)',
+                        '간편결제',
                         style: TextStyle(
                           color: const Color(0xFF747474),
                           fontSize: 14.sp,
@@ -146,7 +143,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       ),
                       UnderlineTextField(
                         controller: cashReceiptController,
-                        hintText: '이름을 입력하세요',
+                        hintText: '현금영수증 정보',
                         obscureText: false,
                         keyboardType: TextInputType.text,
                         validator: (val) {
@@ -175,82 +172,89 @@ class _PlaceOrderState extends State<PlaceOrder> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: StreamBuilder(
-                  stream:
-                      FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(FirebaseAuth.instance.currentUser?.uid ?? '')
-                          .collection('cart')
-                          .snapshots(),
-                  builder: (context6, cartSnapshot) {
-                    if (cartSnapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
-                    }
-                    final cartDocs = cartSnapshot.data!.docs;
-
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      separatorBuilder: (context5, index) {
-                        if (index == cartDocs.length - 1) {
-                          return SizedBox.shrink();
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('구매목록', style: TextStyles.abeezee16px400wPblack),
+                    verticalSpace(10),
+                    StreamBuilder(
+                      stream:
+                          FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(FirebaseAuth.instance.currentUser?.uid ?? '')
+                              .collection('cart')
+                              .snapshots(),
+                      builder: (context6, cartSnapshot) {
+                        if (cartSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Center(child: CircularProgressIndicator());
                         }
-                        return Divider();
-                      },
-                      itemCount: cartDocs.length,
-                      itemBuilder: (ctx, index) {
-                        final cartData = cartDocs[index].data();
-                        final productId = cartData['product_id'];
+                        final cartDocs = cartSnapshot.data!.docs;
 
-                        return FutureBuilder<DocumentSnapshot>(
-                          future:
-                              FirebaseFirestore.instance
-                                  .collection('products')
-                                  .doc(productId)
-                                  .get(),
-                          builder: (context4, productSnapshot) {
-                            if (!productSnapshot.hasData) {
-                              return ListTile(title: Text('로딩 중...'));
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          separatorBuilder: (context5, index) {
+                            if (index == cartDocs.length - 1) {
+                              return SizedBox.shrink();
                             }
-                            final productData =
-                                productSnapshot.data!.data()
-                                    as Map<String, dynamic>;
+                            return Divider();
+                          },
+                          itemCount: cartDocs.length,
+                          itemBuilder: (ctx, index) {
+                            final cartData = cartDocs[index].data();
+                            final productId = cartData['product_id'];
 
-                            return Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              spacing: 12.h,
-                              children: [
-                                Text(
-                                  '${productData['productName']} / 수량 : ${cartData['quantity'].toString()}',
-                                  style: TextStyle(
-                                    color: const Color(0xFF747474),
-                                    fontSize: 14.sp,
-                                    fontFamily: 'ABeeZee',
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.40.h,
-                                  ),
-                                ),
+                            return FutureBuilder<DocumentSnapshot>(
+                              future:
+                                  FirebaseFirestore.instance
+                                      .collection('products')
+                                      .doc(productId)
+                                      .get(),
+                              builder: (context4, productSnapshot) {
+                                if (!productSnapshot.hasData) {
+                                  return ListTile(title: Text('로딩 중...'));
+                                }
+                                final productData =
+                                    productSnapshot.data!.data()
+                                        as Map<String, dynamic>;
 
-                                Text(
-                                  '${(cartData['price']).toString()} KRW',
-                                  style: TextStyle(
-                                    color: const Color(0xFF747474),
-                                    fontSize: 14.sp,
-                                    fontFamily: 'ABeeZee',
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.40.h,
-                                  ),
-                                ),
-                              ],
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  spacing: 12.h,
+                                  children: [
+                                    Text(
+                                      '${productData['productName']} / 수량 : ${cartData['quantity'].toString()}',
+                                      style: TextStyle(
+                                        color: const Color(0xFF747474),
+                                        fontSize: 14.sp,
+                                        fontFamily: 'ABeeZee',
+                                        fontWeight: FontWeight.w400,
+                                        height: 1.40.h,
+                                      ),
+                                    ),
+
+                                    Text(
+                                      '${(cartData['price']).toString()} 원',
+                                      style: TextStyle(
+                                        color: const Color(0xFF747474),
+                                        fontSize: 14.sp,
+                                        fontFamily: 'ABeeZee',
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.40.h,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             );
                           },
                         );
                       },
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
               verticalSpace(20),
@@ -279,7 +283,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Total : ',
+                                '총 결제 금액 ',
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontSize: 18.sp,
@@ -290,7 +294,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                               ),
                               totalSnapshot.hasData
                                   ? Text(
-                                    '${totalSnapshot.data} KRW',
+                                    '${totalSnapshot.data} 원',
                                     style: TextStyle(
                                       color: Colors.black,
                                       fontSize: 18.sp,
@@ -302,9 +306,9 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                   : CircularProgressIndicator(),
                             ],
                           ),
-                          verticalSpace(20),
+                          verticalSpace(5),
                           WideTextButton(
-                            txt: '주문하기',
+                            txt: '주문',
                             func: () async {
                               if (!_formKey.currentState!.validate()) return;
                               final user = FirebaseAuth.instance.currentUser;

@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
@@ -9,8 +8,6 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
-import 'package:ecommerece_app/features/home/widgets/show_post_options.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     Provider.of<PostsProvider>(context, listen: false).startListening();
 
-    _loadData(); // Call the async function when widget initializes
+    _loadData();
   }
 
   // Async function that uses await
@@ -122,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: TextStyles.abeezee16px400wPblack,
                                   ),
                                   Text(
-                                    '오늘 하루 어땠어요?',
+                                    '오늘 하루 어땠는지 말해줘',
                                     style: TextStyle(
                                       color: const Color(0xFF5F5F5F),
                                       fontSize: 13.sp,

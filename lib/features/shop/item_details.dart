@@ -282,7 +282,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                     children: [
                       Flexible(
                         child: Text(
-                          '구매 안내',
+                          '보관법 및 소비기한',
                           style: TextStyle(
                             color: const Color(0xFF121212),
                             fontSize: 16.sp,
@@ -315,7 +315,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                     children: [
                       Flexible(
                         child: Text(
-                          '오늘 배송을 시작하려면 미리 주문하세요',
+                          '오늘출발 마감 시간',
                           style: TextStyle(
                             color: const Color(0xFF121212),
                             fontSize: 16.sp,
@@ -327,7 +327,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          ' ${widget.product.baselineTime} ${widget.product.meridiem}',
+                          ' ${widget.product.baselineTime} ${widget.product.meridiem == 'AM' ? '오전' : '오후 '}',
                           style: TextStyle(
                             color: const Color(0xFF747474),
                             fontSize: 14.sp,
@@ -349,7 +349,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                     children: [
                       Flexible(
                         child: Text(
-                          '재고 남음',
+                          '남은 수량',
                           style: TextStyle(
                             color: const Color(0xFF121212),
                             fontSize: 16.sp,
@@ -361,7 +361,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          widget.product.stock.toString(),
+                          ' ${widget.product.stock.toString()} 개',
                           style: TextStyle(
                             color: const Color(0xFF747474),
                             fontSize: 14.sp,
@@ -595,11 +595,11 @@ class _ItemDetailsState extends State<ItemDetails> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
                     side: BorderSide(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: Text(
-                  '장바구니에 추가',
+                  '장바구니 담기',
                   style: TextStyle(
                     color: Colors.black,
                     fontFamily: 'ABeeZee',
@@ -608,7 +608,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                 ),
               ),
             ),
-            SizedBox(width: 16),
+            SizedBox(width: 10),
             Expanded(
               child: TextButton(
                 onPressed: () async {
@@ -637,11 +637,11 @@ class _ItemDetailsState extends State<ItemDetails> {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: Text(
-                  '지금 주문하기',
+                  '바로 구매',
                   style: TextStyle(
                     color: Colors.white,
                     fontFamily: 'ABeeZee',

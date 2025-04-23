@@ -6,33 +6,41 @@ import 'package:ecommerece_app/core/widgets/black_text_button.dart';
 import 'package:flutter/material.dart';
 
 class TextAndButtons extends StatelessWidget {
-  final String txt;
-  final VoidCallback func;
-  const TextAndButtons({super.key, required this.txt, required this.func});
+  final String orderId;
+  final String orderDate;
+  final String orderStatus;
+  final String orderPrice;
+
+  const TextAndButtons({
+    super.key,
+
+    required this.orderId,
+    required this.orderDate,
+    required this.orderStatus,
+    required this.orderPrice,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Pang2Chocolate', style: TextStyles.abeezee11px400wP600),
-        Text('다크 마시멜로 6개', style: TextStyles.abeezee13px400wPblack),
-        Text('옵션: 2개 내일(수) 도착 예상', style: TextStyles.abeezee11px400wP600),
-        Text('12,000 KRW', style: TextStyles.abeezee13px400wPblack),
+        Text(orderId, style: TextStyles.abeezee11px400wP600),
+        Text(orderDate, style: TextStyles.abeezee13px400wPblack),
+        Text(orderStatus, style: TextStyles.abeezee11px400wP600),
+        Text('$orderPrice 원', style: TextStyles.abeezee13px400wPblack),
         Row(
           children: [
             BlackTextButton(
-              txt: '주문 추적',
+              txt: '배송조회',
               style: TextStyles.abeezee12px400wW,
-              func: () {
-                context.pushNamed(Routes.trackorder);
-              },
+              func: () {},
             ),
             horizontalSpace(5),
             BlackTextButton(
-              txt: txt,
+              txt: '주문취소',
               style: TextStyles.abeezee12px400wW,
-              func: func,
+              func: () {},
             ),
           ],
         ),

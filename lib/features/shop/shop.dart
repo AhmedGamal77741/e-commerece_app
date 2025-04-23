@@ -13,9 +13,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Shop extends StatefulWidget {
@@ -259,7 +256,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                               ),
                               verticalSpace(3),
                               Text(
-                                '${p.price ?? '0'} KRW',
+                                '${p.price ?? '0'} 원',
                                 style: TextStyles.abeezee13px400wPblack,
                               ),
                               verticalSpace(2),
