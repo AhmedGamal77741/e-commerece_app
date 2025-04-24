@@ -92,7 +92,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           return null;
                         },
                       ),
-                      verticalSpace(20),
+                      verticalSpace(10),
                       Text('이메일', style: TextStyles.abeezee16px400wPblack),
                       UnderlineTextField(
                         controller: emailController,
@@ -110,7 +110,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           return null;
                         },
                       ),
-                      verticalSpace(20),
+                      verticalSpace(10),
                       Text('비밀번호', style: TextStyles.abeezee16px400wPblack),
                       UnderlineTextField(
                         controller: passwordController,
@@ -146,43 +146,43 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
             ),
-            verticalSpace(30),
-            Text(error, style: TextStyles.abeezee16px400wPred),
-            Container(
-              decoration: ShapeDecoration(
-                color: ColorsManager.white,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(width: 1, color: ColorsManager.primary100),
-                  borderRadius: BorderRadius.circular(25),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('월 회비', style: TextStyles.abeezee16px400wPblack),
-                    Text('3,000원', style: TextStyles.abeezee14px400wP600),
-                    Divider(color: ColorsManager.primary100),
-                    Text('혜택', style: TextStyles.abeezee16px400wPblack),
-                    Text(
-                      '전제품 무료배송, 무료반품 , 멤버십 커뮤니티 이용, 최저가 \n 상품 구매 ',
-                      style: TextStyles.abeezee14px400wP600,
-                    ),
-                    Divider(color: ColorsManager.primary100),
-                    Text('결제', style: TextStyles.abeezee16px400wPblack),
-                    UnderlineTextField(
-                      controller: paymentInfoController,
-                      hintText: '결제수단 등록',
-                      obscureText: false,
-                      keyboardType: TextInputType.name,
-                    ),
-                    /* Text('결제 정보를 입력하세요', style: TextStyles.abeezee14px400wP600), */
-                  ],
-                ),
-              ),
-            ),
             verticalSpace(40),
+            Text(error, style: TextStyles.abeezee16px400wPred),
+
+            // Container(
+            //   decoration: ShapeDecoration(
+            //     color: ColorsManager.white,
+            //     shape: RoundedRectangleBorder(
+            //       side: BorderSide(width: 1, color: ColorsManager.primary100),
+            //       borderRadius: BorderRadius.circular(25),
+            //     ),
+            //   ),
+            //   child: Padding(
+            //     padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
+            //     child: Column(
+            //       crossAxisAlignment: CrossAxisAlignment.start,
+            //       children: [
+            //         Text('월 회비', style: TextStyles.abeezee16px400wPblack),
+            //         Text('3,000원', style: TextStyles.abeezee14px400wP600),
+            //         Divider(color: ColorsManager.primary100),
+            //         Text('혜택', style: TextStyles.abeezee16px400wPblack),
+            //         Text(
+            //           '전제품 무료배송, 무료반품 , 멤버십 커뮤니티 이용, 최저가 \n 상품 구매 ',
+            //           style: TextStyles.abeezee14px400wP600,
+            //         ),
+            //         Divider(color: ColorsManager.primary100),
+            //         Text('결제', style: TextStyles.abeezee16px400wPblack),
+            //         UnderlineTextField(
+            //           controller: paymentInfoController,
+            //           hintText: '결제수단 등록',
+            //           obscureText: false,
+            //           keyboardType: TextInputType.name,
+            //         ),
+            //         /* Text('결제 정보를 입력하세요', style: TextStyles.abeezee14px400wP600), */
+            //       ],
+            //     ),
+            //   ),
+            // ),
             WideTextButton(
               txt: '가입하기',
               func: () async {

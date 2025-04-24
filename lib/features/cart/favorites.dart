@@ -20,7 +20,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 12.h),
       child: StreamBuilder(
         stream:
             FirebaseFirestore.instance
@@ -103,8 +103,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           borderRadius: BorderRadius.circular(10),
                           child: Image.network(
                             productData['imgUrl'],
-                            width: 106.w,
-                            height: 106.h,
+                            width: 90.w,
+                            height: 90.h,
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -117,39 +117,47 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 productData['sellerName'],
                                 style: TextStyles.abeezee14px400wP600,
                               ),
-                              verticalSpace(5),
                               Text(
                                 productData['productName'],
                                 style: TextStyles.abeezee16px400wPblack,
                               ),
-                              verticalSpace(3),
-                              FutureBuilder<String>(
-                                future: getArrivalDay(
-                                  productData['meridiem'],
-                                  productData['baselineTime'],
-                                ),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return Text(
-                                      '로딩 중...',
-                                      style: TextStyles.abeezee14px400wP600,
-                                    );
-                                  }
-                                  if (snapshot.hasError) {
-                                    return Text(
-                                      '오류 발생',
-                                      style: TextStyles.abeezee14px400wP600,
-                                    );
-                                  }
 
-                                  return Text(
-                                    '${snapshot.data} 도착예정',
+                              Row(
+                                children: [
+                                  FutureBuilder<String>(
+                                    future: getArrivalDay(
+                                      productData['meridiem'],
+                                      productData['baselineTime'],
+                                    ),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return Text(
+                                          '로딩 중...',
+                                          style: TextStyles.abeezee14px400wP600,
+                                        );
+                                      }
+                                      if (snapshot.hasError) {
+                                        return Text(
+                                          '오류 발생',
+                                          style: TextStyles.abeezee14px400wP600,
+                                        );
+                                      }
+
+                                      return Text(
+                                        '${snapshot.data} 도착예정',
+                                        style: TextStyles.abeezee14px400wP600,
+                                      );
+                                    },
+                                  ),
+                                  horizontalSpace(5),
+                                  Text(
+                                    '오늘 출발: (${productData['meridiem'] == 'AM' ? '오전' : '오후 '}${productData['baselineTime']}시까지',
                                     style: TextStyles.abeezee14px400wP600,
-                                  );
-                                },
+                                  ),
+                                ],
                               ),
-                              verticalSpace(3),
+
                               Text(
                                 '${productData['pricePoints'][0]['price']} 원',
                                 style: TextStyles.abeezee16px400wPblack,

@@ -102,12 +102,11 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                     productData['sellerName'],
                                     style: TextStyles.abeezee14px400wP600,
                                   ),
-                                  verticalSpace(5),
+
                                   Text(
                                     productData['productName'],
                                     style: TextStyles.abeezee16px400wPblack,
                                   ),
-                                  verticalSpace(3),
 
                                   Row(
                                     children: [
@@ -142,7 +141,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                           return Text(
                                             '${snapshot.data} 도착예정',
                                             style:
-                                                TextStyles.abeezee16px400wP600,
+                                                TextStyles.abeezee14px400wP600,
                                           );
                                         },
                                       ),
@@ -151,7 +150,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
 
                                   Text(
                                     '${cartData['price']} 원',
-                                    style: TextStyles.abeezee13px400wPblack,
+                                    style: TextStyles.abeezee16px400wPblack,
                                   ),
                                 ],
                               ),

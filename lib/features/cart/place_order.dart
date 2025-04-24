@@ -56,7 +56,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 16.h,
+                    spacing: 5.h,
                     children: [
                       Text(
                         '베송지',
@@ -118,6 +118,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                           height: 1.40.h,
                         ),
                       ),
+                      verticalSpace(5),
                       Text(
                         '간편결제',
                         style: TextStyle(

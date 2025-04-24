@@ -135,7 +135,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         ),
                       ),
                       Text(
-                        '${widget.arrivalDay} - ${widget.product.freeShipping == true ? '무료 배송' : '배송료가 부과됩니다'}',
+                        '${widget.arrivalDay} 도착예정 - ${widget.product.freeShipping == true ? '무료 배송' : '배송료가 부과됩니다'}',
                         style: TextStyle(
                           color: const Color(0xFF747474),
                           fontSize: 14.sp,
@@ -226,13 +226,8 @@ class _ItemDetailsState extends State<ItemDetails> {
                                 ),
                               ),
                               Text(
-                                '(1개 ${perUnit}원)',
-                                style: TextStyle(
-                                  fontFamily: 'ABeeZee',
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 14.sp,
-                                  height: 1.4.h,
-                                ),
+                                '(1개 ${perUnit.round()}원)',
+                                style: TextStyles.abeezee14px400wP600,
                               ),
                             ],
                           ),
@@ -327,7 +322,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       Flexible(
                         child: Text(
-                          '${widget.product.meridiem == 'AM' ? '오전' : '오후 '} ${widget.product.baselineTime} 시',
+                          '${widget.product.meridiem == 'AM' ? '오전' : '오후 '}${widget.product.baselineTime}시',
                           style: TextStyle(
                             color: const Color(0xFF747474),
                             fontSize: 14.sp,

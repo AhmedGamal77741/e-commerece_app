@@ -77,14 +77,17 @@ class _ShopState extends State<Shop> {
         body: Center(child: Text('No categories available')),
       );
     }
-
+    int initialIndex = _categories.length > 4 ? 3 : 0;
     return DefaultTabController(
       length: _categories.length,
+      initialIndex: initialIndex,
+
       child: Scaffold(
         appBar: AppBar(
           toolbarHeight: 70.h,
           backgroundColor: ColorsManager.white,
           title: TabBar(
+            padding: EdgeInsets.zero,
             labelStyle: TextStyle(
               fontSize: 16.sp,
               decoration: TextDecoration.none,
@@ -151,9 +154,9 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
           context.pushNamed(Routes.shopSearchScreen);
         },
         elevation: 0,
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
         shape: const CircleBorder(),
-        child: const Icon(Icons.search, color: Colors.white),
+        child: Image.asset('assets/010.png'),
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 12.w),
