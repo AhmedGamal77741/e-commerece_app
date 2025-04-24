@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text('아이디', style: TextStyles.abeezee16px400wPblack),
                       UnderlineTextField(
                         controller: emailController,
-                        hintText: '전화번호',
+                        hintText: '이메일',
                         obscureText: false,
                         keyboardType: TextInputType.emailAddress,
                         errorMsg: _errorMsg,

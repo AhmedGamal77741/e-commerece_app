@@ -152,7 +152,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                   ),
                                   horizontalSpace(5),
                                   Text(
-                                    '오늘 출발: (${productData['meridiem'] == 'AM' ? '오전' : '오후 '}${productData['baselineTime']}시까지',
+                                    '오늘 출발: ${productData['meridiem'] == 'AM' ? '오전' : '오후 '}${productData['baselineTime']}시까지',
                                     style: TextStyles.abeezee14px400wP600,
                                   ),
                                 ],

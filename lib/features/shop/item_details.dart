@@ -613,12 +613,12 @@ class _ItemDetailsState extends State<ItemDetails> {
                     quantity:
                         widget
                             .product
-                            .pricePoints[int.parse(_selectedOption ?? '1')]
+                            .pricePoints[int.parse(_selectedOption ?? '0')]
                             .quantity,
                     price:
                         widget
                             .product
-                            .pricePoints[int.parse(_selectedOption ?? '1')]
+                            .pricePoints[int.parse(_selectedOption ?? '0')]
                             .price,
                   );
                   context.pushNamed(Routes.placeOrderScreen);
