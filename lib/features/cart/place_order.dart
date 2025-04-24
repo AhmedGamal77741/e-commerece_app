@@ -312,14 +312,17 @@ class _PlaceOrderState extends State<PlaceOrder> {
                             txt: '주문',
                             func: () async {
                               if (!_formKey.currentState!.validate()) return;
+
                               final user = FirebaseAuth.instance.currentUser;
                               if (user == null) return;
+
                               final cartSnapshot =
                                   await FirebaseFirestore.instance
                                       .collection('users')
                                       .doc(user.uid)
                                       .collection('cart')
                                       .get();
+
                               final cartItems =
                                   cartSnapshot.docs
                                       .map((doc) => doc.data())
@@ -331,6 +334,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                       .collection('orders')
                                       .doc();
                               final orderId = docRef.id;
+
                               final orderData = {
                                 'orderId': orderId,
                                 'userId': user.uid,
@@ -354,17 +358,82 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                         )
                                         .toList(),
                               };
+
                               try {
+                                // Step 1: Validate stock for all items
+                                for (var item in cartItems) {
+                                  final productId = item['product_id'];
+                                  final quantityOrdered = item['quantity'];
+
+                                  final productRef = FirebaseFirestore.instance
+                                      .collection('products')
+                                      .doc(productId);
+                                  final productSnapshot =
+                                      await productRef.get();
+
+                                  if (!productSnapshot.exists) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Product with ID $productId no longer exists.',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  final currentStock =
+                                      productSnapshot.data()?['stock'] ?? 0;
+
+                                  if (currentStock < quantityOrdered) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Not enough stock for product ID $productId.',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                }
+
+                                // Step 2: Place the order
                                 await docRef.set(orderData);
+
+                                // Step 3: Update stock
+                                for (var item in cartItems) {
+                                  final productId = item['product_id'];
+                                  final quantityOrdered = item['quantity'];
+
+                                  final productRef = FirebaseFirestore.instance
+                                      .collection('products')
+                                      .doc(productId);
+                                  await productRef.update({
+                                    'stock': FieldValue.increment(
+                                      -quantityOrdered,
+                                    ),
+                                  });
+                                }
+
+                                // Step 4: Clear cart
                                 for (var doc in cartSnapshot.docs) {
                                   await doc.reference.delete();
-                                  mounted;
                                 }
-                                context.pushReplacementNamed(
-                                  Routes.orderCompleteScreen,
-                                );
+
+                                if (mounted) {
+                                  context.pushReplacementNamed(
+                                    Routes.orderCompleteScreen,
+                                  );
+                                }
                               } catch (e) {
                                 print('Failed to place order: $e');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Failed to place order. Please try again.',
+                                    ),
+                                  ),
+                                );
                               }
                             },
                             color: Colors.black,
