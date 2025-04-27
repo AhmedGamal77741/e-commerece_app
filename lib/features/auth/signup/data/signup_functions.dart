@@ -90,9 +90,10 @@ class FirebaseUserRepo {
       try {
         // await user.user!.updateDisplayName(myUser.name);
         // await user.user!.updatePhotoURL(myUser.url);
-        await usersCollection
-            .doc(myUser.userId)
-            .set(myUser.toEntity().toDocument());
+        await usersCollection.doc(myUser.userId).set({
+          ...myUser.toEntity().toDocument(),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       } catch (e) {
         // log(e.toString());
         rethrow;
