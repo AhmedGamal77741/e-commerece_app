@@ -7,13 +7,14 @@ class MyUserEntity {
 
   String url;
   List<String>? blocked = [];
-
+  bool isSub;
   MyUserEntity({
     required this.userId,
     required this.email,
     required this.name,
     required this.url,
     this.blocked,
+    this.isSub = false,
   });
 
   Map<String, Object?> toDocument() {
@@ -23,6 +24,7 @@ class MyUserEntity {
       'name': name,
       'url': url,
       'blocked': blocked,
+      'isSub': isSub,
     };
   }
 
@@ -33,6 +35,7 @@ class MyUserEntity {
       name: doc['name'],
       url: doc['url'],
       blocked: doc['blocked'],
+      isSub: doc['isSub'],
     );
   }
 }

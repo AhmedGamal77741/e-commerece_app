@@ -8,17 +8,25 @@ class MyUser {
   String name;
 
   String url;
+  bool isSub;
   MyUser({
     required this.userId,
     required this.email,
     required this.name,
     required this.url,
+    this.isSub = false,
   });
 
   static final empty = MyUser(userId: '', email: '', name: '', url: '');
 
   MyUserEntity toEntity() {
-    return MyUserEntity(userId: userId, email: email, name: name, url: url);
+    return MyUserEntity(
+      userId: userId,
+      email: email,
+      name: name,
+      url: url,
+      isSub: isSub,
+    );
   }
 
   static MyUser fromEntity(MyUserEntity entity) {
@@ -27,6 +35,7 @@ class MyUser {
       email: entity.email,
       name: entity.name,
       url: entity.url,
+      isSub: entity.isSub,
     );
   }
 
