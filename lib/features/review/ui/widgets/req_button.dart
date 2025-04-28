@@ -19,8 +19,8 @@ class ReqButton extends StatelessWidget {
       onPressed: func,
       style: TextButton.styleFrom(
         backgroundColor: color,
-        fixedSize: Size(150.w, 100.h),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        fixedSize: Size(177.w, 83.h),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       child: Text(txt, style: TextStyles.abeezee23px400wW),
     );

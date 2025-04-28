@@ -9,7 +9,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ExchangeOrRefund extends StatefulWidget {
-  const ExchangeOrRefund({super.key});
+  final String userId;
+  final String orderId;
+  const ExchangeOrRefund({
+    super.key,
+    required this.userId,
+    required this.orderId,
+  });
 
   @override
   State<ExchangeOrRefund> createState() => _ExchangeOrRefundState();
@@ -22,10 +28,7 @@ class _ExchangeOrRefundState extends State<ExchangeOrRefund> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: ColorsManager.white,
-        title: Text(
-          'Request Exchange/Refund',
-          style: TextStyles.abeezee16px400wPblack,
-        ),
+        title: Text('교환/반품 요청', style: TextStyles.abeezee16px400wPblack),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -38,7 +41,7 @@ class _ExchangeOrRefundState extends State<ExchangeOrRefund> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ReqButton(
-                      txt: '환불',
+                      txt: '교환/반품 요청',
                       color:
                           isRefund
                               ? ColorsManager.primaryblack
@@ -53,7 +56,7 @@ class _ExchangeOrRefundState extends State<ExchangeOrRefund> {
                     ),
                     horizontalSpace(20),
                     ReqButton(
-                      txt: '교환',
+                      txt: '새상품 교환',
                       color:
                           isRefund
                               ? ColorsManager.primary500
@@ -69,14 +72,12 @@ class _ExchangeOrRefundState extends State<ExchangeOrRefund> {
                   ],
                 ),
                 verticalSpace(50),
-                isRefund ? RefundBody() : ExchangeBody(),
-                verticalSpace(50),
-                WideTextButton(
-                  txt: '요청',
-                  color: ColorsManager.primary500,
-                  txtColor: ColorsManager.white,
-                  func: () {},
-                ),
+                isRefund
+                    ? RefundBody()
+                    : ExchangeBody(
+                      userId: widget.userId,
+                      orderId: widget.orderId,
+                    ),
               ],
             ),
           ),

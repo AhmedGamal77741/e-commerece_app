@@ -20,7 +20,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 12.h),
+      padding: EdgeInsets.only(left: 10.w, top: 12.h, bottom: 12.h),
       child: StreamBuilder(
         stream:
             FirebaseFirestore.instance
@@ -109,7 +109,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           ),
                         ),
                         Padding(
-                          padding: EdgeInsets.only(left: 10.0),
+                          padding: EdgeInsets.only(left: 5.w),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -146,21 +146,21 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
                                       return Text(
                                         '${snapshot.data} 도착예정',
-                                        style: TextStyles.abeezee14px400wP600,
+                                        style: TextStyles.abeezee11px400wP600,
                                       );
                                     },
                                   ),
                                   horizontalSpace(5),
                                   Text(
                                     '오늘 출발: ${productData['meridiem'] == 'AM' ? '오전' : '오후 '}${productData['baselineTime']}시까지',
-                                    style: TextStyles.abeezee14px400wP600,
+                                    style: TextStyles.abeezee13px400wP600,
                                   ),
                                 ],
                               ),
 
                               Text(
                                 '${productData['pricePoints'][0]['price']} 원',
-                                style: TextStyles.abeezee16px400wPblack,
+                                style: TextStyles.abeezee13px400wPblack,
                               ),
                             ],
                           ),

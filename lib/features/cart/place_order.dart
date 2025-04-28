@@ -327,37 +327,6 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                   cartSnapshot.docs
                                       .map((doc) => doc.data())
                                       .toList();
-                              final totalAmount = totalSnapshot.data;
-
-                              final docRef =
-                                  FirebaseFirestore.instance
-                                      .collection('orders')
-                                      .doc();
-                              final orderId = docRef.id;
-
-                              final orderData = {
-                                'orderId': orderId,
-                                'userId': user.uid,
-                                'deliveryAddress':
-                                    deliveryAddressController.text.trim(),
-                                'deliveryInstructions':
-                                    deliveryInstructionsController.text.trim(),
-                                'cashReceipt':
-                                    cashReceiptController.text.trim(),
-                                'paymentMethod': 'naver pay',
-                                'orderDate': DateTime.now().toIso8601String(),
-                                'totalPrice': totalAmount,
-                                'status': 'pending',
-                                'items':
-                                    cartItems
-                                        .map(
-                                          (item) => {
-                                            'productId': item['product_id'],
-                                            'quantity': item['quantity'],
-                                          },
-                                        )
-                                        .toList(),
-                              };
 
                               try {
                                 // Step 1: Validate stock for all items
@@ -397,14 +366,43 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                   }
                                 }
 
-                                // Step 2: Place the order
-                                await docRef.set(orderData);
-
-                                // Step 3: Update stock
+                                // Step 2: Create an order document **for each product**
                                 for (var item in cartItems) {
                                   final productId = item['product_id'];
                                   final quantityOrdered = item['quantity'];
+                                  final price = item['price'];
 
+                                  final docRef =
+                                      FirebaseFirestore.instance
+                                          .collection('orders')
+                                          .doc();
+                                  final orderId = docRef.id;
+
+                                  final orderData = {
+                                    'orderId': orderId,
+                                    'userId': user.uid,
+                                    'deliveryAddress':
+                                        deliveryAddressController.text.trim(),
+                                    'deliveryInstructions':
+                                        deliveryInstructionsController.text
+                                            .trim(),
+                                    'cashReceipt':
+                                        cashReceiptController.text.trim(),
+                                    'paymentMethod': 'naver pay',
+                                    'orderDate':
+                                        DateTime.now().toIso8601String(),
+                                    'totalPrice': price,
+                                    'productId': productId,
+                                    'quantity': quantityOrdered,
+                                    "courier": '',
+                                    "trackingNumber": '',
+                                    "trackingEvents": [],
+                                    "orderStatus": "orderComplete",
+                                  };
+
+                                  await docRef.set(orderData);
+
+                                  // Step 3: Update stock
                                   final productRef = FirebaseFirestore.instance
                                       .collection('products')
                                       .doc(productId);

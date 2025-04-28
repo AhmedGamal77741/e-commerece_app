@@ -34,10 +34,10 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ShopSearch());
       // case Routes.itemDetailsScreen:
       //   return MaterialPageRoute(builder: (_) => ItemDetails());
-      case Routes.trackorder:
-        return MaterialPageRoute(builder: (_) => const TrackOrder());
-      case Routes.exchangeOrRefund:
-        return MaterialPageRoute(builder: (_) => const ExchangeOrRefund());
+      // case Routes.trackorder:
+      //   return MaterialPageRoute(builder: (_) => const TrackOrder());
+      // case Routes.exchangeOrRefund:
+      //   return MaterialPageRoute(builder: (_) => const ExchangeOrRefund());
       case Routes.cancelSubscription:
         return MaterialPageRoute(builder: (_) => const CancelSubscription());
       case Routes.authScreen:

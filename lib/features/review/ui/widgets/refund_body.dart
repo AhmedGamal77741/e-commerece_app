@@ -2,6 +2,7 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
+import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -28,7 +29,7 @@ class RefundBody extends StatelessWidget {
             children: [
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 25.h),
-                child: Text('이유', style: TextStyles.abeezee16px400wPblack),
+                child: Text('사유', style: TextStyles.abeezee16px400wPblack),
               ),
               Divider(color: ColorsManager.primary100),
               TextFormField(
@@ -36,7 +37,7 @@ class RefundBody extends StatelessWidget {
                 minLines: 4,
                 keyboardType: TextInputType.multiline,
                 decoration: InputDecoration(
-                  hintText: "입장하다",
+                  hintText: "입력",
                   hintStyle: TextStyles.abeezee16px400wP600,
                   contentPadding: EdgeInsets.all(12),
                   border: InputBorder.none,
@@ -63,10 +64,10 @@ class RefundBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('계좌 번호', style: TextStyles.abeezee16px400wPblack),
+                Text('계좌번호', style: TextStyles.abeezee16px400wPblack),
                 UnderlineTextField(
                   controller: nameController,
-                  hintText: '이름',
+                  hintText: '입력',
                   obscureText: false,
                   keyboardType: TextInputType.name,
                   validator: (val) {
@@ -79,10 +80,10 @@ class RefundBody extends StatelessWidget {
                   },
                 ),
                 verticalSpace(15),
-                Text('계좌 번호', style: TextStyles.abeezee16px400wPblack),
+                Text('은행', style: TextStyles.abeezee16px400wPblack),
                 UnderlineTextField(
                   controller: nameController,
-                  hintText: '이름',
+                  hintText: '입력',
                   obscureText: false,
                   keyboardType: TextInputType.name,
                   validator: (val) {
@@ -95,10 +96,10 @@ class RefundBody extends StatelessWidget {
                   },
                 ),
                 verticalSpace(15),
-                Text('계좌 소유자', style: TextStyles.abeezee16px400wPblack),
+                Text('예금주', style: TextStyles.abeezee16px400wPblack),
                 UnderlineTextField(
                   controller: nameController,
-                  hintText: '이름',
+                  hintText: '입력',
                   obscureText: false,
                   keyboardType: TextInputType.name,
                   validator: (val) {
@@ -113,6 +114,13 @@ class RefundBody extends StatelessWidget {
               ],
             ),
           ),
+        ),
+        verticalSpace(50),
+        WideTextButton(
+          txt: '요청하기',
+          color: ColorsManager.primary500,
+          txtColor: ColorsManager.white,
+          func: () {},
         ),
       ],
     );

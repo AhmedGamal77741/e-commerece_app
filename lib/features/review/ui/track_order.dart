@@ -7,32 +7,47 @@ import 'package:ecommerece_app/features/review/ui/widgets/table_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class TrackOrder extends StatelessWidget {
-  const TrackOrder({super.key});
+class TrackOrder extends StatefulWidget {
+  final Map<String, dynamic> order;
+  final String arrivalDate;
+  const TrackOrder({super.key, required this.order, required this.arrivalDate});
+
+  @override
+  State<TrackOrder> createState() => _TrackOrderState();
+}
+
+class _TrackOrderState extends State<TrackOrder> {
+  late Map<String, dynamic> order;
+  late String arrivalDate;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    order = widget.order;
+    arrivalDate = widget.arrivalDate;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: ColorsManager.white,
-        title: Text('Track Order', style: TextStyles.abeezee16px400wPblack),
+        title: Text('배송조회', style: TextStyles.abeezee16px400wPblack),
         centerTitle: true,
       ),
       body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
         child: Center(
           child: Column(
             children: [
-              Text(
-                '예상 도착일 3/27 (목요일)',
-                style: TextStyles.abeezee20px400wPblack,
-              ),
+              Text(arrivalDate, style: TextStyles.abeezee20px400wPblack),
               verticalSpace(40),
-              DeliveryStatus(),
+              DeliveryStatus(orderStatus: order['orderStatus']),
               verticalSpace(10),
-              DeliveryTextRow(),
+              DeliveryTextRow(orderStatus: order['orderStatus']),
               verticalSpace(30),
-              TableContainer(),
+              TableContainer(orderId: order['orderId']),
             ],
           ),
         ),
