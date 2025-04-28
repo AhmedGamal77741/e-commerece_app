@@ -36,7 +36,12 @@ class _HomeScreenState extends State<HomeScreen> {
   // Async function that uses await
   Future<void> _loadData() async {
     try {
-      currentUser = await FirebaseUserRepo().user.first;
+      currentUser = MyUser(
+        userId: FirebaseAuth.instance.currentUser!.uid,
+        email: FirebaseAuth.instance.currentUser!.email!,
+        name: FirebaseAuth.instance.currentUser!.displayName!,
+        url: FirebaseAuth.instance.currentUser!.photoURL!,
+      );
       setState(() {
         _isLoading = false;
       });

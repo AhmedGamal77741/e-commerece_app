@@ -53,13 +53,14 @@ class FirebaseUserRepo {
       if (firebaseUser == null) {
         yield MyUser.empty;
       } else {
-        yield await usersCollection
-            .doc(firebaseUser.uid)
-            .get()
-            .then(
-              (val) =>
-                  MyUser.fromEntity(MyUserEntity.fromDocument(val.data()!)),
-            );
+        yield await usersCollection.doc(firebaseUser.uid).get().then((
+          val,
+        ) async {
+          final user = FirebaseAuth.instance.currentUser!;
+          await user.updateDisplayName(val.data()!['name']);
+          await user.updatePhotoURL(val.data()!['url']);
+          return MyUser.fromEntity(MyUserEntity.fromDocument(val.data()!));
+        });
       }
     });
   }

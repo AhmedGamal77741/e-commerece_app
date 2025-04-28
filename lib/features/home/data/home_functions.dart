@@ -92,12 +92,22 @@ Future<void> blockUser({required String userIdToBlock}) async {
         .collection('users')
         .doc(currentUser.uid);
 
-    // Use arrayUnion to add the user ID to the blocked array
-    // This operation is atomic and won't add duplicates
+    final blocksCollection = FirebaseFirestore.instance.collection('blocks');
+
+    final newBlockRef = blocksCollection.doc();
+
     await userRef.update({
       'blocked': FieldValue.arrayUnion([userIdToBlock]),
     });
 
+    await newBlockRef.set({
+      'blockedUserId': userIdToBlock,
+      'blockedBy': currentUser.uid,
+      'blockId': newBlockRef.id,
+      /*       'createdAt': FieldValue.serverTimestamp(),
+      'status': 'pending',
+      'resolved': false,  */
+    });
     print('User blocked successfully!');
   } catch (e) {
     print('Error blocking user: $e');
@@ -112,7 +122,6 @@ Future<void> reportUser({required String reportedUserId}) async {
 
     final reportsCollection = FirebaseFirestore.instance.collection('reports');
 
-    // Create a new document with auto-generated ID
     final newReportRef = reportsCollection.doc();
 
     await newReportRef.set({
