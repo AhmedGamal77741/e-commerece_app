@@ -17,6 +17,7 @@ class ItemDetails extends StatefulWidget {
     super.key,
     required this.product,
     required this.arrivalDay,
+    String? itemId,
   });
 
   @override

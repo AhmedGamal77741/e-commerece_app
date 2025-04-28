@@ -247,7 +247,6 @@ class _CommentsState extends State<Comments> {
                     ),
                   ),
                   SizedBox(width: 10.w),
-
                   IconButton(
                     padding: EdgeInsets.zero,
                     constraints: BoxConstraints(),

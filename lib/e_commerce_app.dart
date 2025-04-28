@@ -27,7 +27,7 @@ class EcommerceApp extends StatelessWidget {
                     designSize: const Size(700, 926),
                     minTextAdapt: true,
                     builder:
-                        (context, child) => MaterialApp(
+                        (context, child) => MaterialApp.router(
                           theme: ThemeData(
                             scaffoldBackgroundColor: Colors.white,
                             unselectedWidgetColor: Colors.grey,
@@ -38,8 +38,7 @@ class EcommerceApp extends StatelessWidget {
                             ),
                           ),
                           debugShowCheckedModeBanner: false,
-                          onGenerateRoute: appRouter.generateRoute,
-                          home: const LandingScreen(),
+                          routerConfig: AppRouter.router,
                         ),
                   ),
                 ),
@@ -51,7 +50,7 @@ class EcommerceApp extends StatelessWidget {
             designSize: const Size(428, 926),
             minTextAdapt: true,
             builder:
-                (context, child) => MaterialApp(
+                (context, child) => MaterialApp.router(
                   theme: ThemeData(
                     scaffoldBackgroundColor: Colors.white,
                     unselectedWidgetColor: Colors.grey,
@@ -62,8 +61,7 @@ class EcommerceApp extends StatelessWidget {
                     ),
                   ),
                   debugShowCheckedModeBanner: false,
-                  onGenerateRoute: appRouter.generateRoute,
-                  home: const LandingScreen(),
+                  routerConfig: AppRouter.router,
                 ),
           );
         }

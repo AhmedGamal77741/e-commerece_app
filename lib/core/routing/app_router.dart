@@ -12,45 +12,87 @@ import 'package:ecommerece_app/features/review/ui/review_screen.dart';
 import 'package:ecommerece_app/features/review/ui/track_order.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/shop/shop_search.dart';
+import 'package:ecommerece_app/landing.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class AppRouter {
-  Route generateRoute(RouteSettings settings) {
-    switch (settings.name) {
-      case Routes.navBar:
-        return MaterialPageRoute(builder: (_) => const NavBar());
-      case Routes.reviewScreen:
-        return MaterialPageRoute(builder: (_) => const ReviewScreen());
+  static final router = GoRouter(
+    initialLocation: Routes.landingScreen,
+    routes: [
+      GoRoute(
+        path: Routes.landingScreen,
+        builder: (context, state) => const LandingScreen(),
+        routes: [
+          GoRoute(
+            path: Routes.navBar,
+            builder: (context, state) => const NavBar(),
+          ),
+          GoRoute(
+            path: Routes.reviewScreen,
+            builder: (context, state) => const ReviewScreen(),
+          ),
+          GoRoute(
+            path: Routes.notificationsScreen,
+            builder: (context, state) => const Notifications(),
+          ),
+          GoRoute(
+            path: Routes.addPostScreen,
+            builder: (context, state) => const AddPost(),
+          ),
+          GoRoute(
+            path: Routes.placeOrderScreen,
+            builder: (context, state) => const PlaceOrder(),
+          ),
+          GoRoute(
+            path: Routes.orderCompleteScreen,
+            builder: (context, state) => const OrderComplete(),
+          ),
+          GoRoute(
+            path: Routes.shopSearchScreen,
+            builder: (context, state) => const ShopSearch(),
+          ),
+          GoRoute(
+            path: Routes.commentsScreen,
+            builder: (context, state) {
+              final postId = state.uri.queryParameters['postId'] ?? '';
+              return Comments(postId: postId);
+            },
+          ),
+          // Uncomment and update these routes as needed
+          /*
+      GoRoute(
+        path: Routes.itemDetailsScreen,
+        builder: (context, state) => ItemDetails(),
+      ),
+      GoRoute(
+        path: Routes.trackorder,
+        builder: (context, state) => const TrackOrder(),
+      ),
+      GoRoute(
+        path: Routes.exchangeOrRefund,
+        builder: (context, state) => const ExchangeOrRefund(),
+      ),
+      */
+          GoRoute(
+            path: Routes.cancelSubscription,
+            builder: (context, state) => const CancelSubscription(),
+          ),
 
-      case Routes.notificationsScreen:
-        return MaterialPageRoute(builder: (_) => const Notifications());
-      case Routes.addPostScreen:
-        return MaterialPageRoute(builder: (_) => const AddPost());
-      case Routes.placeOrderScreen:
-        return MaterialPageRoute(builder: (_) => const PlaceOrder());
-      case Routes.orderCompleteScreen:
-        return MaterialPageRoute(builder: (_) => const OrderComplete());
-      case Routes.shopSearchScreen:
-        return MaterialPageRoute(builder: (_) => const ShopSearch());
-      // case Routes.itemDetailsScreen:
-      //   return MaterialPageRoute(builder: (_) => ItemDetails());
-      // case Routes.trackorder:
-      //   return MaterialPageRoute(builder: (_) => const TrackOrder());
-      // case Routes.exchangeOrRefund:
-      //   return MaterialPageRoute(builder: (_) => const ExchangeOrRefund());
-      case Routes.cancelSubscription:
-        return MaterialPageRoute(builder: (_) => const CancelSubscription());
-      case Routes.authScreen:
-        return MaterialPageRoute(builder: (_) => const AuthScreen());
-      default:
-        return MaterialPageRoute(
-          builder:
-              (_) => Scaffold(
-                body: Center(
-                  child: Text('no route defined for ${settings.name} '),
-                ),
-              ),
-        );
-    }
-  }
+          /*
+      GoRoute(
+        path: '${Routes.itemDetailsScreen}/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id'];
+          return ItemDetails(itemId: id);
+        },
+      ),       */
+        ],
+      ),
+    ],
+    errorBuilder:
+        (context, state) => Scaffold(
+          body: Center(child: Text('No route defined for ${state.uri.path}')),
+        ),
+  );
 }

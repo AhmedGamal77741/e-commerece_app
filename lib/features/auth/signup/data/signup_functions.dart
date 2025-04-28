@@ -113,6 +113,7 @@ class FirebaseUserRepo {
         password: password,
       );
       var user = result.user;
+      print(user);
       return user;
     } catch (e) {
       return null;

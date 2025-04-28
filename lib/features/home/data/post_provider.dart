@@ -30,24 +30,55 @@ class PostsProvider extends ChangeNotifier {
     if (_isListening) return;
 
     _isListening = true;
-    _firestore
-        .collection('posts')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .listen((snapshot) {
-          for (var change in snapshot.docChanges) {
-            final String postId = change.doc.id;
-            _posts[postId] = change.doc.data()!;
-            _changedPostIds.add(postId);
 
-            // If we're already loading comments for this post, refresh them
-            if (_comments.containsKey(postId)) {
-              loadComments(postId);
-            }
-          }
-          notifyListeners();
-          _changedPostIds.clear();
-        });
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+    final currentUserId = currentUser.uid;
+
+    FirebaseFirestore.instance.collection('users').doc(currentUserId).get().then(
+      (userDoc) {
+        if (!userDoc.exists) return;
+
+        // Extract blocked user IDs
+        List<String> blockedUsers = List<String>.from(
+          userDoc.data()?['blocked'] ?? [],
+        );
+
+        _firestore
+            .collection('posts')
+            .orderBy('createdAt', descending: true)
+            .snapshots()
+            .listen((snapshot) {
+              for (var change in snapshot.docChanges) {
+                final postData = change.doc.data()!;
+                final String postUserId = postData['userId'];
+                final String postId = change.doc.id;
+
+                // Skip posts from blocked users
+                if (blockedUsers.contains(postUserId)) {
+                  continue;
+                }
+
+                List<dynamic> notInterestedBy = List<dynamic>.from(
+                  postData['notInterestedBy'] ?? [],
+                );
+                if (notInterestedBy.contains(currentUserId)) {
+                  continue;
+                }
+
+                _posts[postId] = change.doc.data()!;
+                _changedPostIds.add(postId);
+
+                // If we're already loading comments for this post, refresh them
+                if (_comments.containsKey(postId)) {
+                  loadComments(postId);
+                }
+              }
+              notifyListeners();
+              _changedPostIds.clear();
+            });
+      },
+    );
   }
 
   // Load comments for a specific post

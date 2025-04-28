@@ -62,6 +62,75 @@ Future<void> addComment(String postId, String text) async {
   await batch.commit();
 }
 
+Future<void> markPostNotInterested({required String postId}) async {
+  try {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) throw Exception("User not logged in");
+
+    final postRef = FirebaseFirestore.instance.collection('posts').doc(postId);
+
+    // Add the current user's ID to the notInterestedBy array
+    // If the user ID is already in the array, it won't be added again
+    await postRef.update({
+      'notInterestedBy': FieldValue.arrayUnion([currentUser.uid]),
+    });
+
+    print('Post marked as not interested successfully!');
+  } catch (e) {
+    print('Error marking post as not interested: $e');
+    throw e; // Re-throw to handle in UI
+  }
+}
+
+Future<void> blockUser({required String userIdToBlock}) async {
+  try {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) throw Exception("User not logged in");
+
+    // Reference to the current user's document
+    final userRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid);
+
+    // Use arrayUnion to add the user ID to the blocked array
+    // This operation is atomic and won't add duplicates
+    await userRef.update({
+      'blocked': FieldValue.arrayUnion([userIdToBlock]),
+    });
+
+    print('User blocked successfully!');
+  } catch (e) {
+    print('Error blocking user: $e');
+    throw e; // Re-throw to handle in UI
+  }
+}
+
+Future<void> reportUser({required String reportedUserId}) async {
+  try {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) throw Exception("User not logged in");
+
+    final reportsCollection = FirebaseFirestore.instance.collection('reports');
+
+    // Create a new document with auto-generated ID
+    final newReportRef = reportsCollection.doc();
+
+    await newReportRef.set({
+      'reportedUserId': reportedUserId,
+      'reportingUserId': currentUser.uid,
+      'reportId': newReportRef.id,
+      /*       'createdAt': FieldValue.serverTimestamp(),
+      'status': 'pending',
+      'resolved': false,  */
+    });
+
+    print('User reported successfully!');
+  } catch (e) {
+    print('Error reporting user: $e');
+    throw e; // Re-throw to handle in UI
+  }
+}
+
 Future<void> uploadPost({required String text, required String imgUrl}) async {
   try {
     final currentUser = FirebaseAuth.instance.currentUser;

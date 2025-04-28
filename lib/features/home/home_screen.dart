@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
@@ -8,6 +9,7 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -43,7 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
       });
       print(e);
-      throw e;
     }
   }
 
@@ -138,7 +139,103 @@ class _HomeScreenState extends State<HomeScreen> {
                     //POSTS
                     Divider(),
                     Expanded(
-                      child: Selector<PostsProvider, List<String>>(
+                      child: StreamBuilder<DocumentSnapshot>(
+                        stream:
+                            FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(currentUser!.userId)
+                                .snapshots(),
+                        builder: (context, userSnapshot) {
+                          if (userSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Center(child: CircularProgressIndicator());
+                          }
+
+                          if (userSnapshot.hasError) {
+                            return Center(
+                              child: Text(
+                                'Error loading user data: ${userSnapshot.error}',
+                              ),
+                            );
+                          }
+
+                          if (!userSnapshot.hasData ||
+                              !userSnapshot.data!.exists) {
+                            return Center(
+                              child: Text('User profile not found'),
+                            );
+                          }
+
+                          List<String> blockedUsers = List<String>.from(
+                            userSnapshot.data!.get('blocked') ?? [],
+                          );
+                          return StreamBuilder<QuerySnapshot>(
+                            stream:
+                                FirebaseFirestore.instance
+                                    .collection('posts')
+                                    .orderBy('createdAt', descending: true)
+                                    .snapshots(),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasError) {
+                                return Text('Error: ${snapshot.error}');
+                              }
+
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return CircularProgressIndicator();
+                              }
+
+                              // Get current user information
+                              final currentUser =
+                                  FirebaseAuth.instance.currentUser;
+                              if (currentUser == null) {
+                                return Text(
+                                  'You need to be logged in to view posts',
+                                );
+                              }
+
+                              // Filter posts
+                              final List<DocumentSnapshot> filteredPosts =
+                                  snapshot.data!.docs.where((doc) {
+                                    Map<String, dynamic> data =
+                                        doc.data() as Map<String, dynamic>;
+
+                                    // Check if post is from a blocked user
+                                    if (blockedUsers.contains(data['userId'])) {
+                                      return false;
+                                    }
+
+                                    // Check if user marked post as not interested
+                                    List<dynamic> notInterestedBy =
+                                        List<dynamic>.from(
+                                          data['notInterestedBy'] ?? [],
+                                        );
+                                    if (notInterestedBy.contains(
+                                      currentUser.uid,
+                                    )) {
+                                      return false;
+                                    }
+
+                                    return true;
+                                  }).toList();
+
+                              return ListView.builder(
+                                itemCount: filteredPosts.length,
+                                itemBuilder: (context, index) {
+                                  final post =
+                                      filteredPosts[index].data()
+                                          as Map<String, dynamic>;
+                                  return PostItem(
+                                    postId: post['postId'],
+                                    fromComments: false,
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      /* Selector<PostsProvider, List<String>>(
                         selector: (_, provider) => provider.postIds,
                         builder: (context, postIds, child) {
                           if (postIds.isEmpty) {
@@ -176,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                           );
                         },
-                      ),
+                      ), */
                     ),
                   ],
                 ),

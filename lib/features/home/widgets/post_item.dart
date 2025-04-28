@@ -1,15 +1,16 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_entity.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
-import 'package:ecommerece_app/features/home/models/comment_model.dart';
 import 'package:ecommerece_app/features/home/widgets/post_actions.dart';
 import 'package:ecommerece_app/features/home/widgets/show_post_options.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -69,11 +70,8 @@ class PostItem extends StatelessWidget {
                       child: InkWell(
                         onTap: () {
                           if (!fromComments) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => Comments(postId: postId),
-                              ),
+                            context.push(
+                              '/${Routes.commentsScreen}?postId=$postId',
                             );
                           }
                         },
@@ -91,11 +89,17 @@ class PostItem extends StatelessWidget {
                                     myuser.name,
                                     style: TextStyles.abeezee16px400wPblack,
                                   ),
-                                  IconButton(
-                                    icon: Icon(Icons.more_horiz),
-                                    onPressed:
-                                        () => showPostMenu(context, postId),
-                                  ),
+                                  if (myuser.userId !=
+                                      FirebaseAuth.instance.currentUser!.uid)
+                                    IconButton(
+                                      icon: Icon(Icons.more_horiz),
+                                      onPressed:
+                                          () => showPostMenu(
+                                            context,
+                                            postId,
+                                            myuser.userId,
+                                          ),
+                                    ),
                                 ],
                               ),
 

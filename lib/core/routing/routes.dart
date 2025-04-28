@@ -1,15 +1,17 @@
 class Routes {
-  static const String reviewScreen = '/reviewScreen';
-  static const String loginScreen = '/loginScreen';
-  static const String notificationsScreen = '/notificationsScreen';
-  static const String addPostScreen = '/addPostScreen';
-  static const String placeOrderScreen = '/placeOrderScreen';
-  static const String orderCompleteScreen = '/orderCompleteScreen';
-  static const String shopSearchScreen = '/shopSearchScreen';
-  static const String itemDetailsScreen = '/itemDetailsScreen';
-  static const String navBar = '/navBar';
-  static const String trackorder = '/trackorder';
-  static const String exchangeOrRefund = '/exchangeOrRefund';
-  static const String cancelSubscription = '/cancelSubscription';
-  static const String authScreen = '/';
+  static const String reviewScreen = 'review';
+  static const String loginScreen = 'login';
+  static const String notificationsScreen = 'notifications';
+  static const String addPostScreen = 'add-post';
+  static const String placeOrderScreen = 'place-order';
+  static const String orderCompleteScreen = 'order-complete';
+  static const String shopSearchScreen = 'shop-search';
+  static const String itemDetailsScreen = 'item-details';
+  static const String navBar = 'nav-bar';
+  static const String trackorder = 'track-order';
+  static const String exchangeOrRefund = 'exchange-or-refund';
+  static const String cancelSubscription = 'cancel-subscription';
+  static const String commentsScreen = 'comment';
+  static const String landingScreen = '/';
+  static const String authScreen = 'auth';
 }
