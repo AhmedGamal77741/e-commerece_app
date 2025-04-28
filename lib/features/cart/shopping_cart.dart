@@ -10,6 +10,7 @@ import 'package:ecommerece_app/features/cart/delete_func.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 class ShoppingCart extends StatefulWidget {
   const ShoppingCart({super.key});
@@ -231,7 +232,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                         padding: EdgeInsets.only(right: 20.w),
                         child: TextButton(
                           onPressed: () {
-                            context.pushNamed(Routes.placeOrderScreen);
+                            context.go(Routes.placeOrderScreen);
                           },
                           style: TextButton.styleFrom(
                             backgroundColor: const Color(

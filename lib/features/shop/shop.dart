@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
 
 class Shop extends StatefulWidget {
   const Shop({super.key});
@@ -151,7 +152,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          context.pushNamed(Routes.shopSearchScreen);
+          context.go(Routes.shopSearchScreen);
         },
         elevation: 0,
         backgroundColor: Colors.transparent,

@@ -73,7 +73,7 @@ class _ExchangeOrRefundState extends State<ExchangeOrRefund> {
                 ),
                 verticalSpace(50),
                 isRefund
-                    ? RefundBody()
+                    ? RefundBody(userId: widget.userId, orderId: widget.orderId)
                     : ExchangeBody(
                       userId: widget.userId,
                       orderId: widget.orderId,

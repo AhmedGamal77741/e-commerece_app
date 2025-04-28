@@ -8,6 +8,7 @@ import 'package:ecommerece_app/features/shop/fav_fnc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class ItemDetails extends StatefulWidget {
@@ -569,7 +570,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                             .pricePoints[int.parse(_selectedOption ?? '1')]
                             .price,
                   );
-                  context.pop();
+                  Navigation(context).pop();
                   // Navigator.push(
                   //   context,
                   //   MaterialPageRoute(
@@ -619,7 +620,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                             .pricePoints[int.parse(_selectedOption ?? '0')]
                             .price,
                   );
-                  context.pushNamed(Routes.placeOrderScreen);
+                  context.go(Routes.placeOrderScreen);
                 },
                 style: TextButton.styleFrom(
                   backgroundColor: ColorsManager.primaryblack,

@@ -86,6 +86,10 @@ class ExchangeBody extends StatelessWidget {
             };
             try {
               await docRef.set(exchangeData);
+              await FirebaseFirestore.instance
+                  .collection('orders')
+                  .doc(orderId)
+                  .update({'isRequested': true});
 
               context.pop();
             } catch (e) {

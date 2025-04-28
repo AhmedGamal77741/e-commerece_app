@@ -8,6 +8,7 @@ import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 class PlaceOrder extends StatefulWidget {
   const PlaceOrder({super.key});
@@ -398,6 +399,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                     "trackingNumber": '',
                                     "trackingEvents": [],
                                     "orderStatus": "orderComplete",
+                                    'isRequested': false,
                                   };
 
                                   await docRef.set(orderData);
@@ -419,9 +421,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                 }
 
                                 if (mounted) {
-                                  context.pushReplacementNamed(
-                                    Routes.orderCompleteScreen,
-                                  );
+                                  context.go(Routes.orderCompleteScreen);
                                 }
                               } catch (e) {
                                 print('Failed to place order: $e');

@@ -4,6 +4,7 @@ import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 class UserOptionsContainer extends StatelessWidget {
   const UserOptionsContainer({super.key});
@@ -26,7 +27,7 @@ class UserOptionsContainer extends StatelessWidget {
             InkWell(
               child: Text('멤버십 해지', style: TextStyles.abeezee16px400wPblack),
               onTap: () {
-                context.pushNamed(Routes.cancelSubscription);
+                context.go(Routes.cancelSubscription);
               },
             ),
             Divider(color: ColorsManager.primary100),
