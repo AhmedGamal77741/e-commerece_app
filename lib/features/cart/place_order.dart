@@ -400,6 +400,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                     "trackingEvents": [],
                                     "orderStatus": "orderComplete",
                                     'isRequested': false,
+                                    'deliveryManagerId': '',
                                   };
 
                                   await docRef.set(orderData);
