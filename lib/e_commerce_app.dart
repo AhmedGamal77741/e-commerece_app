@@ -5,8 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
 
-final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
-    GlobalKey<ScaffoldMessengerState>();
+// final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+//     GlobalKey<ScaffoldMessengerState>();
 
 class EcommerceApp extends StatefulWidget {
   final AppRouter appRouter;
@@ -17,54 +17,54 @@ class EcommerceApp extends StatefulWidget {
 }
 
 class _EcommerceAppState extends State<EcommerceApp> {
-  late final AppLinks _appLinks;
-  StreamSubscription<Uri>? _linkSub;
+  // late final AppLinks _appLinks;
+  // StreamSubscription<Uri>? _linkSub;
 
-  @override
-  void initState() {
-    super.initState();
-    _appLinks = AppLinks();
-    _listenForLinks();
-  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _appLinks = AppLinks();
+  //   _listenForLinks();
+  // }
 
-  void _listenForLinks() async {
-    try {
-      final initialUri = await _appLinks.getInitialLink();
-      if (initialUri != null) {
-        _handleUri(initialUri);
-      }
-    } catch (e) {
-      debugPrint('Initial link error: \$e');
-    }
+  // void _listenForLinks() async {
+  //   try {
+  //     final initialUri = await _appLinks.getInitialLink();
+  //     if (initialUri != null) {
+  //       _handleUri(initialUri);
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Initial link error: \$e');
+  //   }
 
-    _linkSub = _appLinks.uriLinkStream.listen(
-      (uri) {
-        _handleUri(uri);
-      },
-      onError: (err) {
-        debugPrint('Stream link error: \$err');
-      },
-    );
-  }
+  //   _linkSub = _appLinks.uriLinkStream.listen(
+  //     (uri) {
+  //       _handleUri(uri);
+  //     },
+  //     onError: (err) {
+  //       debugPrint('Stream link error: \$err');
+  //     },
+  //   );
+  // }
 
-  void _handleUri(Uri uri) {
-    if (uri.scheme == 'paymentresult' && uri.host == 'callback') {
-      final state = uri.queryParameters['PCD_PAY_STATE'];
-      final isSuccess = state == '00';
-      scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Text(isSuccess ? 'Payment Success' : 'Payment Failed'),
-          backgroundColor: isSuccess ? Colors.green : Colors.red,
-        ),
-      );
-    }
-  }
+  // void _handleUri(Uri uri) {
+  //   if (uri.scheme == 'paymentresult' && uri.host == 'callback') {
+  //     final state = uri.queryParameters['PCD_PAY_STATE'];
+  //     final isSuccess = state == '00';
+  //     scaffoldMessengerKey.currentState?.showSnackBar(
+  //       SnackBar(
+  //         content: Text(isSuccess ? 'Payment Success' : 'Payment Failed'),
+  //         backgroundColor: isSuccess ? Colors.green : Colors.red,
+  //       ),
+  //     );
+  //   }
+  // }
 
-  @override
-  void dispose() {
-    _linkSub?.cancel();
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   _linkSub?.cancel();
+  //   super.dispose();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +86,7 @@ class _EcommerceAppState extends State<EcommerceApp> {
                     minTextAdapt: true,
                     builder:
                         (context, child) => MaterialApp.router(
-                          scaffoldMessengerKey: scaffoldMessengerKey,
+                          // scaffoldMessengerKey: scaffoldMessengerKey,
                           title: 'E-commerce App (Web)',
                           theme: ThemeData(
                             scaffoldBackgroundColor: Colors.white,
@@ -111,7 +111,7 @@ class _EcommerceAppState extends State<EcommerceApp> {
             minTextAdapt: true,
             builder:
                 (context, child) => MaterialApp.router(
-                  scaffoldMessengerKey: scaffoldMessengerKey,
+                  // scaffoldMessengerKey: scaffoldMessengerKey,
                   title: 'E-commerce App',
                   theme: ThemeData(
                     scaffoldBackgroundColor: Colors.white,

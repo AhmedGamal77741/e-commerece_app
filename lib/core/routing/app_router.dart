@@ -21,72 +21,58 @@ class AppRouter {
     initialLocation: Routes.landingScreen,
     routes: [
       GoRoute(
+        name: Routes.landingScreen, // name added
         path: Routes.landingScreen,
         builder: (context, state) => const LandingScreen(),
         routes: [
           GoRoute(
-            path: Routes.navBar,
+            name: Routes.navBar,
+            path: Routes.navBar, // '/nav-bar'
             builder: (context, state) => const NavBar(),
           ),
           GoRoute(
-            path: Routes.reviewScreen,
+            name: Routes.reviewScreen,
+            path: Routes.reviewScreen, // '/review'
             builder: (context, state) => const ReviewScreen(),
           ),
           GoRoute(
-            path: Routes.notificationsScreen,
+            name: Routes.notificationsScreen,
+            path: Routes.notificationsScreen, // '/notifications'
             builder: (context, state) => const Notifications(),
           ),
           GoRoute(
-            path: Routes.addPostScreen,
+            name: Routes.addPostScreen,
+            path: '/${Routes.addPostScreen}', // '/add-post'
             builder: (context, state) => const AddPost(),
           ),
           GoRoute(
+            name: Routes.placeOrderScreen,
             path: Routes.placeOrderScreen,
             builder: (context, state) => const PlaceOrder(),
           ),
           GoRoute(
+            name: Routes.orderCompleteScreen,
             path: Routes.orderCompleteScreen,
             builder: (context, state) => const OrderComplete(),
           ),
           GoRoute(
+            name: Routes.shopSearchScreen,
             path: Routes.shopSearchScreen,
             builder: (context, state) => const ShopSearch(),
           ),
           GoRoute(
-            path: Routes.commentsScreen,
+            name: Routes.commentsScreen,
+            path: '/${Routes.commentsScreen}', // '/comment'
             builder: (context, state) {
               final postId = state.uri.queryParameters['postId'] ?? '';
               return Comments(postId: postId);
             },
           ),
-          // Uncomment and update these routes as needed
-          /*
-      GoRoute(
-        path: Routes.itemDetailsScreen,
-        builder: (context, state) => ItemDetails(),
-      ),
-      GoRoute(
-        path: Routes.trackorder,
-        builder: (context, state) => const TrackOrder(),
-      ),
-      GoRoute(
-        path: Routes.exchangeOrRefund,
-        builder: (context, state) => const ExchangeOrRefund(),
-      ),
-      */
           GoRoute(
+            name: Routes.cancelSubscription,
             path: Routes.cancelSubscription,
             builder: (context, state) => const CancelSubscription(),
           ),
-
-          /*
-      GoRoute(
-        path: '${Routes.itemDetailsScreen}/:id',
-        builder: (context, state) {
-          final id = state.pathParameters['id'];
-          return ItemDetails(itemId: id);
-        },
-      ),       */
         ],
       ),
     ],

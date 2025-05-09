@@ -11,7 +11,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 class UserInfoContainer extends StatefulWidget {
-  UserInfoContainer({super.key});
+  const UserInfoContainer({super.key});
 
   @override
   State<UserInfoContainer> createState() => _UserInfoContainerState();
@@ -19,41 +19,47 @@ class UserInfoContainer extends StatefulWidget {
 
 class _UserInfoContainerState extends State<UserInfoContainer> {
   final passwordController = TextEditingController();
-
   final nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  IconData iconPassword = Icons.visibility;
-  bool obscurePassword = true;
-  bool signUpRequired = false;
   String imgUrl = "";
   String error = '';
   final fireBaseRepo = FirebaseUserRepo();
 
-  MyUser? currentUser = MyUser(userId: "", email: "", name: "", url: "");
-  bool liked = false;
+  MyUser? currentUser;
   bool _isLoading = true;
 
+  @override
   void initState() {
     super.initState();
+    // Start listening to posts as before
     Provider.of<PostsProvider>(context, listen: false).startListening();
-
-    _loadData(); // Call the async function when widget initializes
+    _loadData();
   }
 
-  // Async function that uses await
   Future<void> _loadData() async {
     try {
-      currentUser = await FirebaseUserRepo().user.first;
+      final user = await FirebaseUserRepo().user.first;
+      if (!mounted) return;
       setState(() {
+        currentUser = user;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      print(e);
-      throw e;
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      debugPrint('Error loading user: $e');
     }
+  }
+
+  @override
+  void dispose() {
+    // Clean up controllers
+    passwordController.dispose();
+    nameController.dispose();
+    super.dispose();
   }
 
   @override
@@ -73,107 +79,102 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Avatar Row
               Row(
                 children: [
                   Text('닉네임', style: TextStyles.abeezee16px400wPblack),
-                  Spacer(),
-                  InkWell(
-                    onTap: () async {
-                      imgUrl = await uploadImageToImgBB();
-                      setState(() {});
-                    },
-                    child:
-                        _isLoading
-                            ? Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.black,
-                              ),
-                            )
-                            : ClipOval(
-                              child: Image.network(
-                                imgUrl.isEmpty ? currentUser!.url : imgUrl,
-                                height: 55.h,
-                                width: 56.w,
-                                fit: BoxFit.cover, // Ensures proper filling
-                              ),
-                            ),
-                  ),
+                  const Spacer(),
+                  _isLoading
+                      ? const CircularProgressIndicator(color: Colors.black)
+                      : InkWell(
+                        onTap: () async {
+                          final newUrl = await uploadImageToImgBB();
+                          if (!mounted) return;
+                          setState(() => imgUrl = newUrl);
+                        },
+                        child: ClipOval(
+                          child: Image.network(
+                            (imgUrl.isEmpty ? currentUser?.url : imgUrl) ?? '',
+                            height: 55.h,
+                            width: 56.w,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
                 ],
               ),
+
+              verticalSpace(20),
+
+              // Name field
               UnderlineTextField(
                 controller: nameController,
                 hintText: '팽이마켓',
                 obscureText: false,
                 keyboardType: TextInputType.name,
                 validator: (val) {
-                  if (val!.isEmpty) {
-                    return '이 필드를 입력해 주세요';
-                  } else if (val.length > 30) {
-                    return '이름이 너무 깁니다';
-                  }
+                  if (val!.isEmpty) return '이 필드를 입력해 주세요';
+                  if (val.length > 30) return '이름이 너무 깁니다';
                   return null;
                 },
               ),
+
               verticalSpace(20),
-              /*               Text('사용자 ID', style: TextStyles.abeezee16px400wPblack),
-              UnderlineTextField(
-                controller: nameController,
-                hintText: '이름',
-                obscureText: false,
-                keyboardType: TextInputType.name,
-                validator: (val) {
-                  if (val!.isEmpty) {
-                    return '이 필드를 입력해 주세요';
-                  } else if (val.length > 30) {
-                    return 'Name too long';
-                  }
-                  return null;
-                },
-              ),
-              verticalSpace(20), */
+
+              // Password and submit button
               Text('비밀번호', style: TextStyles.abeezee16px400wPblack),
               Row(
                 children: [
-                  Spacer(),
+                  const Spacer(),
                   BlackTextButton(
                     txt: '완료',
                     func: () async {
-                      if (_formKey.currentState!.validate()) {
-                        MyUser myUser = MyUser.empty;
-                        myUser.email = currentUser!.email;
-                        myUser.name = nameController.text;
-                        myUser.url = imgUrl;
-                        var result = await fireBaseRepo.updateUser(
-                          myUser,
-                          passwordController.text,
-                        );
-                        if (result == null) {
-                          setState(() {
-                            error = "이미 사용 중인 이메일입니다";
-                          });
-                        }
+                      if (!_formKey.currentState!.validate()) return;
+
+                      final myUser = MyUser(
+                        userId: currentUser!.userId,
+                        email: currentUser!.email,
+                        name: nameController.text,
+                        url: imgUrl,
+                      );
+
+                      final result = await fireBaseRepo.updateUser(
+                        myUser,
+                        passwordController.text,
+                      );
+
+                      if (!mounted) return;
+                      if (result == null) {
+                        setState(() {
+                          error = "이미 사용 중인 이메일입니다";
+                        });
                       }
                     },
                     style: TextStyles.abeezee14px400wW,
                   ),
                 ],
               ),
+
+              // Password field
               UnderlineTextField(
                 controller: passwordController,
                 hintText: '영문,숫자 조합',
-                obscureText: false,
-                keyboardType: TextInputType.name,
+                obscureText: true,
+                keyboardType: TextInputType.visiblePassword,
                 validator: (val) {
-                  if (val!.isEmpty) {
-                    return '이 필드를 작성해 주세요';
-                  } else if (!RegExp(
-                    r'^(?=.*[A-Za-z])(?=.*\d).{8,}$',
-                  ).hasMatch(val)) {
+                  if (val!.isEmpty) return '이 필드를 작성해 주세요';
+                  if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d).{8,}$').hasMatch(val)) {
                     return '유효한 비밀번호를 입력해 주세요';
                   }
                   return null;
                 },
               ),
+
+              if (error.isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.only(top: 8.h),
+                  child: Text(error, style: const TextStyle(color: Colors.red)),
+                ),
             ],
           ),
         ),

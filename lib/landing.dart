@@ -21,8 +21,7 @@ class LandingScreen extends StatelessWidget {
         }
 
         final user = snapshot.data;
-
-        if (user == null || user == MyUser.empty) {
+        if (user == null) {
           return AuthScreen();
         } else {
           return NavBar();

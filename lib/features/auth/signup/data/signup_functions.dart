@@ -49,18 +49,43 @@ class FirebaseUserRepo {
     : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
   Stream<MyUser?> get user {
-    return _firebaseAuth.authStateChanges().flatMap((firebaseUser) async* {
+    return _firebaseAuth.authStateChanges().asyncExpand((firebaseUser) async* {
+      print('⚡ authStateChanges fired: $firebaseUser');
       if (firebaseUser == null) {
-        yield MyUser.empty;
+        // No Firebase user → unauthenticated
+        yield null;
       } else {
-        yield await usersCollection.doc(firebaseUser.uid).get().then((
-          val,
-        ) async {
-          final user = FirebaseAuth.instance.currentUser!;
-          await user.updateDisplayName(val.data()!['name']);
-          await user.updatePhotoURL(val.data()!['url']);
-          return MyUser.fromEntity(MyUserEntity.fromDocument(val.data()!));
-        });
+        final docRef = usersCollection.doc(firebaseUser.uid);
+        try {
+          final snapshot = await docRef.get();
+          if (!snapshot.exists) {
+            print('⚠️ User doc does not exist for uid=${firebaseUser.uid}');
+            yield null;
+          } else {
+            final data = snapshot.data()!;
+            print('✅ Fetched user data: $data');
+
+            // Safely extract each field, with defaults if missing
+            final user = MyUser(
+              userId: data['userId'] as String? ?? firebaseUser.uid,
+              email: data['email'] as String? ?? firebaseUser.email ?? '',
+              name: data['name'] as String? ?? '',
+              url: data['url'] as String? ?? '',
+              isSub: data['isSub'] as bool? ?? false,
+              defaultAddressId: data['defaultAddressId'] as String?,
+              blocked:
+                  (data['blocked'] as List<dynamic>?)
+                      ?.map((e) => e as String)
+                      .toList() ??
+                  <String>[],
+            );
+
+            yield user;
+          }
+        } catch (e, st) {
+          print('❌ Error loading user doc: $e\n$st');
+          yield null;
+        }
       }
     });
   }
