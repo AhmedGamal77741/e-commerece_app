@@ -13,7 +13,7 @@ class ReviewScreen extends StatelessWidget {
       length: 1,
       child: Scaffold(
         appBar: TabAppBar(imgUrl: 'rev_icon.png', firstTab: '주문목록'),
-        body: TabBarView(children: [SubscriptionManagementScreen()]),
+        body: TabBarView(children: [OrderHistory()]),
       ),
     );
   }

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Payple Test</title>
+  <script src="https://democpay.payple.kr/js/v1/payment.js"></script>
+</head>
+<body>
+  <h3>Payple Payment Test</h3>
+  <button onclick="openPayple()">Pay Now</button>
+
+  <script>
+    function getResult(params) {
+      alert("Result received: " + JSON.stringify(params));
+    }
+
+    function openPayple() {
+      const obj = {
+        clientKey: "test_DF55F29DA654A8CBC0F0A9DD4B556486",
+        PCD_PAY_TYPE: "card",
+        PCD_SIMPLE_FLAG: "Y",
+        PCD_RST_URL: "https://example.com/payple_result", // <-- use absolute path!
+        callbackFunction: getResult,
+        PCD_TAXSAVE_FLAG: "N",
+        PCD_PAY_GOODS: "Test Product",
+        PCD_PAY_TOTAL: "1000",
+        PCD_PAYER_EMAIL: "test@example.com",
+        PCD_PAYER_NAME: "Ahmed",
+        PCD_PAYER_HP: "01012345678"
+      };
+      PaypleCpayAuthCheck(obj);
+    }
+  </script>
+</body>
+</html>

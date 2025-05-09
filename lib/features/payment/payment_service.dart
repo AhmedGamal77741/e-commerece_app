@@ -1,117 +1,42 @@
-// lib/services/payment_service.dart
-import 'package:cloud_functions/cloud_functions.dart';
+// payment_service.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:ecommerece_app/features/payment/payment_web_view_screen.dart';
 
 class PaymentService {
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final String basePaymentUrl =
+      'https://e-commerce-app-34fb2.web.app/payment.html';
 
-  // Get current user ID
-  String? get currentUserId => _auth.currentUser?.uid;
-
-  // Authenticate with Payple
-  Future<Map<String, dynamic>> authenticatePayple() async {
-    try {
-      print('Calling authenticatePayple function');
-      final result =
-          await _functions.httpsCallable('authenticatePayple').call();
-      print('Auth result: ${result.data}');
-      return result.data;
-    } catch (e) {
-      print('Error authenticating with Payple: $e');
-      return {'success': false, 'error': e.toString()};
-    }
-  }
-
-  // Get subscription status for current user
-  Future<Map<String, dynamic>> getUserSubscription() async {
-    try {
-      final userId = currentUserId;
-      if (userId == null) {
-        return {'active': false, 'error': 'User not logged in'};
-      }
-
-      final userDoc = await _firestore.collection('users').doc(userId).get();
-
-      if (!userDoc.exists || !userDoc.data()!.containsKey('subscription')) {
-        return {'active': false};
-      }
-
-      return {
-        'active': userDoc.data()!['subscription']['active'] ?? false,
-        'details': userDoc.data()!['subscription'],
-      };
-    } catch (e) {
-      print('Error getting subscription status: $e');
-      return {'active': false, 'error': e.toString()};
-    }
-  }
-
-  // Cancel subscription
-  Future<bool> cancelSubscription() async {
-    try {
-      final userId = currentUserId;
-      if (userId == null) {
-        return false;
-      }
-
-      // Update user subscription status
-      await _firestore.collection('users').doc(userId).update({
-        'subscription.active': false,
-        'subscription.cancelledAt': FieldValue.serverTimestamp(),
-      });
-
-      return true;
-    } catch (e) {
-      print('Error cancelling subscription: $e');
-      return false;
-    }
-  }
-
-  // Listen to subscription changes
-  Stream<Map<String, dynamic>> subscriptionStream() {
-    final userId = currentUserId;
+  /// Launches the Payple flow and returns true if the subscription succeeded.
+  Future<bool> startSubscription(BuildContext context, double amount) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
-      return Stream.value({'active': false, 'error': 'User not logged in'});
+      throw Exception('User not logged in');
     }
 
-    return _firestore.collection('users').doc(userId).snapshots().map((
-      snapshot,
-    ) {
-      if (!snapshot.exists || !snapshot.data()!.containsKey('subscription')) {
-        return {'active': false};
-      }
+    final url = '$basePaymentUrl?amount=${amount.toInt()}&userId=$userId';
 
-      final subscription = snapshot.data()!['subscription'];
-      return {
-        'active': subscription['active'] ?? false,
-        'details': subscription,
-      };
-    });
+    // Push the WebView and await whether it popped true/false
+    final result = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => PaymentWebView(url: url)));
+
+    return result == true;
   }
-}
 
-// Add this to lib/services/payment_service.dart
+  /// (Optional) you can still check your Firestore if needed
+  Future<bool> checkActiveSubscription() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return false;
 
-extension PaymentServiceExtensions on PaymentService {
-  Future<List<Map<String, dynamic>>> getPaymentHistory(String userId) async {
-    try {
-      final querySnapshot =
-          await _firestore
-              .collection('paymentResults')
-              .where('userId', isEqualTo: userId)
-              .orderBy('timestamp', descending: true)
-              .limit(10)
-              .get();
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('subscriptions')
+            .doc(userId)
+            .get();
 
-      return querySnapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .toList();
-    } catch (e) {
-      print('Error getting payment history: $e');
-      return [];
-    }
+    return doc.exists && doc.data()?['status'] == 'active';
   }
 }
