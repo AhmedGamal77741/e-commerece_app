@@ -26,15 +26,6 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
     super.dispose();
   }
 
-  void _onSearchChanged(String query) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      if (query.isNotEmpty) {
-        _performSearch(query);
-      }
-    });
-  }
-
   Future<void> _performSearch(String query) async {
     setState(() {
       _isLoading = true;
@@ -134,7 +125,6 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
                           )
                           : null,
                 ),
-                onChanged: _onSearchChanged,
                 textInputAction: TextInputAction.search,
                 onSubmitted: _performSearch,
                 autofocus: true,

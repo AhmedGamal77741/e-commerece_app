@@ -116,41 +116,163 @@ class _PlaceOrderState extends State<PlaceOrder> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    address.name.isEmpty
-                                        ? '베송지'
-                                        : '베송지 | ${address.name}',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 15.sp,
-                                      fontFamily: 'ABeeZee',
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.40.h,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8.h),
+                              child:
+                                  address.name.isEmpty
+                                      ? FutureBuilder(
+                                        future:
+                                            FirebaseFirestore.instance
+                                                .collection('users')
+                                                .doc(
+                                                  FirebaseAuth
+                                                      .instance
+                                                      .currentUser!
+                                                      .uid,
+                                                )
+                                                .get(),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState ==
+                                              ConnectionState.waiting) {
+                                            return Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            );
+                                          }
 
-                                  Text(
-                                    address.phone,
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      color: Color(0xFF9E9E9E),
-                                      fontFamily: 'ABeeZee',
-                                    ),
-                                  ),
-                                  Text(
-                                    address.detailAddress,
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      color: Color(0xFF9E9E9E),
-                                      fontFamily: 'ABeeZee',
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                          if (snapshot.hasError) {
+                                            return Center(
+                                              child: Text(
+                                                'Error loading user address: ${snapshot.error}',
+                                              ),
+                                            );
+                                          }
+
+                                          if (!snapshot.hasData ||
+                                              !snapshot.data!.exists) {
+                                            return Center(
+                                              child: Text(
+                                                'User data not found',
+                                              ),
+                                            );
+                                          }
+
+                                          final userData =
+                                              snapshot.data?.data();
+                                          return FutureBuilder(
+                                            future:
+                                                FirebaseFirestore.instance
+                                                    .collection('users')
+                                                    .doc(
+                                                      FirebaseAuth
+                                                          .instance
+                                                          .currentUser!
+                                                          .uid,
+                                                    )
+                                                    .collection('addresses')
+                                                    .doc(
+                                                      userData!['defaultAddressId'],
+                                                    )
+                                                    .get(),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.connectionState ==
+                                                  ConnectionState.waiting) {
+                                                return Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                );
+                                              }
+
+                                              if (snapshot.hasError) {
+                                                return Center(
+                                                  child: Text(
+                                                    'Error loading user address: ${snapshot.error}',
+                                                  ),
+                                                );
+                                              }
+
+                                              if (!snapshot.hasData ||
+                                                  !snapshot.data!.exists) {
+                                                return Center(
+                                                  child: Text(
+                                                    'User data not found',
+                                                  ),
+                                                );
+                                              }
+
+                                              final addressData =
+                                                  snapshot.data?.data();
+                                              return Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    '베송지 | ${addressData!['name']}',
+                                                    style: TextStyle(
+                                                      color: Colors.black,
+                                                      fontSize: 15.sp,
+                                                      fontFamily: 'ABeeZee',
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      height: 1.40.h,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 8.h),
+
+                                                  Text(
+                                                    addressData['phone'],
+                                                    style: TextStyle(
+                                                      fontSize: 15.sp,
+                                                      color: Color(0xFF9E9E9E),
+                                                      fontFamily: 'ABeeZee',
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    addressData['address'],
+                                                    style: TextStyle(
+                                                      fontSize: 15.sp,
+                                                      color: Color(0xFF9E9E9E),
+                                                      fontFamily: 'ABeeZee',
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        },
+                                      )
+                                      : Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '베송지 | ${address.name}',
+                                            style: TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 15.sp,
+                                              fontFamily: 'ABeeZee',
+                                              fontWeight: FontWeight.w400,
+                                              height: 1.40.h,
+                                            ),
+                                          ),
+                                          SizedBox(height: 8.h),
+
+                                          Text(
+                                            address.phone,
+                                            style: TextStyle(
+                                              fontSize: 15.sp,
+                                              color: Color(0xFF9E9E9E),
+                                              fontFamily: 'ABeeZee',
+                                            ),
+                                          ),
+                                          Text(
+                                            address.detailAddress,
+                                            style: TextStyle(
+                                              fontSize: 15.sp,
+                                              color: Color(0xFF9E9E9E),
+                                              fontFamily: 'ABeeZee',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                             ),
                             TextButton(
                               onPressed: _selectAddress,
@@ -190,41 +312,45 @@ class _PlaceOrderState extends State<PlaceOrder> {
                           height: 1.40.h,
                         ),
                       ),
-                      DropdownButtonFormField<String>(
-                        value: selectedRequest,
-                        dropdownColor: Colors.white,
-                        items:
-                            deliveryRequests
-                                .map(
-                                  (request) => DropdownMenuItem(
-                                    value: request,
-                                    child: Text(
-                                      request,
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 16.sp,
-                                        fontFamily: 'ABeeZee',
-                                        fontWeight: FontWeight.w400,
-                                        height: 1.40.h,
+                      StatefulBuilder(
+                        builder: (context, setStateDropdown) {
+                          return DropdownButtonFormField<String>(
+                            value: selectedRequest,
+                            dropdownColor: Colors.white,
+                            items:
+                                deliveryRequests
+                                    .map(
+                                      (request) => DropdownMenuItem(
+                                        value: request,
+                                        child: Text(
+                                          request,
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 16.sp,
+                                            fontFamily: 'ABeeZee',
+                                            fontWeight: FontWeight.w400,
+                                            height: 1.40.h,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                        decoration: const InputDecoration(
-                          border: UnderlineInputBorder(),
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 0,
-                            vertical: 8,
-                          ),
-                        ),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedRequest = value!;
-                          });
+                                    )
+                                    .toList(),
+                            decoration: const InputDecoration(
+                              border: UnderlineInputBorder(),
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 0,
+                                vertical: 8,
+                              ),
+                            ),
+                            onChanged: (value) {
+                              setStateDropdown(() {
+                                selectedRequest = value!;
+                              });
+                            },
+                            icon: Icon(Icons.keyboard_arrow_down),
+                          );
                         },
-                        icon: Icon(Icons.keyboard_arrow_down),
                       ),
 
                       Text(
@@ -298,56 +424,60 @@ class _PlaceOrderState extends State<PlaceOrder> {
                           ],
                         ),
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Row(
+                      StatefulBuilder(
+                        builder: (context, setStateRadio) {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
                             children: [
-                              Radio(
-                                value: 1,
-                                groupValue: selectedOption,
-                                onChanged: (value) {
-                                  setState(() {
-                                    selectedOption = value!;
-                                    print("Button value: $value");
-                                  });
-                                },
+                              Row(
+                                children: [
+                                  Radio(
+                                    value: 1,
+                                    groupValue: selectedOption,
+                                    onChanged: (value) {
+                                      setStateRadio(() {
+                                        selectedOption = value!;
+                                        print("Button value: $value");
+                                      });
+                                    },
+                                  ),
+                                  Text(
+                                    '현금 영수증',
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      fontFamily: 'ABeeZee',
+                                      fontWeight: FontWeight.w400,
+                                      color: ColorsManager.primaryblack,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                '현금 영수증',
-                                style: TextStyle(
-                                  fontSize: 15.sp,
-                                  fontFamily: 'ABeeZee',
-                                  fontWeight: FontWeight.w400,
-                                  color: ColorsManager.primaryblack,
-                                ),
+                              Row(
+                                children: [
+                                  Radio(
+                                    value: 2,
+                                    groupValue: selectedOption,
+                                    onChanged: (value) {
+                                      setStateRadio(() {
+                                        selectedOption = value!;
+                                        print("Button value: $value");
+                                      });
+                                    },
+                                  ),
+                                  Text(
+                                    '세금 계산서',
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      fontFamily: 'ABeeZee',
+                                      fontWeight: FontWeight.w400,
+                                      color: ColorsManager.primaryblack,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
-                          ),
-                          Row(
-                            children: [
-                              Radio(
-                                value: 2,
-                                groupValue: selectedOption,
-                                onChanged: (value) {
-                                  setState(() {
-                                    selectedOption = value!;
-                                    print("Button value: $value");
-                                  });
-                                },
-                              ),
-                              Text(
-                                '세금 계산서',
-                                style: TextStyle(
-                                  fontSize: 15.sp,
-                                  fontFamily: 'ABeeZee',
-                                  fontWeight: FontWeight.w400,
-                                  color: ColorsManager.primaryblack,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                          );
+                        },
                       ),
 
                       UnderlineTextField(
