@@ -38,20 +38,9 @@ class AddressService {
       // Commit the batch
       await batch.commit();
 
-      // Show success message
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Address deleted successfully')));
-
       return true;
     } catch (e) {
       print(e);
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error setting default address: ${e.toString()}'),
-        ),
-      );
       return false;
     }
   }
@@ -84,21 +73,9 @@ class AddressService {
       // Also update the isDefault field in the address document if needed
       await _addressesCollection.doc(addressId).update({'isDefault': true});
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Default address updated successfully')),
-      );
-
       return true;
     } catch (e) {
       print(e);
-
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error setting default address: ${e.toString()}'),
-        ),
-      );
 
       return false;
     }

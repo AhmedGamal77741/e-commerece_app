@@ -27,21 +27,36 @@ class _PlaceOrderState extends State<PlaceOrder> {
   final deliveryAddressController = TextEditingController();
   final deliveryInstructionsController = TextEditingController();
   final cashReceiptController = TextEditingController();
+  final phoneController = TextEditingController();
+  int selectedOption = 1;
   final _formKey = GlobalKey<FormState>();
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
+  Address address = Address(
+    name: '',
+    phone: '',
+    address: '',
+    detailAddress: '',
+    isDefault: false,
+    addressMap: {},
+  );
+  final List<String> deliveryRequests = [
+    '문앞', // "At the door"
+    '직접 받고 부재 시 문앞', // "Security office"
+    '택배함', // "Parcel box"
+    '경비실', // "Receive directly"
+    '직접입력', // "Other"
+  ];
+  String selectedRequest = '문앞';
   Future<void> _selectAddress() async {
-    final result = await Navigator.push<Address>(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => AddressListScreen()),
     );
 
     if (result != null) {
       deliveryAddressController.text = result.address;
+      setState(() {
+        address = result;
+      });
     }
   }
 
@@ -87,17 +102,8 @@ class _PlaceOrderState extends State<PlaceOrder> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     spacing: 5.h,
                     children: [
-                      Text(
-                        '베송지',
-                        style: TextStyle(
-                          color: const Color(0xFF121212),
-                          fontSize: 16.sp,
-                          fontFamily: 'ABeeZee',
-                          fontWeight: FontWeight.w400,
-                          height: 1.40.h,
-                        ),
-                      ),
                       Container(
+                        padding: EdgeInsets.only(bottom: 5.h),
                         decoration: BoxDecoration(
                           border: Border(
                             bottom: BorderSide(
@@ -107,24 +113,43 @@ class _PlaceOrderState extends State<PlaceOrder> {
                           ),
                         ),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Flexible(
-                              child: TextFormField(
-                                controller: deliveryAddressController,
-                                decoration: InputDecoration(
-                                  hintText: '기본 배송지 : ',
-                                  border: InputBorder.none,
-                                ),
-                                obscureText: false,
-                                keyboardType: TextInputType.text,
-                                validator: (val) {
-                                  if (val!.isEmpty) {
-                                    return '이름을 입력하세요';
-                                  } else if (val.length > 30) {
-                                    return '이름이 너무 깁니다';
-                                  }
-                                  return null;
-                                },
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    address.name.isEmpty
+                                        ? '베송지'
+                                        : '베송지 | ${address.name}',
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 15.sp,
+                                      fontFamily: 'ABeeZee',
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.40.h,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8.h),
+
+                                  Text(
+                                    address.phone,
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      color: Color(0xFF9E9E9E),
+                                      fontFamily: 'ABeeZee',
+                                    ),
+                                  ),
+                                  Text(
+                                    address.detailAddress,
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      color: Color(0xFF9E9E9E),
+                                      fontFamily: 'ABeeZee',
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             TextButton(
@@ -155,6 +180,52 @@ class _PlaceOrderState extends State<PlaceOrder> {
                       ),
 
                       SizedBox(height: 15.h),
+                      Text(
+                        '배송 요청사항',
+                        style: TextStyle(
+                          color: const Color(0xFF121212),
+                          fontSize: 16.sp,
+                          fontFamily: 'ABeeZee',
+                          fontWeight: FontWeight.w400,
+                          height: 1.40.h,
+                        ),
+                      ),
+                      DropdownButtonFormField<String>(
+                        value: selectedRequest,
+                        dropdownColor: Colors.white,
+                        items:
+                            deliveryRequests
+                                .map(
+                                  (request) => DropdownMenuItem(
+                                    value: request,
+                                    child: Text(
+                                      request,
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 16.sp,
+                                        fontFamily: 'ABeeZee',
+                                        fontWeight: FontWeight.w400,
+                                        height: 1.40.h,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                        decoration: const InputDecoration(
+                          border: UnderlineInputBorder(),
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 0,
+                            vertical: 8,
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedRequest = value!;
+                          });
+                        },
+                        icon: Icon(Icons.keyboard_arrow_down),
+                      ),
 
                       Text(
                         '배송 요청사항',
@@ -166,60 +237,124 @@ class _PlaceOrderState extends State<PlaceOrder> {
                           height: 1.40.h,
                         ),
                       ),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: ColorsManager.primary400,
+                              width: 1.0,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Flexible(
+                              child: TextFormField(
+                                controller: cashReceiptController,
+                                decoration: InputDecoration(
+                                  hintText: '국민은행 / 0000000000000',
+                                  hintStyle: TextStyle(
+                                    fontSize: 15.sp,
+                                    color: ColorsManager.primary400,
+                                  ),
+                                  border: InputBorder.none,
+                                ),
+                                obscureText: false,
+                                keyboardType: TextInputType.text,
+                                validator: (val) {
+                                  if (val!.isEmpty) {
+                                    return '이름을 입력하세요';
+                                  } else if (val.length > 30) {
+                                    return '이름이 너무 깁니다';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {},
+
+                              style: TextButton.styleFrom(
+                                fixedSize: Size(48.w, 30.h),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                side: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1.0,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4.0),
+                                ),
+                              ),
+                              child: Text(
+                                '변경',
+                                style: TextStyle(
+                                  color: ColorsManager.primaryblack,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13.sp,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Radio(
+                                value: 1,
+                                groupValue: selectedOption,
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedOption = value!;
+                                    print("Button value: $value");
+                                  });
+                                },
+                              ),
+                              Text(
+                                '현금 영수증',
+                                style: TextStyle(
+                                  fontSize: 15.sp,
+                                  fontFamily: 'ABeeZee',
+                                  fontWeight: FontWeight.w400,
+                                  color: ColorsManager.primaryblack,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Radio(
+                                value: 2,
+                                groupValue: selectedOption,
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedOption = value!;
+                                    print("Button value: $value");
+                                  });
+                                },
+                              ),
+                              Text(
+                                '세금 계산서',
+                                style: TextStyle(
+                                  fontSize: 15.sp,
+                                  fontFamily: 'ABeeZee',
+                                  fontWeight: FontWeight.w400,
+                                  color: ColorsManager.primaryblack,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
                       UnderlineTextField(
-                        controller: deliveryInstructionsController,
-                        hintText: '문앞',
+                        controller: phoneController,
+                        hintText: '전화번호 ',
                         obscureText: false,
-                        keyboardType: TextInputType.text,
-                        validator: (val) {
-                          if (val!.isEmpty) {
-                            return '이름을 입력하세요';
-                          } else if (val.length > 30) {
-                            return '이름이 너무 깁니다';
-                          }
-                          return null;
-                        },
-                      ),
-
-                      Text(
-                        '결제',
-                        style: TextStyle(
-                          color: const Color(0xFF121212),
-                          fontSize: 16.sp,
-                          fontFamily: 'ABeeZee',
-                          fontWeight: FontWeight.w400,
-                          height: 1.40.h,
-                        ),
-                      ),
-                      verticalSpace(5),
-                      Text(
-                        '간편결제',
-                        style: TextStyle(
-                          color: const Color(0xFF747474),
-                          fontSize: 14.sp,
-                          fontFamily: 'ABeeZee',
-                          fontWeight: FontWeight.w400,
-                          height: 1.40.h,
-                        ),
-                      ),
-
-                      Divider(),
-
-                      Text(
-                        '현금 영수증',
-                        style: TextStyle(
-                          color: const Color(0xFF121212),
-                          fontSize: 16.sp,
-                          fontFamily: 'ABeeZee',
-                          fontWeight: FontWeight.w400,
-                          height: 1.40.h,
-                        ),
-                      ),
-                      UnderlineTextField(
-                        controller: cashReceiptController,
-                        hintText: '현금영수증 정보',
-                        obscureText: false,
-                        keyboardType: TextInputType.text,
+                        keyboardType: TextInputType.phone,
                         validator: (val) {
                           if (val!.isEmpty) {
                             return '이름을 입력하세요';
