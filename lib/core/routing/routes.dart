@@ -2,7 +2,7 @@ class Routes {
   static const String reviewScreen = '/review';
   static const String loginScreen = '/login';
   static const String notificationsScreen = '/notifications';
-  static const String addPostScreen = 'add-post';
+  static const String addPostScreen = '/add-post';
   static const String placeOrderScreen = '/place-order';
   static const String orderCompleteScreen = '/order-complete';
   static const String shopSearchScreen = '/shop-search';

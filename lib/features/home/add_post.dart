@@ -5,6 +5,7 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart'
     as sp;
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -17,32 +18,9 @@ class AddPost extends StatefulWidget {
 
 class _AddPostState extends State<AddPost> {
   String imgUrl = "";
-  MyUser? currentUser = MyUser(userId: "", email: "", name: "", url: "");
+  final currentUser = FirebaseAuth.instance.currentUser;
   TextEditingController _textController = TextEditingController();
-  bool _isLoading = true;
-
-  void initState() {
-    super.initState();
-
-    _loadData(); // Call the async function when widget initializes
-  }
-
-  // Async function that uses await
-  Future<void> _loadData() async {
-    try {
-      currentUser = await sp.FirebaseUserRepo().user.first;
-      print(currentUser!.userId);
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      print(e);
-      throw e;
-    }
-  }
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +35,7 @@ class _AddPostState extends State<AddPost> {
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(SnackBar(content: Text('성공')));
-              Navigator.pop(context); // Close after posting
+              Navigator.pop(context);
             } catch (e) {
               print(e.toString());
 
@@ -128,7 +106,7 @@ class _AddPostState extends State<AddPost> {
                             height: 55.h,
                             decoration: ShapeDecoration(
                               image: DecorationImage(
-                                image: NetworkImage(currentUser!.url),
+                                image: NetworkImage(currentUser!.photoURL!),
                                 fit: BoxFit.cover,
                               ),
                               shape: OvalBorder(),
@@ -144,7 +122,7 @@ class _AddPostState extends State<AddPost> {
                             spacing: 15.h,
                             children: [
                               Text(
-                                currentUser!.name,
+                                currentUser!.displayName!,
                                 style: TextStyles.abeezee16px400wPblack,
                               ),
                               TextField(
