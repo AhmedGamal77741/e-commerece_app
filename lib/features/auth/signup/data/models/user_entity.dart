@@ -37,7 +37,8 @@ class MyUserEntity {
       email: doc['email'],
       name: doc['name'],
       url: doc['url'],
-      blocked: doc['blocked'],
+      blocked:
+          (doc['blocked'] as List<dynamic>?)?.map((e) => e as String).toList(),
       isSub: doc['isSub'],
       defaultAddressId: doc['defaultAddressId'],
     );
