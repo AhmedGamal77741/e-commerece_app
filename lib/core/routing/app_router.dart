@@ -6,6 +6,7 @@ import 'package:ecommerece_app/features/home/add_post.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/notifications.dart';
 import 'package:ecommerece_app/features/mypage/ui/cancel_subscription.dart';
+import 'package:ecommerece_app/features/mypage/ui/delete_account_screen.dart';
 import 'package:ecommerece_app/features/navBar/nav_bar.dart';
 import 'package:ecommerece_app/features/review/ui/exchange_or_refund.dart';
 import 'package:ecommerece_app/features/review/ui/review_screen.dart';
@@ -72,6 +73,11 @@ class AppRouter {
             name: Routes.cancelSubscription,
             path: Routes.cancelSubscription,
             builder: (context, state) => const CancelSubscription(),
+          ),
+          GoRoute(
+            name: Routes.deleteAccount,
+            path: Routes.deleteAccount,
+            builder: (context, state) => DeleteAccountScreen(),
           ),
         ],
       ),

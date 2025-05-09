@@ -80,29 +80,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Avatar Row
-              Row(
-                children: [
-                  Text('닉네임', style: TextStyles.abeezee16px400wPblack),
-                  const Spacer(),
-                  _isLoading
-                      ? const CircularProgressIndicator(color: Colors.black)
-                      : InkWell(
-                        onTap: () async {
-                          final newUrl = await uploadImageToImgBB();
-                          if (!mounted) return;
-                          setState(() => imgUrl = newUrl);
-                        },
-                        child: ClipOval(
-                          child: Image.network(
-                            (imgUrl.isEmpty ? currentUser?.url : imgUrl) ?? '',
-                            height: 55.h,
-                            width: 56.w,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                ],
-              ),
+              Text('닉네임', style: TextStyles.abeezee16px400wPblack),
 
               verticalSpace(20),
 

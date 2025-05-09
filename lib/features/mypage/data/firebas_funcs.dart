@@ -6,7 +6,7 @@ Future<void> reauthenticateAndDeleteUser({
   required String password,
 }) async {
   final FirebaseAuth auth = FirebaseAuth.instance;
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
   final user = auth.currentUser;
 
   if (user == null) {
@@ -19,7 +19,7 @@ Future<void> reauthenticateAndDeleteUser({
       password: password,
     );
     await user.reauthenticateWithCredential(credential);
-    await firestore.collection('users').doc(user.uid).delete();
+
     await user.delete();
     print('User deleted successfully.');
   } on FirebaseAuthException catch (e) {

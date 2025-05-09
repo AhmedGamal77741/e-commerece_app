@@ -72,7 +72,10 @@ class _UserOptionsContainerState extends State<UserOptionsContainer> {
             Divider(color: ColorsManager.primary100),
             if (widget.isSub == true)
               InkWell(
-                child: Text('cancel', style: TextStyles.abeezee16px400wPblack),
+                child: Text(
+                  '프리미엄 멤버십 해지',
+                  style: TextStyles.abeezee16px400wPblack,
+                ),
                 onTap: () {
                   context.go(Routes.cancelSubscription);
                 },
@@ -95,7 +98,12 @@ class _UserOptionsContainerState extends State<UserOptionsContainer> {
             InkWell(
               child: Text('회원탈퇴', style: TextStyles.abeezee17px800wPblack),
               onTap: () {
-                showDeleteAccountDialog(context);
+                widget.isSub
+                    ? ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('먼저 멤버십을 해지하세요.')),
+                    )
+                    : context.go(Routes.deleteAccount);
+                // showDeleteAccountDialog(context);
               },
             ),
             Text('멤버십 해지 후 탈퇴 가능합니다.', style: TextStyles.abeezee11px400wP600),
@@ -143,116 +151,4 @@ void _launchPartnerPage() async {
   } else {
     throw 'Could not launch $url';
   }
-}
-
-void showDeleteAccountDialog(BuildContext context) {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final formKey = GlobalKey<FormState>();
-  bool isLoading = false;
-  String? errorMsg;
-  IconData iconPassword = Icons.visibility;
-  bool obsecurepassword = true;
-  showDialog(
-    context: context,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            backgroundColor: Colors.white,
-
-            title: const Text('탈퇴 확인'),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  UnderlineTextField(
-                    controller: emailController,
-                    hintText: '이메일',
-                    obscureText: false,
-                    keyboardType: TextInputType.emailAddress,
-                    errorMsg: errorMsg,
-                    validator: (val) {
-                      if (val!.isEmpty) {
-                        return 'Please fill in this field';
-                      } else if (!RegExp(
-                        r'^[\w-\.]+@([\w-]+.)+[\w-]{2,4}$',
-                      ).hasMatch(val)) {
-                        return '유효한 이메일을 입력해 주세요';
-                      }
-                      return null;
-                    },
-                  ),
-                  verticalSpace(12),
-                  UnderlineTextField(
-                    controller: passwordController,
-                    hintText: '영문,숫자 조합',
-                    obscureText: obsecurepassword,
-                    keyboardType: TextInputType.visiblePassword,
-                    errorMsg: errorMsg,
-                    validator: (val) {
-                      if (val!.isEmpty) {
-                        return '이 필드를 작성해 주세요';
-                      } else if (!RegExp(
-                        r'^(?=.*[A-Za-z])(?=.*\d).{8,}$',
-                      ).hasMatch(val)) {
-                        return '유효한 비밀번호를 입력해 주세요';
-                      }
-                      return null;
-                    },
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          obsecurepassword = !obsecurepassword;
-                          if (obsecurepassword) {
-                            iconPassword = Icons.visibility_off;
-                          } else {
-                            iconPassword = Icons.visibility;
-                          }
-                        });
-                      },
-                      icon: Icon(iconPassword),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                child: Text('취소 ', style: TextStyles.abeezee13px400wPblack),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              BlackTextButton(
-                txt: '계정 삭제',
-                func: () async {
-                  if (!formKey.currentState!.validate()) return;
-
-                  setState(() => isLoading = true);
-                  try {
-                    await reauthenticateAndDeleteUser(
-                      email: emailController.text.trim(),
-                      password: passwordController.text,
-                    );
-                    Navigator.of(context).pop(); // close the dialog
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Account deleted successfully'),
-                      ),
-                    );
-                  } catch (e) {
-                    setState(() => isLoading = false);
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text(e.toString())));
-                  }
-                },
-                style: TextStyles.abeezee14px400wW,
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
 }

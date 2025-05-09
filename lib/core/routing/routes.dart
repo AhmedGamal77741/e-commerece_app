@@ -14,4 +14,5 @@ class Routes {
   static const String commentsScreen = 'comment';
   static const String landingScreen = '/';
   static const String authScreen = '/auth';
+  static const String deleteAccount = '/delete-account';
 }

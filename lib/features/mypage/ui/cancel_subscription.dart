@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 class CancelSubscription extends StatefulWidget {
   const CancelSubscription({super.key});
@@ -19,7 +22,11 @@ class _CancelSubscriptionState extends State<CancelSubscription> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.white),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        title: Text('프리미엄 멤버십 해지', style: TextStyles.abeezee16px400wPblack),
+        centerTitle: true,
+      ),
       body: Center(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
@@ -27,7 +34,7 @@ class _CancelSubscriptionState extends State<CancelSubscription> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                '서비스 개선을 위해\n해지하는 이유를 알려주세요',
+                '서비스 개선을 위해 프리미엄\n멤버십을 해지하는 이유를\n알려주세요',
                 textAlign: TextAlign.center,
                 style: TextStyles.abeezee20px400wPblack,
               ),
@@ -97,7 +104,34 @@ class _CancelSubscriptionState extends State<CancelSubscription> {
                 txt: '로그인',
                 color: Colors.white,
                 txtColor: ColorsManager.primaryblack,
-                func: () {},
+                func: () async {
+                  final userId = FirebaseAuth.instance.currentUser!.uid;
+                  final docRef =
+                      FirebaseFirestore.instance.collection('cancels').doc();
+                  final cancelId = docRef.id;
+                  final cancelData = {
+                    'cancelId': cancelId,
+                    'userId': userId,
+                    'reason': currentOption.trim(),
+                    'createdAt': DateTime.now().toIso8601String(),
+                  };
+
+                  try {
+                    await docRef.set(cancelData);
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(userId)
+                        .update({'isSub': false});
+                    context.pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('멤버십이 성공적으로 해지되었습니다.')),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('사유 저장 실패. 다시 시도해주세요.')),
+                    );
+                  }
+                },
               ),
             ],
           ),

@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:rxdart/rxdart.dart';
 
 Future<String> uploadImageToImgBB() async {
+  final userId = FirebaseAuth.instance.currentUser!.uid;
   final XFile? image = await ImagePicker().pickImage(
     source: ImageSource.gallery,
   );
@@ -34,6 +35,9 @@ Future<String> uploadImageToImgBB() async {
 
   if (response.statusCode == 200) {
     final jsonData = jsonDecode(response.body);
+    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      'url': jsonData['data']['url'],
+    });
     return jsonData['data']['url'];
   } else {
     throw Exception('Failed to upload: ${response.body}');
