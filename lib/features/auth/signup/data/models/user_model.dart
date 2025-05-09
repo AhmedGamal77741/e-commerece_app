@@ -8,16 +8,28 @@ class MyUser {
   String name;
 
   String url;
+  List<String>? blocked = [];
   bool isSub;
+  String? defaultAddressId;
   MyUser({
     required this.userId,
     required this.email,
     required this.name,
     required this.url,
     this.isSub = false,
+    this.defaultAddressId,
+    this.blocked,
   });
 
-  static final empty = MyUser(userId: '', email: '', name: '', url: '');
+  static final empty = MyUser(
+    userId: '',
+    email: '',
+    name: '',
+    url: '',
+    blocked: [],
+    defaultAddressId: '',
+    isSub: false,
+  );
 
   MyUserEntity toEntity() {
     return MyUserEntity(
@@ -26,6 +38,8 @@ class MyUser {
       name: name,
       url: url,
       isSub: isSub,
+      defaultAddressId: defaultAddressId,
+      blocked: blocked,
     );
   }
 
@@ -36,6 +50,8 @@ class MyUser {
       name: entity.name,
       url: entity.url,
       isSub: entity.isSub,
+      defaultAddressId: entity.defaultAddressId,
+      blocked: entity.blocked,
     );
   }
 

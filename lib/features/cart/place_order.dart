@@ -2,9 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
+import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
+import 'package:ecommerece_app/features/cart/models/address.dart';
+import 'package:ecommerece_app/features/cart/services/kakao_service.dart';
+import 'package:ecommerece_app/features/cart/sub_screens/add_address_screen.dart';
+import 'package:ecommerece_app/features/cart/sub_screens/address_list_screen.dart';
+import 'package:ecommerece_app/features/cart/sub_screens/address_search_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -22,6 +28,23 @@ class _PlaceOrderState extends State<PlaceOrder> {
   final deliveryInstructionsController = TextEditingController();
   final cashReceiptController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  Future<void> _selectAddress() async {
+    final result = await Navigator.push<Address>(
+      context,
+      MaterialPageRoute(builder: (context) => AddressListScreen()),
+    );
+
+    if (result != null) {
+      deliveryAddressController.text = result.address;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -40,7 +63,12 @@ class _PlaceOrderState extends State<PlaceOrder> {
           child: ListView(
             children: [
               Container(
-                padding: EdgeInsets.only(left: 15.w, top: 15.h, bottom: 15.h),
+                padding: EdgeInsets.only(
+                  left: 15.w,
+                  top: 15.h,
+                  bottom: 15.h,
+                  right: 15.w,
+                ),
                 decoration: ShapeDecoration(
                   color: Colors.white,
                   shape: RoundedRectangleBorder(
@@ -69,20 +97,64 @@ class _PlaceOrderState extends State<PlaceOrder> {
                           height: 1.40.h,
                         ),
                       ),
-                      UnderlineTextField(
-                        controller: deliveryAddressController,
-                        hintText: '기본 배송지 : ',
-                        obscureText: false,
-                        keyboardType: TextInputType.text,
-                        validator: (val) {
-                          if (val!.isEmpty) {
-                            return '이름을 입력하세요';
-                          } else if (val.length > 30) {
-                            return '이름이 너무 깁니다';
-                          }
-                          return null;
-                        },
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: ColorsManager.primary400,
+                              width: 1.0,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: TextFormField(
+                                controller: deliveryAddressController,
+                                decoration: InputDecoration(
+                                  hintText: '기본 배송지 : ',
+                                  border: InputBorder.none,
+                                ),
+                                obscureText: false,
+                                keyboardType: TextInputType.text,
+                                validator: (val) {
+                                  if (val!.isEmpty) {
+                                    return '이름을 입력하세요';
+                                  } else if (val.length > 30) {
+                                    return '이름이 너무 깁니다';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _selectAddress,
+
+                              style: TextButton.styleFrom(
+                                fixedSize: Size(48.w, 30.h),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                side: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1.0,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4.0),
+                                ),
+                              ),
+                              child: Text(
+                                '변경',
+                                style: TextStyle(
+                                  color: ColorsManager.primaryblack,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13.sp,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+
+                      SizedBox(height: 15.h),
 
                       Text(
                         '배송 요청사항',
