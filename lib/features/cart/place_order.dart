@@ -157,6 +157,37 @@ class _PlaceOrderState extends State<PlaceOrder> {
 
                                           final userData =
                                               snapshot.data?.data();
+                                          if (userData == null ||
+                                              userData['defaultAddressId'] ==
+                                                  null ||
+                                              userData['defaultAddressId'] ==
+                                                  '') {
+                                            return Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  '배송지 미설정',
+                                                  style: TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 15.sp,
+                                                    fontFamily: 'ABeeZee',
+                                                    fontWeight: FontWeight.w400,
+                                                    height: 1.40.h,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 8.h),
+                                                Text(
+                                                  '배송지를 설정해주세요',
+                                                  style: TextStyle(
+                                                    fontSize: 15.sp,
+                                                    color: Color(0xFF9E9E9E),
+                                                    fontFamily: 'ABeeZee',
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          }
                                           return FutureBuilder(
                                             future:
                                                 FirebaseFirestore.instance

@@ -3,6 +3,7 @@ import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/shop/cart_func.dart';
 import 'package:ecommerece_app/features/shop/fav_fnc.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:flutter/material.dart';
@@ -63,6 +64,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   Product p = Product.fromMap(productData);
                   return InkWell(
                     onTap: () async {
+                      bool isSub = await isUserSubscribed();
                       bool liked = isFavoritedByUser(
                         p: p,
                         userId: FirebaseAuth.instance.currentUser?.uid ?? '',
@@ -78,6 +80,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               (context) => ItemDetails(
                                 product: p,
                                 arrivalDay: arrivalTime,
+                                isSub: isSub,
                               ),
                         ),
                       );

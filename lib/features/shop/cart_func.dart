@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 Future<void> addProductAsNewEntryToCart({
   required String userId,
@@ -18,4 +19,19 @@ Future<void> addProductAsNewEntryToCart({
     'price': price,
     'added_at': FieldValue.serverTimestamp(),
   });
+}
+
+Future<bool> isUserSubscribed() async {
+  final user = FirebaseAuth.instance.currentUser;
+
+  if (user == null) return false; // Not logged in
+
+  final userDoc =
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+
+  final data = userDoc.data();
+
+  if (data == null || data['issub'] == null) return false;
+
+  return data['issub'] == true;
 }

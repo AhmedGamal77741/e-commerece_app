@@ -5,6 +5,7 @@ import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/shop/cart_func.dart';
 
 import 'package:ecommerece_app/features/shop/fav_fnc.dart';
 
@@ -198,6 +199,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
 
                 return InkWell(
                   onTap: () async {
+                    bool isSub = await isUserSubscribed();
                     bool liked = isFavoritedByUser(
                       p: p,
                       userId: FirebaseAuth.instance.currentUser?.uid ?? '',
@@ -213,6 +215,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                             (context) => ItemDetails(
                               product: p,
                               arrivalDay: arrivalTime,
+                              isSub: isSub,
                             ),
                       ),
                     );

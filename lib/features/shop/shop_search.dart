@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
+import 'package:ecommerece_app/features/shop/cart_func.dart';
 import 'package:ecommerece_app/features/shop/fav_fnc.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -130,6 +131,7 @@ class _ShopSearchState extends State<ShopSearch> {
                       fit: BoxFit.cover,
                     ),
                     onTap: () async {
+                      bool isSub = await isUserSubscribed();
                       bool liked = isFavoritedByUser(
                         p: product,
                         userId: FirebaseAuth.instance.currentUser?.uid ?? '',
@@ -146,6 +148,7 @@ class _ShopSearchState extends State<ShopSearch> {
                               (context) => ItemDetails(
                                 product: product,
                                 arrivalDay: arrivalTime,
+                                isSub: isSub,
                               ),
                         ),
                       );

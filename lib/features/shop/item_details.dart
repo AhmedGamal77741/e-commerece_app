@@ -10,15 +10,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ItemDetails extends StatefulWidget {
   final Product product;
   final String arrivalDay;
+  final bool isSub;
   const ItemDetails({
     super.key,
     required this.product,
     required this.arrivalDay,
     String? itemId,
+    required this.isSub,
   });
 
   @override
@@ -101,6 +104,26 @@ class _ItemDetailsState extends State<ItemDetails> {
               ],
             ),
           ),
+          if (!widget.isSub)
+            GestureDetector(
+              onTap: () {
+                _launchPaymentPage(
+                  '3000',
+                  FirebaseAuth.instance.currentUser!.uid,
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                height: 33.h,
+                color: Colors.black,
+                child: Center(
+                  child: Text(
+                    '프리미엄 회원 모든 제품 10% 할인',
+                    style: TextStyles.abeezee16px400wW,
+                  ),
+                ),
+              ),
+            ),
           Padding(
             padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 14.h),
             child: Row(
@@ -216,7 +239,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                           title: Row(
                             children: [
                               Text(
-                                '${pricePoint.quantity}개 ${pricePoint.price}원 ',
+                                '${pricePoint.quantity}개 ${widget.isSub ? pricePoint.price : (pricePoint.price / 0.9).round()}원 ',
                                 style: TextStyle(
                                   fontFamily: 'ABeeZee',
                                   fontWeight: FontWeight.w400,
@@ -371,182 +394,7 @@ class _ItemDetailsState extends State<ItemDetails> {
               ),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
-
-            // child: Container(
-            //   padding: EdgeInsets.only(
-            //     left: 15.w,
-            //     top: 15.h,
-            //     bottom: 15.h,
-            //     right: 15.w,
-            //   ),
-
-            //   decoration: ShapeDecoration(
-            //     color: Colors.white,
-            //     shape: RoundedRectangleBorder(
-            //       side: BorderSide(width: 0.27, color: const Color(0xFF747474)),
-            //       borderRadius: BorderRadius.circular(12),
-            //     ),
-            //   ),
-            //   child: Column(
-            //     mainAxisSize: MainAxisSize.min,
-            //     mainAxisAlignment: MainAxisAlignment.start,
-            //     crossAxisAlignment: CrossAxisAlignment.center,
-            //     spacing: 10.h,
-            //     children: [
-            //       Row(
-            //         children: [
-            //           RatingBar(
-            //             ignoreGestures: true,
-            //             itemSize: 20.sp,
-            //             maxRating: 5,
-            //             minRating: 0,
-            //             initialRating: 3.5,
-            //             allowHalfRating: true,
-            //             ratingWidget: RatingWidget(
-            //               full: Icon(
-            //                 Icons.star,
-            //                 color: ColorsManager.primaryblack,
-            //               ),
-            //               half: Icon(
-            //                 Icons.star_half,
-            //                 color: ColorsManager.primaryblack,
-            //               ),
-            //               empty: Icon(
-            //                 Icons.star_border,
-            //                 color: ColorsManager.primary300,
-            //               ),
-            //             ),
-            //             onRatingUpdate: (rating) {
-            //               print("평점은: $rating");
-            //             },
-            //           ),
-            //           Text("(1,740)", style: TextStyles.abeezee14px400wP600),
-            //         ],
-            //       ),
-            //       Row(
-            //         crossAxisAlignment: CrossAxisAlignment.start,
-            //         children: [
-            //           Flexible(
-            //             child: Image.asset(
-            //               'assets/product_image_order.png',
-            //               width: 105.w,
-            //               height: 105.h,
-            //             ),
-            //           ),
-            //           Expanded(
-            //             flex: 2,
-            //             child: Padding(
-            //               padding: EdgeInsets.only(left: 10.w),
-            //               child: Column(
-            //                 crossAxisAlignment: CrossAxisAlignment.start,
-            //                 children: [
-            //                   Text(
-            //                     'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. ',
-            //                     style: TextStyles.abeezee16px400wPblack,
-            //                   ),
-
-            //                   RatingBar(
-            //                     ignoreGestures: true,
-            //                     itemSize: 20.sp,
-            //                     maxRating: 5,
-            //                     minRating: 0,
-            //                     initialRating: 4,
-            //                     allowHalfRating: true,
-            //                     ratingWidget: RatingWidget(
-            //                       full: Icon(
-            //                         Icons.star,
-            //                         color: ColorsManager.primaryblack,
-            //                       ),
-            //                       half: Icon(
-            //                         Icons.star_half,
-            //                         color: ColorsManager.primaryblack,
-            //                       ),
-            //                       empty: Icon(
-            //                         Icons.star_border,
-            //                         color: ColorsManager.primary300,
-            //                       ),
-            //                     ),
-            //                     onRatingUpdate: (rating) {
-            //                       print("Rating is: $rating");
-            //                     },
-            //                   ),
-            //                 ],
-            //               ),
-            //             ),
-            //           ),
-            //         ],
-            //       ),
-            //       verticalSpace(5),
-            //       Row(
-            //         crossAxisAlignment: CrossAxisAlignment.start,
-            //         children: [
-            //           Flexible(
-            //             child: Image.asset(
-            //               'assets/product_image_order.png',
-            //               width: 105.w,
-            //               height: 105.h,
-            //             ),
-            //           ),
-            //           Expanded(
-            //             flex: 2,
-            //             child: Padding(
-            //               padding: EdgeInsets.only(left: 10.w),
-            //               child: Column(
-            //                 crossAxisAlignment: CrossAxisAlignment.start,
-            //                 children: [
-            //                   Text(
-            //                     'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi interdum tincidunt nisi, sed euismod nibh viverra eu. ',
-            //                     style: TextStyles.abeezee16px400wPblack,
-            //                   ),
-
-            //                   RatingBar(
-            //                     ignoreGestures: true,
-            //                     itemSize: 20.sp,
-            //                     maxRating: 5,
-            //                     minRating: 0,
-            //                     initialRating: 4,
-            //                     allowHalfRating: true,
-            //                     ratingWidget: RatingWidget(
-            //                       full: Icon(
-            //                         Icons.star,
-            //                         color: ColorsManager.primaryblack,
-            //                       ),
-            //                       half: Icon(
-            //                         Icons.star_half,
-            //                         color: ColorsManager.primaryblack,
-            //                       ),
-            //                       empty: Icon(
-            //                         Icons.star_border,
-            //                         color: ColorsManager.primary300,
-            //                       ),
-            //                     ),
-            //                     onRatingUpdate: (rating) {
-            //                       print("Rating is: $rating");
-            //                     },
-            //                   ),
-            //                 ],
-            //               ),
-            //             ),
-            //           ),
-            //         ],
-            //       ),
-            //       verticalSpace(5),
-            //       Text(
-            //         '모두 보기',
-            //         style: TextStyle(
-            //           color: const Color(0xFF747474),
-            //           fontSize: 14.sp,
-            //           fontFamily: 'ABeeZee',
-            //           fontWeight: FontWeight.w400,
-            //           height: 1.40.h,
-            //         ),
-            //       ),
-            //     ],
-            //   ),
-            // ),
-          ),
+          Padding(padding: EdgeInsets.symmetric(horizontal: 20.w)),
         ],
       ),
       bottomNavigationBar: Padding(
@@ -565,10 +413,19 @@ class _ItemDetailsState extends State<ItemDetails> {
                             .pricePoints[int.parse(_selectedOption ?? '1')]
                             .quantity,
                     price:
-                        widget
-                            .product
-                            .pricePoints[int.parse(_selectedOption ?? '1')]
-                            .price,
+                        widget.isSub
+                            ? widget
+                                .product
+                                .pricePoints[int.parse(_selectedOption ?? '1')]
+                                .price
+                            : (widget
+                                        .product
+                                        .pricePoints[int.parse(
+                                          _selectedOption ?? '1',
+                                        )]
+                                        .price /
+                                    0.9)
+                                .round(),
                   );
                   Navigation(context).pop();
                   // Navigator.push(
@@ -615,10 +472,19 @@ class _ItemDetailsState extends State<ItemDetails> {
                             .pricePoints[int.parse(_selectedOption ?? '0')]
                             .quantity,
                     price:
-                        widget
-                            .product
-                            .pricePoints[int.parse(_selectedOption ?? '0')]
-                            .price,
+                        widget.isSub
+                            ? widget
+                                .product
+                                .pricePoints[int.parse(_selectedOption ?? '0')]
+                                .price
+                            : (widget
+                                        .product
+                                        .pricePoints[int.parse(
+                                          _selectedOption ?? '0',
+                                        )]
+                                        .price /
+                                    0.9)
+                                .round(),
                   );
                   context.go(Routes.placeOrderScreen);
                 },
@@ -648,5 +514,20 @@ class _ItemDetailsState extends State<ItemDetails> {
         ),
       ),
     );
+  }
+}
+
+void _launchPaymentPage(String amount, String userId) async {
+  final url = Uri.parse(
+    'https://e-commerce-app-34fb2.web.app/payment.html?amount=$amount&userId=$userId',
+  );
+
+  if (await canLaunchUrl(url)) {
+    await launchUrl(
+      url,
+      // mode: LaunchMode.externalApplication, // Forces external browser
+    );
+  } else {
+    throw 'Could not launch $url';
   }
 }
