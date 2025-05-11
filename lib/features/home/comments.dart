@@ -120,7 +120,7 @@ class _CommentsState extends State<Comments> {
                               style: TextStyle(
                                 color: const Color(0xFF121212),
                                 fontSize: 16,
-                                fontFamily: 'ABeeZee',
+                                fontFamily: 'NotoSans',
                                 fontWeight: FontWeight.w400,
                                 height: 1.40,
                               ),
@@ -133,7 +133,7 @@ class _CommentsState extends State<Comments> {
                               style: TextStyle(
                                 color: const Color(0xFF5F5F5F),
                                 fontSize: 16,
-                                fontFamily: 'ABeeZee',
+                                fontFamily: 'NotoSans',
                                 fontWeight: FontWeight.w400,
                                 height: 1.40,
                                 letterSpacing: -0.09,
@@ -177,7 +177,7 @@ class _CommentsState extends State<Comments> {
                               style: TextStyle(
                                 color: Colors.grey,
                                 fontSize: 14.sp,
-                                fontFamily: 'ABeeZee',
+                                fontFamily: 'NotoSans',
                               ),
                             ),
                           ),

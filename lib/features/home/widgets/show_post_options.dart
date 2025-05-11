@@ -60,7 +60,7 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                               style: TextStyle(
                                 color: const Color(0xFF343434),
                                 fontSize: 16.sp,
-                                fontFamily: 'ABeeZee',
+                                fontFamily: 'NotoSans',
                                 fontWeight: FontWeight.w400,
                                 height: 1.40.h,
                               ),
@@ -137,7 +137,7 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                                   style: TextStyle(
                                     color: const Color(0xFF343434),
                                     fontSize: 16.sp,
-                                    fontFamily: 'ABeeZee',
+                                    fontFamily: 'NotoSans',
                                     fontWeight: FontWeight.w400,
                                     height: 1.40.h,
                                   ),
@@ -228,7 +228,7 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                                   style: TextStyle(
                                     color: const Color(0xFFDA3A48),
                                     fontSize: 16.sp,
-                                    fontFamily: 'ABeeZee',
+                                    fontFamily: 'NotoSans',
                                     fontWeight: FontWeight.w400,
                                     height: 1.40.h,
                                   ),
@@ -305,7 +305,7 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                                     style: TextStyle(
                                       color: const Color(0xFFDA3A48),
                                       fontSize: 16.sp,
-                                      fontFamily: 'ABeeZee',
+                                      fontFamily: 'NotoSans',
                                       fontWeight: FontWeight.w400,
                                       height: 1.40.h,
                                     ),

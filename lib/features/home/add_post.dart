@@ -78,7 +78,7 @@ class _AddPostState extends State<AddPost> {
                 style: TextStyle(
                   color: const Color(0xFF121212),
                   fontSize: 16,
-                  fontFamily: 'ABeeZee',
+                  fontFamily: 'NotoSans',
                   fontWeight: FontWeight.w400,
                   height: 1.40,
                 ),
@@ -142,14 +142,14 @@ class _AddPostState extends State<AddPost> {
                                     // Matches your text style
                                     color: const Color(0xFF5F5F5F),
                                     fontSize: 13.sp,
-                                    fontFamily: 'ABeeZee',
+                                    fontFamily: 'NotoSans',
                                     fontWeight: FontWeight.w400,
                                   ),
                                 ),
                                 style: TextStyle(
                                   color: const Color(0xFF5F5F5F),
                                   fontSize: 13.sp,
-                                  fontFamily: 'ABeeZee',
+                                  fontFamily: 'NotoSans',
                                   fontWeight: FontWeight.w400,
                                 ),
                               ),

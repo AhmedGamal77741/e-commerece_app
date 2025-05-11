@@ -148,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: TextStyle(
                                       color: const Color(0xFF5F5F5F),
                                       fontSize: 13.sp,
-                                      fontFamily: 'ABeeZee',
+                                      fontFamily: 'NotoSans',
                                       fontWeight: FontWeight.w400,
                                     ),
                                   ),

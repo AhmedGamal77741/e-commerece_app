@@ -110,7 +110,7 @@ class PostItem extends StatelessWidget {
                                   style: TextStyle(
                                     color: const Color(0xFF343434),
                                     fontSize: 16.sp,
-                                    fontFamily: 'ABeeZee',
+                                    fontFamily: 'NotoSans',
                                     fontWeight: FontWeight.w400,
                                     height: 1.40.h,
                                     letterSpacing: -0.09.w,

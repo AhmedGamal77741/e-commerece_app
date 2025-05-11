@@ -8,7 +8,7 @@ class TextStyles {
     required FontWeight fontWeight,
     required color,
     double letterSpacing = 0,
-    String fontFamily = 'ABeeZee',
+    String fontFamily = 'NotoSans',
   }) {
     return TextStyle(
       fontSize: fontSize.sp,

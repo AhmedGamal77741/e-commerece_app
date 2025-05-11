@@ -252,7 +252,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                           style: TextStyle(
                             color: Colors.black,
                             fontSize: 18.sp,
-                            fontFamily: 'ABeeZee',
+                            fontFamily: 'NotoSans',
                             fontWeight: FontWeight.w400,
                             height: 1.40.h,
                           ),
@@ -267,7 +267,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                               style: TextStyle(
                                 color: Colors.black,
                                 fontSize: 18.sp,
-                                fontFamily: 'ABeeZee',
+                                fontFamily: 'NotoSans',
                                 fontWeight: FontWeight.w400,
                                 height: 1.40.h,
                               ),
@@ -303,7 +303,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                             style: TextStyle(
                               color: const Color(0xFFF5F5F5),
                               fontSize: 16.sp,
-                              fontFamily: 'ABeeZee',
+                              fontFamily: 'NotoSans',
                               fontWeight: FontWeight.w400,
                               height: 1.40.h,
                             ),

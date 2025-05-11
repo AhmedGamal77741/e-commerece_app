@@ -82,6 +82,9 @@ flutter:
     - family: ABeeZee
       fonts:
         - asset: fonts/ABeeZee-Regular.ttf
+    - family: NotoSans
+      fonts:
+        - asset: fonts/NotoSans-Regular.ttf
   #   - family: Trajan Pro
   #     fonts:
   #       - asset: fonts/TrajanPro.ttf

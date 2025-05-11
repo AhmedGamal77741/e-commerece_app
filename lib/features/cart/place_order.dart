@@ -74,7 +74,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
             onPressed: () => Navigator.pop(context),
             icon: Icon(Icons.arrow_back_ios),
           ),
-          title: Text("주문 결제", style: TextStyle(fontFamily: 'ABeeZee')),
+          title: Text("주문 결제", style: TextStyle(fontFamily: 'NotoSans')),
         ),
         body: Padding(
           padding: EdgeInsets.only(left: 15.w, top: 30.h, right: 15.w),
@@ -174,7 +174,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                                   style: TextStyle(
                                                     color: Colors.black,
                                                     fontSize: 15.sp,
-                                                    fontFamily: 'ABeeZee',
+                                                    fontFamily: 'NotoSans',
                                                     fontWeight: FontWeight.w400,
                                                     height: 1.40.h,
                                                   ),
@@ -185,7 +185,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                                   style: TextStyle(
                                                     fontSize: 15.sp,
                                                     color: Color(0xFF9E9E9E),
-                                                    fontFamily: 'ABeeZee',
+                                                    fontFamily: 'NotoSans',
                                                   ),
                                                 ),
                                               ],
@@ -243,7 +243,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                                     style: TextStyle(
                                                       color: Colors.black,
                                                       fontSize: 15.sp,
-                                                      fontFamily: 'ABeeZee',
+                                                      fontFamily: 'NotoSans',
                                                       fontWeight:
                                                           FontWeight.w400,
                                                       height: 1.40.h,
@@ -256,7 +256,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                                     style: TextStyle(
                                                       fontSize: 15.sp,
                                                       color: Color(0xFF9E9E9E),
-                                                      fontFamily: 'ABeeZee',
+                                                      fontFamily: 'NotoSans',
                                                     ),
                                                   ),
                                                   Text(
@@ -264,7 +264,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                                     style: TextStyle(
                                                       fontSize: 15.sp,
                                                       color: Color(0xFF9E9E9E),
-                                                      fontFamily: 'ABeeZee',
+                                                      fontFamily: 'NotoSans',
                                                     ),
                                                   ),
                                                 ],
@@ -282,7 +282,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                             style: TextStyle(
                                               color: Colors.black,
                                               fontSize: 15.sp,
-                                              fontFamily: 'ABeeZee',
+                                              fontFamily: 'NotoSans',
                                               fontWeight: FontWeight.w400,
                                               height: 1.40.h,
                                             ),
@@ -294,7 +294,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                             style: TextStyle(
                                               fontSize: 15.sp,
                                               color: Color(0xFF9E9E9E),
-                                              fontFamily: 'ABeeZee',
+                                              fontFamily: 'NotoSans',
                                             ),
                                           ),
                                           Text(
@@ -302,7 +302,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                             style: TextStyle(
                                               fontSize: 15.sp,
                                               color: Color(0xFF9E9E9E),
-                                              fontFamily: 'ABeeZee',
+                                              fontFamily: 'NotoSans',
                                             ),
                                           ),
                                         ],
@@ -341,7 +341,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 16.sp,
-                          fontFamily: 'ABeeZee',
+                          fontFamily: 'NotoSans',
                           fontWeight: FontWeight.w400,
                           height: 1.40.h,
                         ),
@@ -361,7 +361,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                           style: TextStyle(
                                             color: Colors.black,
                                             fontSize: 16.sp,
-                                            fontFamily: 'ABeeZee',
+                                            fontFamily: 'NotoSans',
                                             fontWeight: FontWeight.w400,
                                             height: 1.40.h,
                                           ),
@@ -392,7 +392,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 16.sp,
-                          fontFamily: 'ABeeZee',
+                          fontFamily: 'NotoSans',
                           fontWeight: FontWeight.w400,
                           height: 1.40.h,
                         ),
@@ -479,7 +479,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                     '현금 영수증',
                                     style: TextStyle(
                                       fontSize: 15.sp,
-                                      fontFamily: 'ABeeZee',
+                                      fontFamily: 'NotoSans',
                                       fontWeight: FontWeight.w400,
                                       color: ColorsManager.primaryblack,
                                     ),
@@ -502,7 +502,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                     '세금 계산서',
                                     style: TextStyle(
                                       fontSize: 15.sp,
-                                      fontFamily: 'ABeeZee',
+                                      fontFamily: 'NotoSans',
                                       fontWeight: FontWeight.w400,
                                       color: ColorsManager.primaryblack,
                                     ),
@@ -603,7 +603,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                       style: TextStyle(
                                         color: const Color(0xFF747474),
                                         fontSize: 14.sp,
-                                        fontFamily: 'ABeeZee',
+                                        fontFamily: 'NotoSans',
                                         fontWeight: FontWeight.w400,
                                         height: 1.40.h,
                                       ),
@@ -614,7 +614,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                       style: TextStyle(
                                         color: const Color(0xFF747474),
                                         fontSize: 14.sp,
-                                        fontFamily: 'ABeeZee',
+                                        fontFamily: 'NotoSans',
                                         fontWeight: FontWeight.w600,
                                         height: 1.40.h,
                                       ),
@@ -660,7 +660,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontSize: 18.sp,
-                                  fontFamily: 'ABeeZee',
+                                  fontFamily: 'NotoSans',
                                   fontWeight: FontWeight.w400,
                                   height: 1.40.h,
                                 ),
@@ -671,7 +671,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                     style: TextStyle(
                                       color: Colors.black,
                                       fontSize: 18.sp,
-                                      fontFamily: 'ABeeZee',
+                                      fontFamily: 'NotoSans',
                                       fontWeight: FontWeight.w400,
                                       height: 1.40.h,
                                     ),

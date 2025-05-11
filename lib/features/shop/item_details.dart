@@ -169,7 +169,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 14.sp,
-                          fontFamily: 'ABeeZee',
+                          fontFamily: 'NotoSans',
                           fontWeight: FontWeight.w400,
                           height: 1.40, // Removed .h as height is a factor
                         ),
@@ -180,7 +180,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 16.sp,
-                          fontFamily: 'ABeeZee',
+                          fontFamily: 'NotoSans',
                           fontWeight: FontWeight.w400,
                           height: 1.40, // Removed .h
                         ),
@@ -191,7 +191,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         style: TextStyle(
                           color: const Color(0xFF747474),
                           fontSize: 14.sp,
-                          fontFamily: 'ABeeZee',
+                          fontFamily: 'NotoSans',
                           fontWeight: FontWeight.w400,
                           height: 1.40, // Removed .h
                         ),
@@ -280,7 +280,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                               Text(
                                 '${pricePoint.quantity}개 ${formatCurrency.format(widget.isSub ? pricePoint.price : (pricePoint.price / 0.9).round())}원',
                                 style: TextStyle(
-                                  fontFamily: 'ABeeZee',
+                                  fontFamily: 'NotoSans',
                                   fontWeight: FontWeight.w400,
                                   fontSize: 16.sp,
                                   height: 1.4, // Removed .h
@@ -436,7 +436,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                   '장바구니 담기',
                   style: TextStyle(
                     color: Colors.black,
-                    fontFamily: 'ABeeZee',
+                    fontFamily: 'NotoSans',
                     fontSize: 18.sp,
                   ),
                 ),
@@ -503,7 +503,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                   '바로 구매',
                   style: TextStyle(
                     color: Colors.white,
-                    fontFamily: 'ABeeZee',
+                    fontFamily: 'NotoSans',
                     fontSize: 18.sp,
                   ),
                 ),
@@ -527,7 +527,7 @@ class _ItemDetailsState extends State<ItemDetails> {
           style: TextStyle(
             color: const Color(0xFF121212),
             fontSize: 16.sp,
-            fontFamily: 'ABeeZee',
+            fontFamily: 'NotoSans',
             fontWeight: FontWeight.w400,
             height: 1.40,
           ),
@@ -538,7 +538,7 @@ class _ItemDetailsState extends State<ItemDetails> {
           style: TextStyle(
             color: const Color(0xFF747474),
             fontSize: 14.sp,
-            fontFamily: 'ABeeZee',
+            fontFamily: 'NotoSans',
             fontWeight: FontWeight.w400,
             height: 1.40,
           ),

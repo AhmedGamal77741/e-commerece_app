@@ -43,7 +43,7 @@ class AppRouter {
           ),
           GoRoute(
             name: Routes.addPostScreen,
-            path: '/${Routes.addPostScreen}', // '/add-post'
+            path: '${Routes.addPostScreen}', // '/add-post'
             builder: (context, state) => const AddPost(),
           ),
           GoRoute(

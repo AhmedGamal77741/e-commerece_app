@@ -71,7 +71,7 @@ class _PostActionsState extends State<PostActions> {
                 style: TextStyle(
                   color: const Color(0xFF343434),
                   fontSize: 14,
-                  fontFamily: 'ABeeZee',
+                  fontFamily: 'NotoSans',
                   fontWeight: FontWeight.w400,
                   height: 1.40,
                 ),
@@ -109,7 +109,7 @@ class _PostActionsState extends State<PostActions> {
                 style: TextStyle(
                   color: const Color(0xFF343434),
                   fontSize: 14,
-                  fontFamily: 'ABeeZee',
+                  fontFamily: 'NotoSans',
                   fontWeight: FontWeight.w400,
                   height: 1.40,
                 ),

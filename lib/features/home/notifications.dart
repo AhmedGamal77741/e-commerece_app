@@ -49,7 +49,7 @@ class _NotificationsState extends State<Notifications> {
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 20.sp,
-                      fontFamily: 'ABeeZee',
+                      fontFamily: 'NotoSans',
                       fontWeight: FontWeight.w400,
                       height: 1.40.h,
                     ),
@@ -59,7 +59,7 @@ class _NotificationsState extends State<Notifications> {
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 20.sp,
-                      fontFamily: 'ABeeZee',
+                      fontFamily: 'NotoSans',
                       fontWeight: FontWeight.w400,
                       height: 1.40.h,
                     ),
@@ -78,7 +78,7 @@ class _NotificationsState extends State<Notifications> {
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 20.sp,
-                        fontFamily: 'ABeeZee',
+                        fontFamily: 'NotoSans',
                         fontWeight: FontWeight.w400,
                         height: 1.40.h,
                       ),
@@ -98,7 +98,7 @@ class _NotificationsState extends State<Notifications> {
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 20.sp,
-                        fontFamily: 'ABeeZee',
+                        fontFamily: 'NotoSans',
                         fontWeight: FontWeight.w400,
                         height: 1.40.h,
                       ),

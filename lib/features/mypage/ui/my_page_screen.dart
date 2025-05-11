@@ -75,7 +75,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
             labelStyle: TextStyle(
               fontSize: 16.sp,
               decoration: TextDecoration.none,
-              fontFamily: 'ABeeZee',
+              fontFamily: 'NotoSans',
               fontStyle: FontStyle.normal,
               fontWeight: FontWeight.w400,
               letterSpacing: 0,

@@ -25,7 +25,7 @@ class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
             labelStyle: TextStyle(
               fontSize: 16.sp,
               decoration: TextDecoration.none,
-              fontFamily: 'ABeeZee',
+              fontFamily: 'NotoSans',
               fontStyle: FontStyle.normal,
               fontWeight: FontWeight.w400,
               letterSpacing: 0,
@@ -48,7 +48,7 @@ class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
             labelStyle: TextStyle(
               fontSize: 16.sp,
               decoration: TextDecoration.none,
-              fontFamily: 'ABeeZee',
+              fontFamily: 'NotoSans',
               fontStyle: FontStyle.normal,
               fontWeight: FontWeight.w400,
               letterSpacing: 0,
