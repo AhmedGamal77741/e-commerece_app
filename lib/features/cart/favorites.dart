@@ -9,6 +9,7 @@ import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -18,6 +19,8 @@ class FavoritesScreen extends StatefulWidget {
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
+  final formatCurrency = NumberFormat('#,###');
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -162,7 +165,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               ),
 
                               Text(
-                                '${productData['pricePoints'][0]['price']} 원',
+                                '${formatCurrency.format(productData['pricePoints'][0]['price'] ?? 0)} 원',
                                 style: TextStyles.abeezee13px400wPblack,
                               ),
                             ],

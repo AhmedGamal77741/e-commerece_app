@@ -2,15 +2,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
+import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/cart/delete_func.dart';
+import 'package:ecommerece_app/features/shop/cart_func.dart';
+import 'package:ecommerece_app/features/shop/fav_fnc.dart';
+import 'package:ecommerece_app/features/shop/item_details.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 class ShoppingCart extends StatefulWidget {
   const ShoppingCart({super.key});
@@ -20,6 +25,7 @@ class ShoppingCart extends StatefulWidget {
 }
 
 class _ShoppingCartState extends State<ShoppingCart> {
+  final formatCurrency = NumberFormat('#,###');
   // Function to calculate total cart price
   Future<int> calculateCartTotal(List<QueryDocumentSnapshot> cartDocs) async {
     int total = 0;
@@ -81,94 +87,134 @@ class _ShoppingCartState extends State<ShoppingCart> {
                         final productData =
                             productSnapshot.data!.data()
                                 as Map<String, dynamic>;
-
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                productData['imgUrl'],
-                                width: 106.w,
-                                height: 106.h,
-                                fit: BoxFit.cover,
+                        Product p = Product.fromMap(productData);
+                        return InkWell(
+                          onTap: () async {
+                            bool isSub = await isUserSubscribed();
+                            bool liked = isFavoritedByUser(
+                              p: p,
+                              userId:
+                                  FirebaseAuth.instance.currentUser?.uid ?? '',
+                            );
+                            String arrivalTime = await getArrivalDay(
+                              p.meridiem,
+                              p.baselineTime,
+                            );
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => ItemDetails(
+                                      product: p,
+                                      arrivalDay: arrivalTime,
+                                      isSub: isSub,
+                                    ),
                               ),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.only(left: 10.w),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    productData['sellerName'],
-                                    style: TextStyles.abeezee14px400wP600,
-                                  ),
+                            );
 
-                                  Text(
-                                    productData['productName'],
-                                    style: TextStyles.abeezee16px400wPblack,
-                                  ),
+                            // context.pushNamed(
+                            //   Routes.itemDetailsScreen,
+                            //   arguments: {
+                            // 'imgUrl': data['imgUrl'],
+                            // 'sellerName': data['sellerName	'],
+                            // 'price': data['price	'],
+                            // 'product_id': data['product_id'],
+                            // 'freeShipping': data['freeShipping	'],
+                            // 'meridiem': data['meridiem'],
+                            // 'baselinehour': data['baselinehour	'],
+                            // 'productName': data['productName	'],
+                            //   },
+                            // );
+                          },
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.network(
+                                  productData['imgUrl'],
+                                  width: 106.w,
+                                  height: 106.h,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.only(left: 10.w),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      productData['sellerName'],
+                                      style: TextStyles.abeezee14px400wP600,
+                                    ),
 
-                                  Row(
-                                    children: [
-                                      Text(
-                                        '수량 : ${cartData['quantity'].toString()}  ',
-                                        style: TextStyles.abeezee14px400wP600,
-                                      ),
-                                      FutureBuilder<String>(
-                                        future: getArrivalDay(
-                                          productData['meridiem'],
-                                          productData['baselineTime'],
+                                    Text(
+                                      productData['productName'],
+                                      style: TextStyles.abeezee16px400wPblack,
+                                    ),
+
+                                    Row(
+                                      children: [
+                                        Text(
+                                          '수량 : ${cartData['quantity'].toString()}  ',
+                                          style: TextStyles.abeezee14px400wP600,
                                         ),
-                                        builder: (context, snapshot) {
-                                          if (snapshot.connectionState ==
-                                              ConnectionState.waiting) {
+                                        FutureBuilder<String>(
+                                          future: getArrivalDay(
+                                            productData['meridiem'],
+                                            productData['baselineTime'],
+                                          ),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.connectionState ==
+                                                ConnectionState.waiting) {
+                                              return Text(
+                                                '로딩 중...',
+                                                style:
+                                                    TextStyles
+                                                        .abeezee14px400wP600,
+                                              );
+                                            }
+                                            if (snapshot.hasError) {
+                                              return Text(
+                                                '오류 발생',
+                                                style:
+                                                    TextStyles
+                                                        .abeezee14px400wP600,
+                                              );
+                                            }
+
                                             return Text(
-                                              '로딩 중...',
+                                              '${snapshot.data} 도착예정',
                                               style:
                                                   TextStyles
                                                       .abeezee14px400wP600,
                                             );
-                                          }
-                                          if (snapshot.hasError) {
-                                            return Text(
-                                              '오류 발생',
-                                              style:
-                                                  TextStyles
-                                                      .abeezee14px400wP600,
-                                            );
-                                          }
+                                          },
+                                        ),
+                                      ],
+                                    ),
 
-                                          return Text(
-                                            '${snapshot.data} 도착예정',
-                                            style:
-                                                TextStyles.abeezee14px400wP600,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-
-                                  Text(
-                                    '${cartData['price']} 원',
-                                    style: TextStyles.abeezee16px400wPblack,
-                                  ),
-                                ],
+                                    Text(
+                                      '${formatCurrency.format(cartData['price'] ?? 0)} 원',
+                                      style: TextStyles.abeezee16px400wPblack,
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
 
-                            Spacer(),
-                            IconButton(
-                              onPressed: () async {
-                                await deleteCartItem(cartDocs[index].id);
-                              },
-                              icon: Icon(
-                                Icons.close,
-                                color: ColorsManager.primary600,
-                                size: 18,
+                              Spacer(),
+                              IconButton(
+                                onPressed: () async {
+                                  await deleteCartItem(cartDocs[index].id);
+                                },
+                                icon: Icon(
+                                  Icons.close,
+                                  color: ColorsManager.primary600,
+                                  size: 18,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         );
                       },
                     );
@@ -217,7 +263,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                           ? Padding(
                             padding: EdgeInsets.only(right: 10.w),
                             child: Text(
-                              '${totalSnapshot.data} 원',
+                              '${formatCurrency.format(totalSnapshot.data ?? 0)} 원',
                               style: TextStyle(
                                 color: Colors.black,
                                 fontSize: 18.sp,

@@ -8,6 +8,7 @@ import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 
 class ShopSearch extends StatefulWidget {
   const ShopSearch({super.key});
@@ -64,6 +65,8 @@ class _ShopSearchState extends State<ShopSearch> {
       });
     }
   }
+
+  final formatCurrency = NumberFormat('#,###');
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +126,7 @@ class _ShopSearchState extends State<ShopSearch> {
                   final product = _filteredProducts[index];
                   return ListTile(
                     title: Text(product.productName),
-                    subtitle: Text('${product.price} 원'),
+                    subtitle: Text('${formatCurrency.format(product.price)} 원'),
                     leading: Image.network(
                       product.imgUrl!,
                       width: 50.w,

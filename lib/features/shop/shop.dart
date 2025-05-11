@@ -16,6 +16,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 class Shop extends StatefulWidget {
   const Shop({super.key});
@@ -79,7 +80,7 @@ class _ShopState extends State<Shop> {
         body: Center(child: Text('No categories available')),
       );
     }
-    int initialIndex = _categories.length > 4 ? 3 : 0;
+    int initialIndex = 0;
     return DefaultTabController(
       length: _categories.length,
       initialIndex: initialIndex,
@@ -131,7 +132,7 @@ class CategoryProductsScreen extends StatefulWidget {
   final String categoryId;
   final String categoryName;
 
-  const CategoryProductsScreen({
+  CategoryProductsScreen({
     Key? key,
     required this.categoryId,
     required this.categoryName,
@@ -171,7 +172,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
 
           builder: (context, snapshot) {
             print(snapshot);
-
+            final formatCurrency = NumberFormat('#,###');
             if (snapshot.hasError) {
               return Center(child: Text('오류: ${snapshot.error}'));
             }
@@ -265,7 +266,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
-                                '${p.price ?? '0'} 원',
+                                '${formatCurrency.format(p.price)} 원',
                                 style: TextStyles.abeezee16px400wPblack,
                               ),
                               verticalSpace(2),

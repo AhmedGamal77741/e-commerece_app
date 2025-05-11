@@ -15,6 +15,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 class PlaceOrder extends StatefulWidget {
   const PlaceOrder({super.key});
@@ -59,6 +60,8 @@ class _PlaceOrderState extends State<PlaceOrder> {
       });
     }
   }
+
+  final formatCurrency = NumberFormat('#,###');
 
   @override
   Widget build(BuildContext context) {
@@ -607,7 +610,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                     ),
 
                                     Text(
-                                      '${(cartData['price']).toString()} 원',
+                                      '${formatCurrency.format(cartData['price'] ?? 0)} 원',
                                       style: TextStyle(
                                         color: const Color(0xFF747474),
                                         fontSize: 14.sp,
@@ -664,7 +667,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                               ),
                               totalSnapshot.hasData
                                   ? Text(
-                                    '${totalSnapshot.data} 원',
+                                    '${formatCurrency.format(totalSnapshot.data ?? 0)} 원',
                                     style: TextStyle(
                                       color: Colors.black,
                                       fontSize: 18.sp,

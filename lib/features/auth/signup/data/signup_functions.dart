@@ -12,6 +12,8 @@ import 'package:rxdart/rxdart.dart';
 
 Future<String> uploadImageToImgBB() async {
   final userId = FirebaseAuth.instance.currentUser!.uid;
+  final CollectionReference usersCollection = FirebaseFirestore.instance
+      .collection('users');
   final XFile? image = await ImagePicker().pickImage(
     source: ImageSource.gallery,
   );
@@ -48,7 +50,11 @@ class FirebaseUserRepo {
   final FirebaseAuth _firebaseAuth;
 
   final usersCollection = FirebaseFirestore.instance.collection('users');
-
+  static const String signUpSuccess = "SIGNUP_SUCCESS";
+  static const String errorEmailAlreadyInUse = "ERROR_EMAIL_ALREADY_IN_USE";
+  static const String errorUsernameTaken = "ERROR_USERNAME_TAKEN";
+  static const String errorWeakPassword = "ERROR_WEAK_PASSWORD";
+  static const String errorUnknown = "ERROR_UNKNOWN";
   FirebaseUserRepo({FirebaseAuth? firebaseAuth})
     : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
@@ -108,32 +114,66 @@ class FirebaseUserRepo {
     return myUser;
   }
 
-  Future signUp(MyUser myUser, String password) async {
+  Future<String> signUp(MyUser myUser, String password) async {
     try {
-      UserCredential user = await _firebaseAuth.createUserWithEmailAndPassword(
-        email: myUser.email,
-        password: password,
-      );
+      // 1. Check if username (nickname) already exists
+      final usernameQuery =
+          await usersCollection
+              .where(
+                'name',
+                isEqualTo: myUser.name,
+              ) // Assuming 'name' is the field for nickname in Firestore
+              .limit(1)
+              .get();
 
-      myUser.userId = user.user!.uid;
-
-      try {
-        // await user.user!.updateDisplayName(myUser.name);
-        // await user.user!.updatePhotoURL(myUser.url);
-        await usersCollection.doc(myUser.userId).set({
-          ...myUser.toEntity().toDocument(),
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      } catch (e) {
-        // log(e.toString());
-        rethrow;
+      if (usernameQuery.docs.isNotEmpty) {
+        return errorUsernameTaken; // Username is already taken
       }
-      await user.user!.updateDisplayName(myUser.name);
-      await user.user!.updatePhotoURL(myUser.url);
-      return myUser;
+
+      // 2. If username is unique, proceed to create user with email and password
+      UserCredential userCredential = await _firebaseAuth
+          .createUserWithEmailAndPassword(
+            email: myUser.email,
+            password: password,
+          );
+
+      myUser.userId = userCredential.user!.uid;
+
+      // 3. Store user details in Firestore
+      // It's good practice to do this after successful Firebase Auth creation
+      await usersCollection.doc(myUser.userId).set({
+        ...myUser.toEntity().toDocument(), // Ensure this maps 'name' correctly
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // 4. Update Firebase Auth user's profile (optional, but good for consistency)
+      // Do this after successfully saving to Firestore to ensure data consistency
+      await userCredential.user!.updateDisplayName(myUser.name);
+      await userCredential.user!.updatePhotoURL(myUser.url);
+
+      return signUpSuccess; // Indicate success
+    } on FirebaseAuthException catch (e) {
+      print('FirebaseAuthException during sign up: ${e.code} - ${e.message}');
+      if (e.code == 'email-already-in-use') {
+        return errorEmailAlreadyInUse;
+      } else if (e.code == 'weak-password') {
+        return errorWeakPassword;
+      }
+      // Handle other specific Firebase Auth errors as needed
+      return errorUnknown; // Generic error for other Firebase Auth issues
     } catch (e) {
-      return null;
+      print('Generic exception during sign up: ${e.toString()}');
+      return errorUnknown; // Generic error for non-Firebase Auth issues
     }
+  }
+
+  // Assuming uploadImageToImgBB is also in this class or accessible
+  // This is a placeholder, ensure your actual implementation exists
+  Future<String> uploadImageToImgBB() async {
+    // Simulate image upload
+    await Future.delayed(const Duration(seconds: 1));
+    // return "https://i.ibb.co/your-actual-image-url.png"; // Replace with actual upload logic
+    return ""; // Return empty if you want to test default
   }
 
   Future signIn(String email, String password) async {
