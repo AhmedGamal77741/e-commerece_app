@@ -59,7 +59,7 @@ class _PostActionsState extends State<PostActions> {
                         ? "assets/icon=like,status=off (1).png"
                         : "assets/icon=like,status=off.png",
                   ),
-                  color: isLiked ? Colors.red : Colors.black,
+                  color: isLiked ? Color(0xFF280404) : Colors.black,
                 ),
               ),
             ),
