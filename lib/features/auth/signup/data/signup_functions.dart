@@ -40,6 +40,9 @@ Future<String> uploadImageToImgBB() async {
     await FirebaseFirestore.instance.collection('users').doc(userId).update({
       'url': jsonData['data']['url'],
     });
+    await FirebaseAuth.instance.currentUser!.updatePhotoURL(
+      jsonData['data']['url'],
+    );
     return jsonData['data']['url'];
   } else {
     throw Exception('Failed to upload: ${response.body}');
@@ -50,11 +53,12 @@ class FirebaseUserRepo {
   final FirebaseAuth _firebaseAuth;
 
   final usersCollection = FirebaseFirestore.instance.collection('users');
-  static const String signUpSuccess = "SIGNUP_SUCCESS";
-  static const String errorEmailAlreadyInUse = "ERROR_EMAIL_ALREADY_IN_USE";
-  static const String errorUsernameTaken = "ERROR_USERNAME_TAKEN";
-  static const String errorWeakPassword = "ERROR_WEAK_PASSWORD";
-  static const String errorUnknown = "ERROR_UNKNOWN";
+  static const String signUpSuccess = "회원가입이 완료되었습니다";
+  static const String errorEmailAlreadyInUse = "이미 사용 중인 이메일입니다";
+  static const String errorUsernameTaken = "이미 사용 중인 사용자 이름입니다";
+  static const String errorWeakPassword = "비밀번호가 너무 약합니다";
+  static const String errorUnknown = "알 수 없는 오류가 발생했습니다";
+
   FirebaseUserRepo({FirebaseAuth? firebaseAuth})
     : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
@@ -100,18 +104,50 @@ class FirebaseUserRepo {
     });
   }
 
-  Future updateUser(MyUser myUser, String password) async {
+  Future<MyUser?> updateUser(MyUser myUser, String password) async {
     try {
+      // Check if username is unique only if name is changed
+      if (myUser.name != FirebaseAuth.instance.currentUser?.displayName) {
+        final querySnapshot =
+            await usersCollection.where('name', isEqualTo: myUser.name).get();
+
+        if (querySnapshot.docs.isNotEmpty) {
+          // Username already exists
+          return null;
+        }
+      }
+
+      // Update user document with new information
       await usersCollection
           .doc(myUser.userId)
           .update(myUser.toEntity().toDocument());
-      await FirebaseAuth.instance.currentUser!.updatePassword(password);
+
+      // Update auth display name if name was provided
+      if (myUser.name != FirebaseAuth.instance.currentUser?.displayName) {
+        await FirebaseAuth.instance.currentUser!.updateDisplayName(myUser.name);
+      }
+
+      // Update password only if it was provided
+      if (password.isNotEmpty) {
+        try {
+          await FirebaseAuth.instance.currentUser!.updatePassword(password);
+        } catch (e) {
+          // Handle specific password update errors
+          if (e is FirebaseAuthException) {
+            // For security-sensitive operations, Firebase might require recent authentication
+            if (e.code == 'requires-recent-login') {
+              throw Exception('비밀번호 업데이트를 위해 다시 로그인해 주세요');
+            }
+          }
+          throw e; // Rethrow other errors
+        }
+      }
+
+      return myUser;
     } catch (e) {
-      // log(e.toString());
+      print('Error updating user: $e');
       rethrow;
     }
-
-    return myUser;
   }
 
   Future<String> signUp(MyUser myUser, String password) async {

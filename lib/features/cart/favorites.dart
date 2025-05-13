@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
@@ -164,9 +166,34 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 ],
                               ),
 
-                              Text(
-                                '${formatCurrency.format(productData['pricePoints'][0]['price'] ?? 0)} 원',
-                                style: TextStyles.abeezee13px400wPblack,
+                              FutureBuilder<bool>(
+                                future: isUserSubscribed(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return Text(
+                                      '로딩 중...',
+                                      style: TextStyles.abeezee14px400wP600,
+                                    );
+                                  }
+                                  if (snapshot.hasError) {
+                                    return Text(
+                                      '오류 발생',
+                                      style: TextStyles.abeezee14px400wP600,
+                                    );
+                                  }
+                                  if (snapshot.data == true) {
+                                    return Text(
+                                      '${formatCurrency.format(productData['pricePoints'][0]['price'] ?? 0)} 원',
+                                      style: TextStyles.abeezee13px400wPblack,
+                                    );
+                                  } else {
+                                    return Text(
+                                      '${formatCurrency.format(productData['pricePoints'][0]['price'] / 0.9 ?? 0)} 원',
+                                      style: TextStyles.abeezee13px400wPblack,
+                                    );
+                                  }
+                                },
                               ),
                             ],
                           ),

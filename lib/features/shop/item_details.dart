@@ -288,7 +288,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                               ),
                               SizedBox(width: 5.w), // Spacing
                               Text(
-                                '(1개 ${formatCurrency.format(perUnit.round())}원)',
+                                '(1개 ${formatCurrency.format(widget.isSub ? perUnit.round() : (perUnit / 0.9).round())}원)',
                                 style: TextStyles.abeezee14px400wP600,
                               ),
                             ],

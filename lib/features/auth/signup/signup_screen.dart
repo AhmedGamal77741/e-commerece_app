@@ -199,9 +199,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     myUser,
                     passwordController.text,
                   );
-                  if (result == null) {
+                  if (result != '회원가입이 완료되었습니다') {
                     setState(() {
-                      error = "이미 사용 중인 이메일입니다";
+                      error = result;
                     });
                   }
                 }

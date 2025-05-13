@@ -91,7 +91,8 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                 obscureText: false,
                 keyboardType: TextInputType.name,
                 validator: (val) {
-                  if (val!.isEmpty) return '이 필드를 입력해 주세요';
+                  // Skip validation if empty - we'll handle this separately
+                  if (val!.isEmpty) return null;
                   if (val.length > 30) return '이름이 너무 깁니다';
                   return null;
                 },
@@ -109,22 +110,71 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                     func: () async {
                       if (!_formKey.currentState!.validate()) return;
 
+                      // Check if both fields are empty
+                      if (nameController.text.isEmpty &&
+                          passwordController.text.isEmpty) {
+                        setState(() {
+                          error = "이름 또는 비밀번호를 입력해 주세요";
+                        });
+                        return;
+                      }
+
+                      // Track what we're trying to update
+                      final isUpdatingName = nameController.text.isNotEmpty;
+                      final isUpdatingPassword =
+                          passwordController.text.isNotEmpty;
+
+                      // Prepare user model (only update name if it's provided)
                       final myUser = MyUser(
                         userId: currentUser!.userId,
                         email: currentUser!.email,
-                        name: nameController.text,
-                        url: imgUrl,
+                        name:
+                            isUpdatingName
+                                ? nameController.text
+                                : currentUser!.name,
+                        url: imgUrl.isEmpty ? currentUser!.url : imgUrl,
                       );
 
-                      final result = await fireBaseRepo.updateUser(
-                        myUser,
-                        passwordController.text,
-                      );
+                      try {
+                        // Pass empty string for password if we're not updating it
+                        final result = await fireBaseRepo.updateUser(
+                          myUser,
+                          isUpdatingPassword ? passwordController.text : "",
+                        );
 
-                      if (!mounted) return;
-                      if (result == null) {
+                        if (!mounted) return;
+
+                        if (result == null) {
+                          setState(() {
+                            error = "이미 사용 중인 닉네임입니다";
+                          });
+                        } else {
+                          // Clear error message
+                          setState(() {
+                            error = "";
+                          });
+
+                          // Clear fields that were updated
+                          if (isUpdatingName) nameController.clear();
+                          if (isUpdatingPassword) passwordController.clear();
+
+                          // Show appropriate success message based on what was updated
+                          String successMessage;
+                          if (isUpdatingName && isUpdatingPassword) {
+                            successMessage = "닉네임과 비밀번호가 성공적으로 업데이트되었습니다";
+                          } else if (isUpdatingName) {
+                            successMessage = "닉네임이 성공적으로 업데이트되었습니다";
+                          } else {
+                            successMessage = "비밀번호가 성공적으로 업데이트되었습니다";
+                          }
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(successMessage)),
+                          );
+                        }
+                      } catch (e) {
                         setState(() {
-                          error = "이미 사용 중인 이메일입니다";
+                          error = "업데이트 중 오류가 발생했습니다: ${e.toString()}";
                         });
                       }
                     },
@@ -140,7 +190,8 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                 obscureText: true,
                 keyboardType: TextInputType.visiblePassword,
                 validator: (val) {
-                  if (val!.isEmpty) return '이 필드를 작성해 주세요';
+                  // Skip validation if empty - we'll handle this separately
+                  if (val!.isEmpty) return null;
                   if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d).{8,}$').hasMatch(val)) {
                     return '유효한 비밀번호를 입력해 주세요';
                   }

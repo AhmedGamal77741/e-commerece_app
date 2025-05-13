@@ -265,9 +265,37 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              Text(
-                                '${formatCurrency.format(p.price)} 원',
-                                style: TextStyles.abeezee16px400wPblack,
+                              FutureBuilder<bool>(
+                                future: isUserSubscribed(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return Text(
+                                      '로딩 중...',
+                                      style: TextStyles.abeezee11px400wP600,
+                                    );
+                                  }
+                                  if (snapshot.hasError) {
+                                    return Text(
+                                      '오류 발생',
+                                      style: TextStyles.abeezee11px400wP600,
+                                    );
+                                  }
+                                  print(snapshot.data);
+                                  if (snapshot.data == true) {
+                                    return Text(
+                                      '${formatCurrency.format(p.price)} 원',
+
+                                      style: TextStyles.abeezee16px400wPblack,
+                                    );
+                                  } else {
+                                    return Text(
+                                      '${formatCurrency.format(p.price / 0.9)} 원',
+
+                                      style: TextStyles.abeezee16px400wPblack,
+                                    );
+                                  }
+                                },
                               ),
                               verticalSpace(2),
                               FutureBuilder<String>(
@@ -289,6 +317,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                                       style: TextStyles.abeezee11px400wP600,
                                     );
                                   }
+
                                   return Text(
                                     '${snapshot.data} 도착예정 · ${p.freeShipping == true ? '무료배송' : '배송료가 부과됩니다'} ',
                                     style: TextStyles.abeezee14px400wP600,
