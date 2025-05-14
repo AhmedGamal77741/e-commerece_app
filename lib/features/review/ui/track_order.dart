@@ -39,16 +39,18 @@ class _TrackOrderState extends State<TrackOrder> {
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
         child: Center(
-          child: Column(
-            children: [
-              Text(arrivalDate, style: TextStyles.abeezee20px400wPblack),
-              verticalSpace(40),
-              DeliveryStatus(orderStatus: order['orderStatus']),
-              verticalSpace(10),
-              DeliveryTextRow(orderStatus: order['orderStatus']),
-              verticalSpace(30),
-              TableContainer(orderId: order['orderId']),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Text(arrivalDate, style: TextStyles.abeezee20px400wPblack),
+                verticalSpace(40),
+                DeliveryStatus(orderStatus: order['orderStatus']),
+                verticalSpace(10),
+                DeliveryTextRow(orderStatus: order['orderStatus']),
+                verticalSpace(30),
+                TableContainer(orderId: order['orderId']),
+              ],
+            ),
           ),
         ),
       ),

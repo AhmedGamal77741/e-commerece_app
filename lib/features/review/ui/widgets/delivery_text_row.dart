@@ -8,7 +8,7 @@ class DeliveryTextRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return orderStatus == 'orderComplete'
+    return orderStatus == "OUT_FOR_DELIVERY"
         ? Padding(
           padding: EdgeInsets.symmetric(horizontal: 30.w),
           child: Row(
@@ -21,7 +21,7 @@ class DeliveryTextRow extends StatelessWidget {
               ),
               Text(
                 '배송 중',
-                style: TextStyles.abeezee16px400wP600,
+                style: TextStyles.abeezee16px400wPblack,
                 textAlign: TextAlign.center,
               ),
               Text(
@@ -32,7 +32,7 @@ class DeliveryTextRow extends StatelessWidget {
             ],
           ),
         )
-        : orderStatus == "OnDelivery"
+        : orderStatus == 'DELIVERED'
         ? Padding(
           padding: EdgeInsets.symmetric(horizontal: 30.w),
           child: Row(
@@ -50,7 +50,7 @@ class DeliveryTextRow extends StatelessWidget {
               ),
               Text(
                 '배송\n 완료',
-                style: TextStyles.abeezee16px400wP600,
+                style: TextStyles.abeezee16px400wPblack,
                 textAlign: TextAlign.center,
               ),
             ],
@@ -68,12 +68,12 @@ class DeliveryTextRow extends StatelessWidget {
               ),
               Text(
                 '배송 중',
-                style: TextStyles.abeezee16px400wPblack,
+                style: TextStyles.abeezee16px400wP600,
                 textAlign: TextAlign.center,
               ),
               Text(
                 '배송\n 완료',
-                style: TextStyles.abeezee16px400wPblack,
+                style: TextStyles.abeezee16px400wP600,
                 textAlign: TextAlign.center,
               ),
             ],

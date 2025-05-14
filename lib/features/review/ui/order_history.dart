@@ -96,7 +96,7 @@ class _OrderHistoryState extends State<OrderHistory> {
                               sellerName: product['sellerName'],
                               productName: product['productName'],
                               qunatity: data['quantity'].toString(),
-                              orderPrice: data['totalPrice'].toString(),
+                              orderPrice: data['totalPrice'],
                               baselineTime: product['baselineTime'],
                               meridiem: product['meridiem'],
                             ),

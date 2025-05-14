@@ -8,62 +8,7 @@ class DeliveryStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return orderStatus == 'orderComplete'
-        ? Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 100.w,
-              height: 100.h,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: ColorsManager.primaryblack,
-              ),
-              child: Icon(
-                Icons.dashboard_customize_rounded,
-                size: 50,
-                color: ColorsManager.white,
-              ),
-            ),
-            Container(
-              width: 50.w,
-              height: 15.h,
-              decoration: BoxDecoration(color: ColorsManager.primary300),
-            ),
-            Container(
-              width: 100.w,
-              height: 100.h,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: ColorsManager.primary300,
-              ),
-              child: Icon(
-                Icons.local_shipping,
-                size: 50,
-                color: ColorsManager.white,
-              ),
-            ),
-            Container(
-              width: 50.w,
-              height: 15.h,
-              decoration: BoxDecoration(color: ColorsManager.primary300),
-            ),
-            Container(
-              width: 100.w,
-              height: 100.h,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: ColorsManager.primary300,
-              ),
-              child: Icon(
-                Icons.checklist_rounded,
-                size: 50,
-                color: ColorsManager.white,
-              ),
-            ),
-          ],
-        )
-        : orderStatus == 'OnDelivery'
+    return orderStatus == 'OUT_FOR_DELIVERY'
         ? Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -109,6 +54,61 @@ class DeliveryStatus extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 color: ColorsManager.primary300,
+              ),
+              child: Icon(
+                Icons.checklist_rounded,
+                size: 50,
+                color: ColorsManager.white,
+              ),
+            ),
+          ],
+        )
+        : orderStatus == 'DELIVERED'
+        ? Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100.w,
+              height: 100.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: ColorsManager.primaryblack,
+              ),
+              child: Icon(
+                Icons.dashboard_customize_rounded,
+                size: 50,
+                color: ColorsManager.white,
+              ),
+            ),
+            Container(
+              width: 50.w,
+              height: 15.h,
+              decoration: BoxDecoration(color: ColorsManager.primaryblack),
+            ),
+            Container(
+              width: 100.w,
+              height: 100.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: ColorsManager.primaryblack,
+              ),
+              child: Icon(
+                Icons.local_shipping,
+                size: 50,
+                color: ColorsManager.white,
+              ),
+            ),
+            Container(
+              width: 50.w,
+              height: 15.h,
+              decoration: BoxDecoration(color: ColorsManager.primaryblack),
+            ),
+            Container(
+              width: 100.w,
+              height: 100.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: ColorsManager.primaryblack,
               ),
               child: Icon(
                 Icons.checklist_rounded,
@@ -137,14 +137,14 @@ class DeliveryStatus extends StatelessWidget {
             Container(
               width: 50.w,
               height: 15.h,
-              decoration: BoxDecoration(color: ColorsManager.primaryblack),
+              decoration: BoxDecoration(color: ColorsManager.primary300),
             ),
             Container(
               width: 100.w,
               height: 100.h,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                color: ColorsManager.primaryblack,
+                color: ColorsManager.primary300,
               ),
               child: Icon(
                 Icons.local_shipping,
@@ -155,14 +155,14 @@ class DeliveryStatus extends StatelessWidget {
             Container(
               width: 50.w,
               height: 15.h,
-              decoration: BoxDecoration(color: ColorsManager.primaryblack),
+              decoration: BoxDecoration(color: ColorsManager.primary300),
             ),
             Container(
               width: 100.w,
               height: 100.h,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                color: ColorsManager.primaryblack,
+                color: ColorsManager.primary300,
               ),
               child: Icon(
                 Icons.checklist_rounded,

@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
@@ -7,10 +6,7 @@ import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:ecommerece_app/features/cart/models/address.dart';
-import 'package:ecommerece_app/features/cart/services/kakao_service.dart';
-import 'package:ecommerece_app/features/cart/sub_screens/add_address_screen.dart';
 import 'package:ecommerece_app/features/cart/sub_screens/address_list_screen.dart';
-import 'package:ecommerece_app/features/cart/sub_screens/address_search_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -768,10 +764,11 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                     'quantity': quantityOrdered,
                                     "courier": '',
                                     "trackingNumber": '',
-                                    "trackingEvents": [],
+                                    "trackingEvents": {},
                                     "orderStatus": "orderComplete",
                                     'isRequested': false,
                                     'deliveryManagerId': '',
+                                    'carrierId': '',
                                   };
 
                                   await docRef.set(orderData);
