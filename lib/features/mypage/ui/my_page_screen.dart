@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/widgets/tab_app_bar.dart';
 import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
@@ -52,9 +53,11 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
                   return InkWell(
                     onTap: () async {
+                      showLoadingDialog(context);
                       final newUrl = await uploadImageToImgBB();
                       if (!mounted) return;
                       setState(() => imgUrl = newUrl);
+                      Navigator.pop(context);
                     },
                     child: ClipOval(
                       child: Image.network(
