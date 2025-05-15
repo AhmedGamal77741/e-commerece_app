@@ -859,7 +859,8 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                     "trackingEvents": {},
                                     "orderStatus": "orderComplete",
                                     'isRequested': false,
-                                    'deliveryManagerId': '',
+                                    'deliveryManagerId':
+                                        item['deliveryManagerId'],
                                     'carrierId': '',
                                     'isSent': false,
                                   };
