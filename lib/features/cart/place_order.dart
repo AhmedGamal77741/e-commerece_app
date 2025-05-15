@@ -425,121 +425,121 @@ class _PlaceOrderState extends State<PlaceOrder> {
                           height: 1.40.h,
                         ),
                       ),
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
-                              color: ColorsManager.primary400,
-                              width: 1.0,
-                            ),
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Flexible(
-                              child: TextFormField(
-                                controller: cashReceiptController,
-                                enabled: false,
-                                decoration: InputDecoration(
-                                  hintText: '국민은행 / 0000000000000',
-                                  hintStyle: TextStyle(
-                                    fontSize: 15.sp,
-                                    color: ColorsManager.primary400,
-                                  ),
-                                  border: InputBorder.none,
-                                ),
-                                obscureText: false,
-                                keyboardType: TextInputType.text,
-                                // validator: (val) {
-                                //   if (val!.isEmpty) {
-                                //     return '이름을 입력하세요';
-                                //   } else if (val.length > 30) {
-                                //     return '이름이 너무 깁니다';
-                                //   }
-                                //   return null;
-                                // },
-                              ),
-                            ),
-                            StreamBuilder<DocumentSnapshot>(
-                              stream: userDoc.snapshots(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return SizedBox(
-                                    width: 48.w,
-                                    height: 30.h,
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                  );
-                                }
-                                // error
-                                if (snapshot.hasError ||
-                                    !snapshot.hasData ||
-                                    !snapshot.data!.exists) {
-                                  return Text('Error loading status');
-                                }
+                      // Container(
+                      //   decoration: BoxDecoration(
+                      //     border: Border(
+                      //       bottom: BorderSide(
+                      //         color: ColorsManager.primary400,
+                      //         width: 1.0,
+                      //       ),
+                      //     ),
+                      //   ),
+                      //   child: Row(
+                      //     crossAxisAlignment: CrossAxisAlignment.start,
+                      //     children: [
+                      //       Flexible(
+                      //         child: TextFormField(
+                      //           controller: cashReceiptController,
+                      //           enabled: false,
+                      //           decoration: InputDecoration(
+                      //             hintText: '국민은행 / 0000000000000',
+                      //             hintStyle: TextStyle(
+                      //               fontSize: 15.sp,
+                      //               color: ColorsManager.primary400,
+                      //             ),
+                      //             border: InputBorder.none,
+                      //           ),
+                      //           obscureText: false,
+                      //           keyboardType: TextInputType.text,
+                      //           // validator: (val) {
+                      //           //   if (val!.isEmpty) {
+                      //           //     return '이름을 입력하세요';
+                      //           //   } else if (val.length > 30) {
+                      //           //     return '이름이 너무 깁니다';
+                      //           //   }
+                      //           //   return null;
+                      //           // },
+                      //         ),
+                      //       ),
+                      //       StreamBuilder<DocumentSnapshot>(
+                      //         stream: userDoc.snapshots(),
+                      //         builder: (context, snapshot) {
+                      //           if (snapshot.connectionState ==
+                      //               ConnectionState.waiting) {
+                      //             return SizedBox(
+                      //               width: 48.w,
+                      //               height: 30.h,
+                      //               child: Center(
+                      //                 child: CircularProgressIndicator(
+                      //                   strokeWidth: 2,
+                      //                 ),
+                      //               ),
+                      //             );
+                      //           }
+                      //           // error
+                      //           if (snapshot.hasError ||
+                      //               !snapshot.hasData ||
+                      //               !snapshot.data!.exists) {
+                      //             return Text('Error loading status');
+                      //           }
 
-                                // extract payerId
-                                final data =
-                                    snapshot.data!.data()
-                                        as Map<String, dynamic>;
-                                final payerId = data['payerId'] as String?;
+                      //           // extract payerId
+                      //           final data =
+                      //               snapshot.data!.data()
+                      //                   as Map<String, dynamic>;
+                      //           final payerId = data['payerId'] as String?;
 
-                                // compute isFirst
-                                final isFirst =
-                                    payerId == null || payerId.isEmpty;
-                                return TextButton(
-                                  onPressed: () async {
-                                    if (!_formKey.currentState!.validate()) {
-                                      return;
-                                    }
-                                    var total = await calculateCartTotalPay();
-                                    isFirst
-                                        ? _launchPaymentPage(
-                                          total.toString(),
-                                          uid,
-                                          phoneController.toString().trim(),
-                                          orderId,
-                                        )
-                                        : _launchRpaymentPage(
-                                          total.toString(),
-                                          uid,
-                                          phoneController.toString().trim(),
-                                          orderId,
-                                          payerId,
-                                        );
-                                  },
+                      //           // compute isFirst
+                      //           final isFirst =
+                      //               payerId == null || payerId.isEmpty;
+                      //           return TextButton(
+                      //             onPressed: () async {
+                      //               if (!_formKey.currentState!.validate()) {
+                      //                 return;
+                      //               }
+                      //               var total = await calculateCartTotalPay();
+                      //               isFirst
+                      //                   ? _launchPaymentPage(
+                      //                     total.toString(),
+                      //                     uid,
+                      //                     phoneController.toString().trim(),
+                      //                     orderId,
+                      //                   )
+                      //                   : _launchRpaymentPage(
+                      //                     total.toString(),
+                      //                     uid,
+                      //                     phoneController.toString().trim(),
+                      //                     orderId,
+                      //                     payerId,
+                      //                   );
+                      //             },
 
-                                  style: TextButton.styleFrom(
-                                    fixedSize: Size(48.w, 30.h),
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    side: BorderSide(
-                                      color: Colors.grey.shade300,
-                                      width: 1.0,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4.0),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    '변경',
-                                    style: TextStyle(
-                                      color: ColorsManager.primaryblack,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13.sp,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
+                      //             style: TextButton.styleFrom(
+                      //               fixedSize: Size(48.w, 30.h),
+                      //               tapTargetSize:
+                      //                   MaterialTapTargetSize.shrinkWrap,
+                      //               side: BorderSide(
+                      //                 color: Colors.grey.shade300,
+                      //                 width: 1.0,
+                      //               ),
+                      //               shape: RoundedRectangleBorder(
+                      //                 borderRadius: BorderRadius.circular(4.0),
+                      //               ),
+                      //             ),
+                      //             child: Text(
+                      //               '변경',
+                      //               style: TextStyle(
+                      //                 color: ColorsManager.primaryblack,
+                      //                 fontWeight: FontWeight.bold,
+                      //                 fontSize: 13.sp,
+                      //               ),
+                      //             ),
+                      //           );
+                      //         },
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
                       StatefulBuilder(
                         builder: (context, setStateRadio) {
                           return Row(
@@ -766,12 +766,29 @@ class _PlaceOrderState extends State<PlaceOrder> {
                             txt: '주문',
                             func: () async {
                               if (!_formKey.currentState!.validate()) return;
+                              String? payerId = await fetchPayerId(uid);
+                              final isFirst =
+                                  payerId == null || payerId.isEmpty;
+                              isFirst
+                                  ? _launchPaymentPage(
+                                    totalSnapshot.data.toString(),
+                                    uid,
+                                    phoneController.toString().trim(),
+                                    orderId,
+                                  )
+                                  : _launchRpaymentPage(
+                                    totalSnapshot.data.toString(),
+                                    uid,
+                                    phoneController.toString().trim(),
+                                    orderId,
+                                    payerId,
+                                  );
 
                               if (!await isPaymentCompleted(orderId, uid)) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('먼저 결제를 완료해주세요.'),
-                                    backgroundColor: Colors.red,
+                                    content: Text('결제 시작'),
+                                    backgroundColor: Colors.green,
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );
@@ -915,33 +932,33 @@ class _PlaceOrderState extends State<PlaceOrder> {
 }
 
 /// Fetches all docs in users/{uid}/cart once and returns the sum of their `price` fields.
-Future<int> calculateCartTotalPay() async {
-  // 1. Ensure we have a logged-in user
-  final uid = FirebaseAuth.instance.currentUser?.uid;
-  if (uid == null) {
-    throw StateError('No user logged in');
-  }
+// Future<int> calculateCartTotalPay() async {
+//   // 1. Ensure we have a logged-in user
+//   final uid = FirebaseAuth.instance.currentUser?.uid;
+//   if (uid == null) {
+//     throw StateError('No user logged in');
+//   }
 
-  // 2. Fetch the cart subcollection
-  final querySnap =
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('cart')
-          .get();
+//   // 2. Fetch the cart subcollection
+//   final querySnap =
+//       await FirebaseFirestore.instance
+//           .collection('users')
+//           .doc(uid)
+//           .collection('cart')
+//           .get();
 
-  // 3. Sum all price fields
-  var total = 0;
-  for (final doc in querySnap.docs) {
-    final data = doc.data();
-    final price = data['price'];
-    if (price is num) {
-      total += price.toInt();
-    }
-  }
+//   // 3. Sum all price fields
+//   var total = 0;
+//   for (final doc in querySnap.docs) {
+//     final data = doc.data();
+//     final price = data['price'];
+//     if (price is num) {
+//       total += price.toInt();
+//     }
+//   }
 
-  return total;
-}
+//   return total;
+// }
 
 Future<int> calculateCartTotal(List<QueryDocumentSnapshot> cartDocs) async {
   int total = 0;
@@ -1010,4 +1027,23 @@ Future<bool> isPaymentCompleted(String orderId, String uid) async {
           .get();
 
   return querySnapshot.docs.isNotEmpty;
+}
+
+Future<String?> fetchPayerId(String uid) async {
+  try {
+    final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+    final snapshot = await userDoc.get();
+
+    if (!snapshot.exists) {
+      print("User document doesn't exist.");
+      return null;
+    }
+
+    final data = snapshot.data();
+    final payerId = data?['payerId'] as String?;
+    return payerId;
+  } catch (e) {
+    print("Error fetching payerId: $e");
+    return null;
+  }
 }

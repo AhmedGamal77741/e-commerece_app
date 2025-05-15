@@ -101,7 +101,7 @@ class _CancelSubscriptionState extends State<CancelSubscription> {
               ),
               verticalSpace(30),
               WideTextButton(
-                txt: '로그인',
+                txt: '해지하기',
                 color: Colors.white,
                 txtColor: ColorsManager.primaryblack,
                 func: () async {
