@@ -143,14 +143,36 @@ class _HomeScreenState extends State<HomeScreen> {
                                     currentUser!.name.toString(),
                                     style: TextStyles.abeezee16px400wPblack,
                                   ),
-                                  Text(
-                                    '오늘 하루 어땠는지 말해줘',
-                                    style: TextStyle(
-                                      color: const Color(0xFF5F5F5F),
-                                      fontSize: 13.sp,
-                                      fontFamily: 'NotoSans',
-                                      fontWeight: FontWeight.w400,
-                                    ),
+                                  FutureBuilder(
+                                    future:
+                                        FirebaseFirestore.instance
+                                            .collection('widgets')
+                                            .doc('placeholders')
+                                            .get(),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
+                                        );
+                                      }
+                                      if (snapshot.hasError) {
+                                        return const Center(
+                                          child: Text('Error'),
+                                        );
+                                      }
+
+                                      return Text(
+                                        snapshot.data!
+                                            .data()!['outerPlaceholderText'],
+                                        style: TextStyle(
+                                          color: const Color(0xFF5F5F5F),
+                                          fontSize: 13.sp,
+                                          fontFamily: 'NotoSans',
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ],
                               ),

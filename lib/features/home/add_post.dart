@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
@@ -125,31 +126,57 @@ class _AddPostState extends State<AddPost> {
                         currentUser!.displayName!,
                         style: TextStyles.abeezee16px400wPblack,
                       ),
-                      TextField(
-                        controller: _textController,
-                        onChanged: (value) {
-                          setState(() {}); // Handle text changes
-                        },
-                        decoration: InputDecoration(
-                          hintText: '새로운 소식이 있나요?', // Placeholder text
-                          border: InputBorder.none, // Removes all borders
-                          contentPadding:
-                              EdgeInsets.zero, // Removes default padding
-                          isDense: true, // Reduces vertical padding
-                          hintStyle: TextStyle(
-                            // Matches your text style
-                            color: const Color(0xFF5F5F5F),
-                            fontSize: 13.sp,
-                            fontFamily: 'NotoSans',
-                            fontWeight: FontWeight.w400,
+                      Stack(
+                        alignment: Alignment.centerLeft,
+                        children: [
+                          Visibility(
+                            visible: _textController.text.isEmpty,
+                            child: FutureBuilder(
+                              future:
+                                  FirebaseFirestore.instance
+                                      .collection('widgets')
+                                      .doc('placeholders')
+                                      .get(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
+                                if (snapshot.hasError) {
+                                  return const Center(child: Text('Error'));
+                                }
+
+                                return Text(
+                                  snapshot.data!
+                                      .data()!['innerPlaceholderText'],
+                                  style: TextStyle(
+                                    color: const Color(0xFF5F5F5F),
+                                    fontSize: 13.sp,
+                                    fontFamily: 'NotoSans',
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                        style: TextStyle(
-                          color: const Color(0xFF5F5F5F),
-                          fontSize: 13.sp,
-                          fontFamily: 'NotoSans',
-                          fontWeight: FontWeight.w400,
-                        ),
+                          TextField(
+                            controller: _textController,
+                            onChanged: (value) => setState(() {}),
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                              isDense: true,
+                            ),
+                            style: TextStyle(
+                              color: const Color(0xFF5F5F5F),
+                              fontSize: 13.sp,
+                              fontFamily: 'NotoSans',
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
                       ),
                       InkWell(
                         onTap: () async {
