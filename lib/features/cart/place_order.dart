@@ -861,6 +861,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                     'isRequested': false,
                                     'deliveryManagerId': '',
                                     'carrierId': '',
+                                    'isSent': false,
                                   };
 
                                   await docRef.set(orderData);
