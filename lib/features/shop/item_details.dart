@@ -210,9 +210,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         const AssetImage('assets/grey_006m.png'),
                         size: 32.sp,
                         // color: liked ? Colors.black : Colors.grey, // This icon seems to be for sharing, color shouldn't depend on 'liked'
-                        color:
-                            Colors
-                                .grey, // Example: Set a fixed color or based on theme
+                        color: liked ? Colors.black : Colors.grey,
                       ),
                     ),
                     IconButton(

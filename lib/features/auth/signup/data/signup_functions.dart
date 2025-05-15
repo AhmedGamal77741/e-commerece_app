@@ -90,6 +90,7 @@ class FirebaseUserRepo {
                       ?.map((e) => e as String)
                       .toList() ??
                   <String>[],
+              payerId: data['payerId'] as String? ?? '',
             );
 
             yield user;

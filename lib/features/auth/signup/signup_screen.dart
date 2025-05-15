@@ -92,8 +92,9 @@ class _SignupScreenState extends State<SignupScreen> {
                           return null;
                         },
                       ),
-                      verticalSpace(10),
+                      verticalSpace(20),
                       Text('이메일', style: TextStyles.abeezee16px400wPblack),
+                      verticalSpace(8),
                       UnderlineTextField(
                         controller: emailController,
                         hintText: '이메일을 입력하세요',
@@ -110,8 +111,9 @@ class _SignupScreenState extends State<SignupScreen> {
                           return null;
                         },
                       ),
-                      verticalSpace(10),
+                      verticalSpace(20),
                       Text('비밀번호', style: TextStyles.abeezee16px400wPblack),
+                      verticalSpace(8),
                       UnderlineTextField(
                         controller: passwordController,
                         hintText: '영문,숫자 조합 8자 이상',

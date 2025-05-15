@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PlaceOrder extends StatefulWidget {
   const PlaceOrder({super.key});
@@ -43,6 +44,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
     '직접입력', // "Other"
   ];
   String selectedRequest = '문앞';
+  String? manualRequest;
   Future<void> _selectAddress() async {
     final result = await Navigator.push(
       context,
@@ -61,6 +63,11 @@ class _PlaceOrderState extends State<PlaceOrder> {
 
   @override
   Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+    final docRef = FirebaseFirestore.instance.collection('orders').doc();
+    final orderId = docRef.id;
+
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
@@ -376,15 +383,40 @@ class _PlaceOrderState extends State<PlaceOrder> {
                             onChanged: (value) {
                               setStateDropdown(() {
                                 selectedRequest = value!;
+                                // clear manual text when switching away
+                                if (selectedRequest != '직접입력')
+                                  manualRequest = null;
                               });
+                              // also notify parent state if needed:
+                              setState(() {});
                             },
                             icon: Icon(Icons.keyboard_arrow_down),
                           );
                         },
                       ),
 
+                      // only show when “직접입력” is selected:
+                      if (selectedRequest == '직접입력') ...[
+                        SizedBox(height: 12),
+                        TextFormField(
+                          initialValue: manualRequest,
+                          onChanged:
+                              (text) => setState(() => manualRequest = text),
+                          decoration: InputDecoration(
+                            labelText: '직접 입력',
+                            hintText: '배송 요청을 입력하세요',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                      SizedBox(height: 15.h),
                       Text(
-                        '배송 요청사항',
+                        '간편 계좌 결제',
                         style: TextStyle(
                           color: const Color(0xFF121212),
                           fontSize: 16.sp,
@@ -408,6 +440,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                             Flexible(
                               child: TextFormField(
                                 controller: cashReceiptController,
+                                enabled: false,
                                 decoration: InputDecoration(
                                   hintText: '국민은행 / 0000000000000',
                                   hintStyle: TextStyle(
@@ -418,38 +451,91 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                 ),
                                 obscureText: false,
                                 keyboardType: TextInputType.text,
-                                validator: (val) {
-                                  if (val!.isEmpty) {
-                                    return '이름을 입력하세요';
-                                  } else if (val.length > 30) {
-                                    return '이름이 너무 깁니다';
-                                  }
-                                  return null;
-                                },
+                                // validator: (val) {
+                                //   if (val!.isEmpty) {
+                                //     return '이름을 입력하세요';
+                                //   } else if (val.length > 30) {
+                                //     return '이름이 너무 깁니다';
+                                //   }
+                                //   return null;
+                                // },
                               ),
                             ),
-                            TextButton(
-                              onPressed: () {},
+                            StreamBuilder<DocumentSnapshot>(
+                              stream: userDoc.snapshots(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return SizedBox(
+                                    width: 48.w,
+                                    height: 30.h,
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                // error
+                                if (snapshot.hasError ||
+                                    !snapshot.hasData ||
+                                    !snapshot.data!.exists) {
+                                  return Text('Error loading status');
+                                }
 
-                              style: TextButton.styleFrom(
-                                fixedSize: Size(48.w, 30.h),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                side: BorderSide(
-                                  color: Colors.grey.shade300,
-                                  width: 1.0,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4.0),
-                                ),
-                              ),
-                              child: Text(
-                                '변경',
-                                style: TextStyle(
-                                  color: ColorsManager.primaryblack,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13.sp,
-                                ),
-                              ),
+                                // extract payerId
+                                final data =
+                                    snapshot.data!.data()
+                                        as Map<String, dynamic>;
+                                final payerId = data['payerId'] as String?;
+
+                                // compute isFirst
+                                final isFirst =
+                                    payerId == null || payerId.isEmpty;
+                                return TextButton(
+                                  onPressed: () async {
+                                    if (!_formKey.currentState!.validate()) {
+                                      return;
+                                    }
+                                    var total = await calculateCartTotalPay();
+                                    isFirst
+                                        ? _launchPaymentPage(
+                                          total.toString(),
+                                          uid,
+                                          phoneController.toString().trim(),
+                                          orderId,
+                                        )
+                                        : _launchRpaymentPage(
+                                          total.toString(),
+                                          uid,
+                                          phoneController.toString().trim(),
+                                          orderId,
+                                          payerId,
+                                        );
+                                  },
+
+                                  style: TextButton.styleFrom(
+                                    fixedSize: Size(48.w, 30.h),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    side: BorderSide(
+                                      color: Colors.grey.shade300,
+                                      width: 1.0,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4.0),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '변경',
+                                    style: TextStyle(
+                                      color: ColorsManager.primaryblack,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13.sp,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -681,6 +767,17 @@ class _PlaceOrderState extends State<PlaceOrder> {
                             func: () async {
                               if (!_formKey.currentState!.validate()) return;
 
+                              if (!await isPaymentCompleted(orderId, uid)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('먼저 결제를 완료해주세요.'),
+                                    backgroundColor: Colors.red,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                return;
+                              }
+
                               final user = FirebaseAuth.instance.currentUser;
                               if (user == null) return;
 
@@ -740,20 +837,15 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                   final quantityOrdered = item['quantity'];
                                   final price = item['price'];
 
-                                  final docRef =
-                                      FirebaseFirestore.instance
-                                          .collection('orders')
-                                          .doc();
-                                  final orderId = docRef.id;
-
                                   final orderData = {
                                     'orderId': orderId,
                                     'userId': user.uid,
                                     'deliveryAddress':
                                         deliveryAddressController.text.trim(),
                                     'deliveryInstructions':
-                                        deliveryInstructionsController.text
-                                            .trim(),
+                                        selectedRequest == '직접입력'
+                                            ? manualRequest!.trim()
+                                            : selectedRequest.trim(),
                                     'cashReceipt':
                                         cashReceiptController.text.trim(),
                                     'paymentMethod': 'naver pay',
@@ -820,6 +912,35 @@ class _PlaceOrderState extends State<PlaceOrder> {
   }
 }
 
+/// Fetches all docs in users/{uid}/cart once and returns the sum of their `price` fields.
+Future<int> calculateCartTotalPay() async {
+  // 1. Ensure we have a logged-in user
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid == null) {
+    throw StateError('No user logged in');
+  }
+
+  // 2. Fetch the cart subcollection
+  final querySnap =
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('cart')
+          .get();
+
+  // 3. Sum all price fields
+  var total = 0;
+  for (final doc in querySnap.docs) {
+    final data = doc.data();
+    final price = data['price'];
+    if (price is num) {
+      total += price.toInt();
+    }
+  }
+
+  return total;
+}
+
 Future<int> calculateCartTotal(List<QueryDocumentSnapshot> cartDocs) async {
   int total = 0;
 
@@ -833,4 +954,58 @@ Future<int> calculateCartTotal(List<QueryDocumentSnapshot> cartDocs) async {
   }
 
   return total;
+}
+
+void _launchPaymentPage(
+  String amount,
+  String userId,
+  String phoneNo,
+  String orderId,
+) async {
+  final url = Uri.parse(
+    'https://e-commerce-app-34fb2.web.app/p-payment.html?orderId=$orderId&amount=$amount&userId=$userId&phoneNo=$phoneNo',
+  );
+
+  if (await canLaunchUrl(url)) {
+    await launchUrl(
+      url,
+      // mode: LaunchMode.externalApplication, // Forces external browser
+    );
+  } else {
+    throw 'Could not launch $url';
+  }
+}
+
+void _launchRpaymentPage(
+  String amount,
+  String userId,
+  String phoneNo,
+  String orderId,
+  String payerId,
+) async {
+  final url = Uri.parse(
+    'https://e-commerce-app-34fb2.web.app/r-p-payment.html?orderId=$orderId&amount=$amount&userId=$userId&phoneNo=$phoneNo&payerId=$payerId',
+  );
+
+  if (await canLaunchUrl(url)) {
+    await launchUrl(
+      url,
+      // mode: LaunchMode.externalApplication, // Forces external browser
+    );
+  } else {
+    throw 'Could not launch $url';
+  }
+}
+
+Future<bool> isPaymentCompleted(String orderId, String uid) async {
+  final querySnapshot =
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('payments')
+          .where('orderId', isEqualTo: orderId)
+          .limit(1) // We only need to know if at least one exists
+          .get();
+
+  return querySnapshot.docs.isNotEmpty;
 }
