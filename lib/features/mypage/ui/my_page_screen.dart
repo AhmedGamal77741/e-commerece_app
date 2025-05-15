@@ -54,7 +54,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                   return InkWell(
                     onTap: () async {
                       showLoadingDialog(context);
-                      final newUrl = await uploadImageToImgBB();
+                      final newUrl = await uploadImageToFirebaseStorage();
                       if (!mounted) return;
                       setState(() => imgUrl = newUrl);
                       Navigator.pop(context);

@@ -55,7 +55,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           Spacer(),
                           InkWell(
                             onTap: () async {
-                              imgUrl = await uploadImageToImgBB();
+                              imgUrl = await uploadImageToFirebaseStorage();
                               setState(() {});
                             },
                             child:

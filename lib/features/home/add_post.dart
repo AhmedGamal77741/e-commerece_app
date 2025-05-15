@@ -182,7 +182,7 @@ class _AddPostState extends State<AddPost> {
                         onTap: () async {
                           showLoadingDialog(context);
 
-                          imgUrl = await uploadImageToImgBB();
+                          imgUrl = await uploadImageToFirebaseStorage();
                           Navigator.pop(context);
                           setState(() {});
                         },
