@@ -23,7 +23,9 @@ class _PostActionsState extends State<PostActions> {
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
     var isLiked =
-        widget.postData['likedBy']?.contains(currentUser!.uid) ?? false;
+        currentUser != null
+            ? (widget.postData['likedBy']?.contains(currentUser!.uid) ?? false)
+            : false;
     final likeCount = widget.postData['likes'] ?? 0;
     final commentCount = widget.postData['comments'] ?? 0;
 

@@ -26,7 +26,7 @@ class _OrderHistoryState extends State<OrderHistory> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return Center(child: Text('You must be logged in to view orders.'));
+      return Center(child: Text('주문을 보려면 로그인해야 합니다.'));
     }
 
     final orderStream =
@@ -43,7 +43,7 @@ class _OrderHistoryState extends State<OrderHistory> {
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No orders found.'));
+          return const Center(child: Text('주문이 없습니다.'));
         }
 
         final orders = snapshot.data!.docs;

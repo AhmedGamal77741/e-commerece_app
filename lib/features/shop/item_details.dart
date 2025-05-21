@@ -128,6 +128,7 @@ class _ItemDetailsState extends State<ItemDetails> {
             GestureDetector(
               onTap: () {
                 final currentUser = FirebaseAuth.instance.currentUser;
+
                 if (currentUser != null) {
                   _launchPaymentPage(
                     '3000', // This seems like a fixed amount
@@ -136,7 +137,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                 } else {
                   // Handle case where user is not logged in, e.g., show a message
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Please log in to proceed.")),
+                    const SnackBar(content: Text("계속하려면 로그인해 주세요.")),
                   );
                 }
               },
@@ -219,9 +220,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         if (currentUser == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text(
-                                "Please log in to manage favorites.",
-                              ),
+                              content: Text("즐겨찾기를 관리하려면 로그인해 주세요."),
                             ),
                           );
                           return;
@@ -379,9 +378,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                   final currentUser = FirebaseAuth.instance.currentUser;
                   if (currentUser == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Please log in to add to cart."),
-                      ),
+                      const SnackBar(content: Text("장바구니에 추가하려면 로그인해 주세요.")),
                     );
                     return;
                   }
@@ -447,9 +444,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                   final currentUser = FirebaseAuth.instance.currentUser;
                   if (currentUser == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Please log in to buy now."),
-                      ),
+                      const SnackBar(content: Text("지금 구매하려면 로그인해 주세요.")),
                     );
                     return;
                   }
