@@ -5,6 +5,7 @@ import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 class MyStory extends StatefulWidget {
@@ -97,11 +98,14 @@ class _MyStoryState extends State<MyStory> {
                 if (userPostIds.isEmpty) {
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(20.0),
+                      padding: EdgeInsets.symmetric(
+                        vertical: 20.h,
+                        horizontal: 20.w,
+                      ),
                       child: Text(
-                        'You haven\'t created any posts yet',
+                        '아직 작성한 게시물이 없습니다.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(fontSize: 16.sp),
                       ),
                     ),
                   );

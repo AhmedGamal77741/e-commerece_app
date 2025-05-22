@@ -880,6 +880,8 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                         item['deliveryManagerId'],
                                     'carrierId': '',
                                     'isSent': false,
+                                    'phoneNo':
+                                        phoneController.toString().trim(),
                                   };
 
                                   await docRef.set(orderData);
