@@ -33,7 +33,31 @@ class _HomeScreenState extends State<HomeScreen>
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: TabAppBar(firstTab: '추천', secondTab: '구독'),
+        appBar: AppBar(
+          toolbarHeight: 130.h,
+          backgroundColor: ColorsManager.white,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              ImageIcon(AssetImage('assets/005 3.png'), size: 21),
+              TabBar(
+                labelStyle: TextStyle(
+                  fontSize: 16.sp,
+                  decoration: TextDecoration.none,
+                  fontFamily: 'NotoSans',
+                  fontStyle: FontStyle.normal,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 0,
+                  color: ColorsManager.primaryblack,
+                ),
+                unselectedLabelColor: ColorsManager.primary600,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicatorColor: ColorsManager.primaryblack,
+                tabs: [Tab(text: '추천'), Tab(text: '구독')],
+              ),
+            ],
+          ),
+        ),
         body: TabBarView(children: [_HomeFeedTab(), FollowingTab()]),
       ),
     );
