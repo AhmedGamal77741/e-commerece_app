@@ -7,6 +7,7 @@ import 'package:ecommerece_app/core/widgets/tab_app_bar.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -33,9 +34,7 @@ class _HomeScreenState extends State<HomeScreen>
       length: 2,
       child: Scaffold(
         appBar: TabAppBar(firstTab: '추천', secondTab: '구독'),
-        body: TabBarView(
-          children: [_HomeFeedTab(), Center(child: Text('data'))],
-        ),
+        body: TabBarView(children: [_HomeFeedTab(), FollowingTab()]),
       ),
     );
   }

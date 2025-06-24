@@ -9,6 +9,7 @@ import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/models/comment_model.dart';
 import 'package:ecommerece_app/features/home/widgets/comment_item.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -25,7 +26,7 @@ class _CommentsState extends State<Comments> {
   bool liked = false;
   final TextEditingController _commentController = TextEditingController();
   bool _isSubmitting = false;
-  MyUser? currentUser = MyUser.empty;
+  final currentUser = FirebaseAuth.instance.currentUser;
   bool _isLoading = true;
   String? postAuthorId;
   @override
@@ -58,7 +59,6 @@ class _CommentsState extends State<Comments> {
   // Async function that uses await
   Future<void> _loadData() async {
     try {
-      currentUser = await FirebaseUserRepo().user.first;
       setState(() {
         _isLoading = false;
       });
@@ -127,12 +127,12 @@ class _CommentsState extends State<Comments> {
                           ),
                         ),
                         if (postAuthorId != null &&
-                            postAuthorId != currentUser?.userId)
+                            postAuthorId != currentUser?.uid)
                           StreamBuilder<DocumentSnapshot>(
                             stream:
                                 FirebaseFirestore.instance
                                     .collection('users')
-                                    .doc(currentUser?.userId)
+                                    .doc(currentUser?.uid)
                                     .collection('following')
                                     .doc(postAuthorId)
                                     .snapshots(),
@@ -166,10 +166,13 @@ class _CommentsState extends State<Comments> {
                                     ),
                                   ),
                                   onPressed: () async {
+                                    final batch =
+                                        FirebaseFirestore.instance.batch();
+
                                     final followingRef = FirebaseFirestore
                                         .instance
                                         .collection('users')
-                                        .doc(currentUser?.userId)
+                                        .doc(currentUser?.uid)
                                         .collection('following')
                                         .doc(postAuthorId);
                                     final followerRef = FirebaseFirestore
@@ -177,20 +180,22 @@ class _CommentsState extends State<Comments> {
                                         .collection('users')
                                         .doc(postAuthorId)
                                         .collection('followers')
-                                        .doc(currentUser?.userId);
+                                        .doc(currentUser?.uid);
                                     if (isFollowing) {
-                                      await followingRef.delete();
-                                      await followerRef.delete();
+                                      batch.delete(followingRef);
+                                      batch.delete(followerRef);
                                     } else {
-                                      await followingRef.set({
+                                      batch.set(followingRef, {
                                         'createdAt':
                                             FieldValue.serverTimestamp(),
                                       });
-                                      await followerRef.set({
+                                      batch.set(followerRef, {
                                         'createdAt':
                                             FieldValue.serverTimestamp(),
                                       });
                                     }
+
+                                    await batch.commit();
                                   },
                                   child: Text(isFollowing ? '구독 취소' : '구독'),
                                 ),
@@ -312,7 +317,7 @@ class _CommentsState extends State<Comments> {
                     height: 30.h,
                     decoration: ShapeDecoration(
                       image: DecorationImage(
-                        image: NetworkImage(currentUser!.url.toString()),
+                        image: NetworkImage(currentUser!.photoURL.toString()),
                         fit: BoxFit.cover,
                       ),
                       shape: OvalBorder(),
