@@ -230,19 +230,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
             if (userData == null) {
               return Center(child: Text('User profile not found'));
             }
-            final currentUser = MyUser(
-              userId: userData['userId'] as String? ?? firebaseUser.uid,
-              email: userData['email'] as String? ?? firebaseUser.email ?? '',
-              name: userData['name'] as String? ?? '',
-              url: userData['url'] as String? ?? '',
-              isSub: userData['isSub'] as bool? ?? false,
-              defaultAddressId: userData['defaultAddressId'] as String?,
-              blocked:
-                  (userData['blocked'] as List<dynamic>?)
-                      ?.map((e) => e as String)
-                      .toList() ??
-                  <String>[],
-            );
+            final currentUser = MyUser.fromDocument(userData);
 
             // --- Non-premium user: can only view posts, but sees their own info ---
             if (!currentUser.isSub) {
