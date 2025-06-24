@@ -1,0 +1,264 @@
+// services/chat_service.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:ecommerece_app/features/friends/services/friends_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/chat_room_model.dart';
+import '../models/message_model.dart';
+
+class ChatService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FriendsService _friendsService = FriendsService();
+
+  String get currentUserId => _auth.currentUser?.uid ?? '';
+
+  // Create or get direct chat room (updated with friend check)
+  Future<String?> createDirectChatRoom(String otherUserId) async {
+    // Check if users are friends
+    final areFriends = await _friendsService.areFriends(otherUserId);
+    if (!areFriends) {
+      throw Exception('You can only chat with friends');
+    }
+
+    final participants = [currentUserId, otherUserId]..sort();
+    final chatRoomId = participants.join('_');
+
+    final chatRoomRef = _firestore.collection('chatRooms').doc(chatRoomId);
+    final chatRoomDoc = await chatRoomRef.get();
+
+    if (!chatRoomDoc.exists) {
+      // Get other user's data
+      final otherUserDoc =
+          await _firestore.collection('users').doc(otherUserId).get();
+      final otherUser = MyUser.fromDocument(otherUserDoc.data()!);
+
+      final chatRoom = ChatRoomModel(
+        id: chatRoomId,
+        name: otherUser.name,
+        type: 'direct',
+        participants: participants,
+        lastMessageTime: DateTime.now(),
+        createdAt: DateTime.now(),
+        unreadCount: {currentUserId: 0, otherUserId: 0},
+      );
+
+      await chatRoomRef.set(chatRoom.toMap());
+
+      // Update participants' chatRooms list
+      await _updateUserChatRooms(currentUserId, chatRoomId);
+      await _updateUserChatRooms(otherUserId, chatRoomId);
+    }
+
+    return chatRoomId;
+  }
+
+  // Create group chat room (updated with friend check)
+  Future<String?> createGroupChatRoom({
+    required String name,
+    required List<String> participantIds,
+    String? groupImage,
+  }) async {
+    // Check if all participants are friends
+    for (String participantId in participantIds) {
+      final areFriends = await _friendsService.areFriends(participantId);
+      if (!areFriends) {
+        throw Exception('You can only add friends to group chats');
+      }
+    }
+
+    final chatRoomRef = _firestore.collection('chatRooms').doc();
+    final chatRoomId = chatRoomRef.id;
+
+    final participants = [currentUserId, ...participantIds];
+    final unreadCount = <String, int>{};
+    for (String userId in participants) {
+      unreadCount[userId] = 0;
+    }
+
+    final chatRoom = ChatRoomModel(
+      id: chatRoomId,
+      name: name,
+      type: 'group',
+      participants: participants,
+      lastMessageTime: DateTime.now(),
+      createdAt: DateTime.now(),
+      createdBy: currentUserId,
+      groupImage: groupImage,
+      unreadCount: unreadCount,
+    );
+
+    await chatRoomRef.set(chatRoom.toMap());
+
+    // Update all participants' chatRooms list
+    for (String userId in participants) {
+      await _updateUserChatRooms(userId, chatRoomId);
+    }
+
+    return chatRoomId;
+  }
+
+  // Get friends for chat creation
+  Stream<List<MyUser>> getFriendsStream() {
+    return _friendsService.getFriendsStream();
+  }
+
+  // Send message
+  Future<void> sendMessage({
+    required String chatRoomId,
+    required String content,
+    String type = 'text',
+    String? replyToMessageId,
+  }) async {
+    final messageRef = _firestore.collection('messages').doc();
+    final messageId = messageRef.id;
+
+    // Get current user data
+    final userDoc =
+        await _firestore.collection('users').doc(currentUserId).get();
+    final user = MyUser.fromDocument(userDoc.data()!);
+
+    final message = MessageModel(
+      id: messageId,
+      chatRoomId: chatRoomId,
+      senderId: currentUserId,
+      senderName: user.name,
+      content: content,
+      type: type,
+      timestamp: DateTime.now(),
+      readBy: [currentUserId],
+      replyToMessageId: replyToMessageId,
+    );
+
+    // Send message
+    await messageRef.set(message.toMap());
+
+    // Update chat room's last message
+    await _firestore.collection('chatRooms').doc(chatRoomId).update({
+      'lastMessage': content,
+      'lastMessageTime': message.timestamp.millisecondsSinceEpoch,
+      'lastMessageSenderId': currentUserId,
+    });
+
+    // Update unread count for other participants
+    final chatRoomDoc =
+        await _firestore.collection('chatRooms').doc(chatRoomId).get();
+    final chatRoom = ChatRoomModel.fromMap(chatRoomDoc.data()!);
+
+    final updatedUnreadCount = Map<String, int>.from(chatRoom.unreadCount);
+    for (String participantId in chatRoom.participants) {
+      if (participantId != currentUserId) {
+        updatedUnreadCount[participantId] =
+            (updatedUnreadCount[participantId] ?? 0) + 1;
+      }
+    }
+
+    await _firestore.collection('chatRooms').doc(chatRoomId).update({
+      'unreadCount': updatedUnreadCount,
+    });
+  }
+
+  // Mark messages as read
+  Future<void> markMessagesAsRead(String chatRoomId) async {
+    final messagesQuery =
+        await _firestore
+            .collection('messages')
+            .where('chatRoomId', isEqualTo: chatRoomId)
+            .where('senderId', isNotEqualTo: currentUserId)
+            .get();
+
+    final batch = _firestore.batch();
+
+    for (var doc in messagesQuery.docs) {
+      final message = MessageModel.fromMap(doc.data());
+      if (!message.readBy.contains(currentUserId)) {
+        batch.update(doc.reference, {
+          'readBy': FieldValue.arrayUnion([currentUserId]),
+        });
+      }
+    }
+
+    await batch.commit();
+
+    // Reset unread count
+    await _firestore.collection('chatRooms').doc(chatRoomId).update({
+      'unreadCount.$currentUserId': 0,
+    });
+  }
+
+  // Get chat rooms stream
+  Stream<List<ChatRoomModel>> getChatRoomsStream() {
+    return _firestore
+        .collection('chatRooms')
+        .where('participants', arrayContains: currentUserId)
+        .orderBy('lastMessageTime', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => ChatRoomModel.fromMap(doc.data()))
+                  .toList(),
+        );
+  }
+
+  // Get messages stream
+  Stream<List<MessageModel>> getMessagesStream(String chatRoomId) {
+    return _firestore
+        .collection('messages')
+        .where('chatRoomId', isEqualTo: chatRoomId)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => MessageModel.fromMap(doc.data()))
+                  .toList(),
+        );
+  }
+
+  // Get users for creating chats
+  Stream<List<MyUser>> getUsersStream() {
+    return _firestore
+        .collection('users')
+        .where('id', isNotEqualTo: currentUserId)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => MyUser.fromDocument(doc.data()))
+                  .toList(),
+        );
+  }
+
+  // Helper method to update user's chat rooms
+  Future<void> _updateUserChatRooms(String userId, String chatRoomId) async {
+    await _firestore.collection('users').doc(userId).update({
+      'chatRooms': FieldValue.arrayUnion([chatRoomId]),
+    });
+  }
+
+  // Add participant to group
+  Future<void> addParticipantToGroup(String chatRoomId, String userId) async {
+    await _firestore.collection('chatRooms').doc(chatRoomId).update({
+      'participants': FieldValue.arrayUnion([userId]),
+      'unreadCount.$userId': 0,
+    });
+
+    await _updateUserChatRooms(userId, chatRoomId);
+  }
+
+  // Remove participant from group
+  Future<void> removeParticipantFromGroup(
+    String chatRoomId,
+    String userId,
+  ) async {
+    await _firestore.collection('chatRooms').doc(chatRoomId).update({
+      'participants': FieldValue.arrayRemove([userId]),
+      'unreadCount.$userId': FieldValue.delete(),
+    });
+
+    await _firestore.collection('users').doc(userId).update({
+      'chatRooms': FieldValue.arrayRemove([chatRoomId]),
+    });
+  }
+}

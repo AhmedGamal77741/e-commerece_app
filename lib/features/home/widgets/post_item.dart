@@ -2,6 +2,7 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_entity.dart';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
@@ -37,7 +38,7 @@ class PostItem extends StatelessWidget {
           return SizedBox.shrink(); // Post doesn't exist
         }
 
-        return FutureBuilder<MyUserEntity>(
+        return FutureBuilder<MyUser>(
           future: getUser(postData['userId']),
           builder: (context, snapshot) {
             if (snapshot.hasError || !snapshot.hasData) {

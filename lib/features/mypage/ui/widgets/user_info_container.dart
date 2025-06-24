@@ -133,6 +133,17 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                                 ? nameController.text
                                 : currentUser!.name,
                         url: imgUrl.isEmpty ? currentUser!.url : imgUrl,
+                        isSub: currentUser!.isSub,
+                        defaultAddressId: currentUser!.defaultAddressId,
+                        blocked: currentUser!.blocked,
+                        payerId: currentUser!.payerId,
+                        isOnline: currentUser!.isOnline,
+                        lastSeen: currentUser!.lastSeen,
+                        chatRooms: currentUser!.chatRooms,
+                        friends: currentUser!.friends,
+                        friendRequestsSent: currentUser!.friendRequestsSent,
+                        friendRequestsReceived:
+                            currentUser!.friendRequestsReceived,
                       );
 
                       try {
