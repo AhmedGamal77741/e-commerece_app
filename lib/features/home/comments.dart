@@ -24,7 +24,7 @@ class _CommentsState extends State<Comments> {
   bool liked = false;
   final TextEditingController _commentController = TextEditingController();
   bool _isSubmitting = false;
-  MyUser? currentUser = MyUser(userId: "", email: "", name: "", url: "");
+  MyUser? currentUser = MyUser.empty;
   bool _isLoading = true;
   @override
   void dispose() {

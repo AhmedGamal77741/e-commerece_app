@@ -78,20 +78,7 @@ class FirebaseUserRepo {
             print('✅ Fetched user data: $data');
 
             // Safely extract each field, with defaults if missing
-            final user = MyUser(
-              userId: data['userId'] as String? ?? firebaseUser.uid,
-              email: data['email'] as String? ?? firebaseUser.email ?? '',
-              name: data['name'] as String? ?? '',
-              url: data['url'] as String? ?? '',
-              isSub: data['isSub'] as bool? ?? false,
-              defaultAddressId: data['defaultAddressId'] as String?,
-              blocked:
-                  (data['blocked'] as List<dynamic>?)
-                      ?.map((e) => e as String)
-                      .toList() ??
-                  <String>[],
-              payerId: data['payerId'] as String? ?? '',
-            );
+            final user = MyUser.fromDocument(data);
 
             yield user;
           }

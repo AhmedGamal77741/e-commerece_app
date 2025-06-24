@@ -50,19 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       final data = doc.data()!;
       setState(() {
-        currentUser = MyUser(
-          userId: data['userId'] as String? ?? firebaseUser.uid,
-          email: data['email'] as String? ?? firebaseUser.email ?? '',
-          name: data['name'] as String? ?? '',
-          url: data['url'] as String? ?? '',
-          isSub: data['isSub'] as bool? ?? false,
-          defaultAddressId: data['defaultAddressId'] as String?,
-          blocked:
-              (data['blocked'] as List<dynamic>?)
-                  ?.map((e) => e as String)
-                  .toList() ??
-              <String>[],
-        );
+        currentUser = MyUser.fromDocument(data);
         _isLoading = false;
       });
     } catch (e) {
@@ -270,22 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       return Center(child: Text('User profile not found'));
                     }
 
-                    final currentUser = MyUser(
-                      userId: userData['userId'] as String? ?? firebaseUser.uid,
-                      email:
-                          userData['email'] as String? ??
-                          firebaseUser.email ??
-                          '',
-                      name: userData['name'] as String? ?? '',
-                      url: userData['url'] as String? ?? '',
-                      isSub: userData['isSub'] as bool? ?? false,
-                      defaultAddressId: userData['defaultAddressId'] as String?,
-                      blocked:
-                          (userData['blocked'] as List<dynamic>?)
-                              ?.map((e) => e as String)
-                              .toList() ??
-                          <String>[],
-                    );
+                    final currentUser = MyUser.fromDocument(userData);
 
                     // --- Non-premium user: can only view posts, but sees their own info ---
                     if (!currentUser.isSub) {

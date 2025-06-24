@@ -1,26 +1,34 @@
-import 'package:ecommerece_app/features/auth/signup/data/models/user_entity.dart';
-
 class MyUser {
   String userId;
-
   String email;
-
   String name;
-
   String url;
-  List<String>? blocked = [];
+  List<String>? blocked;
   bool isSub;
   String? defaultAddressId;
   String? payerId;
+  final bool isOnline;
+  final DateTime lastSeen;
+  final List<String> chatRooms;
+  final List<String> friends; // Added field
+  final List<String> friendRequestsSent; // Added field
+  final List<String> friendRequestsReceived; // Added field
+
   MyUser({
     required this.userId,
     required this.email,
     required this.name,
     required this.url,
-    this.payerId,
+    this.blocked,
     this.isSub = false,
     this.defaultAddressId,
-    this.blocked,
+    this.payerId,
+    this.isOnline = false,
+    required this.lastSeen,
+    this.chatRooms = const [],
+    this.friends = const [],
+    this.friendRequestsSent = const [],
+    this.friendRequestsReceived = const [],
   });
 
   static final empty = MyUser(
@@ -32,32 +40,63 @@ class MyUser {
     defaultAddressId: '',
     isSub: false,
     payerId: '',
+    isOnline: false,
+    lastSeen: DateTime.now(),
+    chatRooms: const [],
+    friends: const [],
+    friendRequestsSent: const [],
+    friendRequestsReceived: const [],
   );
 
-  MyUserEntity toEntity() {
-    return MyUserEntity(
-      userId: userId,
-      email: email,
-      name: name,
-      url: url,
-      isSub: isSub,
-      defaultAddressId: defaultAddressId,
-      blocked: blocked,
-      payerId: payerId ?? '',
+  // Database serialization methods (from MyUserEntity)
+  Map<String, Object?> toDocument() {
+    return {
+      'userId': userId,
+      'email': email,
+      'name': name,
+      'url': url,
+      'blocked': blocked,
+      'isSub': isSub,
+      'defaultAddressId': defaultAddressId ?? '',
+      'payerId': payerId,
+      'isOnline': isOnline,
+      'lastSeen': lastSeen.millisecondsSinceEpoch,
+      'chatRooms': chatRooms,
+      'friends': friends,
+      'friendRequestsSent': friendRequestsSent,
+      'friendRequestsReceived': friendRequestsReceived,
+    };
+  }
+
+  static MyUser fromDocument(Map<String, dynamic> doc) {
+    return MyUser(
+      userId: doc['userId'],
+      email: doc['email'],
+      name: doc['name'],
+      url: doc['url'],
+      blocked:
+          (doc['blocked'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      isSub: doc['isSub'],
+      defaultAddressId: doc['defaultAddressId'],
+      payerId: doc['payerId'],
+      isOnline: doc['isOnline'] ?? false,
+      lastSeen: DateTime.fromMillisecondsSinceEpoch(doc['lastSeen'] ?? 0),
+      chatRooms: List<String>.from(doc['chatRooms'] ?? []),
+      friends: List<String>.from(doc['friends'] ?? []),
+      friendRequestsSent: List<String>.from(doc['friendRequestsSent'] ?? []),
+      friendRequestsReceived: List<String>.from(
+        doc['friendRequestsReceived'] ?? [],
+      ),
     );
   }
 
-  static MyUser fromEntity(MyUserEntity entity) {
-    return MyUser(
-      userId: entity.userId,
-      email: entity.email,
-      name: entity.name,
-      url: entity.url,
-      isSub: entity.isSub,
-      defaultAddressId: entity.defaultAddressId,
-      blocked: entity.blocked,
-      payerId: entity.payerId,
-    );
+  // Keep these methods for backward compatibility if needed elsewhere
+  MyUser toEntity() {
+    return this; // Returns itself since it's now the same class
+  }
+
+  static MyUser fromEntity(MyUser entity) {
+    return entity; // Returns the same instance
   }
 
   @override
