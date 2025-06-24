@@ -26,7 +26,7 @@ class _OrderHistoryState extends State<OrderHistory> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return Center(child: Text('주문을 보려면 로그인해야 합니다.'));
+      return Center(child: Text('내 페이지 탭에서 회원가입 후 이용가능합니다.'));
     }
 
     final orderStream =

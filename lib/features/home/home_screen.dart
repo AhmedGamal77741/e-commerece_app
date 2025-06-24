@@ -121,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               onTap: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text("계속하려면 로그인해 주세요."),
+                                    content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
                                   ),
                                 );
                               },
@@ -144,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               onTap: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text("계속하려면 로그인해 주세요."),
+                                    content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
                                   ),
                                 );
                               },
@@ -287,7 +287,149 @@ class _HomeScreenState extends State<HomeScreen> {
                           <String>[],
                     );
 
-                    // Now use your original UI code but with the currentUser from here
+                    // --- Non-premium user: can only view posts, but sees their own info ---
+                    if (!currentUser.isSub) {
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Flexible(
+                                child: InkWell(
+                                  onTap: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("프리미엄 가입 후 이용가능합니다"),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: 56.w,
+                                    height: 55.h,
+                                    decoration: ShapeDecoration(
+                                      image: DecorationImage(
+                                        image: NetworkImage(currentUser.url),
+                                        fit: BoxFit.cover,
+                                      ),
+                                      shape: OvalBorder(),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 4,
+                                child: InkWell(
+                                  onTap: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("프리미엄 가입 후 이용가능합니다"),
+                                      ),
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: EdgeInsets.only(right: 10.w),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          currentUser.name,
+                                          style:
+                                              TextStyles.abeezee16px400wPblack,
+                                        ),
+                                        FutureBuilder(
+                                          future:
+                                              FirebaseFirestore.instance
+                                                  .collection('widgets')
+                                                  .doc('placeholders')
+                                                  .get(),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.connectionState ==
+                                                ConnectionState.waiting) {
+                                              return const Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: Colors.black,
+                                                    ),
+                                              );
+                                            }
+                                            if (snapshot.hasError) {
+                                              return const Center(
+                                                child: Text('Error'),
+                                              );
+                                            }
+                                            return Text(
+                                              snapshot.data!
+                                                  .data()!['outerPlaceholderText'],
+                                              style: TextStyle(
+                                                color: const Color(0xFF5F5F5F),
+                                                fontSize: 13.sp,
+                                                fontFamily: 'NotoSans',
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          verticalSpace(5),
+                          Divider(),
+                          Expanded(
+                            child: StreamBuilder<QuerySnapshot>(
+                              stream:
+                                  FirebaseFirestore.instance
+                                      .collection('posts')
+                                      .orderBy('createdAt', descending: true)
+                                      .snapshots(),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasError) {
+                                  return Text('Error: ${snapshot.error}');
+                                }
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      color: Colors.black,
+                                    ),
+                                  );
+                                }
+                                final posts = snapshot.data!.docs;
+                                if (posts.isEmpty) {
+                                  return Center(child: Text('게시물이 없습니다.'));
+                                }
+                                return ListView.builder(
+                                  itemCount: posts.length,
+                                  itemBuilder: (context, index) {
+                                    final post =
+                                        posts[index].data()
+                                            as Map<String, dynamic>;
+                                    if (post['postId'] == null) {
+                                      post['postId'] = posts[index].id;
+                                    }
+                                    return GuestPostItem(post: post);
+                                    // Or, if you want to use PostItem:
+                                    // return PostItem(postId: post['postId'], fromComments: false, canInteract: false);
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    // --- Premium user: full interaction ---
+                    // ...existing code for premium user...
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [

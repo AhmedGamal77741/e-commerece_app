@@ -137,7 +137,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                 } else {
                   // Handle case where user is not logged in, e.g., show a message
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("계속하려면 로그인해 주세요.")),
+                    const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
                   );
                 }
               },
@@ -220,7 +220,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         if (currentUser == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text("즐겨찾기를 관리하려면 로그인해 주세요."),
+                              content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
                             ),
                           );
                           return;
@@ -378,7 +378,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                   final currentUser = FirebaseAuth.instance.currentUser;
                   if (currentUser == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("장바구니에 추가하려면 로그인해 주세요.")),
+                      const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
                     );
                     return;
                   }
@@ -444,7 +444,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                   final currentUser = FirebaseAuth.instance.currentUser;
                   if (currentUser == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("지금 구매하려면 로그인해 주세요.")),
+                      const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
                     );
                     return;
                   }

@@ -46,7 +46,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return Center(child: Text('장바구니를 보려면 로그인해야 합니다.'));
+      return Center(child: Text('내 페이지 탭에서 회원가입 후 이용가능합니다.'));
     }
     return Column(
       children: [

@@ -27,7 +27,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return Center(child: Text('즐겨찾기를 보려면 로그인해야 합니다.'));
+      return Center(child: Text('내 페이지 탭에서 회원가입 후 이용가능합니다.'));
     }
     return Padding(
       padding: EdgeInsets.only(left: 10.w, top: 12.h, bottom: 12.h),
