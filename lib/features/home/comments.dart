@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
@@ -26,6 +27,7 @@ class _CommentsState extends State<Comments> {
   bool _isSubmitting = false;
   MyUser? currentUser = MyUser(userId: "", email: "", name: "", url: "");
   bool _isLoading = true;
+  String? postAuthorId;
   @override
   void dispose() {
     _commentController.dispose();
@@ -35,8 +37,22 @@ class _CommentsState extends State<Comments> {
   void initState() {
     super.initState();
     Provider.of<PostsProvider>(context, listen: false).startListening();
+    _loadData();
+    _getPostAuthorId();
+  }
 
-    _loadData(); // Call the async function when widget initializes
+  Future<void> _getPostAuthorId() async {
+    // Get the post's authorId from Firestore
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('posts')
+            .doc(widget.postId)
+            .get();
+    if (doc.exists) {
+      setState(() {
+        postAuthorId = (doc.data() as Map<String, dynamic>)['userId'];
+      });
+    }
   }
 
   // Async function that uses await
@@ -99,7 +115,90 @@ class _CommentsState extends State<Comments> {
                 children: [
                   Padding(
                     padding: EdgeInsets.only(right: 10.w),
-                    child: PostItem(postId: widget.postId, fromComments: true),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: PostItem(
+                            postId: widget.postId,
+                            fromComments: true,
+                            showMoreButton:
+                                false, // Hide the More button in comments context
+                          ),
+                        ),
+                        if (postAuthorId != null &&
+                            postAuthorId != currentUser?.userId)
+                          StreamBuilder<DocumentSnapshot>(
+                            stream:
+                                FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(currentUser?.userId)
+                                    .collection('following')
+                                    .doc(postAuthorId)
+                                    .snapshots(),
+                            builder: (context, snapshot) {
+                              final isFollowing =
+                                  snapshot.hasData && snapshot.data!.exists;
+                              return Padding(
+                                padding: EdgeInsets.only(top: 8.h, right: 8.w),
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        isFollowing
+                                            ? Colors.grey[300]
+                                            : ColorsManager.primary600,
+                                    foregroundColor:
+                                        isFollowing
+                                            ? Colors.black
+                                            : Colors.white,
+                                    minimumSize: Size(80.w, 36.h),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 12.w,
+                                      vertical: 0,
+                                    ),
+                                    textStyle: TextStyle(
+                                      fontSize: 14.sp,
+                                      fontFamily: 'NotoSans',
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    final followingRef = FirebaseFirestore
+                                        .instance
+                                        .collection('users')
+                                        .doc(currentUser?.userId)
+                                        .collection('following')
+                                        .doc(postAuthorId);
+                                    final followerRef = FirebaseFirestore
+                                        .instance
+                                        .collection('users')
+                                        .doc(postAuthorId)
+                                        .collection('followers')
+                                        .doc(currentUser?.userId);
+                                    if (isFollowing) {
+                                      await followingRef.delete();
+                                      await followerRef.delete();
+                                    } else {
+                                      await followingRef.set({
+                                        'createdAt':
+                                            FieldValue.serverTimestamp(),
+                                      });
+                                      await followerRef.set({
+                                        'createdAt':
+                                            FieldValue.serverTimestamp(),
+                                      });
+                                    }
+                                  },
+                                  child: Text(isFollowing ? '구독 취소' : '구독'),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    ),
                   ),
                   Divider(height: 50.h),
                   Row(

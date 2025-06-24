@@ -33,7 +33,7 @@ class _NavBarState extends State<NavBar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: widgetOptions.elementAt(_selectedIndex),
+      body: IndexedStack(index: _selectedIndex, children: widgetOptions),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
         showSelectedLabels: true,

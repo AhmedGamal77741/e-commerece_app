@@ -81,10 +81,46 @@ class _ShopState extends State<Shop> {
       );
     }
     int initialIndex = 0;
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, authSnapshot) {
+        if (authSnapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        final firebaseUser = authSnapshot.data;
+        if (firebaseUser == null) {
+          // Not logged in, just show the shop as before (or you can restrict access)
+          return _buildShopTabController(null);
+        }
+        return StreamBuilder<DocumentSnapshot>(
+          stream:
+              FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(firebaseUser.uid)
+                  .snapshots(),
+          builder: (context, userSnapshot) {
+            if (userSnapshot.connectionState == ConnectionState.waiting) {
+              return Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+            if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+              return Scaffold(
+                body: Center(child: Text('User profile not found')),
+              );
+            }
+            final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
+            return _buildShopTabController(userData);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildShopTabController(Map<String, dynamic>? userData) {
+    int initialIndex = 0;
+    final bool isSub = userData != null && (userData['isSub'] ?? false);
     return DefaultTabController(
       length: _categories.length,
       initialIndex: initialIndex,
-
       child: Scaffold(
         appBar: AppBar(
           toolbarHeight: 70.h,
@@ -103,8 +139,7 @@ class _ShopState extends State<Shop> {
             unselectedLabelColor: ColorsManager.primary600,
             indicatorSize: TabBarIndicatorSize.tab,
             indicatorColor: ColorsManager.primaryblack,
-            isScrollable:
-                _categories.length > 4, // Make scrollable if many categories
+            isScrollable: _categories.length > 4,
             tabs:
                 _categories
                     .map((category) => Tab(text: category['name']))
@@ -118,6 +153,7 @@ class _ShopState extends State<Shop> {
                     (category) => CategoryProductsScreen(
                       categoryId: category['id'],
                       categoryName: category['name'],
+                      isSub: isSub,
                     ),
                   )
                   .toList(),
@@ -127,15 +163,16 @@ class _ShopState extends State<Shop> {
   }
 }
 
-// Create a CategoryProductsScreen widget to display products for each category
 class CategoryProductsScreen extends StatefulWidget {
   final String categoryId;
   final String categoryName;
+  final bool isSub;
 
   CategoryProductsScreen({
     Key? key,
     required this.categoryId,
     required this.categoryName,
+    this.isSub = false,
   }) : super(key: key);
 
   @override
@@ -143,11 +180,6 @@ class CategoryProductsScreen extends StatefulWidget {
 }
 
 class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
   @override
   Widget build(BuildContext context) {
     // Display products in a grid
@@ -169,22 +201,17 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                   .collection('products')
                   .where('category', isEqualTo: widget.categoryId)
                   .snapshots(),
-
           builder: (context, snapshot) {
-            print(snapshot);
             final formatCurrency = NumberFormat('#,###');
             if (snapshot.hasError) {
               return Center(child: Text('오류: ${snapshot.error}'));
             }
-
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
               return const Center(child: Text('아직 제품이 없습니다'));
             }
-
             final products = snapshot.data!.docs;
             return ListView.separated(
               separatorBuilder: (context, index) {
@@ -197,14 +224,8 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
               itemBuilder: (context, index) {
                 final data2 = products[index].data() as Map<String, dynamic>;
                 Product p = Product.fromMap(data2);
-
                 return InkWell(
                   onTap: () async {
-                    bool isSub = await isUserSubscribed();
-                    bool liked = isFavoritedByUser(
-                      p: p,
-                      userId: FirebaseAuth.instance.currentUser?.uid ?? '',
-                    );
                     String arrivalTime = await getArrivalDay(
                       p.meridiem,
                       p.baselineTime,
@@ -216,24 +237,10 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                             (context) => ItemDetails(
                               product: p,
                               arrivalDay: arrivalTime,
-                              isSub: isSub,
+                              isSub: widget.isSub,
                             ),
                       ),
                     );
-
-                    // context.pushNamed(
-                    //   Routes.itemDetailsScreen,
-                    //   arguments: {
-                    // 'imgUrl': data['imgUrl'],
-                    // 'sellerName': data['sellerName	'],
-                    // 'price': data['price	'],
-                    // 'product_id': data['product_id'],
-                    // 'freeShipping': data['freeShipping	'],
-                    // 'meridiem': data['meridiem'],
-                    // 'baselinehour': data['baselinehour	'],
-                    // 'productName': data['productName	'],
-                    //   },
-                    // );
                   },
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 1.h),
@@ -265,37 +272,11 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              FutureBuilder<bool>(
-                                future: isUserSubscribed(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return Text(
-                                      '로딩 중...',
-                                      style: TextStyles.abeezee11px400wP600,
-                                    );
-                                  }
-                                  if (snapshot.hasError) {
-                                    return Text(
-                                      '오류 발생',
-                                      style: TextStyles.abeezee11px400wP600,
-                                    );
-                                  }
-                                  print(snapshot.data);
-                                  if (snapshot.data == true) {
-                                    return Text(
-                                      '${formatCurrency.format(p.price)} 원',
-
-                                      style: TextStyles.abeezee16px400wPblack,
-                                    );
-                                  } else {
-                                    return Text(
-                                      '${formatCurrency.format(p.price / 0.9)} 원',
-
-                                      style: TextStyles.abeezee16px400wPblack,
-                                    );
-                                  }
-                                },
+                              Text(
+                                widget.isSub
+                                    ? '${formatCurrency.format(p.price)} 원'
+                                    : '${formatCurrency.format(p.price / 0.9)} 원',
+                                style: TextStyles.abeezee16px400wPblack,
                               ),
                               verticalSpace(2),
                               FutureBuilder<String>(
