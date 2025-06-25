@@ -3,9 +3,8 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:ecommerece_app/core/widgets/tab_app_bar.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
+import 'package:ecommerece_app/features/chat/ui/friends_screen.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
@@ -39,7 +38,15 @@ class _HomeScreenState extends State<HomeScreen>
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              ImageIcon(AssetImage('assets/005 3.png'), size: 21),
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => FriendsScreen()),
+                  );
+                },
+                child: ImageIcon(AssetImage('assets/005 3.png'), size: 21),
+              ),
               TabBar(
                 labelStyle: TextStyle(
                   fontSize: 16.sp,
