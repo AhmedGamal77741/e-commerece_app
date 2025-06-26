@@ -1,6 +1,8 @@
 // screens/chat_screen.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -255,124 +257,196 @@ class MessageBubble extends StatelessWidget {
 
       child: Align(
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment:
-                isMe ? MainAxisAlignment.start : MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Column(
-                children: [
-                  if (!isMe)
-                    Text(
-                      message.senderName,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isMe ? Colors.white70 : Colors.black54,
-                      ),
+        child: SizedBox(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment:
+                  isMe ? MainAxisAlignment.start : MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!isMe)
+                  Flexible(
+                    child: FutureBuilder(
+                      future:
+                          FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(message.senderId)
+                              .get(),
+                      builder: (context, asyncSnapshot) {
+                        if (!asyncSnapshot.hasData) {
+                          return SizedBox(
+                            width: 35.sp,
+                            height: 35.sp,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: ColorsManager.primary600,
+                              ),
+                            ),
+                          );
+                        }
+                        return CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.grey[300],
+                          backgroundImage: NetworkImage(
+                            asyncSnapshot.data!.data()!['url'],
+                          ),
+                        );
+                      },
                     ),
-                  SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment:
-                        isMe ? MainAxisAlignment.start : MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                        isMe
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
                     children: [
-                      InkWell(
-                        onTap: () {
-                          _toggleLove(context);
-                        },
-                        child: ImageIcon(
-                          AssetImage(
-                            message.lovedBy.contains(
-                                  FirebaseAuth.instance.currentUser!.uid,
-                                )
-                                ? "assets/icon=like,status=off (1).png"
-                                : "assets/icon=like,status=off.png",
-                          ),
-
-                          color:
-                              message.lovedBy.contains(
-                                    FirebaseAuth.instance.currentUser!.uid,
-                                  )
-                                  ? Color(0xFF280404)
-                                  : Colors.black,
-                        ),
-                      ),
-                      if (message.lovedBy.length > 1)
-                        Text(
-                          message.lovedBy.length.toString(),
-                          style: TextStyle(
-                            color: const Color(0xFF343434),
-                            fontSize: 14,
-                            fontFamily: 'NotoSans',
-                            fontWeight: FontWeight.w400,
-                            height: 1.40,
+                      if (!isMe)
+                        Padding(
+                          padding: EdgeInsets.only(left: 8, right: 5),
+                          child: Text(
+                            message.senderName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isMe ? Colors.white70 : Colors.black54,
+                            ),
                           ),
                         ),
-                      Container(
-                        margin: EdgeInsets.only(
-                          left: isMe ? 5 : 8,
-                          right: isMe ? 8 : 60,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Color(0xFFEEEEEE),
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(12),
-                            topRight: const Radius.circular(12),
-                            bottomLeft: Radius.circular(isMe ? 12 : 0),
-                            bottomRight: Radius.circular(isMe ? 0 : 12),
-                          ),
-                        ),
-                        child: Text(
-                          message.content,
-                          style: TextStyle(color: Colors.black),
-                        ),
-
-                        /*                     Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _formatTime(message.timestamp),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: isMe ? Colors.white70 : Colors.black54,
+                      SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment:
+                            isMe
+                                ? MainAxisAlignment.start
+                                : MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (isMe)
+                            Flexible(
+                              child: InkWell(
+                                onTap: () {
+                                  _toggleLove(context);
+                                },
+                                child: ImageIcon(
+                                  AssetImage(
+                                    message.lovedBy.contains(
+                                          FirebaseAuth
+                                              .instance
+                                              .currentUser!
+                                              .uid,
+                                        )
+                                        ? "assets/icon=like,status=off (1).png"
+                                        : "assets/icon=like,status=off.png",
                                   ),
+
+                                  color:
+                                      message.lovedBy.contains(
+                                            FirebaseAuth
+                                                .instance
+                                                .currentUser!
+                                                .uid,
+                                          )
+                                          ? Color(0xFF280404)
+                                          : Colors.black,
                                 ),
-                                if (isMe) ...[
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    message.readBy.length > 1
-                                        ? Icons.done_all
-                                        : Icons.done,
-                                    size: 16,
-                                    color: Colors.white70,
-                                  ),
-                                ],
-                              ],
-                            ), */
+                              ),
+                            ),
+                          if (message.lovedBy.length > 1)
+                            Flexible(
+                              child: Text(
+                                message.lovedBy.length.toString(),
+                                style: TextStyle(
+                                  color: const Color(0xFF343434),
+                                  fontSize: 14,
+                                  fontFamily: 'NotoSans',
+                                  fontWeight: FontWeight.w400,
+                                  height: 1.40,
+                                ),
+                              ),
+                            ),
+                          Flexible(
+                            child: Container(
+                              margin: EdgeInsets.only(
+                                left: isMe ? 5 : 8,
+                                right: isMe ? 8 : 5,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Color(0xFFEEEEEE),
+                                borderRadius: BorderRadius.only(
+                                  topLeft: const Radius.circular(12),
+                                  topRight: const Radius.circular(12),
+                                  bottomLeft: Radius.circular(isMe ? 12 : 0),
+                                  bottomRight: Radius.circular(isMe ? 0 : 12),
+                                ),
+                              ),
+                              child: Text(
+                                message.content,
+                                style: TextStyle(color: Colors.black),
+                              ),
+
+                              /*                     Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _formatTime(message.timestamp),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isMe ? Colors.white70 : Colors.black54,
+                                        ),
+                                      ),
+                                      if (isMe) ...[
+                                        const SizedBox(width: 4),
+                                        Icon(
+                                          message.readBy.length > 1
+                                              ? Icons.done_all
+                                              : Icons.done,
+                                          size: 16,
+                                          color: Colors.white70,
+                                        ),
+                                      ],
+                                    ],
+                                  ), */
+                            ),
+                          ),
+                          if (!isMe)
+                            InkWell(
+                              onTap: () {
+                                _toggleLove(context);
+                              },
+                              child: ImageIcon(
+                                AssetImage(
+                                  message.lovedBy.contains(
+                                        FirebaseAuth.instance.currentUser!.uid,
+                                      )
+                                      ? "assets/icon=like,status=off (1).png"
+                                      : "assets/icon=like,status=off.png",
+                                ),
+
+                                color:
+                                    message.lovedBy.contains(
+                                          FirebaseAuth
+                                              .instance
+                                              .currentUser!
+                                              .uid,
+                                        )
+                                        ? Color(0xFF280404)
+                                        : Colors.black,
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-              if (!isMe)
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: Colors.grey[300],
-                  child: Text(
-                    message.senderName.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(fontSize: 16),
-                  ),
                 ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

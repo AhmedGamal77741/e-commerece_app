@@ -39,7 +39,7 @@ class FollowingUsersList extends StatelessWidget {
                   CircleAvatar(
                     radius: 20,
                     backgroundColor: Colors.grey[300],
-                    backgroundImage: NetworkImage(user.url!),
+                    backgroundImage: NetworkImage(user.url),
                   ),
                   Text(
                     user.name,
