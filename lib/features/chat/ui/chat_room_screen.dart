@@ -67,7 +67,10 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.white),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        forceMaterialTransparency: true,
+      ),
       body: Column(
         children: [
           Expanded(
@@ -152,16 +155,14 @@ class _ChatScreenState extends State<ChatScreen> {
             padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 15.w),
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
-                  onPressed: () {
-                    // TODO: Show attachment options
-                  },
-                ),
-                // Comment input field
+                Image.asset("assets/추가-007.png"),
+                SizedBox(width: 10.w),
                 Expanded(
                   flex: 4,
                   child: TextFormField(
+                    onChanged: (value) {
+                      setState(() {});
+                    },
                     controller: _messageController,
                     decoration: InputDecoration(
                       contentPadding: EdgeInsets.symmetric(
@@ -178,13 +179,23 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
                 SizedBox(width: 10.w),
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                  icon: Icon(Icons.send),
-                  color: ColorsManager.primary600,
-                  iconSize: 25.sp,
-                  onPressed: _sendMessage,
+                InkWell(
+                  onTap: _sendMessage,
+                  child: Container(
+                    width: 50.w,
+                    height: 37.h,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(50),
+                      color:
+                          _messageController.text.isNotEmpty
+                              ? Colors.black
+                              : Color(0xFFEEEEEE),
+                    ),
+                    child: ImageIcon(
+                      AssetImage("assets/Vector 3.png"),
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ],
             ),
