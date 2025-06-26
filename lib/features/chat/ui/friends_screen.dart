@@ -3,6 +3,7 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/chat/services/chat_service.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
+import 'package:ecommerece_app/features/chat/widgets/expandable_FAB.dart';
 import 'package:ecommerece_app/features/friends/services/friends_service.dart';
 import 'package:flutter/material.dart';
 
@@ -22,8 +23,13 @@ class _FriendsScreenState extends State<FriendsScreen>
   @override
   void initState() {
     super.initState();
-    // Sync contacts when screen loads
+
     _syncContactsOnEnter();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _syncContactsOnEnter() async {
@@ -106,7 +112,8 @@ class _FriendsScreenState extends State<FriendsScreen>
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: ExpandableFAB(),
+      /*       floatingActionButton: FloatingActionButton(
         heroTag: 'unique-fab-1', // Add this unique tag
         onPressed: () {
           /*           Navigator.push(
@@ -116,7 +123,7 @@ class _FriendsScreenState extends State<FriendsScreen>
         },
         backgroundColor: Colors.black,
         child: const Icon(Icons.add, color: Colors.white),
-      ),
+      ), */
     );
   }
 
@@ -329,58 +336,6 @@ class _FriendsScreenState extends State<FriendsScreen>
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBottomNavigation() {
-    return Container(
-      height: 80,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE5E5E5), width: 0.5)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildBottomNavItem(
-            icon: Icons.chat_bubble_outline,
-            label: '친구톡톡',
-            isSelected: true,
-          ),
-          _buildBottomNavItem(
-            icon: Icons.person_outline,
-            label: '1:1 채팅',
-            isSelected: false,
-          ),
-          _buildBottomNavItem(
-            icon: Icons.group_outlined,
-            label: '그룹채팅',
-            isSelected: false,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-  }) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, size: 24, color: isSelected ? Colors.black : Colors.grey),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: isSelected ? Colors.black : Colors.grey,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ],
     );
   }
 }
