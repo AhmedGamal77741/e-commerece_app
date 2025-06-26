@@ -410,34 +410,50 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                         onTap: () {
                           context.pushNamed(Routes.notificationsScreen);
                         },
-                        child: Stack(
-                          children: [
-                            Container(
-                              width: 56.w,
-                              height: 55.h,
-                              decoration: ShapeDecoration(
-                                image: DecorationImage(
-                                  image: NetworkImage(
-                                    currentUser.url.toString(),
+                        child: StreamBuilder<QuerySnapshot>(
+                          stream:
+                              FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(currentUser.userId)
+                                  .collection('notifications')
+                                  .where('isRead', isEqualTo: false)
+                                  .limit(1)
+                                  .snapshots(),
+                          builder: (context, notifSnapshot) {
+                            final hasUnread =
+                                notifSnapshot.hasData &&
+                                notifSnapshot.data!.docs.isNotEmpty;
+                            return Stack(
+                              children: [
+                                Container(
+                                  width: 56.w,
+                                  height: 55.h,
+                                  decoration: ShapeDecoration(
+                                    image: DecorationImage(
+                                      image: NetworkImage(
+                                        currentUser.url.toString(),
+                                      ),
+                                      fit: BoxFit.cover,
+                                    ),
+                                    shape: OvalBorder(),
                                   ),
-                                  fit: BoxFit.cover,
                                 ),
-                                shape: OvalBorder(),
-                              ),
-                            ),
-                            Positioned(
-                              right: 0.w,
-                              top: 0.h,
-                              child: Container(
-                                width: 18.w,
-                                height: 18.h,
-                                decoration: ShapeDecoration(
-                                  color: const Color(0xFFDA3A48),
-                                  shape: OvalBorder(),
-                                ),
-                              ),
-                            ),
-                          ],
+                                if (hasUnread)
+                                  Positioned(
+                                    right: 0.w,
+                                    top: 0.h,
+                                    child: Container(
+                                      width: 18.w,
+                                      height: 18.h,
+                                      decoration: ShapeDecoration(
+                                        color: const Color(0xFFDA3A48),
+                                        shape: OvalBorder(),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ),
