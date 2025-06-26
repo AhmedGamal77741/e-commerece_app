@@ -14,15 +14,24 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:ecommerece_app/core/models/product_model.dart';
 
-class PlaceOrder extends StatefulWidget {
-  const PlaceOrder({super.key});
+class BuyNow extends StatefulWidget {
+  final Product product;
+  final int quantity;
+  final int price;
+  const BuyNow({
+    Key? key,
+    required this.product,
+    required this.quantity,
+    required this.price,
+  }) : super(key: key);
 
   @override
-  State<PlaceOrder> createState() => _PlaceOrderState();
+  State<BuyNow> createState() => _BuyNowState();
 }
 
-class _PlaceOrderState extends State<PlaceOrder> {
+class _BuyNowState extends State<BuyNow> {
   final deliveryAddressController = TextEditingController();
   final deliveryInstructionsController = TextEditingController();
   final cashReceiptController = TextEditingController();
@@ -76,72 +85,39 @@ class _PlaceOrderState extends State<PlaceOrder> {
       isProcessing = true;
     });
     try {
-      final cartSnapshot =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('cart')
-              .get();
-      final cartItems = cartSnapshot.docs.map((doc) => doc.data()).toList();
-      if (cartItems.isEmpty) {
+      // Check stock for the single product
+      final productRef = FirebaseFirestore.instance
+          .collection('products')
+          .doc(widget.product.product_id);
+      final productSnapshot = await productRef.get();
+      if (!productSnapshot.exists) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('장바구니가 비어 있습니다.')));
+        ).showSnackBar(SnackBar(content: Text('상품이 더 이상 존재하지 않습니다.')));
         setState(() {
           isProcessing = false;
         });
         return;
       }
-      for (var item in cartItems) {
-        final productId = item['product_id'];
-        final quantityOrdered = item['quantity'];
-        final productRef = FirebaseFirestore.instance
-            .collection('products')
-            .doc(productId);
-        final productSnapshot = await productRef.get();
-        if (!productSnapshot.exists) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('상품이 더 이상 존재하지 않습니다.')));
-          setState(() {
-            isProcessing = false;
-          });
-          return;
-        }
-        final currentStock = productSnapshot.data()?['stock'] ?? 0;
-        if (quantityOrdered is! int || quantityOrdered <= 0) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('주문 수량이 올바르지 않습니다.')));
-          setState(() {
-            isProcessing = false;
-          });
-          return;
-        }
-        if (currentStock < quantityOrdered) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '재고가 부족한 상품이 있습니다. (주문 수량: $quantityOrdered, 남은 재고: $currentStock)',
-              ),
+      final currentStock = productSnapshot.data()?['stock'] ?? 0;
+      if (widget.quantity <= 0 || currentStock < widget.quantity) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '재고가 부족합니다. (주문 수량: ${widget.quantity}, 남은 재고: $currentStock)',
             ),
-          );
-          setState(() {
-            isProcessing = false;
-          });
-          return;
-        }
+          ),
+        );
+        setState(() {
+          isProcessing = false;
+        });
+        return;
       }
       final docRef = FirebaseFirestore.instance.collection('orders').doc();
       final paymentId = docRef.id;
       currentPaymentId = paymentId;
       final pendingOrderRef =
           FirebaseFirestore.instance.collection('pending_orders').doc();
-      final productIds = cartItems.map((item) => item['product_id']).toList();
-      final quantities = cartItems.map((item) => item['quantity']).toList();
-      final prices = cartItems.map((item) => item['price']).toList();
-      final deliveryManagerIds =
-          cartItems.map((item) => item['deliveryManagerId']).toList();
       final orderData = {
         'pendingOrderId': pendingOrderRef.id,
         'userId': uid,
@@ -156,13 +132,13 @@ class _PlaceOrderState extends State<PlaceOrder> {
         'orderDate': DateTime.now().toIso8601String(),
         'createdAt': FieldValue.serverTimestamp(),
         'totalPrice': totalPrice,
-        'productIds': productIds,
-        'quantities': quantities,
-        'prices': prices,
+        'productIds': [widget.product.product_id],
+        'quantities': [widget.quantity],
+        'prices': [widget.price],
         'orderStatus': 'pending',
         'status': 'pending',
         'isRequested': false,
-        'deliveryManagerIds': deliveryManagerIds,
+        'deliveryManagerIds': [''],
         'carrierId': '',
         'isSent': false,
         'phoneNo': phoneController.text.trim(),
@@ -1028,6 +1004,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                 ),
               ),
               verticalSpace(20.h),
+              // --- Single product summary for Buy Now ---
               Container(
                 padding: EdgeInsets.only(left: 15.w, top: 15.h, bottom: 15.h),
                 decoration: ShapeDecoration(
@@ -1045,139 +1022,58 @@ class _PlaceOrderState extends State<PlaceOrder> {
                   children: [
                     Text('구매목록', style: TextStyles.abeezee16px400wPblack),
                     verticalSpace(10.h),
-                    StreamBuilder(
-                      stream:
-                          FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(FirebaseAuth.instance.currentUser?.uid ?? '')
-                              .collection('cart')
-                              .snapshots(),
-                      builder: (context6, cartSnapshot) {
-                        if (cartSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Center(child: CircularProgressIndicator());
-                        }
-                        final cartDocs = cartSnapshot.data!.docs;
-
-                        return ListView.separated(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          separatorBuilder: (context5, index) {
-                            if (index == cartDocs.length - 1) {
-                              return SizedBox.shrink();
-                            }
-                            return Divider();
-                          },
-                          itemCount: cartDocs.length,
-                          itemBuilder: (ctx, index) {
-                            final cartData = cartDocs[index].data();
-                            final productId = cartData['product_id'];
-
-                            return FutureBuilder<DocumentSnapshot>(
-                              future:
-                                  FirebaseFirestore.instance
-                                      .collection('products')
-                                      .doc(productId)
-                                      .get(),
-                              builder: (context4, productSnapshot) {
-                                if (!productSnapshot.hasData) {
-                                  return ListTile(title: Text('로딩 중...'));
-                                }
-                                final productData =
-                                    productSnapshot.data!.data()
-                                        as Map<String, dynamic>;
-
-                                return Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${productData['productName']} / 수량 : ${cartData['quantity'].toString()}',
-                                      style: TextStyle(
-                                        color: const Color(0xFF747474),
-                                        fontSize: 14.sp,
-                                        fontFamily: 'NotoSans',
-                                        fontWeight: FontWeight.w400,
-                                        height: 1.40.h,
-                                      ),
-                                    ),
-                                    SizedBox(height: 8.h),
-                                    Text(
-                                      '${formatCurrency.format(cartData['price'] ?? 0)} 원',
-                                      style: TextStyle(
-                                        color: const Color(0xFF747474),
-                                        fontSize: 14.sp,
-                                        fontFamily: 'NotoSans',
-                                        fontWeight: FontWeight.w600,
-                                        height: 1.40.h,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                        );
-                      },
+                    Text(
+                      '${widget.product.productName} / 수량 : ${widget.quantity}',
+                      style: TextStyle(
+                        color: const Color(0xFF747474),
+                        fontSize: 14.sp,
+                        fontFamily: 'NotoSans',
+                        fontWeight: FontWeight.w400,
+                        height: 1.40.h,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      '${formatCurrency.format(widget.price)} 원',
+                      style: TextStyle(
+                        color: const Color(0xFF747474),
+                        fontSize: 14.sp,
+                        fontFamily: 'NotoSans',
+                        fontWeight: FontWeight.w600,
+                        height: 1.40.h,
+                      ),
                     ),
                   ],
                 ),
               ),
-              StreamBuilder<QuerySnapshot>(
-                stream:
-                    FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(FirebaseAuth.instance.currentUser?.uid ?? '')
-                        .collection('cart')
-                        .snapshots(),
-                builder: (context3, cartSnapshot) {
-                  if (!cartSnapshot.hasData ||
-                      cartSnapshot.data!.docs.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  return FutureBuilder<int>(
-                    future: calculateCartTotal(cartSnapshot.data!.docs),
-                    builder: (context2, totalSnapshot) {
-                      final totalPrice = totalSnapshot.data ?? 0;
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          verticalSpace(20.h),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '총 결제 금액 ',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 18.sp,
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.40.h,
-                                ),
-                              ),
-                              totalSnapshot.hasData
-                                  ? Text(
-                                    '${formatCurrency.format(totalPrice)} 원',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 18.sp,
-                                      fontFamily: 'NotoSans',
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.40.h,
-                                    ),
-                                  )
-                                  : CircularProgressIndicator(),
-                            ],
-                          ),
-                          _buildPaymentButton(totalPrice, uid),
-                        ],
-                      );
-                    },
-                  );
-                },
+              verticalSpace(20.h),
+              // --- Total and payment button for Buy Now ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '총 결제 금액 ',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 18.sp,
+                      fontFamily: 'NotoSans',
+                      fontWeight: FontWeight.w400,
+                      height: 1.40.h,
+                    ),
+                  ),
+                  Text(
+                    '${formatCurrency.format(widget.price)} 원',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 18.sp,
+                      fontFamily: 'NotoSans',
+                      fontWeight: FontWeight.w400,
+                      height: 1.40.h,
+                    ),
+                  ),
+                ],
               ),
+              _buildPaymentButton(widget.price, uid),
             ],
           ),
         ),

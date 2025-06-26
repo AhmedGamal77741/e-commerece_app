@@ -1,6 +1,5 @@
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
-import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/shop/cart_func.dart';
@@ -65,7 +64,7 @@ class _ItemDetailsState extends State<ItemDetails> {
   Widget build(BuildContext context) {
     final List<dynamic> imageUrls = [
       if (widget.product.imgUrl != null) widget.product.imgUrl,
-      ...?widget.product.imgUrls,
+      ...widget.product.imgUrls,
     ];
 
     final formatCurrency = NumberFormat('#,###');
@@ -451,41 +450,25 @@ class _ItemDetailsState extends State<ItemDetails> {
                   if (_selectedOption == null) {
                     _showQuantityRequiredMessage();
                   } else {
-                    await addProductAsNewEntryToCart(
-                      userId: currentUser.uid,
-                      productId: widget.product.product_id,
-                      quantity:
-                          widget
-                              .product
-                              .pricePoints[int.parse(_selectedOption!)]
-                              .quantity,
-                      price:
-                          widget.isSub
-                              ? widget
-                                  .product
-                                  .pricePoints[int.parse(_selectedOption!)]
-                                  .price
-                              : (widget
-                                          .product
-                                          .pricePoints[int.parse(
-                                            _selectedOption!,
-                                          )]
-                                          .price /
-                                      0.9)
-                                  .round(),
+                    // Navigate to BuyNow page with product info
+                    final pricePoint =
+                        widget.product.pricePoints[int.parse(_selectedOption!)];
+                    context.go(
+                      '/buy-now', // Use the correct route path for BuyNow
+                      extra: {
+                        'product': widget.product,
+                        'quantity': pricePoint.quantity,
+                        'price':
+                            widget.isSub
+                                ? pricePoint.price
+                                : (pricePoint.price / 0.9).round(),
+                      },
                     );
-                    if (mounted) {
-                      // Check if the widget is still in the tree
-                      context.go(Routes.placeOrderScreen);
-                    }
                   }
                 },
                 style: TextButton.styleFrom(
                   backgroundColor: ColorsManager.primaryblack,
-                  padding: EdgeInsets.symmetric(
-                    // horizontal: 0.w, // Horizontal padding 0 might make it look tight
-                    vertical: 10.h,
-                  ),
+                  padding: EdgeInsets.symmetric(vertical: 10.h),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
