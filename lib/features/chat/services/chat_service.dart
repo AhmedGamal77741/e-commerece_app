@@ -53,6 +53,38 @@ class ChatService {
     return chatRoomId;
   }
 
+  Future<bool> toggleLoveReaction({
+    required String messageId,
+    required String chatRoomId,
+  }) async {
+    try {
+      final messageRef = _firestore.collection('messages').doc(messageId);
+      final messageDoc = await messageRef.get();
+
+      if (!messageDoc.exists) return false;
+
+      final message = MessageModel.fromMap(messageDoc.data()!);
+      final isLoved = message.lovedBy.contains(currentUserId);
+
+      if (isLoved) {
+        // Remove love
+        await messageRef.update({
+          'lovedBy': FieldValue.arrayRemove([currentUserId]),
+        });
+      } else {
+        // Add love
+        await messageRef.update({
+          'lovedBy': FieldValue.arrayUnion([currentUserId]),
+        });
+      }
+
+      return true;
+    } catch (e) {
+      print('Error toggling love reaction: $e');
+      return false;
+    }
+  }
+
   // Create group chat room (updated with friend check)
   Future<String?> createGroupChatRoom({
     required String name,

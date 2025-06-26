@@ -10,6 +10,7 @@ class MessageModel {
   final List<String> readBy;
   final String? replyToMessageId;
   final bool isEdited;
+  final List<String> lovedBy;
 
   MessageModel({
     required this.id,
@@ -22,6 +23,7 @@ class MessageModel {
     this.readBy = const [],
     this.replyToMessageId,
     this.isEdited = false,
+    this.lovedBy = const [],
   });
 
   factory MessageModel.fromMap(Map<String, dynamic> map) {
@@ -36,6 +38,7 @@ class MessageModel {
       readBy: List<String>.from(map['readBy'] ?? []),
       replyToMessageId: map['replyToMessageId'],
       isEdited: map['isEdited'] ?? false,
+      lovedBy: List<String>.from(map['lovedBy'] ?? []),
     );
   }
 
@@ -51,6 +54,7 @@ class MessageModel {
       'readBy': readBy,
       'replyToMessageId': replyToMessageId,
       'isEdited': isEdited,
+      'lovedBy': lovedBy,
     };
   }
 }

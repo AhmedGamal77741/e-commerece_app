@@ -2,6 +2,7 @@
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/chat_service.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
+import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/friends/services/friends_service.dart';
 import 'package:flutter/material.dart';
 
@@ -196,8 +197,16 @@ class _FriendsScreenState extends State<FriendsScreen>
               friend.userId,
             );
             if (chatRoomId != null) {
-              // Navigate to chat
-              // You'll need to get the ChatRoomModel first
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => ChatScreen(
+                        chatRoomId: chatRoomId,
+                        chatRoomName: friend.name,
+                      ),
+                ),
+              );
             }
           } catch (e) {
             ScaffoldMessenger.of(

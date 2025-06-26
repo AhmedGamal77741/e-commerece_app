@@ -13,6 +13,8 @@ class MyUser {
   final List<String> friends; // Added field
   final List<String> friendRequestsSent; // Added field
   final List<String> friendRequestsReceived; // Added field
+  final int followerCount;
+  final int followingCount;
 
   MyUser({
     required this.userId,
@@ -29,6 +31,8 @@ class MyUser {
     this.friends = const [],
     this.friendRequestsSent = const [],
     this.friendRequestsReceived = const [],
+    this.followerCount = 0,
+    this.followingCount = 0,
   });
 
   static final empty = MyUser(
@@ -46,6 +50,8 @@ class MyUser {
     friends: const [],
     friendRequestsSent: const [],
     friendRequestsReceived: const [],
+    followerCount: 0,
+    followingCount: 0,
   );
 
   // Database serialization methods (from MyUserEntity)
@@ -65,6 +71,8 @@ class MyUser {
       'friends': friends,
       'friendRequestsSent': friendRequestsSent,
       'friendRequestsReceived': friendRequestsReceived,
+      'followerCount': followerCount,
+      'followingCount': followingCount,
     };
   }
 
@@ -87,6 +95,8 @@ class MyUser {
       friendRequestsReceived: List<String>.from(
         doc['friendRequestsReceived'] ?? [],
       ),
+      followerCount: doc['followerCount'] ?? 0,
+      followingCount: doc['followingCount'] ?? 0,
     );
   }
 
