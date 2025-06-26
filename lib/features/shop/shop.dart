@@ -213,16 +213,26 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
               return const Center(child: Text('아직 제품이 없습니다'));
             }
             final products = snapshot.data!.docs;
+            // Sort: available products first, then sold out
+            final sortedProducts = List.from(products)..sort((a, b) {
+              final stockA = (a.data() as Map<String, dynamic>)['stock'] ?? 0;
+              final stockB = (b.data() as Map<String, dynamic>)['stock'] ?? 0;
+              if ((stockA > 0 && stockB > 0) || (stockA == 0 && stockB == 0))
+                return 0;
+              if (stockA > 0) return -1;
+              return 1;
+            });
             return ListView.separated(
               separatorBuilder: (context, index) {
-                if (index == products.length - 1) {
+                if (index == sortedProducts.length - 1) {
                   return SizedBox.shrink();
                 }
                 return Divider();
               },
-              itemCount: products.length,
+              itemCount: sortedProducts.length,
               itemBuilder: (context, index) {
-                final data2 = products[index].data() as Map<String, dynamic>;
+                final data2 =
+                    sortedProducts[index].data() as Map<String, dynamic>;
                 Product p = Product.fromMap(data2);
                 return InkWell(
                   onTap: () async {
@@ -285,6 +295,12 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                                   p.baselineTime,
                                 ),
                                 builder: (context, snapshot) {
+                                  if (p.stock == 0) {
+                                    return Text(
+                                      '품절',
+                                      style: TextStyles.abeezee14px400wP600,
+                                    );
+                                  }
                                   if (snapshot.connectionState ==
                                       ConnectionState.waiting) {
                                     return Text(

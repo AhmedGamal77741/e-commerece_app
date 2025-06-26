@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ItemDetails extends StatefulWidget {
   final Product product;
@@ -187,7 +188,9 @@ class _ItemDetailsState extends State<ItemDetails> {
                       ),
                       SizedBox(height: 10.h),
                       Text(
-                        '${widget.arrivalDay} 도착예정 - ${widget.product.freeShipping == true ? '무료 배송' : '배송료가 부과됩니다'}',
+                        widget.product.stock == 0
+                            ? '품절'
+                            : '${widget.arrivalDay} 도착예정 - ${widget.product.freeShipping == true ? '무료 배송' : '배송료가 부과됩니다'}',
                         style: TextStyle(
                           color: const Color(0xFF747474),
                           fontSize: 14.sp,
@@ -384,28 +387,31 @@ class _ItemDetailsState extends State<ItemDetails> {
                   if (_selectedOption == null) {
                     _showQuantityRequiredMessage();
                   } else {
+                    // Stock validation before adding to cart
+                    final pricePoint =
+                        widget.product.pricePoints[int.parse(_selectedOption!)];
+                    final productRef = FirebaseFirestore.instance
+                        .collection('products')
+                        .doc(widget.product.product_id);
+                    final productSnapshot = await productRef.get();
+                    final currentStock = productSnapshot.data()?['stock'] ?? 0;
+                    if (pricePoint.quantity > currentStock) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('수량 부족'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
                     await addProductAsNewEntryToCart(
                       userId: currentUser.uid,
                       productId: widget.product.product_id,
-                      quantity:
-                          widget
-                              .product
-                              .pricePoints[int.parse(_selectedOption!)]
-                              .quantity,
+                      quantity: pricePoint.quantity,
                       price:
                           widget.isSub
-                              ? widget
-                                  .product
-                                  .pricePoints[int.parse(_selectedOption!)]
-                                  .price
-                              : (widget
-                                          .product
-                                          .pricePoints[int.parse(
-                                            _selectedOption!,
-                                          )]
-                                          .price /
-                                      0.9)
-                                  .round(),
+                              ? pricePoint.price
+                              : (pricePoint.price / 0.9).round(),
                     );
                     if (mounted) {
                       // Check if the widget is still in the tree
@@ -450,11 +456,26 @@ class _ItemDetailsState extends State<ItemDetails> {
                   if (_selectedOption == null) {
                     _showQuantityRequiredMessage();
                   } else {
-                    // Navigate to BuyNow page with product info
+                    // Stock validation before Buy Now
                     final pricePoint =
                         widget.product.pricePoints[int.parse(_selectedOption!)];
+                    final productRef = FirebaseFirestore.instance
+                        .collection('products')
+                        .doc(widget.product.product_id);
+                    final productSnapshot = await productRef.get();
+                    final currentStock = productSnapshot.data()?['stock'] ?? 0;
+                    if (pricePoint.quantity > currentStock) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('수량 부족'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+                    // Navigate to BuyNow page with product info
                     context.go(
-                      '/buy-now', // Use the correct route path for BuyNow
+                      '/buy-now',
                       extra: {
                         'product': widget.product,
                         'quantity': pricePoint.quantity,
