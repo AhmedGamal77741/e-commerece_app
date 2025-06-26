@@ -4,6 +4,7 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:ecommerece_app/features/chat/ui/chats_navbar.dart';
 import 'package:ecommerece_app/features/chat/ui/friends_screen.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
@@ -42,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen>
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => FriendsScreen()),
+                    MaterialPageRoute(builder: (context) => ChatsNavbar()),
                   );
                 },
                 child: ImageIcon(AssetImage('assets/005 3.png'), size: 21),

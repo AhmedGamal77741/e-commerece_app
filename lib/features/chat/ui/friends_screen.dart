@@ -107,6 +107,7 @@ class _FriendsScreenState extends State<FriendsScreen>
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'unique-fab-1', // Add this unique tag
         onPressed: () {
           /*           Navigator.push(
             context,
@@ -116,7 +117,6 @@ class _FriendsScreenState extends State<FriendsScreen>
         backgroundColor: Colors.black,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 
