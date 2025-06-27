@@ -4,9 +4,14 @@ import 'package:flutter/material.dart';
 
 class FollowingUsersList extends StatelessWidget {
   final List<String> followingIds;
-
-  const FollowingUsersList({Key? key, required this.followingIds})
-    : super(key: key);
+  final void Function(String userId)? onUserTap;
+  final String? selectedUserId; // Add this
+  const FollowingUsersList({
+    Key? key,
+    required this.followingIds,
+    this.onUserTap,
+    this.selectedUserId,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -32,25 +37,41 @@ class FollowingUsersList extends StatelessWidget {
             final userData = snapshot.data!.data() as Map<String, dynamic>?;
             if (userData == null) return const SizedBox.shrink();
             final user = MyUser.fromDocument(userData);
-            return Container(
-              margin: const EdgeInsets.only(right: 16),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.grey[300],
-                    backgroundImage: NetworkImage(user.url),
+            return GestureDetector(
+              onTap: () {
+                if (onUserTap != null) {
+                  onUserTap!(user.userId);
+                }
+              },
+              child: Opacity(
+                opacity:
+                    selectedUserId == user.userId
+                        ? 1
+                        : selectedUserId == null
+                        ? 1
+                        : .5,
+                child: Container(
+                  margin: const EdgeInsets.only(right: 16),
+
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage: NetworkImage(user.url),
+                      ),
+                      Text(
+                        user.name,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                  Text(
-                    user.name,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                ),
               ),
             );
           },

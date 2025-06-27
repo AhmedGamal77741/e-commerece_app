@@ -15,6 +15,7 @@ class FollowingTab extends StatefulWidget {
 class _FollowingTabState extends State<FollowingTab>
     with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
+  String? selectedUserId; // Add this
 
   bool get wantKeepAlive => true;
 
@@ -56,7 +57,19 @@ class _FollowingTabState extends State<FollowingTab>
                 return const Center(child: Text('팔로우한 사용자가 없습니다'));
               }
 
-              return FollowingUsersList(followingIds: followingIds);
+              return FollowingUsersList(
+                followingIds: followingIds,
+                onUserTap: (userId) {
+                  setState(() {
+                    if (selectedUserId == userId) {
+                      selectedUserId = null; // Deselect if tapped again
+                    } else {
+                      selectedUserId = userId;
+                    }
+                  });
+                },
+                selectedUserId: selectedUserId,
+              );
             },
           ),
         ),
@@ -66,6 +79,7 @@ class _FollowingTabState extends State<FollowingTab>
           child: FollowingPostsList(
             currentUserId: currentUserId,
             scrollController: _scrollController,
+            selectedUserId: selectedUserId, // Pass here
           ),
         ),
       ],
@@ -76,16 +90,19 @@ class _FollowingTabState extends State<FollowingTab>
 class FollowingPostsList extends StatelessWidget {
   final String currentUserId;
   final ScrollController scrollController;
+  final String? selectedUserId; // Add this
+
   FollowingPostsList({
     Key? key,
     required this.currentUserId,
     required this.scrollController,
+    this.selectedUserId,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: _getFollowingPostsStream(),
+      stream: _getFollowingPostsStream(selectedUserId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Center(child: Text('오류가 발생했습니다'));
@@ -125,7 +142,15 @@ class FollowingPostsList extends StatelessWidget {
     );
   }
 
-  Stream<QuerySnapshot> _getFollowingPostsStream() {
+  Stream<QuerySnapshot> _getFollowingPostsStream(String? userId) {
+    if (userId != null) {
+      // Show only posts from the selected user
+      return FirebaseFirestore.instance
+          .collection('posts')
+          .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .snapshots();
+    }
     return FirebaseFirestore.instance
         .collection('users')
         .doc(currentUserId)
