@@ -55,10 +55,22 @@ class FollowingUsersList extends StatelessWidget {
 
                   child: Column(
                     children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: Colors.grey[300],
-                        backgroundImage: NetworkImage(user.url),
+                      Container(
+                        decoration:
+                            selectedUserId == user.userId
+                                ? BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    width: 2,
+                                    color: Colors.black,
+                                  ),
+                                )
+                                : null,
+                        child: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.grey[300],
+                          backgroundImage: NetworkImage(user.url),
+                        ),
                       ),
                       Text(
                         user.name,
