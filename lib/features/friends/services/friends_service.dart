@@ -9,65 +9,56 @@ class FriendsService {
 
   String get currentUserId => _auth.currentUser?.uid ?? '';
 
-  // Add friend directly without request
-  Future<bool> addFriend(String friendId) async {
-    try {
-      // Prevent adding yourself as a friend
-      if (friendId == currentUserId) {
-        throw Exception('Cannot add yourself as a friend');
-      }
+  Future<bool> addFriend(String friendName) async {
+  try {
+    // Prevent adding yourself as a friend by name
+    final currentUserDoc =
+        await _firestore.collection('users').doc(currentUserId).get();
+    final currentUser = MyUser.fromDocument(currentUserDoc.data()!);
 
-      // Check if already friends
-      final currentUserDoc =
-          await _firestore.collection('users').doc(currentUserId).get();
-      final currentUser = MyUser.fromDocument(currentUserDoc.data()!);
-
-      if (currentUser.friends.contains(friendId)) {
-        throw Exception('Already friends with this user');
-      }
-
-      // Check if friend exists
-      final friendDoc =
-          await _firestore.collection('users').doc(friendId).get();
-      if (!friendDoc.exists) {
-        throw Exception('User not found');
-      }
-
-      // Use batch to ensure atomicity
-      final batch = _firestore.batch();
-
-      // Add to current user's friends list
-      batch.update(_firestore.collection('users').doc(currentUserId), {
-        'friends': FieldValue.arrayUnion([friendId]),
-      });
-
-      // Add to friend's friends list
-      batch.update(_firestore.collection('users').doc(friendId), {
-        'friends': FieldValue.arrayUnion([currentUserId]),
-      });
-
-      // Create friendship activity/notification (optional)
-      final activityRef = _firestore.collection('activities').doc();
-      batch.set(activityRef, {
-        'id': activityRef.id,
-        'type': 'new_friend',
-        'userId': friendId,
-        'friendId': currentUserId,
-        'friendName': currentUser.name,
-        'friendProfileImage': currentUser.url,
-        'message': '${currentUser.name} added you as a friend',
-        'createdAt': FieldValue.serverTimestamp(),
-        'read': false,
-      });
-
-      await batch.commit();
-      return true;
-    } catch (e) {
-      print('Error adding friend: $e');
-      return false;
+    if (currentUser.name == friendName) {
+      throw Exception('Cannot add yourself as a friend');
     }
-  }
 
+    // Search for user by name
+    final userQuery = await _firestore
+        .collection('users')
+        .where('name', isEqualTo: friendName)
+        .limit(1)
+        .get();
+
+    if (userQuery.docs.isEmpty) {
+      throw Exception('User not found');
+    }
+
+    final friendDoc = userQuery.docs.first;
+    final friendId = friendDoc['userId'];
+
+    // Check if already friends
+    if (currentUser.friends.contains(friendId)) {
+      throw Exception('Already friends with this user');
+    }
+
+    // Use batch to ensure atomicity
+    final batch = _firestore.batch();
+
+    // Add to current user's friends list
+    batch.update(_firestore.collection('users').doc(currentUserId), {
+      'friends': FieldValue.arrayUnion([friendId]),
+    });
+
+    // Add to friend's friends list
+    batch.update(_firestore.collection('users').doc(friendId), {
+      'friends': FieldValue.arrayUnion([currentUserId]),
+    });
+
+    await batch.commit();
+    return true;
+  } catch (e) {
+    print('Error adding friend: $e');
+    return false;
+  }
+}
   // Remove friend
   Future<bool> removeFriend(String friendId) async {
     try {

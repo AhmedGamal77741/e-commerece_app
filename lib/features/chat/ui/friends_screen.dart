@@ -6,6 +6,7 @@ import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/chat/widgets/expandable_FAB.dart';
 import 'package:ecommerece_app/features/friends/services/friends_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class FriendsScreen extends StatefulWidget {
   @override
@@ -19,6 +20,30 @@ class _FriendsScreenState extends State<FriendsScreen>
   final ChatService _chatService = ChatService();
 
   bool _isSyncing = false;
+  bool editMode = false;
+  bool searchMode = false;
+  Set<String> selectedChatIds = {};
+  String searchQuery = '';
+  final TextEditingController searchController = TextEditingController();
+
+  void toggleSearchMode() {
+    setState(() {
+      searchMode = !searchMode;
+      if (!searchMode) {
+        searchQuery = '';
+        searchController.clear();
+      }
+    });
+  }
+
+  void toggleEditMode() {
+    setState(() {
+      editMode = !editMode;
+      if (!editMode) selectedChatIds.clear();
+    });
+  }
+
+  void onSelectChat(String chatId, bool selected) {}
 
   @override
   void initState() {
@@ -63,35 +88,108 @@ class _FriendsScreenState extends State<FriendsScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        title:
+            searchMode
+                ? TextField(
+                  controller: searchController,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    hintText: 'Search...',
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value.trim().toLowerCase();
+                    });
+                  },
+                )
+                : null,
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () async {
+            if (editMode) {
+              setState(() {
+                editMode = false;
+                selectedChatIds.clear();
+              });
+            } else if (searchMode) {
+              setState(() {
+                searchMode = false;
+                searchQuery = '';
+                searchController.clear();
+              });
+            } else {
+              Navigator.pop(context);
+            }
+          },
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.black),
-            onPressed: () {
-              // Handle edit action
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.black),
-            onPressed: () {
-              /*               Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AddFriendScreen()),
-              ); */
-            },
-          ),
-        ],
+        actions:
+            editMode
+                ? [
+                  InkWell(
+                    onTap: toggleEditMode,
+                    child: Image.asset(
+                      'assets/015.png',
+                      height: 30.sp,
+                      width: 30.sp,
+                      cacheWidth: 40,
+                      cacheHeight: 40,
+                    ),
+                  ),
+                  SizedBox(width: 5.w),
+                  InkWell(
+                    onTap: toggleEditMode,
+                    child: Image.asset(
+                      'assets/014.png',
+                      height: 30.sp,
+                      width: 30.sp,
+                      cacheWidth: 40,
+                      cacheHeight: 40,
+                    ),
+                  ),
+                  /*  TextButton(
+                    onPressed:
+                        selectedChatIds.isEmpty
+                            ? null
+                            : () {
+                              // Handle delete or other action for selectedChatIds
+                              // Example: chatService.deleteChats(selectedChatIds);
+                              toggleEditMode();
+                            },
+                    child: Text(
+                      'Delete',
+                      style: TextStyle(
+                        color:
+                            selectedChatIds.isEmpty ? Colors.grey : Colors.red,
+                        fontSize: 16.sp,
+                      ),
+                    ),
+                  ), */
+                ]
+                : [
+                  InkWell(
+                    onTap: toggleEditMode,
+                    child: Image.asset(
+                      'assets/002 (1).png',
+                      height: 30.sp,
+                      width: 30.sp,
+                      cacheWidth: 40,
+                      cacheHeight: 40,
+                    ),
+                  ),
+                  SizedBox(width: 5.w),
+                  IconButton(
+                    icon: Icon(Icons.search, color: Colors.black, size: 30.sp),
+                    onPressed: toggleSearchMode,
+                  ),
+                ],
       ),
       body: StreamBuilder<List<MyUser>>(
         stream: _friendsService.getFriendsStream(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting ||
-              _isSyncing) {
+          if (!snapshot.hasData || _isSyncing) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -112,7 +210,6 @@ class _FriendsScreenState extends State<FriendsScreen>
           );
         },
       ),
-      floatingActionButton: ExpandableFAB(),
       /*       floatingActionButton: FloatingActionButton(
         heroTag: 'unique-fab-1', // Add this unique tag
         onPressed: () {
@@ -145,23 +242,29 @@ class _FriendsScreenState extends State<FriendsScreen>
             ),
           ),
         ),
-        ...favoriteFriends
-            .map(
-              (friend) => _buildFriendItem(friend: friend, showSubtitle: true),
-            )
-            .toList(),
-        if (friends.length > 4) ...[
+        ...favoriteFriends.map((friend) {
+          // Filter by search query
+          if (searchQuery.isNotEmpty &&
+              !friend.name.toLowerCase().contains(searchQuery)) {
+            return const SizedBox.shrink();
+          }
+          return _buildFriendItem(
+            friend: friend,
+            showSubtitle: true,
+            showCheckbox: editMode,
+          );
+        }).toList(),
+        /*         if (friends.length > 4) ...[
           const SizedBox(height: 16),
           const Divider(height: 1, color: Color(0xFFE5E5E5)),
           const SizedBox(height: 16),
           ...friends
-              .skip(4)
               .map(
                 (friend) =>
                     _buildFriendItem(friend: friend, showSubtitle: true),
               )
               .toList(),
-        ],
+        ], */
       ],
     );
   }
@@ -194,7 +297,11 @@ class _FriendsScreenState extends State<FriendsScreen>
     );
   }
 
-  Widget _buildFriendItem({required MyUser friend, bool showSubtitle = false}) {
+  Widget _buildFriendItem({
+    required MyUser friend,
+    bool showSubtitle = false,
+    bool showCheckbox = false,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
@@ -247,14 +354,25 @@ class _FriendsScreenState extends State<FriendsScreen>
                 ],
               ),
             ),
-            if (friend.isOnline)
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                ),
+            if (showCheckbox)
+              StatefulBuilder(
+                builder: (context, checkboxState) {
+                  return Checkbox(
+                    value: selectedChatIds.contains(friend.userId),
+                    onChanged: (checked) {
+                      checkboxState(() {
+                        if (checked ?? false) {
+                          selectedChatIds.add(friend.userId);
+                        } else {
+                          selectedChatIds.remove(friend.userId);
+                        }
+                      });
+
+                      /*                                 onSelectChat(chat.id, );
+                                 */
+                    },
+                  );
+                },
               ),
           ],
         ),
