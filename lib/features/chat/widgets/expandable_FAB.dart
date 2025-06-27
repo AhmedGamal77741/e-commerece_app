@@ -1,3 +1,4 @@
+import 'package:ecommerece_app/features/friends/services/friends_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -56,7 +57,7 @@ class _ExpandableFABState extends State<ExpandableFAB>
           animation: _animation,
           builder: (context, child) {
             return Transform.translate(
-              offset: Offset(0, -_animation.value * 70),
+              offset: Offset(0,40  -_animation.value * 70),
               child: Transform.scale(
                 scale: _scaleAnimation.value,
                 alignment: Alignment.bottomRight,
@@ -64,50 +65,56 @@ class _ExpandableFABState extends State<ExpandableFAB>
                   opacity: _animation.value,
                   child: Container(
                     width: 200.w,
-                    height: 190.h,
-                    margin: const EdgeInsets.only(right: 8),
+                    height: 200.h,
+                    margin: const EdgeInsets.only(right: 8,),
                     decoration: BoxDecoration(
+                            borderRadius: BorderRadius.only(
+        topRight: Radius.circular(40),
+        bottomLeft: Radius.circular(40),
+        
+              ),
+        
+                      border: Border.all(
+                        color: Colors.grey[300]!,
+                        width: 1,
+                      ),
                       color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(16),
                       boxShadow: [],
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: _buildMenuItem(
-                            icon: "assets/009 (1).png",
-
-                            label: '그룹 만들기',
-                            onTap: () {
-                              print('그룹 만들기 clicked');
-                              _toggle();
-                            },
-                            showDivider: true,
-                          ),
+                        _buildMenuItem(
+                          icon: "assets/009 (1).png",
+                        
+                          label: '그룹 만들기',
+                          onTap: () {
+                            print('그룹 만들기 clicked');
+                            _toggle();
+                          },
+                          showDivider: true,
                         ),
-                        Expanded(
-                          child: _buildMenuItem(
-                            icon: "assets/012.png",
-                            label: '친구 추가',
-                            onTap: () {
-                              print('친구 추가 clicked');
-                              _toggle();
-                            },
-                            showDivider: true,
-                          ),
+                        _buildMenuItem(
+                          icon: "assets/012.png",
+                          label: '친구 추가',
+                          onTap: () async {
+                          await showAddFriendDialog(context, (userId) async {
+                            // Call your FriendsService.addFriend here
+                            await FriendsService().addFriend(userId);
+                            // Show success/failure message if needed
+                          });                              _toggle();
+                          },
+                          showDivider: true,
                         ),
-                        Expanded(
-                          child: _buildMenuItem(
-                            icon: "assets/012.png",
-                            label: '차단 친구',
-                            onTap: () {
-                              print('차단 친구 clicked');
-                              _toggle();
-                            },
-                            showDivider: false,
-                          ),
+                        _buildMenuItem(
+                          icon: "assets/012.png",
+                          label: '차단 친구',
+                          onTap: () {
+                            print('차단 친구 clicked');
+                            _toggle();
+                          },
+                          showDivider: false,
                         ),
                       ],
                     ),
@@ -135,6 +142,88 @@ class _ExpandableFABState extends State<ExpandableFAB>
       ],
     );
   }
+
+
+// Show dialog to add a friend by user ID or name
+Future<void> showAddFriendDialog(BuildContext context, void Function(String userId) onAdd) async {
+  final controller = TextEditingController();
+
+  await showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('친구 추가'),
+      content: TextField(
+        controller: controller,
+        decoration: const InputDecoration(labelText: '유저 ID 또는 이름'),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+        ElevatedButton(
+          onPressed: () {
+            onAdd(controller.text.trim());
+            Navigator.pop(context);
+          },
+          child: const Text('추가'),
+        ),
+      ],
+    ),
+  );
+}
+
+// Show dialog to create a group chat
+Future<void> showCreateGroupDialog(BuildContext context, void Function(String name, List<String> userIds) onCreate) async {
+  final nameController = TextEditingController();
+  List<String> selectedUserIds = [];
+
+  // Replace with your friends stream/provider
+  final friends = await FriendsService().getFriendsStream().first;
+
+  await showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('그룹 만들기'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: nameController,
+            decoration: const InputDecoration(labelText: '그룹 이름'),
+          ),
+          const SizedBox(height: 12),
+          const Text('친구 선택'),
+          SizedBox(
+            height: 150,
+            child: ListView(
+              children: friends.map((user) {
+                return CheckboxListTile(
+                  value: selectedUserIds.contains(user.userId),
+                  title: Text(user.name),
+                  onChanged: (checked) {
+                    if (checked == true) {
+                      selectedUserIds.add(user.userId);
+                    } else {
+                      selectedUserIds.remove(user.userId);
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+        ElevatedButton(
+          onPressed: () {
+            onCreate(nameController.text, selectedUserIds);
+            Navigator.pop(context);
+          },
+          child: const Text('생성'),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildMenuItem({
     required String icon,
