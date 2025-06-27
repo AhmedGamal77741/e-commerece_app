@@ -511,6 +511,10 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                         ),
                       ),
                     ),
+                    IconButton(
+                      onPressed: () {},
+                      icon: Icon(Icons.search, size: 30.sp),
+                    ),
                   ],
                 ),
                 verticalSpace(5),
