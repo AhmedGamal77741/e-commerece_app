@@ -6,6 +6,7 @@ import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -52,6 +53,86 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
       }
       debugPrint('Error loading user: $e');
     }
+  }
+
+  Future<bool> _reauthenticateUser(BuildContext context) async {
+    bool success = false;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final TextEditingController reauthController = TextEditingController();
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text('비밀번호 재확인', style: TextStyle(color: Colors.black)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '비밀번호를 변경하려면 현재 비밀번호를 입력하세요.',
+                style: TextStyle(color: Colors.black),
+              ),
+              SizedBox(height: 16),
+              UnderlineTextField(
+                controller: reauthController,
+                hintText: '현재 비밀번호',
+                obscureText: true,
+                keyboardType: TextInputType.visiblePassword,
+                validator:
+                    (val) => val == null || val.isEmpty ? '비밀번호를 입력하세요' : null,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.black,
+              ),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                reauthController.dispose();
+              },
+              child: Text('취소', style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.black,
+              ),
+              onPressed: () async {
+                final passwordText = reauthController.text;
+                try {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user == null || user.email == null) {
+                    throw Exception('로그인 정보가 없습니다');
+                  }
+                  final cred = EmailAuthProvider.credential(
+                    email: user.email!,
+                    password: passwordText,
+                  );
+                  await user.reauthenticateWithCredential(cred);
+                  success = true;
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                } catch (e) {
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text('재인증 실패: 비밀번호를 확인하세요.')),
+                    );
+                  }
+                } finally {
+                  reauthController.dispose();
+                }
+              },
+              child: Text('확인', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+    return success;
   }
 
   @override
@@ -109,8 +190,6 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                     txt: '완료',
                     func: () async {
                       if (!_formKey.currentState!.validate()) return;
-
-                      // Check if both fields are empty
                       if (nameController.text.isEmpty &&
                           passwordController.text.isEmpty) {
                         setState(() {
@@ -118,13 +197,9 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                         });
                         return;
                       }
-
-                      // Track what we're trying to update
                       final isUpdatingName = nameController.text.isNotEmpty;
                       final isUpdatingPassword =
                           passwordController.text.isNotEmpty;
-
-                      // Prepare user model (only update name if it's provided)
                       final myUser = MyUser(
                         userId: currentUser!.userId,
                         email: currentUser!.email,
@@ -145,31 +220,27 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                         friendRequestsReceived:
                             currentUser!.friendRequestsReceived,
                       );
-
                       try {
-                        // Pass empty string for password if we're not updating it
+                        // If updating password, require re-authentication
+                        if (isUpdatingPassword) {
+                          final reauth = await _reauthenticateUser(context);
+                          if (!reauth) return;
+                        }
                         final result = await fireBaseRepo.updateUser(
                           myUser,
                           isUpdatingPassword ? passwordController.text : "",
                         );
-
                         if (!mounted) return;
-
                         if (result == null) {
                           setState(() {
                             error = "이미 사용 중인 닉네임입니다";
                           });
                         } else {
-                          // Clear error message
                           setState(() {
                             error = "";
                           });
-
-                          // Clear fields that were updated
                           if (isUpdatingName) nameController.clear();
                           if (isUpdatingPassword) passwordController.clear();
-
-                          // Show appropriate success message based on what was updated
                           String successMessage;
                           if (isUpdatingName && isUpdatingPassword) {
                             successMessage = "닉네임과 비밀번호가 성공적으로 업데이트되었습니다";
@@ -178,14 +249,13 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                           } else {
                             successMessage = "비밀번호가 성공적으로 업데이트되었습니다";
                           }
-
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(successMessage)),
                           );
                         }
                       } catch (e) {
                         setState(() {
-                          error = "업데이트 중 오류가 발생했습니다: ${e.toString()}";
+                          error = "업데이트 중 오류가 발생했습니다: " + e.toString();
                         });
                       }
                     },

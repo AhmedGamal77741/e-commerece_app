@@ -27,62 +27,87 @@ class _FollowingTabState extends State<FollowingTab>
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
-    return Column(
-      children: [
-        // Following users horizontal list
-        SizedBox(
-          height: 90.h,
-          child: StreamBuilder<QuerySnapshot>(
-            stream:
-                FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(currentUserId)
-                    .collection('following')
-                    .orderBy('createdAt', descending: true)
-                    .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return const Center(child: Text('오류가 발생했습니다'));
-              }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const Center(child: Text('내 페이지탭에서 회원가입 후 이용가능합니다'));
+    }
+    // Use StreamBuilder for real-time isSub updates
+    return StreamBuilder<DocumentSnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const Center(child: Text('오류가 발생했습니다'));
+        }
+        final data = snapshot.data!.data() as Map<String, dynamic>?;
+        final isSub = data?['isSub'] == true;
+        if (!isSub) {
+          return const Center(child: Text('프리미엄 회원만 이용가능합니다'));
+        }
+        final currentUserId = user.uid;
+        return Column(
+          children: [
+            // Following users horizontal list
+            SizedBox(
+              height: 90.h,
+              child: StreamBuilder<QuerySnapshot>(
+                stream:
+                    FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(currentUserId)
+                        .collection('following')
+                        .orderBy('createdAt', descending: true)
+                        .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return const Center(child: Text('오류가 발생했습니다'));
+                  }
 
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-              final followingIds =
-                  snapshot.data!.docs.map((doc) => doc.id).toList();
+                  final followingIds =
+                      snapshot.data!.docs.map((doc) => doc.id).toList();
 
-              if (followingIds.isEmpty) {
-                return const Center(child: Text('팔로우한 사용자가 없습니다'));
-              }
+                  if (followingIds.isEmpty) {
+                    return const Center(child: Text('팔로우한 사용자가 없습니다'));
+                  }
 
-              return FollowingUsersList(
-                followingIds: followingIds,
-                onUserTap: (userId) {
-                  setState(() {
-                    if (selectedUserId == userId) {
-                      selectedUserId = null; // Deselect if tapped again
-                    } else {
-                      selectedUserId = userId;
-                    }
-                  });
+                  return FollowingUsersList(
+                    followingIds: followingIds,
+                    onUserTap: (userId) {
+                      setState(() {
+                        if (selectedUserId == userId) {
+                          selectedUserId = null; // Deselect if tapped again
+                        } else {
+                          selectedUserId = userId;
+                        }
+                      });
+                    },
+                    selectedUserId: selectedUserId,
+                  );
                 },
-                selectedUserId: selectedUserId,
-              );
-            },
-          ),
-        ),
-        const Divider(height: 1),
-        // Posts from following users
-        Expanded(
-          child: FollowingPostsList(
-            currentUserId: currentUserId,
-            scrollController: _scrollController,
-            selectedUserId: selectedUserId, // Pass here
-          ),
-        ),
-      ],
+              ),
+            ),
+            const Divider(height: 1),
+            // Posts from following users
+            Expanded(
+              child: FollowingPostsList(
+                currentUserId: currentUserId,
+                scrollController: _scrollController,
+                selectedUserId: selectedUserId, // Pass here
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
