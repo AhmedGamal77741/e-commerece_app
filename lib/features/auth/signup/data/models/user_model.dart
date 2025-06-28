@@ -84,7 +84,7 @@ class MyUser {
       url: doc['url'],
       blocked:
           (doc['blocked'] as List<dynamic>?)?.map((e) => e as String).toList(),
-      isSub: doc['isSub'],
+      isSub: doc['isSub'] ?? false,
       defaultAddressId: doc['defaultAddressId'],
       payerId: doc['payerId'],
       isOnline: doc['isOnline'] ?? false,

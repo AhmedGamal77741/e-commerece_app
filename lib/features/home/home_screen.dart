@@ -8,6 +8,7 @@ import 'package:ecommerece_app/features/chat/ui/chats_navbar.dart';
 import 'package:ecommerece_app/features/chat/ui/friends_screen.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
+import 'package:ecommerece_app/features/home/search_screen.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -512,7 +513,12 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                       ),
                     ),
                     IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => HomeSearch()),
+                        );
+                      },
                       icon: Icon(Icons.search, size: 30.sp),
                     ),
                   ],
