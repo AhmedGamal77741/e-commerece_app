@@ -20,6 +20,8 @@ class _SignupScreenState extends State<SignupScreen> {
   final emailController = TextEditingController();
   final nameController = TextEditingController();
   final paymentInfoController = TextEditingController();
+  final tagController = TextEditingController();
+
   final _formKey = GlobalKey<FormState>();
   IconData iconPassword = Icons.visibility;
   bool obscurePassword = true;
@@ -27,6 +29,17 @@ class _SignupScreenState extends State<SignupScreen> {
   String imgUrl = '';
   String error = '';
   final fireBaseRepo = FirebaseUserRepo();
+
+  @override
+  void dispose() {
+    passwordController.dispose();
+    emailController.dispose();
+    nameController.dispose();
+    paymentInfoController.dispose();
+    tagController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -89,6 +102,24 @@ class _SignupScreenState extends State<SignupScreen> {
                           } else if (val.length > 30) {
                             return '이름이 너무 깁니다';
                           }
+                          return null;
+                        },
+                      ),
+                      verticalSpace(20),
+                      Text('태그', style: TextStyles.abeezee16px400wPblack),
+                      verticalSpace(8),
+                      UnderlineTextField(
+                        controller: tagController,
+                        hintText: '예: pangi123',
+                        obscureText: false,
+                        keyboardType: TextInputType.text,
+                        validator: (val) {
+                          if (val == null || val.isEmpty) {
+                            return '태그를 입력하세요';
+                          } else if (val.length > 30) {
+                            return '태그가 너무 깁니다';
+                          }
+                          // No need to check uniqueness here, do it before signup
                           return null;
                         },
                       ),
@@ -196,7 +227,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ? myUser.url =
                           "https://i.ibb.co/6kmLx2D/mypage-avatar.png"
                       : myUser.url = imgUrl;
-
+                  myUser.tag = tagController.text;
                   var result = await fireBaseRepo.signUp(
                     myUser,
                     passwordController.text,

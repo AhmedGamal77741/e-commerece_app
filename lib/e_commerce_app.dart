@@ -2,8 +2,6 @@ import 'package:ecommerece_app/core/routing/app_router.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:app_links/app_links.dart';
-import 'dart:async';
 
 // final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 //     GlobalKey<ScaffoldMessengerState>();

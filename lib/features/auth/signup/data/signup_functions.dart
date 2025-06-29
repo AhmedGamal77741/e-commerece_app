@@ -1,14 +1,7 @@
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerece_app/features/auth/signup/data/models/user_entity.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 Future<String> uploadImageToFirebaseStorage() async {
@@ -142,7 +135,7 @@ class FirebaseUserRepo {
       final usernameQuery =
           await usersCollection
               .where(
-                'name',
+                'tag',
                 isEqualTo: myUser.name,
               ) // Assuming 'name' is the field for nickname in Firestore
               .limit(1)

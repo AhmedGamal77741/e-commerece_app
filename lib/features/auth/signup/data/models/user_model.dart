@@ -10,12 +10,14 @@ class MyUser {
   final bool isOnline;
   final DateTime lastSeen;
   final List<String> chatRooms;
-  final List<String> friends; // Added field
-  final List<String> friendRequestsSent; // Added field
-  final List<String> friendRequestsReceived; // Added field
+  final List<String> friends;
+  final List<String> friendRequestsSent;
+  final List<String> friendRequestsReceived;
   final int followerCount;
   final int followingCount;
-
+  final String? phoneNumber;
+  String? tag;
+  final String? bio;
   MyUser({
     required this.userId,
     required this.email,
@@ -33,6 +35,9 @@ class MyUser {
     this.friendRequestsReceived = const [],
     this.followerCount = 0,
     this.followingCount = 0,
+    this.tag,
+    this.bio,
+    this.phoneNumber,
   });
 
   static final empty = MyUser(
@@ -52,6 +57,9 @@ class MyUser {
     friendRequestsReceived: const [],
     followerCount: 0,
     followingCount: 0,
+    tag: '',
+    bio: '',
+    phoneNumber: '',
   );
 
   // Database serialization methods (from MyUserEntity)
@@ -73,6 +81,9 @@ class MyUser {
       'friendRequestsReceived': friendRequestsReceived,
       'followerCount': followerCount,
       'followingCount': followingCount,
+      'tag': tag,
+      'bio': bio,
+      'phoneNumber': phoneNumber,
     };
   }
 
@@ -97,6 +108,9 @@ class MyUser {
       ),
       followerCount: doc['followerCount'] ?? 0,
       followingCount: doc['followingCount'] ?? 0,
+      tag: doc['tag'] ?? '',
+      bio: doc['bio'] ?? '',
+      phoneNumber: doc['phoneNumber'] ?? '',
     );
   }
 

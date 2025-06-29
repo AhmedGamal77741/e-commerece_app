@@ -55,8 +55,8 @@ class _ExpandableFABState extends State<ExpandableFAB>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-            width: 250.w,
-      height: 250.h, 
+      width: 250.w,
+      height: 250.h,
       child: Stack(
         alignment: Alignment.bottomRight,
         children: [
@@ -64,7 +64,7 @@ class _ExpandableFABState extends State<ExpandableFAB>
             animation: _animation,
             builder: (context, child) {
               return Transform.translate(
-                offset: Offset(0,40  -_animation.value * 70),
+                offset: Offset(0, 40 - _animation.value * 70),
                 child: Transform.scale(
                   scale: _scaleAnimation.value,
                   alignment: Alignment.bottomRight,
@@ -73,18 +73,14 @@ class _ExpandableFABState extends State<ExpandableFAB>
                     child: Container(
                       width: 200.w,
                       height: 200.h,
-                      margin: const EdgeInsets.only(right: 8,),
+                      margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
-                              borderRadius: BorderRadius.only(
-          topRight: Radius.circular(40),
-          bottomLeft: Radius.circular(40),
-          
-                ),
-          
-                        border: Border.all(
-                          color: Colors.grey[300]!,
-                          width: 1,
+                        borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(40),
+                          bottomLeft: Radius.circular(40),
                         ),
+
+                        border: Border.all(color: Colors.grey[300]!, width: 1),
                         color: Colors.grey[200],
                         boxShadow: [],
                       ),
@@ -95,15 +91,23 @@ class _ExpandableFABState extends State<ExpandableFAB>
                           Expanded(
                             child: _buildMenuItem(
                               icon: "assets/009 (1).png",
-                            
+
                               label: '그룹 만들기',
-                              onTap: ()async {
-         await showCreateGroupDialog(context, (name, userIds, groupImage) async {
-      // Call your ChatService.createGroupChatRoom here
-      await ChatService().createGroupChatRoom(name: name, participantIds: userIds, groupImage: groupImage);
-      // Show success/failure message if needed
-        });
-        _toggle();
+                              onTap: () async {
+                                await showCreateGroupDialog(context, (
+                                  name,
+                                  userIds,
+                                  groupImage,
+                                ) async {
+                                  // Call your ChatService.createGroupChatRoom here
+                                  await ChatService().createGroupChatRoom(
+                                    name: name,
+                                    participantIds: userIds,
+                                    groupImage: groupImage,
+                                  );
+                                  // Show success/failure message if needed
+                                });
+                                _toggle();
                               },
                               showDivider: true,
                             ),
@@ -113,11 +117,14 @@ class _ExpandableFABState extends State<ExpandableFAB>
                               icon: "assets/012.png",
                               label: '친구 추가',
                               onTap: () async {
-                              await showAddFriendDialog(context, (userId) async {
-                                // Call your FriendsService.addFriend here
-                                await FriendsService().addFriend(userId);
-                                // Show success/failure message if needed
-                              });                              _toggle();
+                                await showAddFriendDialog(context, (
+                                  userId,
+                                ) async {
+                                  // Call your FriendsService.addFriend here
+                                  await FriendsService().addFriend(userId);
+                                  // Show success/failure message if needed
+                                });
+                                _toggle();
                               },
                               showDivider: true,
                             ),
@@ -126,13 +133,15 @@ class _ExpandableFABState extends State<ExpandableFAB>
                             child: _buildMenuItem(
                               icon: "assets/012.png",
                               label: '차단 친구',
-                              onTap: ()async {
-        await showBlockUserDialog(context, (userId) async {
-      // Implement your block logic here
-      // e.g., await FriendsService().blockUser(userId);
-      // Show success/failure message if needed
-        });
-        _toggle();
+                              onTap: () async {
+                                await showBlockUserDialog(context, (
+                                  userId,
+                                ) async {
+                                  // Implement your block logic here
+                                  // e.g., await FriendsService().blockUser(userId);
+                                  // Show success/failure message if needed
+                                });
+                                _toggle();
                               },
                               showDivider: false,
                             ),
@@ -165,155 +174,194 @@ class _ExpandableFABState extends State<ExpandableFAB>
     );
   }
 
-// Show dialog to block a user by user ID or name
-Future<void> showBlockUserDialog(BuildContext context, void Function(String userId) onBlock) async {
-  final controller = TextEditingController();
+  // Show dialog to block a user by user ID or name
+  Future<void> showBlockUserDialog(
+    BuildContext context,
+    void Function(String userId) onBlock,
+  ) async {
+    final controller = TextEditingController();
 
-  await showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('차단 친구'),
-      content: TextField(
-        controller: controller,
-        decoration: const InputDecoration(labelText: '유저 ID 또는 이름'),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
-        ElevatedButton(
-          onPressed: () {
-            onBlock(controller.text.trim());
-            Navigator.pop(context);
-          },
-          child: const Text('차단'),
-        ),
-      ],
-    ),
-  );
-}
-
-// Show dialog to add a friend by user ID or name
-Future<void> showAddFriendDialog(BuildContext context, void Function(String userId) onAdd) async {
-  final controller = TextEditingController();
-
-  await showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('친구 추가'),
-      content: TextField(
-        controller: controller,
-        decoration: const InputDecoration(labelText: '유저 ID 또는 이름'),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
-        ElevatedButton(
-          onPressed: () {
-            onAdd(controller.text.trim());
-            Navigator.pop(context);
-          },
-          child: const Text('추가'),
-        ),
-      ],
-    ),
-  );
-}
-
-Future<void> showCreateGroupDialog(
-  BuildContext context,
-  void Function(String name, List<String> userIds, String? groupImageUrl) onCreate,
-) async {
-  final nameController = TextEditingController();
-  List<String> selectedUserIds = [];
-  String? groupImagePath;
-
-  final friends = await FriendsService().getFriendsStream().first;
-
-
-
-  await showDialog(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        title: const Text('그룹 만들기'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Group image picker
-              GestureDetector(
-                onTap: () async {
-   groupImagePath = await uploadImageToFirebaseStorage();
-                  setState(() {});
+    await showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('차단 친구'),
+            content: TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: '유저 ID 또는 이름'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('취소'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  onBlock(controller.text.trim());
+                  Navigator.pop(context);
                 },
-                child: CircleAvatar(
-                  radius: 36,
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage: groupImagePath != null
-                      ? NetworkImage(groupImagePath!)
-                      : null,
-                  child: groupImagePath == null
-                      ? const Icon(Icons.camera_alt, size: 32, color: Colors.black54)
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: '그룹 이름'),
-              ),
-              const SizedBox(height: 12),
-              const Text('친구 선택'),
-              SizedBox(
-                height: 180,
-                child: ListView(
-                  children: friends.map((user) {
-                    return CheckboxListTile(
-                      value: selectedUserIds.contains(user.userId),
-                      title: Row(
-                        children: [
-                          Flexible(
-                            child: CircleAvatar(
-                              backgroundImage: user.url != null && user.url.isNotEmpty
-                                  ? NetworkImage(user.url)
-                                  : null,
-                              child: (user.url.isEmpty)
-                                  ? Text(user.name.isNotEmpty ? user.name[0] : '?')
-                                  : null,
-                            ),
-                          ),
-                           SizedBox(width: 10.w),
-                          Flexible(child: Text(user.name)),
-                        ],
-                      ),
-                      onChanged: (checked) {
-                        setState(() {
-                          if (checked == true) {
-                            selectedUserIds.add(user.userId);
-                          } else {
-                            selectedUserIds.remove(user.userId);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
+                child: const Text('차단'),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
-          ElevatedButton(
-            onPressed: () {
-              onCreate(nameController.text, selectedUserIds, groupImagePath);
-              Navigator.pop(context);
-            },
-            child: const Text('생성'),
+    );
+  }
+
+  // Show dialog to add a friend by user ID or name
+  Future<void> showAddFriendDialog(
+    BuildContext context,
+    void Function(String userId) onAdd,
+  ) async {
+    final controller = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('친구 추가'),
+            content: TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: '유저 ID 또는 이름'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('취소'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  onAdd(controller.text.trim());
+                  Navigator.pop(context);
+                },
+                child: const Text('추가'),
+              ),
+            ],
           ),
-        ],
-      ),
-    ),
-  );
-}
+    );
+  }
+
+  Future<void> showCreateGroupDialog(
+    BuildContext context,
+    void Function(String name, List<String> userIds, String? groupImageUrl)
+    onCreate,
+  ) async {
+    final nameController = TextEditingController();
+    List<String> selectedUserIds = [];
+    String? groupImagePath;
+
+    final friends = await FriendsService().getFriendsStream().first;
+
+    await showDialog(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setState) => AlertDialog(
+                  title: const Text('그룹 만들기'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Group image picker
+                        GestureDetector(
+                          onTap: () async {
+                            groupImagePath =
+                                await uploadImageToFirebaseStorage();
+                            setState(() {});
+                          },
+                          child: CircleAvatar(
+                            radius: 36,
+                            backgroundColor: Colors.grey[300],
+                            backgroundImage:
+                                groupImagePath != null
+                                    ? NetworkImage(groupImagePath!)
+                                    : null,
+                            child:
+                                groupImagePath == null
+                                    ? const Icon(
+                                      Icons.camera_alt,
+                                      size: 32,
+                                      color: Colors.black54,
+                                    )
+                                    : null,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: nameController,
+                          decoration: const InputDecoration(labelText: '그룹 이름'),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text('친구 선택'),
+                        SizedBox(
+                          height: 180,
+                          child: ListView(
+                            children:
+                                friends.map((user) {
+                                  return CheckboxListTile(
+                                    value: selectedUserIds.contains(
+                                      user.userId,
+                                    ),
+                                    title: Row(
+                                      children: [
+                                        Flexible(
+                                          child: CircleAvatar(
+                                            backgroundImage:
+                                                user.url != null &&
+                                                        user.url.isNotEmpty
+                                                    ? NetworkImage(user.url)
+                                                    : null,
+                                            child:
+                                                (user.url.isEmpty)
+                                                    ? Text(
+                                                      user.name.isNotEmpty
+                                                          ? user.name[0]
+                                                          : '?',
+                                                    )
+                                                    : null,
+                                          ),
+                                        ),
+                                        SizedBox(width: 10.w),
+                                        Flexible(child: Text(user.name)),
+                                      ],
+                                    ),
+                                    onChanged: (checked) {
+                                      setState(() {
+                                        if (checked == true) {
+                                          selectedUserIds.add(user.userId);
+                                        } else {
+                                          selectedUserIds.remove(user.userId);
+                                        }
+                                      });
+                                    },
+                                  );
+                                }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('취소'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        onCreate(
+                          nameController.text,
+                          selectedUserIds,
+                          groupImagePath,
+                        );
+                        Navigator.pop(context);
+                      },
+                      child: const Text('생성'),
+                    ),
+                  ],
+                ),
+          ),
+    );
+  }
 
   Widget _buildMenuItem({
     required String icon,
