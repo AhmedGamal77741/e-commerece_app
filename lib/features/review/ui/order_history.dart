@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/basetime.dart';
@@ -260,6 +262,10 @@ Future<void> deleteOrder(
   final navigator = Navigator.of(context);
   final scaffoldMessenger = ScaffoldMessenger.of(context);
 
+  // Debug: Print order map
+  print('🟡 deleteOrder called with order:');
+  order.forEach((k, v) => print('  $k: $v'));
+
   // 1. Confirm with user
   bool? confirmed = await showDialog<bool>(
     context: context,
@@ -308,29 +314,35 @@ Future<void> deleteOrder(
       return;
     }
 
-    await user.getIdToken(true); // Force refresh ID token
-
     // 4. Validate order input
     final orderId = order['orderId'] as String?;
-    final refundTotal = order['totalPrice'] as num?;
+    final refundTotalRaw = order['totalPrice'];
+    final refundTotal =
+        (refundTotalRaw is int)
+            ? refundTotalRaw
+            : (refundTotalRaw is double)
+            ? refundTotalRaw.toInt()
+            : int.tryParse(refundTotalRaw.toString());
+    final uid = user.uid;
+    print(
+      '🟡 orderId: $orderId, refundTotal: $refundTotal, uid: $uid (raw: $refundTotalRaw, type: ${refundTotalRaw.runtimeType})',
+    );
     if (orderId == null || refundTotal == null) {
       navigator.pop();
       scaffoldMessenger.showSnackBar(
-        const SnackBar(content: Text('주문 정보가 올바르지 않습니다.')),
+        SnackBar(
+          content: Text(
+            '주문 정보가 올바르지 않습니다. (orderId: $orderId, refundTotal: $refundTotal) (raw: $refundTotalRaw, type: ${refundTotalRaw.runtimeType})',
+          ),
+        ),
       );
       return;
     }
 
-    // 5. Call Firebase Cloud Function (set region if needed)
-    final callable = FirebaseFunctions.instance.httpsCallable(
-      'requestRefund',
-      options: HttpsCallableOptions(
-        timeout: const Duration(seconds: 15),
-        // region: 'your-region' // Uncomment and set if needed, like 'asia-northeast3'
-      ),
-    );
-
+    // 5. Call Cloud Function (onCall, expects {uid, orderId, refundTotal})
+    final callable = FirebaseFunctions.instance.httpsCallable('requestRefund');
     final result = await callable.call({
+      'uid': uid,
       'orderId': orderId,
       'refundTotal': refundTotal,
     });
@@ -338,27 +350,21 @@ Future<void> deleteOrder(
     navigator.pop(); // Remove loading
 
     final data = result.data;
+    print('🟡 Refund response: $data');
     if (data != null && data['status'] == 'refunded') {
       scaffoldMessenger.showSnackBar(
         const SnackBar(content: Text('주문이 성공적으로 취소되고 환불되었습니다.')),
       );
     } else {
+      String errorMsg = data != null ? data.toString() : '알 수 없는 오류';
       scaffoldMessenger.showSnackBar(
-        const SnackBar(content: Text('환불 처리에 실패했습니다. 관리자에게 문의하세요.')),
+        SnackBar(content: Text('환불 처리에 실패했습니다. 관리자에게 문의하세요. ($errorMsg)')),
       );
     }
   } catch (e) {
     navigator.pop(); // Remove loading
     String errorMessage = '주문 취소 중 오류가 발생했습니다. 다시 시도해주세요.';
-
-    if (e is FirebaseFunctionsException) {
-      print('🚫 FirebaseFunctionsException: ${e.code} - ${e.message}');
-      print('📄 Details: ${e.details}');
-      errorMessage = e.message ?? errorMessage;
-    } else {
-      print('❌ Unexpected error: $e');
-    }
-
+    print('❌ Unexpected error: $e');
     scaffoldMessenger.showSnackBar(SnackBar(content: Text(errorMessage)));
   }
 }
