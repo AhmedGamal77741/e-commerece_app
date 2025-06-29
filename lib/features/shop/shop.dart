@@ -126,6 +126,7 @@ class _ShopState extends State<Shop> {
           toolbarHeight: 70.h,
           backgroundColor: ColorsManager.white,
           title: TabBar(
+            tabAlignment: TabAlignment.start,
             padding: EdgeInsets.zero,
             labelStyle: TextStyle(
               fontSize: 16.sp,

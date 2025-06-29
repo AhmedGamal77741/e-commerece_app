@@ -1,5 +1,6 @@
 import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ecommerece_app/core/routing/app_router.dart';
@@ -15,6 +16,11 @@ void main() async {
   //setUrlStrategy(PathUrlStrategy());
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug, // Use PlayIntegrity for production
+    appleProvider:
+        AppleProvider.debug, // Use DeviceCheck/AppAttest for production
+  );
 
   runApp(
     MultiProvider(

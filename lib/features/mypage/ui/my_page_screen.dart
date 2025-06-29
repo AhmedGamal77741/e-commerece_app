@@ -84,7 +84,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                             FirebaseFirestore.instance
                                 .collection('users')
                                 .doc(userId)
-                                .collection('subscribers')
+                                .collection('followers')
                                 .snapshots(),
                         builder: (context, subSnap) {
                           if (subSnap.connectionState ==

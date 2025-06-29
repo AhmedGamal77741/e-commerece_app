@@ -497,9 +497,15 @@ class _PlaceOrderState extends State<PlaceOrder> {
     final userDoc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
     final data = userDoc.data();
+    print('Fetched user data:');
+    print(data);
     setState(() {
       userBank = data?['bank'] as Map<String, dynamic>?;
       userCard = data?['card'] as Map<String, dynamic>?;
+      print('userBank:');
+      print(userBank);
+      print('userCard:');
+      print(userCard);
     });
   }
 
@@ -882,9 +888,9 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                           ? (userBank != null &&
                                                   userBank!['bankName'] !=
                                                       null &&
-                                                  userBank!['accountNumber'] !=
+                                                  userBank!['bankNumber'] !=
                                                       null
-                                              ? '${userBank!['bankName']} / ${userBank!['accountNumber']}'
+                                              ? '${userBank!['bankName']} / ${userBank!['bankNumber']}'
                                               : '등록된 계좌가 없습니다.')
                                           : (userCard != null &&
                                                   userCard!['cardName'] !=
