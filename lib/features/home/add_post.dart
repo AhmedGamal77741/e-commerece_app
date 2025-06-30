@@ -161,6 +161,10 @@ class _AddPostState extends State<AddPost> {
                           TextField(
                             controller: _textController,
                             onChanged: (value) => setState(() {}),
+                            keyboardType: TextInputType.multiline,
+                            minLines: 1,
+                            maxLines: null,
+                            textInputAction: TextInputAction.newline,
                             decoration: InputDecoration(
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.zero,

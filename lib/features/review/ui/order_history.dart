@@ -128,49 +128,48 @@ class _OrderHistoryState extends State<OrderHistory> {
                                       },
                                     ),
                                     horizontalSpace(5),
-                                    // isDispatched(product, data['orderDate'])
-                                    //     ? (data['isRequested']
-                                    //         ? BlackTextButton(
-                                    //           txt: '교환 · 반품 신청',
-                                    //           style: TextStyles.abeezee14px400wW
-                                    //               .copyWith(
-                                    //                 decoration:
-                                    //                     TextDecoration
-                                    //                         .lineThrough,
-                                    //                 decorationColor: Colors.red,
-                                    //                 decorationThickness: 2,
-                                    //               ),
-                                    //           func: () {},
-                                    //         )
-                                    //         : BlackTextButton(
-                                    //           txt: '교환 · 반품 신청',
-                                    //           style:
-                                    //               TextStyles.abeezee14px400wW,
+                                    isDispatched(product, data['orderDate'])
+                                        ? (data['isRequested']
+                                            ? BlackTextButton(
+                                              txt: '교환 · 반품 신청',
+                                              style: TextStyles.abeezee14px400wW
+                                                  .copyWith(
+                                                    decoration:
+                                                        TextDecoration
+                                                            .lineThrough,
+                                                    decorationColor: Colors.red,
+                                                    decorationThickness: 2,
+                                                  ),
+                                              func: () {},
+                                            )
+                                            : BlackTextButton(
+                                              txt: '교환 · 반품 신청',
+                                              style:
+                                                  TextStyles.abeezee14px400wW,
 
-                                    //           func: () {
-                                    //             Navigator.push(
-                                    //               context,
-                                    //               MaterialPageRoute(
-                                    //                 builder:
-                                    //                     (
-                                    //                       context,
-                                    //                     ) => ExchangeOrRefund(
-                                    //                       userId: user.uid,
-                                    //                       orderId:
-                                    //                           data['orderId'],
-                                    //                     ),
-                                    //               ),
-                                    //             );
-                                    //           },
-                                    //         ))
-                                    //     :
-                                    BlackTextButton(
-                                      txt: '주문취소',
-                                      style: TextStyles.abeezee14px400wW,
-                                      func: () async {
-                                        await deleteOrder(data, context);
-                                      },
-                                    ),
+                                              func: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder:
+                                                        (
+                                                          context,
+                                                        ) => ExchangeOrRefund(
+                                                          userId: user.uid,
+                                                          orderId:
+                                                              data['orderId'],
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                            ))
+                                        : BlackTextButton(
+                                          txt: '주문취소',
+                                          style: TextStyles.abeezee14px400wW,
+                                          func: () async {
+                                            await deleteOrder(data, context);
+                                          },
+                                        ),
                                   ],
                                 ),
                               ],

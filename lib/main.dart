@@ -7,7 +7,6 @@ import 'package:ecommerece_app/core/routing/app_router.dart';
 import 'package:ecommerece_app/e_commerce_app.dart';
 import 'package:ecommerece_app/firebase_options.dart';
 // import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:firebase_core/firebase_core.dart';
 
