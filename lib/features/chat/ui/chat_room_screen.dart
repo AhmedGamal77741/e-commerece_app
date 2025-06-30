@@ -365,7 +365,7 @@ class MessageBubble extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          if (message.lovedBy.length > 1)
+                          if (message.lovedBy.length > 1 && isMe)
                             Flexible(
                               child: Text(
                                 message.lovedBy.length.toString(),

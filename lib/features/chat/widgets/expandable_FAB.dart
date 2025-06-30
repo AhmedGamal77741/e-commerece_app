@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:ecommerece_app/features/chat/services/chat_service.dart';
-import 'package:ecommerece_app/features/friends/services/friends_service.dart';
+import 'package:ecommerece_app/features/chat/services/friends_service.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -90,7 +90,7 @@ class _ExpandableFABState extends State<ExpandableFAB>
                         children: [
                           Expanded(
                             child: _buildMenuItem(
-                              icon: "assets/009 (1).png",
+                              icon: "assets/group_active_1.png",
 
                               label: '그룹 만들기',
                               onTap: () async {
@@ -263,79 +263,87 @@ class _ExpandableFABState extends State<ExpandableFAB>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // Group image picker
-                        GestureDetector(
-                          onTap: () async {
-                            groupImagePath =
-                                await uploadImageToFirebaseStorage();
-                            setState(() {});
-                          },
-                          child: CircleAvatar(
-                            radius: 36,
-                            backgroundColor: Colors.grey[300],
-                            backgroundImage:
-                                groupImagePath != null
-                                    ? NetworkImage(groupImagePath!)
-                                    : null,
-                            child:
-                                groupImagePath == null
-                                    ? const Icon(
-                                      Icons.camera_alt,
-                                      size: 32,
-                                      color: Colors.black54,
-                                    )
-                                    : null,
+                        Flexible(
+                          child: GestureDetector(
+                            onTap: () async {
+                              groupImagePath =
+                                  await uploadImageToFirebaseStorage();
+                              setState(() {});
+                            },
+                            child: CircleAvatar(
+                              radius: 36,
+                              backgroundColor: Colors.grey[300],
+                              backgroundImage:
+                                  groupImagePath != null
+                                      ? NetworkImage(groupImagePath!)
+                                      : null,
+                              child:
+                                  groupImagePath == null
+                                      ? const Icon(
+                                        Icons.camera_alt,
+                                        size: 32,
+                                        color: Colors.black54,
+                                      )
+                                      : null,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
-                        TextField(
-                          controller: nameController,
-                          decoration: const InputDecoration(labelText: '그룹 이름'),
+                        Flexible(
+                          child: TextField(
+                            controller: nameController,
+                            decoration: const InputDecoration(
+                              labelText: '그룹 이름',
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         const Text('친구 선택'),
-                        SizedBox(
-                          height: 180,
-                          child: ListView(
-                            children:
-                                friends.map((user) {
-                                  return CheckboxListTile(
-                                    value: selectedUserIds.contains(
-                                      user.userId,
-                                    ),
-                                    title: Row(
-                                      children: [
-                                        Flexible(
-                                          child: CircleAvatar(
-                                            backgroundImage:
-                                                user.url != null &&
-                                                        user.url.isNotEmpty
-                                                    ? NetworkImage(user.url)
-                                                    : null,
-                                            child:
-                                                (user.url.isEmpty)
-                                                    ? Text(
-                                                      user.name.isNotEmpty
-                                                          ? user.name[0]
-                                                          : '?',
-                                                    )
-                                                    : null,
+                        Flexible(
+                          child: SizedBox(
+                            height: 180,
+                            child: ListView(
+                              children:
+                                  friends.map((user) {
+                                    return CheckboxListTile(
+                                      value: selectedUserIds.contains(
+                                        user.userId,
+                                      ),
+                                      title: Row(
+                                        children: [
+                                          Flexible(
+                                            child: CircleAvatar(
+                                              backgroundImage:
+                                                  user.url != null &&
+                                                          user.url.isNotEmpty
+                                                      ? NetworkImage(user.url)
+                                                      : null,
+                                              child:
+                                                  (user.url.isEmpty)
+                                                      ? Text(
+                                                        user.name.isNotEmpty
+                                                            ? user.name[0]
+                                                            : '?',
+                                                      )
+                                                      : null,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(width: 10.w),
-                                        Flexible(child: Text(user.name)),
-                                      ],
-                                    ),
-                                    onChanged: (checked) {
-                                      setState(() {
-                                        if (checked == true) {
-                                          selectedUserIds.add(user.userId);
-                                        } else {
-                                          selectedUserIds.remove(user.userId);
-                                        }
-                                      });
-                                    },
-                                  );
-                                }).toList(),
+                                          SizedBox(width: 10.w),
+                                          Flexible(child: Text(user.name)),
+                                        ],
+                                      ),
+                                      onChanged: (checked) {
+                                        setState(() {
+                                          if (checked == true) {
+                                            selectedUserIds.add(user.userId);
+                                          } else {
+                                            selectedUserIds.remove(user.userId);
+                                          }
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                            ),
                           ),
                         ),
                       ],

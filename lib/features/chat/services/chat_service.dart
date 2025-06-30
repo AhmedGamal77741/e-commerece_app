@@ -1,7 +1,7 @@
 // services/chat_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/friends/services/friends_service.dart';
+import 'package:ecommerece_app/features/chat/services/friends_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/chat_room_model.dart';
 import '../models/message_model.dart';

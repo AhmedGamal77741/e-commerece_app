@@ -47,13 +47,17 @@ class _ChatsNavbarState extends State<ChatsNavbar> {
             icon: Image.asset(
               height: 35.sp,
               width: 35.sp,
-              _selectedIndex == 0 ? 'assets/005 (1).png' : 'assets/006 (1).png',
+              _selectedIndex == 0
+                  ? 'assets/contacts (1).png'
+                  : 'assets/contacts inactive (1).png',
             ),
             label: '친구톡톡',
           ),
           BottomNavigationBarItem(
             icon: Image.asset(
-              _selectedIndex == 1 ? 'assets/007 (1).png' : 'assets/008 (1).png',
+              _selectedIndex == 1
+                  ? 'assets/direct (1).png'
+                  : 'assets/direct inactive (1).png',
               height: 35.sp,
               width: 35.sp,
             ),
@@ -61,7 +65,9 @@ class _ChatsNavbarState extends State<ChatsNavbar> {
           ),
           BottomNavigationBarItem(
             icon: Image.asset(
-              _selectedIndex == 2 ? 'assets/009 (1).png' : 'assets/010 (1).png',
+              _selectedIndex == 2
+                  ? 'assets/group_active_1.png'
+                  : 'assets/group inactive (1).png',
               height: 35.sp,
               width: 35.sp,
             ),
