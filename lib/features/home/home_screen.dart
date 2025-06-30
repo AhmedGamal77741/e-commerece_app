@@ -18,7 +18,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ScrollController? scrollController;
+  const HomeScreen({super.key, this.scrollController});
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -67,32 +68,38 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
         ),
-        body: TabBarView(children: [_HomeFeedTab(), FollowingTab()]),
+        body: TabBarView(children: [
+          _HomeFeedTab(scrollController: widget.scrollController),
+          FollowingTab(),
+        ]),
       ),
     );
   }
 }
 
 class _HomeFeedTab extends StatefulWidget {
+  final ScrollController? scrollController;
+  const _HomeFeedTab({this.scrollController});
   @override
   State<_HomeFeedTab> createState() => _HomeFeedTabState();
 }
 
 class _HomeFeedTabState extends State<_HomeFeedTab>
     with AutomaticKeepAliveClientMixin {
-  final ScrollController _scrollController = ScrollController();
   @override
   bool get wantKeepAlive => true;
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    // Only dispose if we created the controller
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final ScrollController? controller = widget.scrollController;
+
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, authSnapshot) {
@@ -116,132 +123,124 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
 
         // If no user, show the guest version of the UI
         if (firebaseUser == null) {
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Flexible(
-                    child: InkWell(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 56.w,
-                        height: 55.h,
-                        decoration: ShapeDecoration(
-                          image: DecorationImage(
-                            image: AssetImage('assets/mypage_icon.png'),
-                            fit: BoxFit.cover,
-                          ),
-                          shape: OvalBorder(),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 4,
-                    child: InkWell(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
-                          ),
-                        );
-                      },
-                      child: Padding(
-                        padding: EdgeInsets.only(right: 10.w),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.start,
+          // Guest user: user info row and posts scroll together in a single ListView
+          return StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('posts')
+                .orderBy('createdAt', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator(color: Colors.black));
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              final posts = snapshot.data?.docs ?? [];
+              return ListView.builder(
+                controller: controller,
+                itemCount: posts.length + 1, // +1 for user info row
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    // User info row
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          spacing: 10.h,
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            Text(
-                              '게스트 사용자',
-                              style: TextStyles.abeezee16px400wPblack,
-                            ),
-                            FutureBuilder(
-                              future:
-                                  FirebaseFirestore.instance
-                                      .collection('widgets')
-                                      .doc('placeholders')
-                                      .get(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Center(
-                                    child: CircularProgressIndicator(
-                                      color: Colors.black,
+                            Flexible(
+                              child: InkWell(
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
                                     ),
                                   );
-                                }
-                                if (snapshot.hasError) {
-                                  return const Center(child: Text('Error'));
-                                }
-                                return Text(
-                                  snapshot.data!
-                                      .data()!['outerPlaceholderText'],
-                                  style: TextStyle(
-                                    color: const Color(0xFF5F5F5F),
-                                    fontSize: 13.sp,
-                                    fontFamily: 'NotoSans',
-                                    fontWeight: FontWeight.w400,
+                                },
+                                child: Container(
+                                  width: 56.w,
+                                  height: 55.h,
+                                  decoration: ShapeDecoration(
+                                    image: DecorationImage(
+                                      image: AssetImage('assets/mypage_icon.png'),
+                                      fit: BoxFit.cover,
+                                    ),
+                                    shape: OvalBorder(),
                                   ),
-                                );
-                              },
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 4,
+                              child: InkWell(
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
+                                    ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: EdgeInsets.only(right: 10.w),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '게스트 사용자',
+                                        style: TextStyles.abeezee16px400wPblack,
+                                      ),
+                                      FutureBuilder(
+                                        future: FirebaseFirestore.instance
+                                            .collection('widgets')
+                                            .doc('placeholders')
+                                            .get(),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                                            return const Center(
+                                              child: CircularProgressIndicator(
+                                                color: Colors.black,
+                                              ),
+                                            );
+                                          }
+                                          if (snapshot.hasError) {
+                                            return const Center(child: Text('Error'));
+                                          }
+                                          return Text(
+                                            snapshot.data!.data()!['outerPlaceholderText'],
+                                            style: TextStyle(
+                                              color: const Color(0xFF5F5F5F),
+                                              fontSize: 13.sp,
+                                              fontFamily: 'NotoSans',
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              verticalSpace(5),
-              Divider(),
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream:
-                      FirebaseFirestore.instance
-                          .collection('posts')
-                          .orderBy('createdAt', descending: true)
-                          .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return Text('Error: ${snapshot.error}');
-                    }
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
-                        child: CircularProgressIndicator(color: Colors.black),
-                      );
-                    }
-                    final posts = snapshot.data!.docs;
-                    if (posts.isEmpty) {
-                      return Center(child: Text('게시물이 없습니다.'));
-                    }
-                    return ListView.builder(
-                      controller: _scrollController,
-                      itemCount: posts.length,
-                      itemBuilder: (context, index) {
-                        final post =
-                            posts[index].data() as Map<String, dynamic>;
-                        if (post['postId'] == null) {
-                          post['postId'] = posts[index].id;
-                        }
-                        return GuestPostItem(post: post);
-                      },
+                        verticalSpace(5),
+                        Divider(),
+                      ],
                     );
-                  },
-                ),
-              ),
-            ],
+                  } else {
+                    final post = posts[index - 1].data() as Map<String, dynamic>;
+                    if (post['postId'] == null) {
+                      post['postId'] = posts[index - 1].id;
+                    }
+                    return GuestPostItem(post: post);
+                  }
+                },
+              );
+            },
           );
         }
 
@@ -266,358 +265,297 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
 
             // --- Non-premium user: can only view posts, but sees their own info ---
             if (!currentUser.isSub) {
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Flexible(
-                        child: InkWell(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("프리미엄 가입 후 이용가능합니다"),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            width: 56.w,
-                            height: 55.h,
-                            decoration: ShapeDecoration(
-                              image: DecorationImage(
-                                image: NetworkImage(currentUser.url),
-                                fit: BoxFit.cover,
-                              ),
-                              shape: OvalBorder(),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 4,
-                        child: InkWell(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("프리미엄 가입 후 이용가능합니다"),
-                              ),
-                            );
-                          },
-                          child: Padding(
-                            padding: EdgeInsets.only(right: 10.w),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
+              // Non-premium user: user info row and posts scroll together in a single ListView
+              return StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('posts')
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator(color: Colors.black));
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  final posts = snapshot.data?.docs ?? [];
+                  return ListView.builder(
+                    controller: controller,
+                    itemCount: posts.length + 1, // +1 for user info row
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        // User info row
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                Text(
-                                  currentUser.name,
-                                  style: TextStyles.abeezee16px400wPblack,
-                                ),
-                                FutureBuilder(
-                                  future:
-                                      FirebaseFirestore.instance
-                                          .collection('widgets')
-                                          .doc('placeholders')
-                                          .get(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return const Center(
-                                        child: CircularProgressIndicator(
-                                          color: Colors.black,
+                                Flexible(
+                                  child: InkWell(
+                                    onTap: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text("프리미엄 가입 후 이용가능합니다"),
                                         ),
                                       );
-                                    }
-                                    if (snapshot.hasError) {
-                                      return const Center(child: Text('Error'));
-                                    }
-                                    return Text(
-                                      snapshot.data!
-                                          .data()!['outerPlaceholderText'],
-                                      style: TextStyle(
-                                        color: const Color(0xFF5F5F5F),
-                                        fontSize: 13.sp,
-                                        fontFamily: 'NotoSans',
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  verticalSpace(5),
-                  Divider(),
-                  Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream:
-                          FirebaseFirestore.instance
-                              .collection('posts')
-                              .orderBy('createdAt', descending: true)
-                              .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
-                        }
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.black,
-                            ),
-                          );
-                        }
-                        final posts = snapshot.data!.docs;
-                        if (posts.isEmpty) {
-                          return Center(child: Text('게시물이 없습니다.'));
-                        }
-                        return ListView.builder(
-                          controller: _scrollController,
-                          itemCount: posts.length,
-                          itemBuilder: (context, index) {
-                            final post =
-                                posts[index].data() as Map<String, dynamic>;
-                            if (post['postId'] == null) {
-                              post['postId'] = posts[index].id;
-                            }
-                            return GuestPostItem(post: post);
-                            // Or, if you want to use PostItem:
-                            // return PostItem(postId: post['postId'], fromComments: false, canInteract: false);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              );
-            }
-
-            // --- Premium user: full interaction ---
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Flexible(
-                      child: InkWell(
-                        onTap: () {
-                          context.pushNamed(Routes.notificationsScreen);
-                        },
-                        child: StreamBuilder<QuerySnapshot>(
-                          stream:
-                              FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(currentUser.userId)
-                                  .collection('notifications')
-                                  .where('isRead', isEqualTo: false)
-                                  .limit(1)
-                                  .snapshots(),
-                          builder: (context, notifSnapshot) {
-                            final hasUnread =
-                                notifSnapshot.hasData &&
-                                notifSnapshot.data!.docs.isNotEmpty;
-                            return Stack(
-                              children: [
-                                Container(
-                                  width: 56.w,
-                                  height: 55.h,
-                                  decoration: ShapeDecoration(
-                                    image: DecorationImage(
-                                      image: NetworkImage(
-                                        currentUser.url.toString(),
-                                      ),
-                                      fit: BoxFit.cover,
-                                    ),
-                                    shape: OvalBorder(),
-                                  ),
-                                ),
-                                if (hasUnread)
-                                  Positioned(
-                                    right: 0.w,
-                                    top: 0.h,
+                                    },
                                     child: Container(
-                                      width: 18.w,
-                                      height: 18.h,
+                                      width: 56.w,
+                                      height: 55.h,
                                       decoration: ShapeDecoration(
-                                        color: const Color(0xFFDA3A48),
+                                        image: DecorationImage(
+                                          image: NetworkImage(currentUser.url),
+                                          fit: BoxFit.cover,
+                                        ),
                                         shape: OvalBorder(),
                                       ),
                                     ),
                                   ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 4,
-                      child: InkWell(
-                        onTap: () {
-                          context.go(Routes.addPostScreen);
-                        },
-                        child: Padding(
-                          padding: EdgeInsets.only(right: 10.w),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            spacing: 10.h,
-                            children: [
-                              Text(
-                                currentUser.name.toString(),
-                                style: TextStyles.abeezee16px400wPblack,
-                              ),
-                              FutureBuilder(
-                                future:
-                                    FirebaseFirestore.instance
-                                        .collection('widgets')
-                                        .doc('placeholders')
-                                        .get(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return const Center(
-                                      child: CircularProgressIndicator(
-                                        color: Colors.black,
+                                ),
+                                Expanded(
+                                  flex: 4,
+                                  child: InkWell(
+                                    onTap: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text("프리미엄 가입 후 이용가능합니다"),
+                                        ),
+                                      );
+                                    },
+                                    child: Padding(
+                                      padding: EdgeInsets.only(right: 10.w),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            currentUser.name,
+                                            style: TextStyles.abeezee16px400wPblack,
+                                          ),
+                                          FutureBuilder(
+                                            future: FirebaseFirestore.instance
+                                                .collection('widgets')
+                                                .doc('placeholders')
+                                                .get(),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                                return const Center(
+                                                  child: CircularProgressIndicator(
+                                                    color: Colors.black,
+                                                  ),
+                                                );
+                                              }
+                                              if (snapshot.hasError) {
+                                                return const Center(child: Text('Error'));
+                                              }
+                                              return Text(
+                                                snapshot.data!.data()!['outerPlaceholderText'],
+                                                style: TextStyle(
+                                                  color: const Color(0xFF5F5F5F),
+                                                  fontSize: 13.sp,
+                                                  fontFamily: 'NotoSans',
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
                                       ),
-                                    );
-                                  }
-                                  if (snapshot.hasError) {
-                                    return const Center(child: Text('Error'));
-                                  }
-                                  return Text(
-                                    snapshot.data!
-                                        .data()!['outerPlaceholderText'],
-                                    style: TextStyle(
-                                      color: const Color(0xFF5F5F5F),
-                                      fontSize: 13.sp,
-                                      fontFamily: 'NotoSans',
-                                      fontWeight: FontWeight.w400,
                                     ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            verticalSpace(5),
+                            Divider(),
+                          ],
+                        );
+                      } else {
+                        final post = posts[index - 1].data() as Map<String, dynamic>;
+                        if (post['postId'] == null) {
+                          post['postId'] = posts[index - 1].id;
+                        }
+                        return GuestPostItem(post: post);
+                        // Or, if you want to use PostItem:
+                        // return PostItem(postId: post['postId'], fromComments: false, canInteract: false);
+                      }
+                    },
+                  );
+                },
+              );
+            }
+
+            // --- Premium user: full interaction ---
+            // Premium user: user info row and posts scroll together in a single ListView
+            List<String> blockedUsers = List<String>.from(
+              userSnapshot.data!.get('blocked') ?? [],
+            );
+            return StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('posts')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator(color: Colors.black));
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                // Filter posts
+                final List<DocumentSnapshot> filteredPosts =
+                    (snapshot.data?.docs ?? []).where((doc) {
+                  Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                  // Check if post is from a blocked user
+                  if (blockedUsers.contains(data['userId'])) {
+                    return false;
+                  }
+                  // Check if user marked post as not interested
+                  List<dynamic> notInterestedBy = List<dynamic>.from(
+                    data['notInterestedBy'] ?? [],
+                  );
+                  if (notInterestedBy.contains(currentUser.userId)) {
+                    return false;
+                  }
+                  return true;
+                }).toList();
+                return ListView.builder(
+                  controller: controller,
+                  itemCount: filteredPosts.length + 1, // +1 for user info row
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      // User info row
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Flexible(
+                                child: InkWell(
+                                  onTap: () {
+                                    context.pushNamed(Routes.notificationsScreen);
+                                  },
+                                  child: StreamBuilder<QuerySnapshot>(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(currentUser.userId)
+                                        .collection('notifications')
+                                        .where('isRead', isEqualTo: false)
+                                        .limit(1)
+                                        .snapshots(),
+                                    builder: (context, notifSnapshot) {
+                                      final hasUnread = notifSnapshot.hasData && notifSnapshot.data!.docs.isNotEmpty;
+                                      return Stack(
+                                        children: [
+                                          Container(
+                                            width: 56.w,
+                                            height: 55.h,
+                                            decoration: ShapeDecoration(
+                                              image: DecorationImage(
+                                                image: NetworkImage(currentUser.url.toString()),
+                                                fit: BoxFit.cover,
+                                              ),
+                                              shape: OvalBorder(),
+                                            ),
+                                          ),
+                                          if (hasUnread)
+                                            Positioned(
+                                              right: 0.w,
+                                              top: 0.h,
+                                              child: Container(
+                                                width: 18.w,
+                                                height: 18.h,
+                                                decoration: ShapeDecoration(
+                                                  color: const Color(0xFFDA3A48),
+                                                  shape: OvalBorder(),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 4,
+                                child: InkWell(
+                                  onTap: () {
+                                    context.go(Routes.addPostScreen);
+                                  },
+                                  child: Padding(
+                                    padding: EdgeInsets.only(right: 10.w),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          currentUser.name.toString(),
+                                          style: TextStyles.abeezee16px400wPblack,
+                                        ),
+                                        FutureBuilder(
+                                          future: FirebaseFirestore.instance
+                                              .collection('widgets')
+                                              .doc('placeholders')
+                                              .get(),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.connectionState == ConnectionState.waiting) {
+                                              return const Center(
+                                                child: CircularProgressIndicator(
+                                                  color: Colors.black,
+                                                ),
+                                              );
+                                            }
+                                            if (snapshot.hasError) {
+                                              return const Center(child: Text('Error'));
+                                            }
+                                            return Text(
+                                              snapshot.data!.data()!['outerPlaceholderText'],
+                                              style: TextStyle(
+                                                color: const Color(0xFF5F5F5F),
+                                                fontSize: 13.sp,
+                                                fontFamily: 'NotoSans',
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => HomeSearch()),
                                   );
                                 },
+                                icon: Icon(Icons.search, size: 30.sp),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => HomeSearch()),
-                        );
-                      },
-                      icon: Icon(Icons.search, size: 30.sp),
-                    ),
-                  ],
-                ),
-                verticalSpace(5),
-                Divider(),
-                Expanded(
-                  child: StreamBuilder<DocumentSnapshot>(
-                    stream:
-                        FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(currentUser.userId)
-                            .snapshots(),
-                    builder: (context, userSnapshot) {
-                      if (userSnapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return Center(
-                          child: CircularProgressIndicator(color: Colors.black),
-                        );
-                      }
-
-                      if (userSnapshot.hasError) {
-                        return Center(
-                          child: Text(
-                            'Error loading user data: ${userSnapshot.error}',
-                          ),
-                        );
-                      }
-
-                      if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-                        return Center(child: Text('User profile not found'));
-                      }
-
-                      List<String> blockedUsers = List<String>.from(
-                        userSnapshot.data!.get('blocked') ?? [],
+                          verticalSpace(5),
+                          Divider(),
+                        ],
                       );
-
-                      return StreamBuilder<QuerySnapshot>(
-                        stream:
-                            FirebaseFirestore.instance
-                                .collection('posts')
-                                .orderBy('createdAt', descending: true)
-                                .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            return Text('Error: ${snapshot.error}');
-                          }
-
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return CircularProgressIndicator(
-                              color: Colors.black,
-                            );
-                          }
-
-                          // Filter posts
-                          final List<DocumentSnapshot> filteredPosts =
-                              snapshot.data!.docs.where((doc) {
-                                Map<String, dynamic> data =
-                                    doc.data() as Map<String, dynamic>;
-
-                                // Check if post is from a blocked user
-                                if (blockedUsers.contains(data['userId'])) {
-                                  return false;
-                                }
-
-                                // Check if user marked post as not interested
-                                List<dynamic> notInterestedBy =
-                                    List<dynamic>.from(
-                                      data['notInterestedBy'] ?? [],
-                                    );
-                                if (notInterestedBy.contains(
-                                  currentUser.userId,
-                                )) {
-                                  return false;
-                                }
-
-                                return true;
-                              }).toList();
-
-                          return ListView.builder(
-                            controller: _scrollController,
-                            itemCount: filteredPosts.length,
-                            itemBuilder: (context, index) {
-                              final post =
-                                  filteredPosts[index].data()
-                                      as Map<String, dynamic>;
-                              return PostItem(
-                                postId: post['postId'],
-                                fromComments: false,
-                              );
-                            },
-                          );
-                        },
+                    } else {
+                      final post = filteredPosts[index - 1].data() as Map<String, dynamic>;
+                      return PostItem(
+                        postId: post['postId'],
+                        fromComments: false,
                       );
-                    },
-                  ),
-                ),
-              ],
+                    }
+                  },
+                );
+              },
             );
           },
         );

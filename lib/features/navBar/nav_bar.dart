@@ -16,18 +16,33 @@ class NavBar extends StatefulWidget {
 class _NavBarState extends State<NavBar> {
   int _selectedIndex = 0;
 
-  final List<Widget> widgetOptions = [
-    HomeScreen(),
-    Shop(),
-    Cart(),
-    ReviewScreen(),
-    LandingScreen(),
-  ];
+  // Use a non-static controller and re-create HomeScreen on tab switch to ensure controller is always attached
+  final ScrollController homeScrollController = ScrollController();
+  List<Widget> widgetOptions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    widgetOptions = [
+      HomeScreen(scrollController: homeScrollController),
+      Shop(),
+      Cart(),
+      ReviewScreen(),
+      LandingScreen(),
+    ];
+  }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    if (_selectedIndex == index && index == 0) {
+      if (homeScrollController.hasClients) {
+        homeScrollController.animateTo(0,
+            duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
+      }
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   @override

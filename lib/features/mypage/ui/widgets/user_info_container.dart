@@ -168,7 +168,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
               // Name field
               UnderlineTextField(
                 controller: nameController,
-                hintText: '팽이마켓',
+                hintText: currentUser?.name ?? '팽이마켓',
                 obscureText: false,
                 keyboardType: TextInputType.name,
                 validator: (val) {
