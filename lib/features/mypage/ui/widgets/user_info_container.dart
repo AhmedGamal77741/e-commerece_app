@@ -12,7 +12,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 class UserInfoContainer extends StatefulWidget {
-  const UserInfoContainer({super.key});
+  MyUser myUser;
+  UserInfoContainer({super.key, required this.myUser});
 
   @override
   State<UserInfoContainer> createState() => _UserInfoContainerState();
@@ -21,39 +22,13 @@ class UserInfoContainer extends StatefulWidget {
 class _UserInfoContainerState extends State<UserInfoContainer> {
   final passwordController = TextEditingController();
   final nameController = TextEditingController();
+  final bioController = TextEditingController();
+  final phoneController = TextEditingController();
+
   final _formKey = GlobalKey<FormState>();
   String imgUrl = "";
   String error = '';
   final fireBaseRepo = FirebaseUserRepo();
-
-  MyUser? currentUser;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    // Start listening to posts as before
-    Provider.of<PostsProvider>(context, listen: false).startListening();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    try {
-      final user = await FirebaseUserRepo().user.first;
-      if (!mounted) return;
-      setState(() {
-        currentUser = user;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-      debugPrint('Error loading user: $e');
-    }
-  }
 
   Future<bool> _reauthenticateUser(BuildContext context) async {
     bool success = false;
@@ -140,6 +115,9 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
     // Clean up controllers
     passwordController.dispose();
     nameController.dispose();
+    bioController.dispose();
+    phoneController.dispose();
+
     super.dispose();
   }
 
@@ -160,6 +138,32 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text('userId', style: TextStyles.abeezee16px400wPblack),
+
+              verticalSpace(20),
+
+              // userId field
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: ColorsManager.primary100,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  widget.myUser.tag ?? '',
+                  style: TextStyles.abeezee16px400wPblack.copyWith(
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ),
+
+              verticalSpace(20),
+
               // Avatar Row
               Text('닉네임', style: TextStyles.abeezee16px400wPblack),
 
@@ -168,7 +172,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
               // Name field
               UnderlineTextField(
                 controller: nameController,
-                hintText: currentUser?.name ?? '팽이마켓',
+                hintText: widget.myUser.name,
                 obscureText: false,
                 keyboardType: TextInputType.name,
                 validator: (val) {
@@ -178,7 +182,45 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                   return null;
                 },
               ),
+              verticalSpace(20),
 
+              // Avatar Row
+              Text('User bio', style: TextStyles.abeezee16px400wPblack),
+
+              verticalSpace(20),
+
+              // Name field
+              UnderlineTextField(
+                controller: bioController,
+                hintText: widget.myUser.bio ?? '',
+                obscureText: false,
+                keyboardType: TextInputType.name,
+                validator: (val) {
+                  // Skip validation if empty - we'll handle this separately
+                  if (val!.isEmpty) return null;
+                  if (val.length > 30) return '이름이 너무 깁니다';
+                  return null;
+                },
+              ),
+              verticalSpace(20),
+              Text('전화번호', style: TextStyles.abeezee16px400wPblack),
+              verticalSpace(20),
+
+              UnderlineTextField(
+                controller: phoneController,
+                hintText: widget.myUser.phoneNumber ?? '',
+                obscureText: false,
+                keyboardType: TextInputType.phone,
+                validator: (val) {
+                  if (val!.isEmpty) return null;
+                  // Korean phone number: 010-xxxx-xxxx or 010xxxxxxxx
+                  final koreanReg = RegExp(r'^(01[016789])-?\d{3,4}-?\d{4}$');
+                  if (!koreanReg.hasMatch(val)) {
+                    return '유효한 한국 전화번호를 입력하세요';
+                  }
+                  return null;
+                },
+              ),
               verticalSpace(20),
 
               // Password and submit button
@@ -200,26 +242,19 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                       final isUpdatingName = nameController.text.isNotEmpty;
                       final isUpdatingPassword =
                           passwordController.text.isNotEmpty;
-                      final myUser = MyUser(
-                        userId: currentUser!.userId,
-                        email: currentUser!.email,
-                        name:
-                            isUpdatingName
-                                ? nameController.text
-                                : currentUser!.name,
-                        url: imgUrl.isEmpty ? currentUser!.url : imgUrl,
-                        isSub: currentUser!.isSub,
-                        defaultAddressId: currentUser!.defaultAddressId,
-                        blocked: currentUser!.blocked,
-                        payerId: currentUser!.payerId,
-                        isOnline: currentUser!.isOnline,
-                        lastSeen: currentUser!.lastSeen,
-                        chatRooms: currentUser!.chatRooms,
-                        friends: currentUser!.friends,
-                        friendRequestsSent: currentUser!.friendRequestsSent,
-                        friendRequestsReceived:
-                            currentUser!.friendRequestsReceived,
-                      );
+                      final isUpdatingPhone = phoneController.text.isNotEmpty;
+                      final isUpdatingBio = bioController.text.isNotEmpty;
+
+                      if (isUpdatingName) {
+                        widget.myUser.name = nameController.text;
+                      }
+
+                      if (isUpdatingPhone) {
+                        widget.myUser.phoneNumber = phoneController.text;
+                      }
+                      if (isUpdatingBio) {
+                        widget.myUser.bio = bioController.text;
+                      }
                       try {
                         // If updating password, require re-authentication
                         if (isUpdatingPassword) {
@@ -227,7 +262,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                           if (!reauth) return;
                         }
                         final result = await fireBaseRepo.updateUser(
-                          myUser,
+                          widget.myUser,
                           isUpdatingPassword ? passwordController.text : "",
                         );
                         if (!mounted) return;
@@ -241,6 +276,9 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                           });
                           if (isUpdatingName) nameController.clear();
                           if (isUpdatingPassword) passwordController.clear();
+                          if (isUpdatingPhone) phoneController.clear();
+                          if (isUpdatingBio) bioController.clear();
+
                           String successMessage;
                           if (isUpdatingName && isUpdatingPassword) {
                             successMessage = "닉네임과 비밀번호가 성공적으로 업데이트되었습니다";

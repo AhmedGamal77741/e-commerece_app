@@ -86,17 +86,6 @@ class FirebaseUserRepo {
 
   Future<MyUser?> updateUser(MyUser myUser, String password) async {
     try {
-      // Check if username is unique only if name is changed
-      if (myUser.name != FirebaseAuth.instance.currentUser?.displayName) {
-        final querySnapshot =
-            await usersCollection.where('name', isEqualTo: myUser.name).get();
-
-        if (querySnapshot.docs.isNotEmpty) {
-          // Username already exists
-          return null;
-        }
-      }
-
       // Update user document with new information
       await usersCollection
           .doc(myUser.userId)

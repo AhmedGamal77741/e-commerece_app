@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/mypage/data/firebas_funcs.dart';
 import 'package:ecommerece_app/features/mypage/ui/widgets/user_info_container.dart';
 import 'package:ecommerece_app/features/mypage/ui/widgets/user_options_container.dart';
@@ -33,7 +34,7 @@ class MyPage extends StatelessWidget {
 
         final userData = snapshot.data!.data() as Map<String, dynamic>;
         final bool isSub = userData['isSub'] == true;
-
+        final myuser = MyUser.fromDocument(userData);
         return SingleChildScrollView(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
@@ -43,7 +44,7 @@ class MyPage extends StatelessWidget {
                     ? Text('프리미엄 회원', style: TextStyles.abeezee17px800wPblack)
                     : Text('일반 회원', style: TextStyles.abeezee17px800wPblack),
                 verticalSpace(20),
-                UserInfoContainer(),
+                UserInfoContainer(myUser: myuser),
                 verticalSpace(30),
                 UserOptionsContainer(isSub: isSub),
                 verticalSpace(20),

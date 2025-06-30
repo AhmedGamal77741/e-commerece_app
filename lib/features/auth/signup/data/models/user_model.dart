@@ -17,7 +17,7 @@ class MyUser {
   final int followingCount;
   String? phoneNumber;
   String? tag;
-  final String? bio;
+  String? bio;
   MyUser({
     required this.userId,
     required this.email,
