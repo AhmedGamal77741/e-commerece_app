@@ -15,7 +15,7 @@ class MyUser {
   final List<String> friendRequestsReceived;
   final int followerCount;
   final int followingCount;
-  final String? phoneNumber;
+  String? phoneNumber;
   String? tag;
   final String? bio;
   MyUser({

@@ -46,7 +46,8 @@ class FirebaseUserRepo {
   final usersCollection = FirebaseFirestore.instance.collection('users');
   static const String signUpSuccess = "회원가입이 완료되었습니다";
   static const String errorEmailAlreadyInUse = "이미 사용 중인 이메일입니다";
-  static const String errorUsernameTaken = "이미 사용 중인 사용자 이름입니다";
+  static const String errorUsernameTaken = "userId가 이미 사용 중입니다.";
+  static const String errorPhoneNumberTaken = "전화번호가 이미 사용 중입니다.";
   static const String errorWeakPassword = "비밀번호가 너무 약합니다";
   static const String errorUnknown = "알 수 없는 오류가 발생했습니다";
 
@@ -132,7 +133,7 @@ class FirebaseUserRepo {
   Future<String> signUp(MyUser myUser, String password) async {
     try {
       // 1. Check if username (nickname) already exists
-      final usernameQuery =
+      final tagQuery =
           await usersCollection
               .where(
                 'tag',
@@ -141,8 +142,21 @@ class FirebaseUserRepo {
               .limit(1)
               .get();
 
-      if (usernameQuery.docs.isNotEmpty) {
+      final phoneNumberQuery =
+          await usersCollection
+              .where(
+                'phoneNumber',
+                isEqualTo: myUser.phoneNumber,
+              ) // Assuming 'name' is the field for nickname in Firestore
+              .limit(1)
+              .get();
+
+      if (tagQuery.docs.isNotEmpty) {
         return errorUsernameTaken; // Username is already taken
+      }
+
+      if (phoneNumberQuery.docs.isNotEmpty) {
+        return errorPhoneNumberTaken; // Username is already taken
       }
 
       // 2. If username is unique, proceed to create user with email and password

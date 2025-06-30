@@ -21,6 +21,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final nameController = TextEditingController();
   final paymentInfoController = TextEditingController();
   final tagController = TextEditingController();
+  final phoneController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
   IconData iconPassword = Icons.visibility;
@@ -120,6 +121,28 @@ class _SignupScreenState extends State<SignupScreen> {
                             return '태그가 너무 깁니다';
                           }
                           // No need to check uniqueness here, do it before signup
+                          return null;
+                        },
+                      ),
+                      verticalSpace(20),
+                      Text('전화번호', style: TextStyles.abeezee16px400wPblack),
+                      verticalSpace(8),
+                      UnderlineTextField(
+                        controller: phoneController,
+                        hintText: '전화번호를 입력하세요',
+                        obscureText: false,
+                        keyboardType: TextInputType.phone,
+                        validator: (val) {
+                          if (val == null || val.isEmpty) {
+                            return '전화번호를 입력하세요';
+                          }
+                          // Korean phone number: 010-xxxx-xxxx or 010xxxxxxxx
+                          final koreanReg = RegExp(
+                            r'^(01[016789])-?\d{3,4}-?\d{4}$',
+                          );
+                          if (!koreanReg.hasMatch(val)) {
+                            return '유효한 한국 전화번호를 입력하세요';
+                          }
                           return null;
                         },
                       ),
@@ -228,6 +251,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           "https://i.ibb.co/6kmLx2D/mypage-avatar.png"
                       : myUser.url = imgUrl;
                   myUser.tag = tagController.text;
+                  myUser.phoneNumber = phoneController.text;
                   var result = await fireBaseRepo.signUp(
                     myUser,
                     passwordController.text,
