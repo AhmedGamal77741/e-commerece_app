@@ -93,6 +93,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     _messageController.clear();
+    await _chatService.resetDeletedBy(widget.chatRoomId);
     setState(() {
       _pickedImage = null;
       _replyToMessage = null;
@@ -110,6 +111,8 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     _messageController.clear();
+    await _chatService.resetDeletedBy(widget.chatRoomId);
+
     setState(() {
       _replyToMessage = null;
     });
@@ -182,7 +185,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       itemBuilder: (context, index) {
                         final message = messages[index];
                         final isMe = message.senderId == currentUserId;
-
+                        if (message.deletedBy.contains(currentUserId)) {
+                          return SizedBox.shrink();
+                        }
                         return MessageBubble(
                           message: message,
                           isMe: isMe,
@@ -270,13 +275,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 SizedBox(width: 10.w),
                 InkWell(
                   onTap: () async {
-                    showLoadingDialog(context);
                     if (_pickedImage != null) {
+                      showLoadingDialog(context);
                       await _sendImageMessage();
+                      Navigator.pop(context);
                     } else {
                       await _sendMessage();
                     }
-                    Navigator.pop(context);
                   },
                   child: Container(
                     width: 50.w,
@@ -464,16 +469,14 @@ class MessageBubble extends StatelessWidget {
                               ),
                             ),
                           if (message.lovedBy.isNotEmpty && isMe)
-                            Flexible(
-                              child: Text(
-                                message.lovedBy.length.toString(),
-                                style: TextStyle(
-                                  color: const Color(0xFF343434),
-                                  fontSize: 14,
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.40,
-                                ),
+                            Text(
+                              message.lovedBy.length.toString(),
+                              style: TextStyle(
+                                color: const Color(0xFF343434),
+                                fontSize: 14,
+                                fontFamily: 'NotoSans',
+                                fontWeight: FontWeight.w400,
+                                height: 1.40,
                               ),
                             ),
                           Flexible(
@@ -545,16 +548,14 @@ class MessageBubble extends StatelessWidget {
                             ),
                           ),
                           if (message.lovedBy.isNotEmpty && !isMe)
-                            Flexible(
-                              child: Text(
-                                message.lovedBy.length.toString(),
-                                style: TextStyle(
-                                  color: const Color(0xFF343434),
-                                  fontSize: 14,
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.40,
-                                ),
+                            Text(
+                              message.lovedBy.length.toString(),
+                              style: TextStyle(
+                                color: const Color(0xFF343434),
+                                fontSize: 14,
+                                fontFamily: 'NotoSans',
+                                fontWeight: FontWeight.w400,
+                                height: 1.40,
                               ),
                             ),
                           if (!isMe)

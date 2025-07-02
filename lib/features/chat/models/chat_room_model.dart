@@ -4,6 +4,7 @@ class ChatRoomModel {
   final String name;
   final String type; // 'direct' or 'group'
   final List<String> participants;
+  List<String> deletedBy;
   final String? lastMessage;
   final DateTime lastMessageTime;
   final String? lastMessageSenderId;
@@ -22,6 +23,7 @@ class ChatRoomModel {
     this.lastMessageSenderId,
     this.groupImage,
     this.createdBy,
+    this.deletedBy = const [],
     required this.createdAt,
     this.unreadCount = const {},
   });
@@ -41,6 +43,7 @@ class ChatRoomModel {
       createdBy: map['createdBy'],
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
       unreadCount: Map<String, int>.from(map['unreadCount'] ?? {}),
+      deletedBy: List<String>.from(map['deletedBy'] ?? []),
     );
   }
 
@@ -57,6 +60,7 @@ class ChatRoomModel {
       'createdBy': createdBy,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'unreadCount': unreadCount,
+      'deletedBy': deletedBy,
     };
   }
 }

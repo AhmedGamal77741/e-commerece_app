@@ -188,6 +188,32 @@ class _GroupChatsScreenState extends State<GroupChatsScreen> {
                           ],
                         ),
                       ),
+                      if (chat.unreadCount[FirebaseAuth
+                              .instance
+                              .currentUser!
+                              .uid]! >
+                          0)
+                        Container(
+                          width: 20,
+                          height: 20,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            chat
+                                .unreadCount[FirebaseAuth
+                                    .instance
+                                    .currentUser!
+                                    .uid]!
+                                .toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
                       if (showCheckbox)
                         StatefulBuilder(
                           builder: (context, checkboxState) {

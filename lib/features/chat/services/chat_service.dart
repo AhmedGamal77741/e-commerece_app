@@ -190,6 +190,37 @@ class ChatService {
     });
   }
 
+  Future<void> resetDeletedBy(String chatRoomId) async {
+    await _firestore.collection('chatRooms').doc(chatRoomId).update({
+      'deletedBy': [],
+    });
+  }
+
+  Future<void> softDeleteChatForCurrentUser(String chatRoomId) async {
+    final batch = _firestore.batch();
+
+    // 1. Update chat room's deletedBy
+    final chatRoomRef = _firestore.collection('chatRooms').doc(chatRoomId);
+    batch.update(chatRoomRef, {
+      'deletedBy': FieldValue.arrayUnion([currentUserId]),
+    });
+
+    // 2. Update all messages' deletedBy
+    final messagesQuery =
+        await _firestore
+            .collection('messages')
+            .where('chatRoomId', isEqualTo: chatRoomId)
+            .get();
+
+    for (final doc in messagesQuery.docs) {
+      batch.update(doc.reference, {
+        'deletedBy': FieldValue.arrayUnion([currentUserId]),
+      });
+    }
+
+    await batch.commit();
+  }
+
   // Mark messages as read
   Future<void> markMessagesAsRead(String chatRoomId) async {
     final messagesQuery =

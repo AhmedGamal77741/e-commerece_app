@@ -23,7 +23,7 @@ class MyUser {
     required this.email,
     required this.name,
     required this.url,
-    this.blocked,
+    this.blocked = const [],
     this.isSub = false,
     this.defaultAddressId,
     this.payerId,
@@ -94,7 +94,10 @@ class MyUser {
       name: doc['name'],
       url: doc['url'],
       blocked:
-          (doc['blocked'] as List<dynamic>?)?.map((e) => e as String).toList(),
+          (doc['blocked'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       isSub: doc['isSub'] ?? false,
       defaultAddressId: doc['defaultAddressId'],
       payerId: doc['payerId'],

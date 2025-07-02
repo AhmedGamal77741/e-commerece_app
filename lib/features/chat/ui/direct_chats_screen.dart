@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:ecommerece_app/features/chat/services/friends_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -15,10 +17,12 @@ class DirectChatsScreen extends StatefulWidget {
 class _DirectChatsScreenState extends State<DirectChatsScreen> {
   final ChatService chatService = ChatService();
   String get currentUserId => FirebaseAuth.instance.currentUser!.uid;
+  final FriendsService _friendsService = FriendsService();
 
   bool editMode = false;
   bool searchMode = false;
   Set<String> selectedChatIds = {};
+  Set<String> selectedFriendIds = {};
   String searchQuery = '';
   final TextEditingController searchController = TextEditingController();
 
@@ -43,7 +47,10 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
   void toggleEditMode() {
     setState(() {
       editMode = !editMode;
-      if (!editMode) selectedChatIds.clear();
+      if (!editMode) {
+        selectedChatIds.clear();
+        selectedFriendIds.clear();
+      }
     });
   }
 
@@ -80,6 +87,7 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
               setState(() {
                 editMode = false;
                 selectedChatIds.clear();
+                selectedFriendIds.clear();
               });
             } else if (searchMode) {
               setState(() {
@@ -96,7 +104,14 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
             editMode
                 ? [
                   InkWell(
-                    onTap: toggleEditMode,
+                    onTap: () async {
+                      showLoadingDialog(context);
+                      for (String chatId in selectedFriendIds) {
+                        await _friendsService.blockFriend(chatId);
+                      }
+                      Navigator.pop(context);
+                      toggleEditMode();
+                    },
                     child: Image.asset(
                       'assets/block (1).png',
                       height: 30.sp,
@@ -107,7 +122,13 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
                   ),
                   SizedBox(width: 5.w),
                   InkWell(
-                    onTap: toggleEditMode,
+                    onTap: () async {
+                      showLoadingDialog(context);
+                      for (String chatId in selectedChatIds) {
+                        await chatService.softDeleteChatForCurrentUser(chatId);
+                      }
+                      Navigator.pop(context);
+                    },
                     child: Image.asset(
                       'assets/delete.png',
                       height: 30.sp,
@@ -167,6 +188,8 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
             itemCount: directChats.length,
             itemBuilder: (context, index) {
               final chat = directChats[index];
+              if (chat.deletedBy.contains(currentUserId))
+                return const SizedBox.shrink();
               return FutureBuilder<MyUser?>(
                 future: getOtherUser(chat),
                 builder: (context, userSnap) {
@@ -195,7 +218,7 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
                               ? () {
                                 onSelectChat(
                                   chat.id,
-                                  !selectedChatIds.contains(chat.id),
+                                  !selectedChatIds.contains(friend.userId),
                                 );
                               }
                               : () {
@@ -243,17 +266,47 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
                               ],
                             ),
                           ),
+                          if (chat.unreadCount[FirebaseAuth
+                                  .instance
+                                  .currentUser!
+                                  .uid]! >
+                              0)
+                            Container(
+                              width: 20,
+                              height: 20,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                chat
+                                    .unreadCount[FirebaseAuth
+                                        .instance
+                                        .currentUser!
+                                        .uid]!
+                                    .toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
                           if (showCheckbox)
                             StatefulBuilder(
                               builder: (context, checkboxState) {
                                 return Checkbox(
-                                  value: selectedChatIds.contains(chat.id),
+                                  value: selectedFriendIds.contains(
+                                    friend.userId,
+                                  ),
                                   onChanged: (checked) {
                                     checkboxState(() {
                                       if (checked ?? false) {
                                         selectedChatIds.add(chat.id);
+                                        selectedFriendIds.add(friend.userId);
                                       } else {
                                         selectedChatIds.remove(chat.id);
+                                        selectedFriendIds.remove(friend.userId);
                                       }
                                     });
 

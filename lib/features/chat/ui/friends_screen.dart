@@ -1,4 +1,5 @@
 // screens/friends_screen.dart
+import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/chat_service.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
@@ -131,7 +132,14 @@ class _FriendsScreenState extends State<FriendsScreen>
             editMode
                 ? [
                   InkWell(
-                    onTap: toggleEditMode,
+                    onTap: () async {
+                      showLoadingDialog(context);
+                      for (String chatId in selectedChatIds) {
+                        await _friendsService.blockFriend(chatId);
+                      }
+                      Navigator.pop(context);
+                      toggleEditMode();
+                    },
                     child: Image.asset(
                       'assets/block (1).png',
                       height: 30.sp,
@@ -142,7 +150,14 @@ class _FriendsScreenState extends State<FriendsScreen>
                   ),
                   SizedBox(width: 5.w),
                   InkWell(
-                    onTap: toggleEditMode,
+                    onTap: () async {
+                      showLoadingDialog(context);
+                      for (String chatId in selectedChatIds) {
+                        await _friendsService.removeFriend(chatId);
+                      }
+                      Navigator.pop(context);
+                      toggleEditMode();
+                    },
                     child: Image.asset(
                       'assets/delete.png',
                       height: 30.sp,
@@ -209,9 +224,6 @@ class _FriendsScreenState extends State<FriendsScreen>
   }
 
   Widget _buildFavoriteSection(List<MyUser> friends) {
-    // Take first few friends as favorites for demo
-    final favoriteFriends = friends.take(4).toList();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -226,7 +238,7 @@ class _FriendsScreenState extends State<FriendsScreen>
             ),
           ),
         ),
-        ...favoriteFriends.map((friend) {
+        ...friends.map((friend) {
           // Filter by search query
           if (searchQuery.isNotEmpty &&
               !friend.name.toLowerCase().contains(searchQuery)) {
@@ -328,7 +340,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                       color: Colors.black,
                     ),
                   ),
-                  if (showSubtitle) ...[
+                  if (friend.bio != null && friend.bio!.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       friend.bio ?? '',

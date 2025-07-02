@@ -138,7 +138,7 @@ class _ExpandableFABState extends State<ExpandableFAB>
                                   userId,
                                 ) async {
                                   // Implement your block logic here
-                                  // e.g., await FriendsService().blockUser(userId);
+                                  await FriendsService().blockFriend(userId);
                                   // Show success/failure message if needed
                                 });
                                 _toggle();

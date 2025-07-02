@@ -10,55 +10,106 @@ class FriendsService {
   String get currentUserId => _auth.currentUser?.uid ?? '';
 
   Future<bool> addFriend(String friendName) async {
-  try {
-    // Prevent adding yourself as a friend by name
-    final currentUserDoc =
-        await _firestore.collection('users').doc(currentUserId).get();
-    final currentUser = MyUser.fromDocument(currentUserDoc.data()!);
+    try {
+      // Prevent adding yourself as a friend by name
+      final currentUserDoc =
+          await _firestore.collection('users').doc(currentUserId).get();
+      final currentUser = MyUser.fromDocument(currentUserDoc.data()!);
 
-    if (currentUser.name == friendName) {
-      throw Exception('Cannot add yourself as a friend');
+      if (currentUser.tag == friendName) {
+        throw Exception('Cannot add yourself as a friend');
+      }
+
+      // Search for user by name
+      final userQuery =
+          await _firestore
+              .collection('users')
+              .where('tag', isEqualTo: friendName)
+              .limit(1)
+              .get();
+
+      if (userQuery.docs.isEmpty) {
+        throw Exception('User not found');
+      }
+
+      final friendDoc = userQuery.docs.first;
+      final friendId = friendDoc['userId'];
+
+      // Check if already friends
+      if (currentUser.friends.contains(friendId)) {
+        throw Exception('Already friends with this user');
+      }
+
+      // Use batch to ensure atomicity
+      final batch = _firestore.batch();
+
+      // Add to current user's friends list
+      batch.update(_firestore.collection('users').doc(currentUserId), {
+        'friends': FieldValue.arrayUnion([friendId]),
+      });
+
+      // Add to friend's friends list
+      batch.update(_firestore.collection('users').doc(friendId), {
+        'friends': FieldValue.arrayUnion([currentUserId]),
+      });
+
+      await batch.commit();
+      return true;
+    } catch (e) {
+      print('Error adding friend: $e');
+      return false;
     }
-
-    // Search for user by name
-    final userQuery = await _firestore
-        .collection('users')
-        .where('name', isEqualTo: friendName)
-        .limit(1)
-        .get();
-
-    if (userQuery.docs.isEmpty) {
-      throw Exception('User not found');
-    }
-
-    final friendDoc = userQuery.docs.first;
-    final friendId = friendDoc['userId'];
-
-    // Check if already friends
-    if (currentUser.friends.contains(friendId)) {
-      throw Exception('Already friends with this user');
-    }
-
-    // Use batch to ensure atomicity
-    final batch = _firestore.batch();
-
-    // Add to current user's friends list
-    batch.update(_firestore.collection('users').doc(currentUserId), {
-      'friends': FieldValue.arrayUnion([friendId]),
-    });
-
-    // Add to friend's friends list
-    batch.update(_firestore.collection('users').doc(friendId), {
-      'friends': FieldValue.arrayUnion([currentUserId]),
-    });
-
-    await batch.commit();
-    return true;
-  } catch (e) {
-    print('Error adding friend: $e');
-    return false;
   }
-}
+
+  Future<bool> blockFriend(String friendName) async {
+    try {
+      final currentUserDoc =
+          await _firestore.collection('users').doc(currentUserId).get();
+      final currentUser = MyUser.fromDocument(currentUserDoc.data()!);
+
+      if (currentUser.tag == friendName) {
+        throw Exception('Cannot block yourself');
+      }
+
+      // Search for user by name
+      final userQuery =
+          await _firestore
+              .collection('users')
+              .where('userId', isEqualTo: friendName)
+              .limit(1)
+              .get();
+
+      if (userQuery.docs.isEmpty) {
+        throw Exception('User not found');
+      }
+
+      final friendDoc = userQuery.docs.first;
+      final friendId = friendDoc['userId'];
+      // Check if already friends
+      if (currentUser.blocked!.contains(friendId)) {
+        throw Exception('Already blocked this user');
+      }
+
+      await currentUserDoc.reference.update({
+        'blocked': FieldValue.arrayUnion([friendId]),
+      });
+
+      final blocksCollection = FirebaseFirestore.instance.collection('blocks');
+
+      final newBlockRef = blocksCollection.doc();
+      await newBlockRef.set({
+        'blockedUserId': friendId,
+        'blockedBy': currentUser.userId,
+        'blockId': newBlockRef.id,
+      });
+      print('User blocked successfully!');
+      return true;
+    } catch (e) {
+      print('Error blocking user: $e');
+      return false;
+    }
+  }
+
   // Remove friend
   Future<bool> removeFriend(String friendId) async {
     try {
@@ -99,8 +150,12 @@ class FriendsService {
                   .where('userId', whereIn: user.friends)
                   .get();
 
+          // Filter out blocked users in Dart
           return friendsQuery.docs
               .map((doc) => MyUser.fromDocument(doc.data()))
+              .where(
+                (friend) => !(user.blocked?.contains(friend.userId) ?? false),
+              )
               .toList();
         });
   }
