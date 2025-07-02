@@ -191,7 +191,7 @@ class ChatService {
   }
 
   Future<void> resetDeletedBy(String chatRoomId) async {
-    await _firestore.collection('chatRooms').doc(chatRoomId).update({
+    await _firestore.collection('chatRooms').doc(chatRoomId).set({
       'deletedBy': [],
     });
   }

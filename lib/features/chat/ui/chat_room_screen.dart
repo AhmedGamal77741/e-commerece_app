@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,13 +33,16 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
   XFile? _pickedImage;
-
+  bool _isBlocked = false;
+  bool _blocked = false;
+  bool _loadingBlockState = true;
   MessageModel? _replyToMessage;
 
   @override
   void initState() {
     super.initState();
     _markMessagesAsRead();
+    _checkBlockState();
   }
 
   void _markMessagesAsRead() {
@@ -62,6 +64,54 @@ class _ChatScreenState extends State<ChatScreen> {
         _pickedImage = picked;
       });
     }
+  }
+
+  Future<void> _checkBlockState() async {
+    final currentUserDoc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .get();
+    final chatRoomDoc =
+        await FirebaseFirestore.instance
+            .collection('chatRooms')
+            .doc(widget.chatRoomId)
+            .get();
+
+    // Find the other user's ID (for direct chat)
+    final participants = List<String>.from(chatRoomDoc['participants']);
+    final otherUserId = participants.firstWhere((id) => id != currentUserId);
+
+    final otherUserDoc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(otherUserId)
+            .get();
+
+    final currentBlocked = List<String>.from(
+      currentUserDoc.data()?['blocked'] ?? [],
+    );
+    final otherBlocked = List<String>.from(
+      otherUserDoc.data()?['blocked'] ?? [],
+    );
+
+    setState(() {
+      _blocked = currentBlocked.contains(otherUserId);
+      _isBlocked = otherBlocked.contains(currentUserId);
+      _loadingBlockState = false;
+    });
+  }
+
+  Future<void> _unblockUser(String otherUserId) async {
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUserId)
+        .update({
+          'blocked': FieldValue.arrayRemove([otherUserId]),
+        });
+    setState(() {
+      _blocked = false;
+    });
   }
 
   Future<void> _sendImageMessage() async {
@@ -125,185 +175,244 @@ class _ChatScreenState extends State<ChatScreen> {
         backgroundColor: Colors.white,
         forceMaterialTransparency: true,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<List<MessageModel>>(
-              stream: _chatService.getMessagesStream(widget.chatRoomId),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
+      body:
+          _loadingBlockState
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                children: [
+                  Expanded(
+                    child: StreamBuilder<List<MessageModel>>(
+                      stream: _chatService.getMessagesStream(widget.chatRoomId),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Text('Error: ${snapshot.error}'),
+                          );
+                        }
 
-                final messages = snapshot.data ?? [];
+                        final messages = snapshot.data ?? [];
 
-                if (messages.isEmpty) {
-                  return const Center(
-                    child: Text('No messages yet. Start the conversation!'),
-                  );
-                }
-
-                return _pickedImage != null
-                    ? Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child:
-                                kIsWeb
-                                    ? Image.network(
-                                      _pickedImage!.path,
-
-                                      fit: BoxFit.cover,
-                                    )
-                                    : Image.file(
-                                      File(_pickedImage!.path),
-
-                                      fit: BoxFit.cover,
-                                    ),
-                          ),
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: IconButton(
-                              icon: Icon(Icons.close, color: Colors.red),
-                              onPressed: () {
-                                setState(() {
-                                  _pickedImage = null;
-                                });
-                              },
+                        if (messages.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              'No messages yet. Start the conversation!',
                             ),
+                          );
+                        }
+
+                        return _pickedImage != null
+                            ? Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child:
+                                        kIsWeb
+                                            ? Image.network(
+                                              _pickedImage!.path,
+
+                                              fit: BoxFit.cover,
+                                            )
+                                            : Image.file(
+                                              File(_pickedImage!.path),
+
+                                              fit: BoxFit.cover,
+                                            ),
+                                  ),
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: IconButton(
+                                      icon: Icon(
+                                        Icons.close,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _pickedImage = null;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                            : ListView.builder(
+                              controller: _scrollController,
+                              reverse: true,
+                              itemCount: messages.length,
+                              itemBuilder: (context, index) {
+                                final message = messages[index];
+                                final isMe = message.senderId == currentUserId;
+                                if (message.deletedBy.contains(currentUserId)) {
+                                  return SizedBox.shrink();
+                                }
+                                return MessageBubble(
+                                  message: message,
+                                  isMe: isMe,
+                                  onReply: () {
+                                    setState(() {
+                                      _replyToMessage = message;
+                                    });
+                                  },
+                                  interactable:
+                                      !(_blocked || _isBlocked), // <-- add this
+                                );
+                              },
+                            );
+                      },
+                    ),
+                  ),
+                  if (_replyToMessage != null)
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      color: Colors.grey[200],
+                      child: Row(
+                        children: [
+                          const Icon(Icons.reply, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _replyToMessage!.senderName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  _replyToMessage!.content,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 20),
+                            onPressed: () {
+                              setState(() {
+                                _replyToMessage = null;
+                              });
+                            },
                           ),
                         ],
                       ),
-                    )
-                    : ListView.builder(
-                      controller: _scrollController,
-                      reverse: true,
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final message = messages[index];
-                        final isMe = message.senderId == currentUserId;
-                        if (message.deletedBy.contains(currentUserId)) {
-                          return SizedBox.shrink();
-                        }
-                        return MessageBubble(
-                          message: message,
-                          isMe: isMe,
-                          onReply: () {
-                            setState(() {
-                              _replyToMessage = message;
-                            });
-                          },
-                        );
-                      },
-                    );
-              },
-            ),
-          ),
-          if (_replyToMessage != null)
-            Container(
-              padding: const EdgeInsets.all(8),
-              color: Colors.grey[200],
-              child: Row(
-                children: [
-                  const Icon(Icons.reply, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _replyToMessage!.senderName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+                    ),
+                  (_blocked || _isBlocked)
+                      ? Container(
+                        color: Colors.grey[200],
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            Text(
+                              _blocked && _isBlocked
+                                  ? 'You have blocked this user and they have blocked you.\nYou cannot interact in this chat.'
+                                  : _blocked
+                                  ? 'You have blocked this user.\nYou cannot interact in this chat.'
+                                  : 'You have been blocked by this user.\nYou cannot interact in this chat.',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (_blocked)
+                              ElevatedButton(
+                                onPressed: () async {
+                                  final chatRoomDoc =
+                                      await FirebaseFirestore.instance
+                                          .collection('chatRooms')
+                                          .doc(widget.chatRoomId)
+                                          .get();
+                                  final participants = List<String>.from(
+                                    chatRoomDoc['participants'],
+                                  );
+                                  final otherUserId = participants.firstWhere(
+                                    (id) => id != currentUserId,
+                                  );
+                                  await _unblockUser(otherUserId);
+                                  _checkBlockState();
+                                },
+                                child: const Text('Unblock'),
+                              ),
+                          ],
                         ),
-                        Text(
-                          _replyToMessage!.content,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12),
+                      )
+                      : Container(
+                        height: 60.h,
+                        padding: EdgeInsets.symmetric(
+                          vertical: 10.h,
+                          horizontal: 15.w,
                         ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () {
-                      setState(() {
-                        _replyToMessage = null;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-          Container(
-            height: 60.h,
-            padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 15.w),
-            child: Row(
-              children: [
-                InkWell(
-                  onTap: _pickImage,
-                  child: Image.asset("assets/추가-007.png"),
-                ),
-                SizedBox(width: 10.w),
-                Expanded(
-                  flex: 4,
-                  child: TextFormField(
-                    onChanged: (value) {
-                      setState(() {});
-                    },
-                    controller: _messageController,
-                    decoration: InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 10.h,
+                        child: Row(
+                          children: [
+                            InkWell(
+                              onTap: _pickImage,
+                              child: Image.asset("assets/추가-007.png"),
+                            ),
+                            SizedBox(width: 10.w),
+                            Expanded(
+                              flex: 4,
+                              child: TextFormField(
+                                onChanged: (value) {
+                                  setState(() {});
+                                },
+                                controller: _messageController,
+                                decoration: InputDecoration(
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12.w,
+                                    vertical: 10.h,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: ColorsManager.primary600,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: ColorsManager.primary600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 10.w),
+                            InkWell(
+                              onTap: () async {
+                                if (_pickedImage != null) {
+                                  showLoadingDialog(context);
+                                  await _sendImageMessage();
+                                  Navigator.pop(context);
+                                } else {
+                                  await _sendMessage();
+                                }
+                              },
+                              child: Container(
+                                width: 50.w,
+                                height: 37.h,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(50),
+                                  color:
+                                      _messageController.text.isNotEmpty ||
+                                              _pickedImage != null
+                                          ? Colors.black
+                                          : Color(0xFFEEEEEE),
+                                ),
+                                child: ImageIcon(
+                                  AssetImage("assets/Vector 3.png"),
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(color: ColorsManager.primary600),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: ColorsManager.primary600),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 10.w),
-                InkWell(
-                  onTap: () async {
-                    if (_pickedImage != null) {
-                      showLoadingDialog(context);
-                      await _sendImageMessage();
-                      Navigator.pop(context);
-                    } else {
-                      await _sendMessage();
-                    }
-                  },
-                  child: Container(
-                    width: 50.w,
-                    height: 37.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(50),
-                      color:
-                          _messageController.text.isNotEmpty ||
-                                  _pickedImage != null
-                              ? Colors.black
-                              : Color(0xFFEEEEEE),
-                    ),
-                    child: ImageIcon(
-                      AssetImage("assets/Vector 3.png"),
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          /*  Container(
+                  /*  Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -343,8 +452,8 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
           ), */
-        ],
-      ),
+                ],
+              ),
     );
   }
 }
@@ -353,12 +462,14 @@ class MessageBubble extends StatelessWidget {
   final MessageModel message;
   final bool isMe;
   final VoidCallback onReply;
+  final bool interactable;
 
   const MessageBubble({
     Key? key,
     required this.message,
     required this.isMe,
     required this.onReply,
+    required this.interactable, // <-- add this
   }) : super(key: key);
 
   @override
@@ -367,7 +478,7 @@ class MessageBubble extends StatelessWidget {
       onLongPress: () {
         /*   _showMessageOptions(context); */
       },
-      onDoubleTap: () => _toggleLove(context), // Double tap to love
+      onDoubleTap: interactable ? () => _toggleLove(context) : null,
 
       child: Align(
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -441,9 +552,11 @@ class MessageBubble extends StatelessWidget {
                           if (isMe)
                             Flexible(
                               child: InkWell(
-                                onTap: () {
-                                  _toggleLove(context);
-                                },
+                                onTap:
+                                    interactable
+                                        ? () => _toggleLove(context)
+                                        : null,
+
                                 child: ImageIcon(
                                   AssetImage(
                                     message.lovedBy.contains(
@@ -560,9 +673,11 @@ class MessageBubble extends StatelessWidget {
                             ),
                           if (!isMe)
                             InkWell(
-                              onTap: () {
-                                _toggleLove(context);
-                              },
+                              onTap:
+                                  interactable
+                                      ? () => _toggleLove(context)
+                                      : null,
+
                               child: ImageIcon(
                                 AssetImage(
                                   message.lovedBy.contains(
@@ -598,6 +713,7 @@ class MessageBubble extends StatelessWidget {
 
   void _toggleLove(BuildContext context) {
     final chatService = ChatService();
+
     chatService.toggleLoveReaction(
       messageId: message.id,
       chatRoomId: message.chatRoomId,
