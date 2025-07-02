@@ -139,7 +139,7 @@ class ChatService {
   Future<void> sendMessage({
     required String chatRoomId,
     required String content,
-    String type = 'text',
+    String? imageUrl,
     String? replyToMessageId,
   }) async {
     final messageRef = _firestore.collection('messages').doc();
@@ -156,7 +156,7 @@ class ChatService {
       senderId: currentUserId,
       senderName: user.name,
       content: content,
-      type: type,
+      imageUrl: imageUrl,
       timestamp: DateTime.now(),
       readBy: [currentUserId],
       replyToMessageId: replyToMessageId,

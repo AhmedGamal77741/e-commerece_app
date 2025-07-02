@@ -5,7 +5,7 @@ class MessageModel {
   final String senderId;
   final String senderName;
   final String content;
-  final String type; // 'text', 'image', 'file'
+  final String? imageUrl; // <-- add this
   final DateTime timestamp;
   final List<String> readBy;
   final String? replyToMessageId;
@@ -18,7 +18,7 @@ class MessageModel {
     required this.senderId,
     required this.senderName,
     required this.content,
-    this.type = 'text',
+    this.imageUrl,
     required this.timestamp,
     this.readBy = const [],
     this.replyToMessageId,
@@ -33,7 +33,7 @@ class MessageModel {
       senderId: map['senderId'] ?? '',
       senderName: map['senderName'] ?? '',
       content: map['content'] ?? '',
-      type: map['type'] ?? 'text',
+      imageUrl: map['imageUrl'] ?? '', // <-- add this
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] ?? 0),
       readBy: List<String>.from(map['readBy'] ?? []),
       replyToMessageId: map['replyToMessageId'],
@@ -49,7 +49,7 @@ class MessageModel {
       'senderId': senderId,
       'senderName': senderName,
       'content': content,
-      'type': type,
+      'imageUrl': imageUrl, // <-- add this
       'timestamp': timestamp.millisecondsSinceEpoch,
       'readBy': readBy,
       'replyToMessageId': replyToMessageId,

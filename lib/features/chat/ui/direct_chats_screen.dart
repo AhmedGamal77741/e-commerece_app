@@ -53,6 +53,8 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        actionsPadding: EdgeInsets.only(right: 5.w),
+
         title:
             searchMode
                 ? TextField(
@@ -96,7 +98,7 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
                   InkWell(
                     onTap: toggleEditMode,
                     child: Image.asset(
-                      'assets/015.png',
+                      'assets/block (1).png',
                       height: 30.sp,
                       width: 30.sp,
                       cacheWidth: 40,
@@ -107,7 +109,7 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
                   InkWell(
                     onTap: toggleEditMode,
                     child: Image.asset(
-                      'assets/014.png',
+                      'assets/delete.png',
                       height: 30.sp,
                       width: 30.sp,
                       cacheWidth: 40,
@@ -137,7 +139,7 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
                   InkWell(
                     onTap: toggleEditMode,
                     child: Image.asset(
-                      'assets/002 (1).png',
+                      'assets/edit mode.png',
                       height: 30.sp,
                       width: 30.sp,
                       cacheWidth: 40,

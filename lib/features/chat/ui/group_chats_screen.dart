@@ -48,6 +48,7 @@ class _GroupChatsScreenState extends State<GroupChatsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        actionsPadding: EdgeInsets.only(right: 5.w),
         title:
             searchMode
                 ? TextField(
@@ -115,7 +116,7 @@ class _GroupChatsScreenState extends State<GroupChatsScreen> {
                   InkWell(
                     onTap: toggleEditMode,
                     child: Image.asset(
-                      'assets/002 (1).png',
+                      'assets/edit mode.png',
                       height: 30.sp,
                       width: 30.sp,
                       cacheWidth: 40,

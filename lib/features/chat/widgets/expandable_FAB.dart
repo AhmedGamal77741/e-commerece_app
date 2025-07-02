@@ -114,7 +114,7 @@ class _ExpandableFABState extends State<ExpandableFAB>
                           ),
                           Expanded(
                             child: _buildMenuItem(
-                              icon: "assets/012.png",
+                              icon: "assets/add friend.png",
                               label: '친구 추가',
                               onTap: () async {
                                 await showAddFriendDialog(context, (
@@ -131,7 +131,7 @@ class _ExpandableFABState extends State<ExpandableFAB>
                           ),
                           Expanded(
                             child: _buildMenuItem(
-                              icon: "assets/012.png",
+                              icon: "assets/block user.png",
                               label: '차단 친구',
                               onTap: () async {
                                 await showBlockUserDialog(context, (

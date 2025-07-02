@@ -1,4 +1,8 @@
 // screens/chat_screen.dart
+import 'dart:io';
+import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
@@ -6,6 +10,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/chat_service.dart';
 import '../models/message_model.dart';
 
@@ -28,6 +33,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  XFile? _pickedImage;
 
   MessageModel? _replyToMessage;
 
@@ -48,11 +54,56 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  void _sendMessage() {
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        _pickedImage = picked;
+      });
+    }
+  }
+
+  Future<void> _sendImageMessage() async {
+    if (_pickedImage == null) return;
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}_$currentUserId.jpg';
+    final ref = FirebaseStorage.instance.ref().child('chat_images/$fileName');
+
+    UploadTask uploadTask;
+    if (kIsWeb) {
+      final bytes = await _pickedImage!.readAsBytes();
+      uploadTask = ref.putData(
+        bytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+    } else {
+      uploadTask = ref.putFile(File(_pickedImage!.path));
+    }
+
+    final snapshot = await uploadTask;
+    final downloadUrl = await snapshot.ref.getDownloadURL();
+    final content = _messageController.text.trim();
+
+    await _chatService.sendMessage(
+      chatRoomId: widget.chatRoomId,
+      content: content,
+      imageUrl: downloadUrl,
+      replyToMessageId: _replyToMessage?.id,
+    );
+
+    _messageController.clear();
+    setState(() {
+      _pickedImage = null;
+      _replyToMessage = null;
+    });
+  }
+
+  Future<void> _sendMessage() async {
     final content = _messageController.text.trim();
     if (content.isEmpty) return;
 
-    _chatService.sendMessage(
+    await _chatService.sendMessage(
       chatRoomId: widget.chatRoomId,
       content: content,
       replyToMessageId: _replyToMessage?.id,
@@ -89,25 +140,60 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
 
-                return ListView.builder(
-                  controller: _scrollController,
-                  reverse: true,
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final isMe = message.senderId == currentUserId;
+                return _pickedImage != null
+                    ? Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child:
+                                kIsWeb
+                                    ? Image.network(
+                                      _pickedImage!.path,
 
-                    return MessageBubble(
-                      message: message,
-                      isMe: isMe,
-                      onReply: () {
-                        setState(() {
-                          _replyToMessage = message;
-                        });
+                                      fit: BoxFit.cover,
+                                    )
+                                    : Image.file(
+                                      File(_pickedImage!.path),
+
+                                      fit: BoxFit.cover,
+                                    ),
+                          ),
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: IconButton(
+                              icon: Icon(Icons.close, color: Colors.red),
+                              onPressed: () {
+                                setState(() {
+                                  _pickedImage = null;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                    : ListView.builder(
+                      controller: _scrollController,
+                      reverse: true,
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final message = messages[index];
+                        final isMe = message.senderId == currentUserId;
+
+                        return MessageBubble(
+                          message: message,
+                          isMe: isMe,
+                          onReply: () {
+                            setState(() {
+                              _replyToMessage = message;
+                            });
+                          },
+                        );
                       },
                     );
-                  },
-                );
               },
             ),
           ),
@@ -155,7 +241,10 @@ class _ChatScreenState extends State<ChatScreen> {
             padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 15.w),
             child: Row(
               children: [
-                Image.asset("assets/추가-007.png"),
+                InkWell(
+                  onTap: _pickImage,
+                  child: Image.asset("assets/추가-007.png"),
+                ),
                 SizedBox(width: 10.w),
                 Expanded(
                   flex: 4,
@@ -180,14 +269,23 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 SizedBox(width: 10.w),
                 InkWell(
-                  onTap: _sendMessage,
+                  onTap: () async {
+                    showLoadingDialog(context);
+                    if (_pickedImage != null) {
+                      await _sendImageMessage();
+                    } else {
+                      await _sendMessage();
+                    }
+                    Navigator.pop(context);
+                  },
                   child: Container(
                     width: 50.w,
                     height: 37.h,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(50),
                       color:
-                          _messageController.text.isNotEmpty
+                          _messageController.text.isNotEmpty ||
+                                  _pickedImage != null
                               ? Colors.black
                               : Color(0xFFEEEEEE),
                     ),
@@ -365,7 +463,7 @@ class MessageBubble extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          if (message.lovedBy.length > 1 && isMe)
+                          if (message.lovedBy.isNotEmpty && isMe)
                             Flexible(
                               child: Text(
                                 message.lovedBy.length.toString(),
@@ -397,9 +495,29 @@ class MessageBubble extends StatelessWidget {
                                   bottomRight: Radius.circular(isMe ? 0 : 12),
                                 ),
                               ),
-                              child: Text(
-                                message.content,
-                                style: TextStyle(color: Colors.black),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (message.content.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 8.0,
+                                      ),
+                                      child: Text(
+                                        message.content,
+                                        style: TextStyle(color: Colors.black),
+                                      ),
+                                    ),
+                                  if (message.imageUrl!.isNotEmpty) ...[
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(
+                                        message.imageUrl!,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
 
                               /*                     Row(
@@ -426,6 +544,19 @@ class MessageBubble extends StatelessWidget {
                                   ), */
                             ),
                           ),
+                          if (message.lovedBy.isNotEmpty && !isMe)
+                            Flexible(
+                              child: Text(
+                                message.lovedBy.length.toString(),
+                                style: TextStyle(
+                                  color: const Color(0xFF343434),
+                                  fontSize: 14,
+                                  fontFamily: 'NotoSans',
+                                  fontWeight: FontWeight.w400,
+                                  height: 1.40,
+                                ),
+                              ),
+                            ),
                           if (!isMe)
                             InkWell(
                               onTap: () {

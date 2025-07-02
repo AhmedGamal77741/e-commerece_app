@@ -88,6 +88,8 @@ class _FriendsScreenState extends State<FriendsScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        actionsPadding: EdgeInsets.only(right: 5.w),
+
         title:
             searchMode
                 ? TextField(
@@ -131,7 +133,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                   InkWell(
                     onTap: toggleEditMode,
                     child: Image.asset(
-                      'assets/015.png',
+                      'assets/block (1).png',
                       height: 30.sp,
                       width: 30.sp,
                       cacheWidth: 40,
@@ -142,37 +144,19 @@ class _FriendsScreenState extends State<FriendsScreen>
                   InkWell(
                     onTap: toggleEditMode,
                     child: Image.asset(
-                      'assets/014.png',
+                      'assets/delete.png',
                       height: 30.sp,
                       width: 30.sp,
                       cacheWidth: 40,
                       cacheHeight: 40,
                     ),
                   ),
-                  /*  TextButton(
-                    onPressed:
-                        selectedChatIds.isEmpty
-                            ? null
-                            : () {
-                              // Handle delete or other action for selectedChatIds
-                              // Example: chatService.deleteChats(selectedChatIds);
-                              toggleEditMode();
-                            },
-                    child: Text(
-                      'Delete',
-                      style: TextStyle(
-                        color:
-                            selectedChatIds.isEmpty ? Colors.grey : Colors.red,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-                  ), */
                 ]
                 : [
                   InkWell(
                     onTap: toggleEditMode,
                     child: Image.asset(
-                      'assets/002 (1).png',
+                      'assets/edit mode.png',
                       height: 30.sp,
                       width: 30.sp,
                       cacheWidth: 40,
@@ -347,7 +331,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                   if (showSubtitle) ...[
                     const SizedBox(height: 2),
                     Text(
-                      friend.isOnline ? '온라인' : '오프라인',
+                      friend.bio ?? '',
                       style: const TextStyle(fontSize: 13, color: Colors.grey),
                     ),
                   ],
