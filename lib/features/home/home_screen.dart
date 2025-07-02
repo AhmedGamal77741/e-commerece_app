@@ -4,6 +4,7 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/ui/chats_navbar.dart';
 import 'package:ecommerece_app/features/chat/ui/friends_screen.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
@@ -41,29 +42,55 @@ class _HomeScreenState extends State<HomeScreen>
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ChatsNavbar()),
+              StreamBuilder(
+                stream: FirebaseFirestore.instance
+                    .collection('chatRooms')
+                    .where(
+                      'participants',
+                      arrayContains: FirebaseAuth.instance.currentUser!.uid,
+                    )
+                    .orderBy('lastMessageTime', descending: true)
+                    .snapshots()
+                    .map(
+                      (snapshot) =>
+                          snapshot.docs
+                              .map((doc) => ChatRoomModel.fromMap(doc.data()))
+                              .toList(),
+                    ),
+                builder: (context, snapshot) {
+                  final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+                  bool hasUnread = false;
+                  if (snapshot.hasData) {
+                    final chatRooms = snapshot.data!;
+                    hasUnread = chatRooms.any(
+                      (room) => (room.unreadCount[currentUserId] ?? 0) > 0,
+                    );
+                  }
+                  return InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ChatsNavbar()),
+                      );
+                    },
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        ImageIcon(AssetImage('assets/005 3.png'), size: 21),
+                        if (hasUnread)
+                          Positioned(
+                            left: -10.w,
+                            top: -5.h,
+                            child: Image.asset(
+                              'assets/notification.png',
+                              width: 18.w,
+                              height: 18.h,
+                            ),
+                          ),
+                      ],
+                    ),
                   );
                 },
-                child: Stack(
-                  clipBehavior: Clip.none, // Allow overflow
-
-                  children: [
-                    ImageIcon(AssetImage('assets/005 3.png'), size: 21),
-                    Positioned(
-                      left: -10.w,
-                      top: -5.h,
-                      child: Image.asset(
-                        'assets/notification.png',
-                        width: 18.w,
-                        height: 18.h,
-                      ),
-                    ),
-                  ],
-                ),
               ),
               TabBar(
                 labelStyle: TextStyle(

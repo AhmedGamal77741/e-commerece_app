@@ -312,7 +312,9 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                 keyboardType: TextInputType.phone,
                 validator: (val) {
                   if (val!.isEmpty) return null;
-                  final koreanReg = RegExp(r'^(01[016789])-?\d{3,4}-?\d{4} $');
+                  final koreanReg = RegExp(
+                    r'^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$',
+                  );
                   if (!koreanReg.hasMatch(val)) {
                     return '유효한 한국 전화번호를 입력하세요';
                   }
