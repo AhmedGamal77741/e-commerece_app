@@ -323,15 +323,16 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
                             color: Colors.black,
                           ),
                         ),
-
-                        const SizedBox(height: 2),
-                        Text(
-                          '오프라인',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey,
+                        if (user.bio != null && user.bio!.isNotEmpty) ...{
+                          const SizedBox(height: 2),
+                          Text(
+                            user.bio.toString(),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
                           ),
-                        ),
+                        },
                       ],
                     ),
                   ),
