@@ -192,7 +192,11 @@ class _FriendsScreenState extends State<FriendsScreen>
             return const Center(child: CircularProgressIndicator());
           }
 
-          final friends = snapshot.data ?? [];
+          final allUsers = snapshot.data ?? [];
+          final friends =
+              allUsers.where((user) => user.type == 'user').toList();
+          final brands =
+              allUsers.where((user) => user.type == 'brand').toList();
 
           return Column(
             children: [
@@ -201,7 +205,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
                     _buildFavoriteSection(friends),
-                    _buildBrandSection(),
+                    _buildBrandSection(brands),
                   ],
                 ),
               ),
@@ -265,30 +269,44 @@ class _FriendsScreenState extends State<FriendsScreen>
     );
   }
 
-  Widget _buildBrandSection() {
+  Widget _buildBrandSection(List<MyUser> friends) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 24),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            '브랜드 152',
-            style: TextStyle(
+            '브랜드 ${friends.length}',
+            style: const TextStyle(
               fontSize: 14,
               color: Colors.grey,
               fontWeight: FontWeight.w500,
             ),
           ),
         ),
-        _buildBrandItem(
-          name: '팽이초콜릿',
-          profileImage: null,
-          backgroundColor: Colors.black,
-          textColor: Colors.white,
-        ),
-
-        const SizedBox(height: 100), // Space for bottom navigation
+        ...friends.map((friend) {
+          // Filter by search query
+          if (searchQuery.isNotEmpty &&
+              !friend.name.toLowerCase().contains(searchQuery)) {
+            return const SizedBox.shrink();
+          }
+          return _buildFriendItem(
+            friend: friend,
+            showSubtitle: true,
+            showCheckbox: editMode,
+          );
+        }).toList(),
+        /*         if (friends.length > 4) ...[
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFE5E5E5)),
+          const SizedBox(height: 16),
+          ...friends
+              .map(
+                (friend) =>
+                    _buildFriendItem(friend: friend, showSubtitle: true),
+              )
+              .toList(),
+        ], */
       ],
     );
   }

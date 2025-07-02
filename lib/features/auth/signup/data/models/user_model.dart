@@ -18,6 +18,7 @@ class MyUser {
   String? phoneNumber;
   String? tag;
   String? bio;
+  String type;
   MyUser({
     required this.userId,
     required this.email,
@@ -38,6 +39,7 @@ class MyUser {
     this.tag,
     this.bio,
     this.phoneNumber,
+    this.type = 'user',
   });
 
   static final empty = MyUser(
@@ -60,6 +62,7 @@ class MyUser {
     tag: '',
     bio: '',
     phoneNumber: '',
+    type: 'user',
   );
 
   // Database serialization methods (from MyUserEntity)
@@ -84,6 +87,7 @@ class MyUser {
       'tag': tag,
       'bio': bio,
       'phoneNumber': phoneNumber,
+      'type': type,
     };
   }
 
@@ -114,6 +118,7 @@ class MyUser {
       tag: doc['tag'] ?? '',
       bio: doc['bio'] ?? '',
       phoneNumber: doc['phoneNumber'] ?? '',
+      type: doc['type'] ?? 'user',
     );
   }
 
