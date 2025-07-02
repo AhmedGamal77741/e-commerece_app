@@ -1,6 +1,7 @@
 // screens/chat_screen.dart
 import 'dart:io';
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
+import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -67,19 +68,29 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _checkBlockState() async {
-    final currentUserDoc =
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUserId)
-            .get();
     final chatRoomDoc =
         await FirebaseFirestore.instance
             .collection('chatRooms')
             .doc(widget.chatRoomId)
             .get();
 
+    ChatRoomModel chatRoom = ChatRoomModel.fromMap(chatRoomDoc.data()!);
+    if (chatRoom.type != 'direct') {
+      setState(() {
+        _blocked = false;
+        _isBlocked = false;
+        _loadingBlockState = false;
+      });
+      return;
+    }
+    final currentUserDoc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .get();
+
     // Find the other user's ID (for direct chat)
-    final participants = List<String>.from(chatRoomDoc['participants']);
+    final participants = chatRoom.participants;
     final otherUserId = participants.firstWhere((id) => id != currentUserId);
 
     final otherUserDoc =
