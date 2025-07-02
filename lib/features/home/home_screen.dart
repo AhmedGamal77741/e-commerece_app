@@ -48,7 +48,22 @@ class _HomeScreenState extends State<HomeScreen>
                     MaterialPageRoute(builder: (context) => ChatsNavbar()),
                   );
                 },
-                child: ImageIcon(AssetImage('assets/005 3.png'), size: 21),
+                child: Stack(
+                  clipBehavior: Clip.none, // Allow overflow
+
+                  children: [
+                    ImageIcon(AssetImage('assets/005 3.png'), size: 21),
+                    Positioned(
+                      left: -10.w,
+                      top: -5.h,
+                      child: Image.asset(
+                        'assets/notification.png',
+                        width: 18.w,
+                        height: 18.h,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               TabBar(
                 labelStyle: TextStyle(
@@ -68,10 +83,12 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
         ),
-        body: TabBarView(children: [
-          _HomeFeedTab(scrollController: widget.scrollController),
-          FollowingTab(),
-        ]),
+        body: TabBarView(
+          children: [
+            _HomeFeedTab(scrollController: widget.scrollController),
+            FollowingTab(),
+          ],
+        ),
       ),
     );
   }
@@ -125,13 +142,16 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
         if (firebaseUser == null) {
           // Guest user: user info row and posts scroll together in a single ListView
           return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('posts')
-                .orderBy('createdAt', descending: true)
-                .snapshots(),
+            stream:
+                FirebaseFirestore.instance
+                    .collection('posts')
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator(color: Colors.black));
+                return Center(
+                  child: CircularProgressIndicator(color: Colors.black),
+                );
               }
               if (snapshot.hasError) {
                 return Center(child: Text('Error: ${snapshot.error}'));
@@ -164,7 +184,9 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                   height: 55.h,
                                   decoration: ShapeDecoration(
                                     image: DecorationImage(
-                                      image: AssetImage('assets/mypage_icon.png'),
+                                      image: AssetImage(
+                                        'assets/mypage_icon.png',
+                                      ),
                                       fit: BoxFit.cover,
                                     ),
                                     shape: OvalBorder(),
@@ -187,19 +209,22 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         '게스트 사용자',
                                         style: TextStyles.abeezee16px400wPblack,
                                       ),
                                       FutureBuilder(
-                                        future: FirebaseFirestore.instance
-                                            .collection('widgets')
-                                            .doc('placeholders')
-                                            .get(),
+                                        future:
+                                            FirebaseFirestore.instance
+                                                .collection('widgets')
+                                                .doc('placeholders')
+                                                .get(),
                                         builder: (context, snapshot) {
-                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                                          if (snapshot.connectionState ==
+                                              ConnectionState.waiting) {
                                             return const Center(
                                               child: CircularProgressIndicator(
                                                 color: Colors.black,
@@ -207,10 +232,13 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                             );
                                           }
                                           if (snapshot.hasError) {
-                                            return const Center(child: Text('Error'));
+                                            return const Center(
+                                              child: Text('Error'),
+                                            );
                                           }
                                           return Text(
-                                            snapshot.data!.data()!['outerPlaceholderText'],
+                                            snapshot.data!
+                                                .data()!['outerPlaceholderText'],
                                             style: TextStyle(
                                               color: const Color(0xFF5F5F5F),
                                               fontSize: 13.sp,
@@ -232,7 +260,8 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                       ],
                     );
                   } else {
-                    final post = posts[index - 1].data() as Map<String, dynamic>;
+                    final post =
+                        posts[index - 1].data() as Map<String, dynamic>;
                     if (post['postId'] == null) {
                       post['postId'] = posts[index - 1].id;
                     }
@@ -267,13 +296,16 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
             if (!currentUser.isSub) {
               // Non-premium user: user info row and posts scroll together in a single ListView
               return StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('posts')
-                    .orderBy('createdAt', descending: true)
-                    .snapshots(),
+                stream:
+                    FirebaseFirestore.instance
+                        .collection('posts')
+                        .orderBy('createdAt', descending: true)
+                        .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator(color: Colors.black));
+                    return Center(
+                      child: CircularProgressIndicator(color: Colors.black),
+                    );
                   }
                   if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
@@ -295,7 +327,9 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                 Flexible(
                                   child: InkWell(
                                     onTap: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
                                           content: Text("프리미엄 가입 후 이용가능합니다"),
                                         ),
@@ -318,7 +352,9 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                   flex: 4,
                                   child: InkWell(
                                     onTap: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
                                           content: Text("프리미엄 가입 후 이용가능합니다"),
                                         ),
@@ -328,33 +364,45 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                       padding: EdgeInsets.only(right: 10.w),
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             currentUser.name,
-                                            style: TextStyles.abeezee16px400wPblack,
+                                            style:
+                                                TextStyles
+                                                    .abeezee16px400wPblack,
                                           ),
                                           FutureBuilder(
-                                            future: FirebaseFirestore.instance
-                                                .collection('widgets')
-                                                .doc('placeholders')
-                                                .get(),
+                                            future:
+                                                FirebaseFirestore.instance
+                                                    .collection('widgets')
+                                                    .doc('placeholders')
+                                                    .get(),
                                             builder: (context, snapshot) {
-                                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                              if (snapshot.connectionState ==
+                                                  ConnectionState.waiting) {
                                                 return const Center(
-                                                  child: CircularProgressIndicator(
-                                                    color: Colors.black,
-                                                  ),
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        color: Colors.black,
+                                                      ),
                                                 );
                                               }
                                               if (snapshot.hasError) {
-                                                return const Center(child: Text('Error'));
+                                                return const Center(
+                                                  child: Text('Error'),
+                                                );
                                               }
                                               return Text(
-                                                snapshot.data!.data()!['outerPlaceholderText'],
+                                                snapshot.data!
+                                                    .data()!['outerPlaceholderText'],
                                                 style: TextStyle(
-                                                  color: const Color(0xFF5F5F5F),
+                                                  color: const Color(
+                                                    0xFF5F5F5F,
+                                                  ),
                                                   fontSize: 13.sp,
                                                   fontFamily: 'NotoSans',
                                                   fontWeight: FontWeight.w400,
@@ -374,7 +422,8 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                           ],
                         );
                       } else {
-                        final post = posts[index - 1].data() as Map<String, dynamic>;
+                        final post =
+                            posts[index - 1].data() as Map<String, dynamic>;
                         if (post['postId'] == null) {
                           post['postId'] = posts[index - 1].id;
                         }
@@ -394,13 +443,16 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
               userSnapshot.data!.get('blocked') ?? [],
             );
             return StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('posts')
-                  .orderBy('createdAt', descending: true)
-                  .snapshots(),
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('posts')
+                      .orderBy('createdAt', descending: true)
+                      .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator(color: Colors.black));
+                  return Center(
+                    child: CircularProgressIndicator(color: Colors.black),
+                  );
                 }
                 if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
@@ -408,20 +460,21 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                 // Filter posts
                 final List<DocumentSnapshot> filteredPosts =
                     (snapshot.data?.docs ?? []).where((doc) {
-                  Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-                  // Check if post is from a blocked user
-                  if (blockedUsers.contains(data['userId'])) {
-                    return false;
-                  }
-                  // Check if user marked post as not interested
-                  List<dynamic> notInterestedBy = List<dynamic>.from(
-                    data['notInterestedBy'] ?? [],
-                  );
-                  if (notInterestedBy.contains(currentUser.userId)) {
-                    return false;
-                  }
-                  return true;
-                }).toList();
+                      Map<String, dynamic> data =
+                          doc.data() as Map<String, dynamic>;
+                      // Check if post is from a blocked user
+                      if (blockedUsers.contains(data['userId'])) {
+                        return false;
+                      }
+                      // Check if user marked post as not interested
+                      List<dynamic> notInterestedBy = List<dynamic>.from(
+                        data['notInterestedBy'] ?? [],
+                      );
+                      if (notInterestedBy.contains(currentUser.userId)) {
+                        return false;
+                      }
+                      return true;
+                    }).toList();
                 return ListView.builder(
                   controller: controller,
                   itemCount: filteredPosts.length + 1, // +1 for user info row
@@ -438,26 +491,36 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                               Flexible(
                                 child: InkWell(
                                   onTap: () {
-                                    context.pushNamed(Routes.notificationsScreen);
+                                    context.pushNamed(
+                                      Routes.notificationsScreen,
+                                    );
                                   },
                                   child: StreamBuilder<QuerySnapshot>(
-                                    stream: FirebaseFirestore.instance
-                                        .collection('users')
-                                        .doc(currentUser.userId)
-                                        .collection('notifications')
-                                        .where('isRead', isEqualTo: false)
-                                        .limit(1)
-                                        .snapshots(),
+                                    stream:
+                                        FirebaseFirestore.instance
+                                            .collection('users')
+                                            .doc(currentUser.userId)
+                                            .collection('notifications')
+                                            .where('isRead', isEqualTo: false)
+                                            .limit(1)
+                                            .snapshots(),
                                     builder: (context, notifSnapshot) {
-                                      final hasUnread = notifSnapshot.hasData && notifSnapshot.data!.docs.isNotEmpty;
+                                      final hasUnread =
+                                          notifSnapshot.hasData &&
+                                          notifSnapshot.data!.docs.isNotEmpty;
                                       return Stack(
+                                        clipBehavior:
+                                            Clip.none, // Allow overflow
+
                                         children: [
                                           Container(
                                             width: 56.w,
                                             height: 55.h,
                                             decoration: ShapeDecoration(
                                               image: DecorationImage(
-                                                image: NetworkImage(currentUser.url.toString()),
+                                                image: NetworkImage(
+                                                  currentUser.url.toString(),
+                                                ),
                                                 fit: BoxFit.cover,
                                               ),
                                               shape: OvalBorder(),
@@ -465,15 +528,12 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                           ),
                                           if (hasUnread)
                                             Positioned(
-                                              right: 0.w,
+                                              left: 0.w,
                                               top: 0.h,
-                                              child: Container(
+                                              child: Image.asset(
+                                                'assets/notification.png',
                                                 width: 18.w,
                                                 height: 18.h,
-                                                decoration: ShapeDecoration(
-                                                  color: const Color(0xFFDA3A48),
-                                                  shape: OvalBorder(),
-                                                ),
                                               ),
                                             ),
                                         ],
@@ -492,31 +552,40 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                     padding: EdgeInsets.only(right: 10.w),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           currentUser.name.toString(),
-                                          style: TextStyles.abeezee16px400wPblack,
+                                          style:
+                                              TextStyles.abeezee16px400wPblack,
                                         ),
                                         FutureBuilder(
-                                          future: FirebaseFirestore.instance
-                                              .collection('widgets')
-                                              .doc('placeholders')
-                                              .get(),
+                                          future:
+                                              FirebaseFirestore.instance
+                                                  .collection('widgets')
+                                                  .doc('placeholders')
+                                                  .get(),
                                           builder: (context, snapshot) {
-                                            if (snapshot.connectionState == ConnectionState.waiting) {
+                                            if (snapshot.connectionState ==
+                                                ConnectionState.waiting) {
                                               return const Center(
-                                                child: CircularProgressIndicator(
-                                                  color: Colors.black,
-                                                ),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: Colors.black,
+                                                    ),
                                               );
                                             }
                                             if (snapshot.hasError) {
-                                              return const Center(child: Text('Error'));
+                                              return const Center(
+                                                child: Text('Error'),
+                                              );
                                             }
                                             return Text(
-                                              snapshot.data!.data()!['outerPlaceholderText'],
+                                              snapshot.data!
+                                                  .data()!['outerPlaceholderText'],
                                               style: TextStyle(
                                                 color: const Color(0xFF5F5F5F),
                                                 fontSize: 13.sp,
@@ -535,7 +604,9 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                 onPressed: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (context) => HomeSearch()),
+                                    MaterialPageRoute(
+                                      builder: (context) => HomeSearch(),
+                                    ),
                                   );
                                 },
                                 icon: Icon(Icons.search, size: 30.sp),
@@ -547,7 +618,9 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                         ],
                       );
                     } else {
-                      final post = filteredPosts[index - 1].data() as Map<String, dynamic>;
+                      final post =
+                          filteredPosts[index - 1].data()
+                              as Map<String, dynamic>;
                       return PostItem(
                         postId: post['postId'],
                         fromComments: false,
