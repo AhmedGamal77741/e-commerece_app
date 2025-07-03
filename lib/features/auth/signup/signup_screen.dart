@@ -24,7 +24,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final phoneController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
-  IconData iconPassword = Icons.visibility;
   bool obscurePassword = true;
   bool signUpRequired = false;
   String imgUrl = '';
@@ -177,14 +176,13 @@ class _SignupScreenState extends State<SignupScreen> {
                           onPressed: () {
                             setState(() {
                               obscurePassword = !obscurePassword;
-                              if (obscurePassword) {
-                                iconPassword = Icons.visibility_off;
-                              } else {
-                                iconPassword = Icons.visibility;
-                              }
                             });
                           },
-                          icon: Icon(iconPassword),
+                          icon: Icon(
+                            obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
                         ),
                         validator: (val) {
                           if (val!.isEmpty) {

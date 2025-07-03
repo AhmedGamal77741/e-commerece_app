@@ -42,53 +42,83 @@ class _HomeScreenState extends State<HomeScreen>
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              StreamBuilder(
-                stream: FirebaseFirestore.instance
-                    .collection('chatRooms')
-                    .where(
-                      'participants',
-                      arrayContains: FirebaseAuth.instance.currentUser!.uid,
-                    )
-                    .orderBy('lastMessageTime', descending: true)
-                    .snapshots()
-                    .map(
-                      (snapshot) =>
-                          snapshot.docs
-                              .map((doc) => ChatRoomModel.fromMap(doc.data()))
-                              .toList(),
-                    ),
-                builder: (context, snapshot) {
-                  final currentUserId = FirebaseAuth.instance.currentUser!.uid;
-                  bool hasUnread = false;
-                  if (snapshot.hasData) {
-                    final chatRooms = snapshot.data!;
-                    hasUnread = chatRooms.any(
-                      (room) => (room.unreadCount[currentUserId] ?? 0) > 0,
+              StreamBuilder<User?>(
+                stream: FirebaseAuth.instance.authStateChanges(),
+                builder: (context, authSnapshot) {
+                  final user = authSnapshot.data;
+                  if (user == null) {
+                    // Not authenticated: show disabled chat icon with tooltip
+                    return Tooltip(
+                      message: '로그인 후 채팅을 이용할 수 있습니다',
+                      child: Opacity(
+                        opacity: 0.4,
+                        child: InkWell(
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('로그인 후 채팅을 이용할 수 있습니다'),
+                              ),
+                            );
+                          },
+                          child: ImageIcon(
+                            AssetImage('assets/005 3.png'),
+                            size: 21,
+                          ),
+                        ),
+                      ),
                     );
                   }
-                  return InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => ChatsNavbar()),
+                  // Authenticated: show chat icon with unread badge
+                  return StreamBuilder(
+                    stream: FirebaseFirestore.instance
+                        .collection('chatRooms')
+                        .where('participants', arrayContains: user.uid)
+                        .orderBy('lastMessageTime', descending: true)
+                        .snapshots()
+                        .map(
+                          (snapshot) =>
+                              snapshot.docs
+                                  .map(
+                                    (doc) => ChatRoomModel.fromMap(doc.data()),
+                                  )
+                                  .toList(),
+                        ),
+                    builder: (context, snapshot) {
+                      final currentUserId = user.uid;
+                      bool hasUnread = false;
+                      if (snapshot.hasData) {
+                        final chatRooms = snapshot.data!;
+                        hasUnread = chatRooms.any(
+                          (room) => (room.unreadCount[currentUserId] ?? 0) > 0,
+                        );
+                      }
+                      return InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatsNavbar(),
+                            ),
+                          );
+                        },
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            ImageIcon(AssetImage('assets/005 3.png'), size: 21),
+                            if (hasUnread)
+                              Positioned(
+                                left: -10.w,
+                                top: -5.h,
+                                child: Image.asset(
+                                  'assets/notification.png',
+                                  width: 18.w,
+                                  height: 18.h,
+                                ),
+                              ),
+                          ],
+                        ),
                       );
                     },
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        ImageIcon(AssetImage('assets/005 3.png'), size: 21),
-                        if (hasUnread)
-                          Positioned(
-                            left: -10.w,
-                            top: -5.h,
-                            child: Image.asset(
-                              'assets/notification.png',
-                              width: 18.w,
-                              height: 18.h,
-                            ),
-                          ),
-                      ],
-                    ),
                   );
                 },
               ),

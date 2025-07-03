@@ -19,8 +19,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final emailController = TextEditingController();
 
-  IconData iconPassword = Icons.visibility;
-
   bool obsecurepassword = true;
 
   final _formKey = GlobalKey<FormState>();
@@ -92,14 +90,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () {
                             setState(() {
                               obsecurepassword = !obsecurepassword;
-                              if (obsecurepassword) {
-                                iconPassword = Icons.visibility_off;
-                              } else {
-                                iconPassword = Icons.visibility;
-                              }
                             });
                           },
-                          icon: Icon(iconPassword),
+                          icon: Icon(
+                            obsecurepassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
                         ),
                       ),
                     ],
