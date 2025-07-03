@@ -13,12 +13,16 @@ class ChatService {
 
   String get currentUserId => _auth.currentUser?.uid ?? '';
 
-  // Create or get direct chat room (updated with friend check)
+  // Create or get direct chat room (updated with friend check, support exception)
   Future<String?> createDirectChatRoom(String otherUserId) async {
-    // Check if users are friends
-    final areFriends = await _friendsService.areFriends(otherUserId);
-    if (!areFriends) {
-      throw Exception('You can only chat with friends');
+    // Allow support chat for everyone
+    const supportUserId = 'lln0z9W5TKcIYXCzxkjrj9iCEqA2';
+    if (otherUserId != supportUserId) {
+      // Check if users are friends
+      final areFriends = await _friendsService.areFriends(otherUserId);
+      if (!areFriends) {
+        throw Exception('You can only chat with friends');
+      }
     }
 
     final participants = [currentUserId, otherUserId]..sort();
@@ -33,13 +37,14 @@ class ChatService {
           await _firestore.collection('users').doc(otherUserId).get();
       final otherUser = MyUser.fromDocument(otherUserDoc.data()!);
 
+      final now = DateTime.now();
       final chatRoom = ChatRoomModel(
         id: chatRoomId,
         name: otherUser.name,
         type: 'direct',
         participants: participants,
-        lastMessageTime: DateTime.now(),
-        createdAt: DateTime.now(),
+        lastMessageTime: now,
+        createdAt: now,
         unreadCount: {currentUserId: 0, otherUserId: 0},
       );
 
@@ -48,6 +53,14 @@ class ChatService {
       // Update participants' chatRooms list
       await _updateUserChatRooms(currentUserId, chatRoomId);
       await _updateUserChatRooms(otherUserId, chatRoomId);
+    } else {
+      // If chat room exists but lastMessageTime is missing, set it
+      final data = chatRoomDoc.data();
+      if (data != null && !data.containsKey('lastMessageTime')) {
+        await chatRoomRef.update({
+          'lastMessageTime': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
     }
 
     return chatRoomId;
@@ -191,7 +204,8 @@ class ChatService {
   }
 
   Future<void> resetDeletedBy(String chatRoomId) async {
-    await _firestore.collection('chatRooms').doc(chatRoomId).set({
+    // Use update to avoid overwriting the entire document
+    await _firestore.collection('chatRooms').doc(chatRoomId).update({
       'deletedBy': [],
     });
   }

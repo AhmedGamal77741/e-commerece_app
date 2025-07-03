@@ -10,6 +10,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:ecommerece_app/features/chat/services/chat_service.dart';
+import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 
 class UserOptionsContainer extends StatefulWidget {
   final bool isSub;
@@ -22,6 +24,47 @@ class UserOptionsContainer extends StatefulWidget {
 class _UserOptionsContainerState extends State<UserOptionsContainer>
     with RouteAware {
   final user = FirebaseAuth.instance.currentUser;
+  final ChatService _chatService = ChatService();
+  final String supportUserId = 'lln0z9W5TKcIYXCzxkjrj9iCEqA2';
+
+  Future<void> openSupportChat(BuildContext context) async {
+    if (user == null) return;
+    if (user?.uid == supportUserId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('고객센터 계정에서는 고객센터 채팅을 이용할 수 없습니다.')),
+      );
+      return;
+    }
+    String? chatRoomId;
+    try {
+      chatRoomId = await _chatService.createDirectChatRoom(supportUserId);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('고객센터 채팅방 생성에 실패했습니다.')));
+      return;
+    }
+    // Get support user name (optional, fallback to '고객센터')
+    String supportName = '고객센터';
+    try {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(supportUserId)
+              .get();
+      if (doc.exists && doc.data()?['name'] != null) {
+        supportName = doc.data()!['name'];
+      }
+    } catch (_) {}
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) =>
+                ChatScreen(chatRoomId: chatRoomId!, chatRoomName: supportName),
+      ),
+    );
+  }
 
   Future<void> resubscribeDialog(DateTime nextBillingDate) async {
     final formattedDate =
@@ -99,6 +142,7 @@ class _UserOptionsContainerState extends State<UserOptionsContainer>
     if (user == null) {
       return Center(child: Text('로그인이 필요합니다.'));
     }
+    final isSupport = user?.uid == supportUserId;
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream:
           FirebaseFirestore.instance
@@ -143,10 +187,38 @@ class _UserOptionsContainerState extends State<UserOptionsContainer>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('고객센터 연결', style: TextStyles.abeezee17px800wPblack),
-                Text(
-                  '고객센터 운영시간 : 10:00시 ~ 23:00시',
-                  style: TextStyles.abeezee11px400wP600,
+                Container(
+                  decoration: BoxDecoration(
+                    color: isSupport ? Colors.grey[200] : null,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: InkWell(
+                    onTap: isSupport ? null : () => openSupportChat(context),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8.0,
+                        horizontal: 4.0,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '고객센터 연결',
+                            style: TextStyles.abeezee17px800wPblack.copyWith(
+                              color: isSupport ? Colors.grey : null,
+                            ),
+                          ),
+                          Text(
+                            '고객센터 운영시간 : 10:00시 ~ 23:00시',
+                            style: TextStyles.abeezee11px400wP600.copyWith(
+                              color: isSupport ? Colors.grey : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
                 Divider(color: ColorsManager.primary100),
                 if (isSub == true && subStatus == 'active')

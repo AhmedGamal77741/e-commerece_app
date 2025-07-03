@@ -179,8 +179,16 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
         builder: (context, snapshot) {
           if (!snapshot.hasData)
             return const Center(child: CircularProgressIndicator());
+          // Show chats with type 'direct', missing type, or empty type
           final directChats =
-              snapshot.data!.where((chat) => chat.type == 'direct').toList();
+              snapshot.data!
+                  .where(
+                    (chat) =>
+                        chat.type == 'direct' ||
+                        chat.type == '' ||
+                        chat.type == null,
+                  )
+                  .toList();
           if (directChats.isEmpty)
             return const Center(child: Text('No direct chats.'));
           return ListView.builder(
@@ -267,10 +275,15 @@ class _DirectChatsScreenState extends State<DirectChatsScreen> {
                             ),
                           ),
                           if (chat.unreadCount[FirebaseAuth
-                                  .instance
-                                  .currentUser!
-                                  .uid]! >
-                              0)
+                                      .instance
+                                      .currentUser!
+                                      .uid] !=
+                                  null &&
+                              chat.unreadCount[FirebaseAuth
+                                      .instance
+                                      .currentUser!
+                                      .uid]! >
+                                  0)
                             Container(
                               width: 20,
                               height: 20,

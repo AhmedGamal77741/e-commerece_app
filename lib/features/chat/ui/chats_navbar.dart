@@ -4,6 +4,7 @@ import 'package:ecommerece_app/features/chat/ui/group_chats_screen.dart';
 import 'package:ecommerece_app/features/chat/widgets/expandable_FAB.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatsNavbar extends StatefulWidget {
   const ChatsNavbar({super.key});
@@ -15,11 +16,17 @@ class ChatsNavbar extends StatefulWidget {
 class _ChatsNavbarState extends State<ChatsNavbar> {
   int _selectedIndex = 0;
 
-  final List<Widget> widgetOptions = [
-    FriendsScreen(),
-    DirectChatsScreen(),
-    GroupChatsScreen(),
-  ];
+  final String supportUserId = 'lln0z9W5TKcIYXCzxkjrj9iCEqA2';
+
+  List<Widget> get widgetOptions {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.uid == supportUserId) {
+      // Support account: only direct chats
+      return [DirectChatsScreen()];
+    }
+    // Normal users: all tabs
+    return [FriendsScreen(), DirectChatsScreen(), GroupChatsScreen()];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -29,16 +36,26 @@ class _ChatsNavbarState extends State<ChatsNavbar> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isSupport = user != null && user.uid == supportUserId;
+    if (isSupport) {
+      // Support: only direct chats, no nav bar
+      return Scaffold(
+        body: DirectChatsScreen(),
+        floatingActionButton: null,
+        bottomNavigationBar: null,
+      );
+    }
+    // Normal users: full nav bar
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: widgetOptions),
       floatingActionButton: ExpandableFAB(),
-
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
         showSelectedLabels: true,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.black, // Same as unselected color
+        selectedItemColor: Colors.black,
         unselectedItemColor: Colors.grey[400],
         selectedLabelStyle: TextStyle(fontSize: 10),
         unselectedLabelStyle: TextStyle(fontSize: 10),

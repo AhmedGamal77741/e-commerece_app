@@ -91,7 +91,21 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Find the other user's ID (for direct chat)
     final participants = chatRoom.participants;
-    final otherUserId = participants.firstWhere((id) => id != currentUserId);
+    final otherUserId = participants.firstWhere(
+      (id) => id != currentUserId,
+      orElse: () => '',
+    );
+
+    if (otherUserId.isEmpty) {
+      // Handle the error: no other user in chat
+      setState(() {
+        _blocked = false;
+        _isBlocked = false;
+        _loadingBlockState = false;
+      });
+      // Optionally show a dialog or log the issue
+      return;
+    }
 
     final otherUserDoc =
         await FirebaseFirestore.instance
