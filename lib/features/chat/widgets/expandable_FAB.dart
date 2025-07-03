@@ -79,7 +79,6 @@ class _ExpandableFABState extends State<ExpandableFAB>
                           topRight: Radius.circular(40),
                           bottomLeft: Radius.circular(40),
                         ),
-
                         border: Border.all(color: Colors.grey[300]!, width: 1),
                         color: Colors.grey[200],
                         boxShadow: [],
@@ -91,7 +90,6 @@ class _ExpandableFABState extends State<ExpandableFAB>
                           Expanded(
                             child: _buildMenuItem(
                               icon: "assets/group_active_1.png",
-
                               label: '그룹 만들기',
                               onTap: () async {
                                 await showCreateGroupDialog(context, (
@@ -99,13 +97,11 @@ class _ExpandableFABState extends State<ExpandableFAB>
                                   userIds,
                                   groupImage,
                                 ) async {
-                                  // Call your ChatService.createGroupChatRoom here
                                   await ChatService().createGroupChatRoom(
                                     name: name,
                                     participantIds: userIds,
                                     groupImage: groupImage,
                                   );
-                                  // Show success/failure message if needed
                                 });
                                 _toggle();
                               },
@@ -120,9 +116,7 @@ class _ExpandableFABState extends State<ExpandableFAB>
                                 await showAddFriendDialog(context, (
                                   userId,
                                 ) async {
-                                  // Call your FriendsService.addFriend here
                                   await FriendsService().addFriend(userId);
-                                  // Show success/failure message if needed
                                 });
                                 _toggle();
                               },
@@ -137,9 +131,7 @@ class _ExpandableFABState extends State<ExpandableFAB>
                                 await showBlockUserDialog(context, (
                                   userId,
                                 ) async {
-                                  // Implement your block logic here
                                   await FriendsService().blockFriend(userId);
-                                  // Show success/failure message if needed
                                 });
                                 _toggle();
                               },
@@ -185,22 +177,34 @@ class _ExpandableFABState extends State<ExpandableFAB>
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('차단 친구'),
+            backgroundColor: Colors.white,
+            title: const Text('차단 친구', style: TextStyle(color: Colors.black)),
             content: TextField(
               controller: controller,
-              decoration: const InputDecoration(labelText: '유저 ID 또는 이름'),
+              style: const TextStyle(color: Colors.black),
+              decoration: const InputDecoration(
+                labelText: '유저 ID 또는 이름',
+                labelStyle: TextStyle(color: Colors.black54),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black26),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black),
+                ),
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('취소'),
+                child: const Text('취소', style: TextStyle(color: Colors.black)),
               ),
-              ElevatedButton(
+              TextButton(
+                style: TextButton.styleFrom(backgroundColor: Colors.black),
                 onPressed: () {
                   onBlock(controller.text.trim());
                   Navigator.pop(context);
                 },
-                child: const Text('차단'),
+                child: const Text('차단', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -218,22 +222,34 @@ class _ExpandableFABState extends State<ExpandableFAB>
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('친구 추가'),
+            backgroundColor: Colors.white,
+            title: const Text('친구 추가', style: TextStyle(color: Colors.black)),
             content: TextField(
               controller: controller,
-              decoration: const InputDecoration(labelText: '유저 ID 또는 이름'),
+              style: const TextStyle(color: Colors.black),
+              decoration: const InputDecoration(
+                labelText: '유저 ID 또는 이름',
+                labelStyle: TextStyle(color: Colors.black54),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black26),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black),
+                ),
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('취소'),
+                child: const Text('취소', style: TextStyle(color: Colors.black)),
               ),
-              ElevatedButton(
+              TextButton(
+                style: TextButton.styleFrom(backgroundColor: Colors.black),
                 onPressed: () {
                   onAdd(controller.text.trim());
                   Navigator.pop(context);
                 },
-                child: const Text('추가'),
+                child: const Text('추가', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -248,7 +264,6 @@ class _ExpandableFABState extends State<ExpandableFAB>
     final nameController = TextEditingController();
     List<String> selectedUserIds = [];
     String? groupImagePath;
-
     final friends = await FriendsService().getFriendsStream().first;
 
     await showDialog(
@@ -257,13 +272,18 @@ class _ExpandableFABState extends State<ExpandableFAB>
           (context) => StatefulBuilder(
             builder:
                 (context, setState) => AlertDialog(
-                  title: const Text('그룹 만들기'),
-                  content: SingleChildScrollView(
+                  backgroundColor: Colors.white,
+                  title: const Text(
+                    '그룹 만들기',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                  content: SizedBox(
+                    width: 350,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Group image picker
-                        Flexible(
+                        Center(
                           child: GestureDetector(
                             onTap: () async {
                               groupImagePath =
@@ -288,62 +308,80 @@ class _ExpandableFABState extends State<ExpandableFAB>
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Flexible(
-                          child: TextField(
-                            controller: nameController,
-                            decoration: const InputDecoration(
-                              labelText: '그룹 이름',
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: nameController,
+                          style: const TextStyle(color: Colors.black),
+                          decoration: const InputDecoration(
+                            labelText: '그룹 이름',
+                            labelStyle: TextStyle(color: Colors.black54),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.black26),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.black),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        const Text('친구 선택'),
-                        Flexible(
-                          child: SizedBox(
-                            height: 180,
-                            child: ListView(
-                              children:
-                                  friends.map((user) {
-                                    return CheckboxListTile(
-                                      value: selectedUserIds.contains(
-                                        user.userId,
+                        const SizedBox(height: 16),
+                        const Text(
+                          '친구 선택',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: friends.length,
+                            itemBuilder: (context, idx) {
+                              final user = friends[idx];
+                              return CheckboxListTile(
+                                value: selectedUserIds.contains(user.userId),
+                                title: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundImage:
+                                          user.url.isNotEmpty
+                                              ? NetworkImage(user.url)
+                                              : null,
+                                      child:
+                                          user.url.isEmpty
+                                              ? Text(
+                                                user.name.isNotEmpty
+                                                    ? user.name[0]
+                                                    : '?',
+                                                style: const TextStyle(
+                                                  color: Colors.black,
+                                                ),
+                                              )
+                                              : null,
+                                    ),
+                                    SizedBox(width: 10.w),
+                                    Text(
+                                      user.name,
+                                      style: const TextStyle(
+                                        color: Colors.black,
                                       ),
-                                      title: Row(
-                                        children: [
-                                          Flexible(
-                                            child: CircleAvatar(
-                                              backgroundImage:
-                                                  user.url != null &&
-                                                          user.url.isNotEmpty
-                                                      ? NetworkImage(user.url)
-                                                      : null,
-                                              child:
-                                                  (user.url.isEmpty)
-                                                      ? Text(
-                                                        user.name.isNotEmpty
-                                                            ? user.name[0]
-                                                            : '?',
-                                                      )
-                                                      : null,
-                                            ),
-                                          ),
-                                          SizedBox(width: 10.w),
-                                          Flexible(child: Text(user.name)),
-                                        ],
-                                      ),
-                                      onChanged: (checked) {
-                                        setState(() {
-                                          if (checked == true) {
-                                            selectedUserIds.add(user.userId);
-                                          } else {
-                                            selectedUserIds.remove(user.userId);
-                                          }
-                                        });
-                                      },
-                                    );
-                                  }).toList(),
-                            ),
+                                    ),
+                                  ],
+                                ),
+                                onChanged: (checked) {
+                                  setState(() {
+                                    if (checked == true) {
+                                      selectedUserIds.add(user.userId);
+                                    } else {
+                                      selectedUserIds.remove(user.userId);
+                                    }
+                                  });
+                                },
+                                checkColor: Colors.white,
+                                activeColor: Colors.black,
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -352,9 +390,15 @@ class _ExpandableFABState extends State<ExpandableFAB>
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('취소'),
+                      child: const Text(
+                        '취소',
+                        style: TextStyle(color: Colors.black),
+                      ),
                     ),
-                    ElevatedButton(
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.black,
+                      ),
                       onPressed: () {
                         onCreate(
                           nameController.text,
@@ -363,7 +407,10 @@ class _ExpandableFABState extends State<ExpandableFAB>
                         );
                         Navigator.pop(context);
                       },
-                      child: const Text('생성'),
+                      child: const Text(
+                        '생성',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ],
                 ),
