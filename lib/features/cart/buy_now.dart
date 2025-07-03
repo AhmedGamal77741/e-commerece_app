@@ -36,6 +36,8 @@ class _BuyNowState extends State<BuyNow> {
   final deliveryInstructionsController = TextEditingController();
   final cashReceiptController = TextEditingController();
   final phoneController = TextEditingController();
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
   int selectedOption = 1;
   final _formKey = GlobalKey<FormState>();
   Address address = Address(
@@ -81,6 +83,8 @@ class _BuyNowState extends State<BuyNow> {
 
   Future<void> _handlePlaceOrder(int totalPrice, String uid) async {
     if (!_formKey.currentState!.validate()) return;
+    // Save name/phone/email to cache before placing order (for consistency with PlaceOrder)
+    await _saveCachedUserValues();
     setState(() {
       isProcessing = true;
     });
@@ -142,6 +146,8 @@ class _BuyNowState extends State<BuyNow> {
         'carrierId': '',
         'isSent': false,
         'phoneNo': phoneController.text.trim(),
+        'name': nameController.text.trim(),
+        'email': emailController.text.trim(),
       };
       await pendingOrderRef.set(orderData);
       final payerId =
@@ -157,6 +163,8 @@ class _BuyNowState extends State<BuyNow> {
             phoneController.text.trim(),
             paymentId,
             payerId,
+            nameController.text.trim(),
+            emailController.text.trim(),
           );
         } else {
           _launchBankPaymentPage(
@@ -164,6 +172,8 @@ class _BuyNowState extends State<BuyNow> {
             uid,
             phoneController.text.trim(),
             paymentId,
+            nameController.text.trim(),
+            emailController.text.trim(),
           );
         }
       } else {
@@ -174,6 +184,8 @@ class _BuyNowState extends State<BuyNow> {
             phoneController.text.trim(),
             paymentId,
             payerId,
+            nameController.text.trim(),
+            emailController.text.trim(),
           );
         } else {
           _launchCardPaymentPage(
@@ -181,6 +193,8 @@ class _BuyNowState extends State<BuyNow> {
             uid,
             phoneController.text.trim(),
             paymentId,
+            nameController.text.trim(),
+            emailController.text.trim(),
           );
         }
       }
@@ -245,6 +259,8 @@ class _BuyNowState extends State<BuyNow> {
                           : (userCard != null
                               ? userCard!['payerId'] as String?
                               : null);
+                  final name = data['name'] ?? '';
+                  final email = data['email'] ?? '';
                   if (paymentMethod == 0) {
                     if (payerId != null && payerId.isNotEmpty) {
                       _launchBankRpaymentPage(
@@ -253,6 +269,8 @@ class _BuyNowState extends State<BuyNow> {
                         data['phoneNo'] ?? '',
                         data['paymentId'] ?? '',
                         payerId,
+                        name,
+                        email,
                       );
                     } else {
                       _launchBankPaymentPage(
@@ -260,6 +278,8 @@ class _BuyNowState extends State<BuyNow> {
                         data['userId'] ?? uid,
                         data['phoneNo'] ?? '',
                         data['paymentId'] ?? '',
+                        name,
+                        email,
                       );
                     }
                   } else {
@@ -270,6 +290,8 @@ class _BuyNowState extends State<BuyNow> {
                         data['phoneNo'] ?? '',
                         data['paymentId'] ?? '',
                         payerId,
+                        name,
+                        email,
                       );
                     } else {
                       _launchCardPaymentPage(
@@ -277,6 +299,8 @@ class _BuyNowState extends State<BuyNow> {
                         data['userId'] ?? uid,
                         data['phoneNo'] ?? '',
                         data['paymentId'] ?? '',
+                        name,
+                        email,
                       );
                     }
                   }
@@ -465,6 +489,27 @@ class _BuyNowState extends State<BuyNow> {
   void initState() {
     super.initState();
     _fetchUserPaymentInfo();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCachedUserValues();
+    });
+  }
+
+  Future<void> _loadCachedUserValues() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('usercached_values')
+            .doc(uid)
+            .get();
+    if (doc.exists) {
+      final data = doc.data();
+      if (data != null) {
+        nameController.text = data['name'] ?? '';
+        emailController.text = data['email'] ?? '';
+        phoneController.text = data['phone'] ?? '';
+      }
+    }
   }
 
   Future<void> _fetchUserPaymentInfo() async {
@@ -986,15 +1031,41 @@ class _BuyNowState extends State<BuyNow> {
                         },
                       ),
                       UnderlineTextField(
-                        controller: phoneController,
-                        hintText: '전화번호 ',
+                        controller: nameController,
+                        hintText: '이름',
                         obscureText: false,
-                        keyboardType: TextInputType.phone,
+                        keyboardType: TextInputType.text,
                         validator: (val) {
                           if (val!.isEmpty) {
                             return '이름을 입력하세요';
                           } else if (val.length > 30) {
                             return '이름이 너무 깁니다';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 10.h),
+                      UnderlineTextField(
+                        controller: emailController,
+                        hintText: '이메일',
+                        obscureText: false,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (val) {
+                          if (val!.isEmpty) {
+                            return '이메일을 입력하세요';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 10.h),
+                      UnderlineTextField(
+                        controller: phoneController,
+                        hintText: '전화번호',
+                        obscureText: false,
+                        keyboardType: TextInputType.phone,
+                        validator: (val) {
+                          if (val!.isEmpty) {
+                            return '전화번호를 입력하세요';
                           }
                           return null;
                         },
@@ -1120,9 +1191,11 @@ class _BuyNowState extends State<BuyNow> {
     String userId,
     String phoneNo,
     String paymentId,
+    String userName,
+    String email,
   ) async {
     final url = Uri.parse(
-      'https://pay.pang2chocolate.com/p-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo',
+      'https://pay.pang2chocolate.com/p-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&userName=$userName&email=$email',
     );
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
@@ -1137,9 +1210,11 @@ class _BuyNowState extends State<BuyNow> {
     String phoneNo,
     String paymentId,
     String payerId,
+    String userName,
+    String email,
   ) async {
     final url = Uri.parse(
-      'https://pay.pang2chocolate.com/r-p-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&payerId=$payerId',
+      'https://pay.pang2chocolate.com/r-p-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&payerId=$payerId&userName=$userName&email=$email',
     );
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
@@ -1153,9 +1228,11 @@ class _BuyNowState extends State<BuyNow> {
     String userId,
     String phoneNo,
     String paymentId,
+    String userName,
+    String email,
   ) async {
     final url = Uri.parse(
-      'https://pay.pang2chocolate.com/b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo',
+      'https://pay.pang2chocolate.com/b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&userName=$userName&email=$email',
     );
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
@@ -1170,15 +1247,31 @@ class _BuyNowState extends State<BuyNow> {
     String phoneNo,
     String paymentId,
     String payerId,
+    String userName,
+    String email,
   ) async {
     final url = Uri.parse(
-      'https://pay.pang2chocolate.com/r-b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&payerId=$payerId',
+      'https://pay.pang2chocolate.com/r-b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&payerId=$payerId&userName=$userName&email=$email',
     );
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     } else {
       throw 'Could not launch $url';
     }
+  }
+
+  Future<void> _saveCachedUserValues() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    await FirebaseFirestore.instance
+        .collection('usercached_values')
+        .doc(uid)
+        .set({
+          'userId': uid,
+          'name': nameController.text.trim(),
+          'email': emailController.text.trim(),
+          'phone': phoneController.text.trim(),
+        }, SetOptions(merge: true));
   }
 
   Future<bool> isPaymentCompleted(String orderId, String uid) async {
