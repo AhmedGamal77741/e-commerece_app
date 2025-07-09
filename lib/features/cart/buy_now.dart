@@ -142,7 +142,7 @@ class _BuyNowState extends State<BuyNow> {
         'orderStatus': 'pending',
         'status': 'pending',
         'isRequested': false,
-        'deliveryManagerIds': [''],
+        'deliveryManagerIds': [widget.product.deliveryManagerId],
         'carrierId': '',
         'isSent': false,
         'phoneNo': phoneController.text.trim(),
