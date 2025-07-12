@@ -154,8 +154,6 @@ class _OrderHistoryState extends State<OrderHistory> {
                                                           userId: user.uid,
                                                           orderId:
                                                               data['orderId'],
-                                                          amount:
-                                                              data['totalPrice'],
                                                         ),
                                                   ),
                                                 );
@@ -334,26 +332,25 @@ Future<void> deleteOrder(
       return;
     }
 
-    // 5. Call Cloud Function (onCall, expects {uid, orderId, refundTotal})
+    // 5. Call Cloud Function (onCall, expects {uid, orderId, type})
     final callable = FirebaseFunctions.instance.httpsCallable('requestRefund');
     final result = await callable.call({
       'uid': uid,
       'orderId': orderId,
-      'refundTotal': refundTotal,
+      'type': 'cancel',
     });
 
     navigator.pop(); // Remove loading
 
     final data = result.data;
-    print('🟡 Refund response: $data');
-    if (data != null && data['status'] == 'refunded') {
+    if (data != null &&
+        (data['status'] == 'refunded' || data['status'] == 'canceled')) {
       scaffoldMessenger.showSnackBar(
-        const SnackBar(content: Text('주문이 성공적으로 취소되고 환불되었습니다.')),
+        const SnackBar(content: Text('주문이 성공적으로 취소되었습니다.')),
       );
     } else {
-      String errorMsg = data != null ? data.toString() : '알 수 없는 오류';
       scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text('환불 처리에 실패했습니다. 관리자에게 문의하세요. ($errorMsg)')),
+        const SnackBar(content: Text('주문 취소에 실패했습니다. 다시 시도해주세요.')),
       );
     }
   } catch (e) {

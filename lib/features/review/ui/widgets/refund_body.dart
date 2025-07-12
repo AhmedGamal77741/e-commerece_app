@@ -14,14 +14,9 @@ class RefundBody extends StatelessWidget {
   // final accountOwnerController = TextEditingController();
   final String userId;
   final String orderId;
-  final int amount;
+
   final _formKey = GlobalKey<FormState>();
-  RefundBody({
-    super.key,
-    required this.userId,
-    required this.orderId,
-    required this.amount,
-  });
+  RefundBody({super.key, required this.userId, required this.orderId});
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +149,6 @@ class RefundBody extends StatelessWidget {
                 'refundId': refundId,
                 'userId': userId,
                 'orderId': orderId,
-                'amount': amount,
                 'reason': reasonController.text.trim(),
                 'createdAt': DateTime.now().toIso8601String(),
               };
