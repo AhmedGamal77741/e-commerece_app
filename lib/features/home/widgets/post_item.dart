@@ -66,6 +66,8 @@ class PostItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (!fromComments) ...{
+                      SizedBox(width: 10.w),
+
                       // User Avatar
                       Flexible(
                         child: Padding(
@@ -100,7 +102,7 @@ class PostItem extends StatelessWidget {
                           padding:
                               fromComments
                                   ? EdgeInsets.only(right: 30.w, left: 30.w)
-                                  : EdgeInsets.only(right: 10.w, left: 10.w),
+                                  : EdgeInsets.only(right: 0.w, left: 10.w),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -256,6 +258,7 @@ class PostItem extends StatelessWidget {
                                                   ? IconButton(
                                                     icon: Icon(
                                                       Icons.more_horiz,
+                                                      size: 18.sp,
                                                     ),
                                                     onPressed: () {
                                                       showModalBottomSheet(
@@ -506,6 +509,7 @@ class PostItem extends StatelessWidget {
                                                   : IconButton(
                                                     icon: Icon(
                                                       Icons.more_horiz,
+                                                      size: 18.sp,
                                                     ),
                                                     onPressed: () {
                                                       showPostMenu(

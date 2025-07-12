@@ -104,7 +104,10 @@ class _HomeScreenState extends State<HomeScreen>
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            ImageIcon(AssetImage('assets/005 3.png'), size: 21),
+                            ImageIcon(
+                              AssetImage('assets/005 3.png'),
+                              size: 24.sp,
+                            ),
                             if (hasUnread)
                               Positioned(
                                 left: -10.w,
@@ -227,6 +230,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
+                            SizedBox(width: 10.w),
                             Flexible(
                               child: InkWell(
                                 onTap: () {
@@ -273,6 +277,8 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                         '게스트 사용자',
                                         style: TextStyles.abeezee16px400wPblack,
                                       ),
+                                      SizedBox(height: 10.h),
+
                                       FutureBuilder(
                                         future:
                                             FirebaseFirestore.instance
@@ -381,6 +387,8 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
+                                SizedBox(width: 10.w),
+
                                 Flexible(
                                   child: InkWell(
                                     onTap: () {
@@ -432,6 +440,8 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                                 TextStyles
                                                     .abeezee16px400wPblack,
                                           ),
+                                          SizedBox(height: 10.h),
+
                                           FutureBuilder(
                                             future:
                                                 FirebaseFirestore.instance
@@ -545,6 +555,8 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
+                              SizedBox(width: 10.w),
+
                               Flexible(
                                 child: InkWell(
                                   onTap: () {
@@ -614,11 +626,37 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          currentUser.name.toString(),
-                                          style:
-                                              TextStyles.abeezee16px400wPblack,
+                                        Row(
+                                          children: [
+                                            Text(
+                                              currentUser.name.toString(),
+                                              style:
+                                                  TextStyles
+                                                      .abeezee16px400wPblack,
+                                            ),
+                                            Spacer(),
+                                            InkWell(
+                                              onTap: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder:
+                                                        (context) =>
+                                                            HomeSearch(),
+                                                  ),
+                                                );
+                                              },
+                                              child: ImageIcon(
+                                                AssetImage('assets/search.png'),
+                                                color: Colors.black,
+                                                size: 25.sp,
+                                              ),
+                                            ),
+                                            SizedBox(width: 5.w),
+                                          ],
                                         ),
+                                        SizedBox(height: 10.h),
+
                                         FutureBuilder(
                                           future:
                                               FirebaseFirestore.instance
@@ -656,17 +694,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                     ),
                                   ),
                                 ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => HomeSearch(),
-                                    ),
-                                  );
-                                },
-                                icon: Icon(Icons.search, size: 30.sp),
                               ),
                             ],
                           ),

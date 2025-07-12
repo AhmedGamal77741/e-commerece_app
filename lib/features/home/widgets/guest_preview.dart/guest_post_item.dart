@@ -34,6 +34,8 @@ class GuestPostItem extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                SizedBox(width: 10.w),
+
                 // User Avatar
                 Flexible(
                   child: Padding(
