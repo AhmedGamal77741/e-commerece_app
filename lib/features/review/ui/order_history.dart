@@ -154,6 +154,8 @@ class _OrderHistoryState extends State<OrderHistory> {
                                                           userId: user.uid,
                                                           orderId:
                                                               data['orderId'],
+                                                          amount:
+                                                              data['totalPrice'],
                                                         ),
                                                   ),
                                                 );

@@ -11,10 +11,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class ExchangeOrRefund extends StatefulWidget {
   final String userId;
   final String orderId;
+  final int amount;
   const ExchangeOrRefund({
     super.key,
     required this.userId,
     required this.orderId,
+    required this.amount,
   });
 
   @override
@@ -73,7 +75,11 @@ class _ExchangeOrRefundState extends State<ExchangeOrRefund> {
                 ),
                 verticalSpace(50),
                 isRefund
-                    ? RefundBody(userId: widget.userId, orderId: widget.orderId)
+                    ? RefundBody(
+                      userId: widget.userId,
+                      orderId: widget.orderId,
+                      amount: widget.amount,
+                    )
                     : ExchangeBody(
                       userId: widget.userId,
                       orderId: widget.orderId,
