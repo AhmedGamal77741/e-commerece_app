@@ -60,7 +60,6 @@ class _OrderHistoryState extends State<OrderHistory> {
                         Divider(color: ColorsManager.primary300),
                 itemBuilder: (context, index) {
                   final data = orders[index].data() as Map<String, dynamic>;
-
                   return FutureBuilder<Map<String, dynamic>>(
                     future: fetchProductDetails(data['productId']),
                     builder: (context, productSnapshot) {
@@ -68,14 +67,12 @@ class _OrderHistoryState extends State<OrderHistory> {
                           ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       }
-
                       if (!productSnapshot.hasData ||
                           productSnapshot.data!.isEmpty) {
                         return const Center(
                           child: Text('No products found for this order.'),
                         );
                       }
-
                       // Get the product data
                       final product = productSnapshot.data!;
                       print(isDispatched(product, data['orderDate']));
@@ -146,7 +143,6 @@ class _OrderHistoryState extends State<OrderHistory> {
                                               txt: '교환 · 반품 신청',
                                               style:
                                                   TextStyles.abeezee14px400wW,
-
                                               func: () {
                                                 Navigator.push(
                                                   context,
@@ -190,8 +186,6 @@ class _OrderHistoryState extends State<OrderHistory> {
                     },
                   );
                 },
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
               ),
             );
           },
