@@ -4,14 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
-Future<String> uploadImageToFirebaseStorage() async {
+Future<String> uploadImageToFirebaseStorage(XFile? image) async {
   try {
-    final userId = FirebaseAuth.instance.currentUser!.uid;
-    final XFile? image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-    );
-
     if (image == null) return "";
+    final userId = FirebaseAuth.instance.currentUser!.uid;
 
     // Get reference to Firebase Storage location
     final Reference storageRef = FirebaseStorage.instance
@@ -27,6 +23,7 @@ Future<String> uploadImageToFirebaseStorage() async {
     final String downloadUrl = await snapshot.ref.getDownloadURL();
 
     // Update Firestore and Auth
+
     await FirebaseFirestore.instance.collection('users').doc(userId).update({
       'url': downloadUrl,
     });
@@ -108,7 +105,7 @@ class FirebaseUserRepo {
               throw Exception('비밀번호 업데이트를 위해 다시 로그인해 주세요');
             }
           }
-          throw e; // Rethrow other errors
+          rethrow; // Rethrow other errors
         }
       }
 
@@ -119,7 +116,7 @@ class FirebaseUserRepo {
     }
   }
 
-  Future<String> signUp(MyUser myUser, String password) async {
+  Future<String> signUp(MyUser myUser, String password, XFile? image) async {
     try {
       // 1. Check if username (nickname) already exists
       final tagQuery =
@@ -164,6 +161,9 @@ class FirebaseUserRepo {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      if (image != null) {
+        await uploadImageToFirebaseStorage(image);
+      }
       // 4. Update Firebase Auth user's profile (optional, but good for consistency)
       // Do this after successfully saving to Firestore to ensure data consistency
       await userCredential.user!.updateDisplayName(myUser.name);

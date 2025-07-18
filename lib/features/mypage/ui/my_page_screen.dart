@@ -9,6 +9,7 @@ import 'package:ecommerece_app/features/mypage/ui/my_story.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -62,7 +63,11 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       InkWell(
                         onTap: () async {
                           showLoadingDialog(context);
-                          final newUrl = await uploadImageToFirebaseStorage();
+                          final newUrl = await uploadImageToFirebaseStorage(
+                            await ImagePicker().pickImage(
+                              source: ImageSource.gallery,
+                            ),
+                          );
                           if (!mounted) return;
                           setState(() => imgUrl = newUrl);
                           Navigator.pop(context);
