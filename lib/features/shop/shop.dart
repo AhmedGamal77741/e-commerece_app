@@ -190,9 +190,13 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
           context.go(Routes.shopSearchScreen);
         },
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.black,
         shape: const CircleBorder(),
-        child: ImageIcon(AssetImage('assets/010.png')),
+        child: ImageIcon(
+          AssetImage('assets/010no.png'),
+          color: Colors.white,
+          size: 60.sp,
+        ),
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 12.w),
