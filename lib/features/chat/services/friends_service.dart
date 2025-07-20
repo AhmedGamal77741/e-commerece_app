@@ -16,7 +16,7 @@ class FriendsService {
           await _firestore.collection('users').doc(currentUserId).get();
       final currentUser = MyUser.fromDocument(currentUserDoc.data()!);
 
-      if (currentUser.tag == friendName) {
+      if (currentUser.name == friendName) {
         throw Exception('Cannot add yourself as a friend');
       }
 
@@ -24,7 +24,7 @@ class FriendsService {
       final userQuery =
           await _firestore
               .collection('users')
-              .where('tag', isEqualTo: friendName)
+              .where('name', isEqualTo: friendName)
               .limit(1)
               .get();
 
@@ -67,7 +67,7 @@ class FriendsService {
           await _firestore.collection('users').doc(currentUserId).get();
       final currentUser = MyUser.fromDocument(currentUserDoc.data()!);
 
-      if (currentUser.tag == friendName) {
+      if (currentUser.name == friendName) {
         throw Exception('Cannot block yourself');
       }
 
@@ -75,7 +75,7 @@ class FriendsService {
       final userQuery =
           await _firestore
               .collection('users')
-              .where('userId', isEqualTo: friendName)
+              .where('name', isEqualTo: friendName)
               .limit(1)
               .get();
 
@@ -85,7 +85,7 @@ class FriendsService {
 
       final friendDoc = userQuery.docs.first;
       final friendId = friendDoc['userId'];
-      // Check if already friends
+      // Check if already blocked
       if (currentUser.blocked!.contains(friendId)) {
         throw Exception('Already blocked this user');
       }

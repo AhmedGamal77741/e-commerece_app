@@ -21,7 +21,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class HomeSearch extends StatefulWidget {
-  const HomeSearch({super.key});
+  final bool useGuestPostItem;
+  const HomeSearch({super.key, this.useGuestPostItem = false});
 
   @override
   State<HomeSearch> createState() => _HomeSearchState();
@@ -117,7 +118,10 @@ class _HomeSearchState extends State<HomeSearch> {
         ),
         body: TabBarView(
           children: [
-            _HomeFeedSearchTab(searchQuery: searchQuery),
+            _HomeFeedSearchTab(
+              searchQuery: searchQuery,
+              useGuestPostItem: widget.useGuestPostItem,
+            ),
             FollowingSearchTab(searchQuery: searchQuery),
           ],
         ),
@@ -128,8 +132,13 @@ class _HomeSearchState extends State<HomeSearch> {
 
 class _HomeFeedSearchTab extends StatefulWidget {
   final String searchQuery;
+  final bool useGuestPostItem;
 
-  const _HomeFeedSearchTab({super.key, required this.searchQuery});
+  const _HomeFeedSearchTab({
+    super.key,
+    required this.searchQuery,
+    this.useGuestPostItem = false,
+  });
 
   @override
   State<_HomeFeedSearchTab> createState() => _HomeFeedSearchTabState();
@@ -249,6 +258,11 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                             return true;
                           }).toList();
 
+                      // Determine user type
+                      final userData =
+                          userSnapshot.data!.data() as Map<String, dynamic>?;
+                      final isPremium =
+                          userData != null && (userData['isSub'] == true);
                       return ListView.builder(
                         controller: _scrollController,
                         itemCount: filteredPosts.length,
@@ -256,10 +270,14 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                           final post =
                               filteredPosts[index].data()
                                   as Map<String, dynamic>;
-                          return PostItem(
-                            postId: post['postId'],
-                            fromComments: false,
-                          );
+                          if (isPremium) {
+                            return PostItem(
+                              postId: post['postId'],
+                              fromComments: false,
+                            );
+                          } else {
+                            return GuestPostItem(post: post);
+                          }
                         },
                       );
                     },

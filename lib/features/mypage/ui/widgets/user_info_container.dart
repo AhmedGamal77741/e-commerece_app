@@ -215,35 +215,35 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // userId combo
-              Text(
-                '아이디', // Translated to Korean
-                style: TextStyles.abeezee16px400wPblack.copyWith(
-                  fontSize: 16.sp,
-                ),
-              ),
-              SizedBox(height: 5.h),
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 8.w),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: ColorsManager.primary100,
-                      width: 1.w,
-                    ),
-                  ),
-                ),
-                child: Text(
-                  (currentUser?.tag != null && currentUser!.tag!.isNotEmpty)
-                      ? currentUser!.tag!
-                      : '지정되지 않음',
-                  style: TextStyles.abeezee16px400wPblack.copyWith(
-                    color: Colors.grey[700],
-                    fontSize: 16.sp,
-                  ),
-                ),
-              ),
-              SizedBox(height: 20.h),
+              // Text(
+              //   '아이디', // Translated to Korean
+              //   style: TextStyles.abeezee16px400wPblack.copyWith(
+              //     fontSize: 16.sp,
+              //   ),
+              // ),
+              // SizedBox(height: 5.h),
+              // Container(
+              //   width: double.infinity,
+              //   padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 8.w),
+              //   decoration: BoxDecoration(
+              //     border: Border(
+              //       bottom: BorderSide(
+              //         color: ColorsManager.primary100,
+              //         width: 1.w,
+              //       ),
+              //     ),
+              //   ),
+              //   child: Text(
+              //     (currentUser?.tag != null && currentUser!.tag!.isNotEmpty)
+              //         ? currentUser!.tag!
+              //         : '지정되지 않음',
+              //     style: TextStyles.abeezee16px400wPblack.copyWith(
+              //       color: Colors.grey[700],
+              //       fontSize: 16.sp,
+              //     ),
+              //   ),
+              // ),
+              // SizedBox(height: 20.h),
 
               // 닉네임 combo
               Text(
@@ -402,7 +402,6 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                             isUpdatingPhone
                                 ? phoneController.text
                                 : currentUser!.phoneNumber,
-                        tag: currentUser!.tag,
                       );
                       try {
                         if (isUpdatingPassword) {

@@ -22,7 +22,6 @@ class PostItem extends StatelessWidget {
   final String postId;
   final bool fromComments;
   final bool showMoreButton;
-
   const PostItem({
     Key? key,
     required this.postId,
@@ -61,100 +60,41 @@ class PostItem extends StatelessWidget {
 
             return Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!fromComments) ...{
-                      SizedBox(width: 10.w),
-
-                      // User Avatar
-                      Flexible(
-                        child: Padding(
-                          padding: EdgeInsets.only(top: 20.h),
-                          child: Container(
-                            width: 56.w,
-                            height: 55.h,
-                            decoration: ShapeDecoration(
-                              image: DecorationImage(
-                                image: NetworkImage(myuser.url.toString()),
-                                fit: BoxFit.cover,
-                              ),
-                              shape: OvalBorder(),
+                if (fromComments)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: 20.h,
+                      left: 10.w,
+                      right: 10.w,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 56.w,
+                          height: 55.h,
+                          decoration: ShapeDecoration(
+                            image: DecorationImage(
+                              image: NetworkImage(myuser.url.toString()),
+                              fit: BoxFit.cover,
                             ),
+                            shape: OvalBorder(),
                           ),
                         ),
-                      ),
-                    },
-
-                    // Post Content
-                    Expanded(
-                      flex: 4,
-                      child: InkWell(
-                        onTap: () {
-                          if (!fromComments) {
-                            context.push(
-                              '/${Routes.commentsScreen}?postId=$postId',
-                            );
-                          }
-                        },
-                        child: Padding(
-                          padding:
-                              fromComments
-                                  ? EdgeInsets.only(right: 30.w, left: 30.w)
-                                  : EdgeInsets.only(right: 0.w, left: 10.w),
+                        SizedBox(width: 12.w),
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Header with menu
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  if (fromComments) ...{
-                                    // User Avatar
-                                    Container(
-                                      width: 35.w,
-                                      height: 35.h,
-                                      decoration: ShapeDecoration(
-                                        image: DecorationImage(
-                                          image: NetworkImage(
-                                            myuser.url.toString(),
-                                          ),
-                                          fit: BoxFit.cover,
-                                        ),
-                                        shape: OvalBorder(),
-                                      ),
-                                    ),
-                                  },
-                                  Column(
-                                    children: [
-                                      Text(
-                                        myuser.name,
-                                        style: TextStyles.abeezee16px400wPblack,
-                                      ),
-                                      if (fromComments) ...{
-                                        Text(
-                                          "구독자 ${myuser.followerCount}명",
-                                          style: TextStyle(
-                                            color: const Color(0xFF787878),
-                                            fontSize: 16.sp,
-                                            fontFamily: 'NotoSans',
-                                            fontWeight: FontWeight.w400,
-                                            height: 1.40.h,
-                                            letterSpacing: -0.09.w,
-                                          ),
-                                        ),
-                                      },
-                                    ],
+                                  Text(
+                                    myuser.name,
+                                    style: TextStyles.abeezee16px400wPblack,
                                   ),
                                   Spacer(),
-
                                   if (myuser.userId !=
-                                          FirebaseAuth
-                                              .instance
-                                              .currentUser
-                                              ?.uid &&
-                                      fromComments)
+                                      FirebaseAuth.instance.currentUser?.uid)
                                     StreamBuilder<DocumentSnapshot>(
                                       stream:
                                           FirebaseFirestore.instance
@@ -197,47 +137,6 @@ class PostItem extends StatelessWidget {
                                             FollowService().toggleFollow(
                                               myuser.userId,
                                             );
-                                            /* final batch =
-                                                FirebaseFirestore.instance
-                                                    .batch();
-
-                                            final followingRef =
-                                                FirebaseFirestore.instance
-                                                    .collection('users')
-                                                    .doc(
-                                                      FirebaseAuth
-                                                          .instance
-                                                          .currentUser
-                                                          ?.uid,
-                                                    )
-                                                    .collection('following')
-                                                    .doc(myuser.userId);
-                                            final followerRef =
-                                                FirebaseFirestore.instance
-                                                    .collection('users')
-                                                    .doc(myuser.userId)
-                                                    .collection('followers')
-                                                    .doc(
-                                                      FirebaseAuth
-                                                          .instance
-                                                          .currentUser
-                                                          ?.uid,
-                                                    );
-                                            if (isFollowing) {
-                                              batch.delete(followingRef);
-                                              batch.delete(followerRef);
-                                            } else {
-                                              batch.set(followingRef, {
-                                                'createdAt':
-                                                    FieldValue.serverTimestamp(),
-                                              });
-                                              batch.set(followerRef, {
-                                                'createdAt':
-                                                    FieldValue.serverTimestamp(),
-                                              });
-                                            }
-
-                                            await batch.commit(); */
                                           },
                                           child: Text(
                                             isFollowing ? '구독 취소' : '구독',
@@ -250,314 +149,169 @@ class PostItem extends StatelessWidget {
                                         );
                                       },
                                     ),
-                                  if (showMoreButton)
-                                    Builder(
-                                      builder:
-                                          (parentContext) =>
-                                              isMyPost
-                                                  ? IconButton(
-                                                    icon: Icon(
-                                                      Icons.more_horiz,
-                                                      size: 18.sp,
-                                                    ),
-                                                    onPressed: () {
-                                                      showModalBottomSheet(
-                                                        context: parentContext,
-                                                        shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.vertical(
-                                                                top:
-                                                                    Radius.circular(
-                                                                      16,
-                                                                    ),
-                                                              ),
-                                                        ),
-                                                        backgroundColor:
-                                                            Colors.white,
-                                                        builder:
-                                                            (
-                                                              context,
-                                                            ) => SafeArea(
-                                                              child: Padding(
-                                                                padding:
-                                                                    EdgeInsets.symmetric(
-                                                                      vertical:
-                                                                          12.h,
-                                                                      horizontal:
-                                                                          8.w,
-                                                                    ),
-                                                                child: Column(
-                                                                  mainAxisSize:
-                                                                      MainAxisSize
-                                                                          .min,
-                                                                  children: [
-                                                                    ListTile(
-                                                                      leading: Icon(
-                                                                        Icons
-                                                                            .edit,
-                                                                        color:
-                                                                            Colors.black87,
-                                                                      ),
-                                                                      title: Text(
-                                                                        '수정',
-                                                                        style: TextStyle(
-                                                                          fontSize:
-                                                                              16.sp,
-                                                                          fontWeight:
-                                                                              FontWeight.w500,
-                                                                        ),
-                                                                      ),
-                                                                      onTap: () async {
-                                                                        Navigator.pop(
-                                                                          context,
-                                                                        );
-                                                                        final controller = TextEditingController(
-                                                                          text:
-                                                                              postData['text'] ??
-                                                                              '',
-                                                                        );
-                                                                        final result = await showDialog<
-                                                                          bool
-                                                                        >(
-                                                                          context:
-                                                                              parentContext,
-                                                                          builder:
-                                                                              (
-                                                                                context,
-                                                                              ) => AlertDialog(
-                                                                                title: Text(
-                                                                                  '게시글 수정',
-                                                                                ),
-                                                                                content: TextField(
-                                                                                  controller:
-                                                                                      controller,
-                                                                                  maxLines:
-                                                                                      5,
-                                                                                  decoration: InputDecoration(
-                                                                                    labelText:
-                                                                                        '게시글을 수정하세요',
-                                                                                    border:
-                                                                                        OutlineInputBorder(),
-                                                                                  ),
-                                                                                ),
-                                                                                actions: [
-                                                                                  TextButton(
-                                                                                    onPressed:
-                                                                                        () => Navigator.pop(
-                                                                                          context,
-                                                                                          false,
-                                                                                        ),
-                                                                                    child: Text(
-                                                                                      '취소',
-                                                                                      style: TextStyle(
-                                                                                        color:
-                                                                                            Colors.black,
-                                                                                      ),
-                                                                                    ),
-                                                                                  ),
-                                                                                  TextButton(
-                                                                                    onPressed: () async {
-                                                                                      final newText =
-                                                                                          controller.text.trim();
-                                                                                      if (newText.isNotEmpty) {
-                                                                                        await FirebaseFirestore.instance
-                                                                                            .collection(
-                                                                                              'posts',
-                                                                                            )
-                                                                                            .doc(
-                                                                                              postId,
-                                                                                            )
-                                                                                            .update(
-                                                                                              {
-                                                                                                'text':
-                                                                                                    newText,
-                                                                                              },
-                                                                                            );
-                                                                                      }
-                                                                                      Navigator.pop(
-                                                                                        context,
-                                                                                        true,
-                                                                                      );
-                                                                                    },
-                                                                                    child: Text(
-                                                                                      '수정',
-                                                                                      style: TextStyle(
-                                                                                        color:
-                                                                                            Colors.black,
-                                                                                      ),
-                                                                                    ),
-                                                                                  ),
-                                                                                ],
-                                                                              ),
-                                                                        );
-                                                                        if (result ==
-                                                                            true) {
-                                                                          ScaffoldMessenger.of(
-                                                                            parentContext,
-                                                                          ).showSnackBar(
-                                                                            SnackBar(
-                                                                              content: Text(
-                                                                                '게시글이 수정되었습니다.',
-                                                                              ),
-                                                                            ),
-                                                                          );
-                                                                        }
-                                                                      },
-                                                                    ),
-                                                                    Divider(
-                                                                      height: 1,
-                                                                    ),
-                                                                    ListTile(
-                                                                      leading: Icon(
-                                                                        Icons
-                                                                            .delete,
-                                                                        color:
-                                                                            Colors.red,
-                                                                      ),
-                                                                      title: Text(
-                                                                        '삭제',
-                                                                        style: TextStyle(
-                                                                          fontSize:
-                                                                              16.sp,
-                                                                          fontWeight:
-                                                                              FontWeight.w500,
-                                                                          color:
-                                                                              Colors.red,
-                                                                        ),
-                                                                      ),
-                                                                      onTap: () async {
-                                                                        Navigator.pop(
-                                                                          context,
-                                                                        );
-                                                                        final confirm = await showDialog<
-                                                                          bool
-                                                                        >(
-                                                                          context:
-                                                                              parentContext,
-                                                                          builder:
-                                                                              (
-                                                                                context,
-                                                                              ) => AlertDialog(
-                                                                                title: Text(
-                                                                                  '게시글 삭제',
-                                                                                ),
-                                                                                content: Text(
-                                                                                  '정말로 이 게시글을 삭제하시겠습니까?',
-                                                                                ),
-                                                                                actions: [
-                                                                                  TextButton(
-                                                                                    onPressed:
-                                                                                        () => Navigator.pop(
-                                                                                          context,
-                                                                                          false,
-                                                                                        ),
-                                                                                    child: Text(
-                                                                                      '취소',
-                                                                                      style: TextStyle(
-                                                                                        color:
-                                                                                            Colors.black,
-                                                                                      ),
-                                                                                    ),
-                                                                                  ),
-                                                                                  TextButton(
-                                                                                    onPressed:
-                                                                                        () => Navigator.pop(
-                                                                                          context,
-                                                                                          true,
-                                                                                        ),
-                                                                                    child: Text(
-                                                                                      '삭제',
-                                                                                      style: TextStyle(
-                                                                                        color:
-                                                                                            Colors.red,
-                                                                                      ),
-                                                                                    ),
-                                                                                  ),
-                                                                                ],
-                                                                              ),
-                                                                        );
-                                                                        if (confirm ==
-                                                                            true) {
-                                                                          await FirebaseFirestore
-                                                                              .instance
-                                                                              .collection(
-                                                                                'posts',
-                                                                              )
-                                                                              .doc(
-                                                                                postId,
-                                                                              )
-                                                                              .delete();
-                                                                          ScaffoldMessenger.of(
-                                                                            parentContext,
-                                                                          ).showSnackBar(
-                                                                            SnackBar(
-                                                                              content: Text(
-                                                                                '게시글이 삭제되었습니다.',
-                                                                              ),
-                                                                            ),
-                                                                          );
-                                                                        }
-                                                                      },
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                            ),
-                                                      );
-                                                    },
-                                                  )
-                                                  : IconButton(
-                                                    icon: Icon(
-                                                      Icons.more_horiz,
-                                                      size: 18.sp,
-                                                    ),
-                                                    onPressed: () {
-                                                      showPostMenu(
-                                                        parentContext,
-                                                        postId,
-                                                        myuser.userId,
-                                                      );
-                                                    },
-                                                  ),
-                                    ),
                                 ],
                               ),
-
-                              // Post Text
+                              StreamBuilder<QuerySnapshot>(
+                                stream:
+                                    FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(myuser.userId)
+                                        .collection('followers')
+                                        .snapshots(),
+                                builder: (context, subSnap) {
+                                  if (subSnap.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return SizedBox(height: 16.sp);
+                                  }
+                                  if (subSnap.hasError) {
+                                    return Text(
+                                      '구독자 오류',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 16.sp,
+                                      ),
+                                    );
+                                  }
+                                  final count = subSnap.data?.docs.length ?? 0;
+                                  final formatted = count
+                                      .toString()
+                                      .replaceAllMapped(
+                                        RegExp(r'\B(?=(\d{3})+(?!\d))'),
+                                        (match) => ',',
+                                      );
+                                  return Padding(
+                                    padding: EdgeInsets.only(top: 2.h),
+                                    child: Text(
+                                      '구독자 $formatted명',
+                                      style: TextStyle(
+                                        color: const Color(0xFF787878),
+                                        fontSize: 16.sp,
+                                        fontFamily: 'NotoSans',
+                                        fontWeight: FontWeight.w400,
+                                        height: 1.40.h,
+                                        letterSpacing: -0.09.w,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                               if (postData['text'].toString().isNotEmpty)
-                                Text(
-                                  postData['text'],
-                                  style: TextStyle(
-                                    color: const Color(0xFF343434),
-                                    fontSize: 16.sp,
-                                    fontFamily: 'NotoSans',
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.40.h,
-                                    letterSpacing: -0.09.w,
+                                Padding(
+                                  padding: EdgeInsets.only(top: 5.h),
+                                  child: Text(
+                                    postData['text'],
+                                    style: TextStyle(
+                                      color: const Color(0xFF343434),
+                                      fontSize: 16.sp,
+                                      fontFamily: 'NotoSans',
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.40.h,
+                                      letterSpacing: -0.09.w,
+                                    ),
                                   ),
                                 ),
                               verticalSpace(5),
-                              // Post Image
                               if (postData['imgUrl'].isNotEmpty)
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: Image.network(
                                     postData['imgUrl'],
-                                    width: fromComments ? 377.w : 200.w,
+                                    width: 200.w,
                                     height: 272.h,
-                                    scale: fromComments ? 16 / 9 : 1,
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
                               verticalSpace(5),
-                              // Like/Comment Buttons
-                              PostActions(postId: postId, postData: postData),
+                              Row(
+                                children: [
+                                  PostActions(
+                                    postId: postId,
+                                    postData: postData,
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                if (!fromComments)
+                  InkWell(
+                    onTap: () {
+                      context.push('/${Routes.commentsScreen}?postId=$postId');
+                    },
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        SizedBox(width: 10.w),
+                        Flexible(
+                          child: Container(
+                            width: 56.w,
+                            height: 55.h,
+                            decoration: ShapeDecoration(
+                              image: DecorationImage(
+                                image: NetworkImage(myuser.url.toString()),
+                                fit: BoxFit.cover,
+                              ),
+                              shape: OvalBorder(),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 4,
+                          child: Padding(
+                            padding: EdgeInsets.only(right: 10.w),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  myuser.name,
+                                  style: TextStyles.abeezee16px400wPblack,
+                                ),
+                                if (postData['text'].toString().isNotEmpty)
+                                  Padding(
+                                    padding: EdgeInsets.only(top: 5.h),
+                                    child: Text(
+                                      postData['text'],
+                                      style: TextStyle(
+                                        color: const Color(0xFF343434),
+                                        fontSize: 16.sp,
+                                        fontFamily: 'NotoSans',
+                                        fontWeight: FontWeight.w400,
+                                        height: 1.40.h,
+                                        letterSpacing: -0.09.w,
+                                      ),
+                                    ),
+                                  ),
+                                verticalSpace(5),
+                                if (postData['imgUrl'].isNotEmpty)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      postData['imgUrl'],
+                                      width: 200.w,
+                                      height: 272.h,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                verticalSpace(5),
+                                Row(
+                                  children: [
+                                    PostActions(
+                                      postId: postId,
+                                      postData: postData,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             );
           },

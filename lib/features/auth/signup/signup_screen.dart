@@ -24,8 +24,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final passwordController = TextEditingController();
   final emailController = TextEditingController();
   final nameController = TextEditingController();
-  final paymentInfoController = TextEditingController();
-  final tagController = TextEditingController();
   final phoneController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
@@ -57,8 +55,6 @@ class _SignupScreenState extends State<SignupScreen> {
     passwordController.dispose();
     emailController.dispose();
     nameController.dispose();
-    paymentInfoController.dispose();
-    tagController.dispose();
     super.dispose();
   }
 
@@ -135,24 +131,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               return null;
                             },
                           ),
-                          verticalSpace(20),
-                          Text('태그', style: TextStyles.abeezee16px400wPblack),
-                          verticalSpace(8),
-                          UnderlineTextField(
-                            controller: tagController,
-                            hintText: '예: pangi123',
-                            obscureText: false,
-                            keyboardType: TextInputType.text,
-                            validator: (val) {
-                              if (val == null || val.isEmpty) {
-                                return '태그를 입력하세요';
-                              } else if (val.length > 30) {
-                                return '태그가 너무 깁니다';
-                              }
-                              // No need to check uniqueness here, do it before signup
-                              return null;
-                            },
-                          ),
+
                           verticalSpace(20),
                           Text('전화번호', style: TextStyles.abeezee16px400wPblack),
                           verticalSpace(8),
@@ -230,7 +209,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
                 ),
-                verticalSpace(40),
+                verticalSpace(30),
                 Text(error, style: TextStyles.abeezee16px400wPred),
 
                 // Container(
@@ -280,7 +259,6 @@ class _SignupScreenState extends State<SignupScreen> {
                           ? myUser.url =
                               "https://i.ibb.co/6kmLx2D/mypage-avatar.png"
                           : myUser.url = imgUrl;
-                      myUser.tag = tagController.text;
                       myUser.phoneNumber = phoneController.text;
                       var result = await fireBaseRepo.signUp(
                         myUser,
