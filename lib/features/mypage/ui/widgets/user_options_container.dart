@@ -37,7 +37,7 @@ class _UserOptionsContainerState extends State<UserOptionsContainer>
     }
     String? chatRoomId;
     try {
-      chatRoomId = await _chatService.createDirectChatRoom(supportUserId);
+      chatRoomId = await _chatService.createDirectChatRoom(supportUserId, true);
     } catch (e) {
       ScaffoldMessenger.of(
         context,

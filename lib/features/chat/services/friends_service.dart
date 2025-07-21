@@ -215,6 +215,21 @@ class FriendsService {
         });
   }
 
+  Stream<List<MyUser>> getBrandsStream() {
+    return _firestore.collection('users').snapshots().asyncMap((userDoc) async {
+      final friendsQuery =
+          await _firestore
+              .collection('users')
+              .where('type', isEqualTo: 'brand')
+              .get();
+
+      // Filter out blocked users in Dart
+      return friendsQuery.docs
+          .map((doc) => MyUser.fromDocument(doc.data()))
+          .toList();
+    });
+  }
+
   // Get friends count
   Stream<int> getFriendsCountStream() {
     return _firestore.collection('users').doc(currentUserId).snapshots().map((
