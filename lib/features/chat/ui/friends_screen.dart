@@ -134,8 +134,23 @@ class _FriendsScreenState extends State<FriendsScreen>
                   InkWell(
                     onTap: () async {
                       showLoadingDialog(context);
-                      for (String chatId in selectedChatIds) {
-                        await _friendsService.blockFriend(chatId);
+                      // Block selected friends by name (FriendsService expects name)
+                      final allFriends = _friendsService.getFriendsStream();
+                      final friendsList = await allFriends.first;
+                      for (String userId in selectedChatIds) {
+                        final friend = friendsList.firstWhere(
+                          (f) => f.userId == userId,
+                          orElse:
+                              () => MyUser(
+                                userId: userId,
+                                name: userId,
+                                url: '',
+                                type: 'user',
+                                email: '',
+                                lastSeen: DateTime.now(),
+                              ),
+                        );
+                        await _friendsService.blockFriend(friend.name);
                       }
                       Navigator.pop(context);
                       toggleEditMode();
