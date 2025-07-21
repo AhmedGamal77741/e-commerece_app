@@ -179,10 +179,10 @@ class _AddPostState extends State<AddPost> {
                           ),
                         ],
                       ),
+                      SizedBox(height: 10.h),
                       InkWell(
                         onTap: () async {
                           showLoadingDialog(context);
-
                           imgUrl = await uploadImageToFirebaseStorage();
                           Navigator.pop(context);
                           setState(() {});
@@ -193,11 +193,13 @@ class _AddPostState extends State<AddPost> {
                                   AssetImage('assets/image_icon.png'),
                                   size: 17.sp,
                                 )
-                                : Image.network(
-                                  imgUrl,
-                                  height: 272.h,
-                                  width: 200.w,
-                                  fit: BoxFit.cover,
+                                : ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    imgUrl,
+                                    fit: BoxFit.fitWidth,
+                                    width: double.infinity,
+                                  ),
                                 ),
                       ),
                     ],

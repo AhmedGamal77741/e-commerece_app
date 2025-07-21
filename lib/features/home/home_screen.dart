@@ -245,9 +245,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                   height: 55.h,
                                   decoration: ShapeDecoration(
                                     image: DecorationImage(
-                                      image: AssetImage(
-                                        'assets/mypage_icon.png',
-                                      ),
+                                      image: AssetImage('assets/avatar.png'),
                                       fit: BoxFit.cover,
                                     ),
                                     shape: OvalBorder(),

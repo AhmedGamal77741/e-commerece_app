@@ -164,11 +164,13 @@ class FollowingPostsList extends StatelessWidget {
           itemCount: posts.length,
           itemBuilder: (context, index) {
             final postData = posts[index].data() as Map<String, dynamic>;
-            if (useGuestPostItem) {
-              return GuestPostItem(post: postData);
-            } else {
-              return PostItem(postId: posts[index].id, fromComments: false);
-            }
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+              child:
+                  useGuestPostItem
+                      ? GuestPostItem(post: postData)
+                      : PostItem(postId: posts[index].id, fromComments: false),
+            );
           },
         );
       },

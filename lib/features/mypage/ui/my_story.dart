@@ -116,12 +116,18 @@ class _MyStoryState extends State<MyStory> {
                   itemCount: userPostIds.length,
                   itemBuilder: (context, index) {
                     final postId = userPostIds[index];
-                    return Column(
-                      children: [
-                        if (index != 0)
-                          Divider(color: ColorsManager.primary100),
-                        PostItem(postId: postId, fromComments: false),
-                      ],
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 8.h,
+                      ),
+                      child: Column(
+                        children: [
+                          if (index != 0)
+                            Divider(color: ColorsManager.primary100),
+                          PostItem(postId: postId, fromComments: false),
+                        ],
+                      ),
                     );
                   },
                 );

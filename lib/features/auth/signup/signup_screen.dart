@@ -110,7 +110,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                           ),
                                         )
                                         : Image.asset(
-                                          'assets/mypage_avatar.png',
+                                          'assets/avatar.png',
                                           height: 55.h,
                                           width: 56.w,
                                         ),
@@ -256,8 +256,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       myUser.email = emailController.text;
                       myUser.name = nameController.text;
                       imgUrl.isEmpty
-                          ? myUser.url =
-                              "https://i.ibb.co/6kmLx2D/mypage-avatar.png"
+                          ? myUser.url = "https://i.ibb.co/ccfDzhyH/avatar.png"
                           : myUser.url = imgUrl;
                       myUser.phoneNumber = phoneController.text;
                       var result = await fireBaseRepo.signUp(

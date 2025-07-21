@@ -212,9 +212,8 @@ class GuestPostItem extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
                                 post['imgUrl'],
-                                width: 200.w,
-                                height: 272.h,
-                                fit: BoxFit.cover,
+                                fit: BoxFit.fitWidth,
+                                width: double.infinity,
                               ),
                             ),
                           verticalSpace(5),

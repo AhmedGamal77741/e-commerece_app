@@ -198,16 +198,38 @@ class PostItem extends StatelessWidget {
                               if (postData['text'].toString().isNotEmpty)
                                 Padding(
                                   padding: EdgeInsets.only(top: 5.h),
-                                  child: Text(
-                                    postData['text'],
-                                    style: TextStyle(
-                                      color: const Color(0xFF343434),
-                                      fontSize: 16.sp,
-                                      fontFamily: 'NotoSans',
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.40.h,
-                                      letterSpacing: -0.09.w,
-                                    ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          postData['text'],
+                                          style: TextStyle(
+                                            color: const Color(0xFF343434),
+                                            fontSize: 16.sp,
+                                            fontFamily: 'NotoSans',
+                                            fontWeight: FontWeight.w400,
+                                            height: 1.40.h,
+                                            letterSpacing: -0.09.w,
+                                          ),
+                                        ),
+                                      ),
+                                      if (showMoreButton) ...[
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.more_vert,
+                                            color: Colors.black,
+                                            size: 22.sp,
+                                          ),
+                                          onPressed: () {
+                                            showPostMenu(
+                                              context,
+                                              postId,
+                                              myuser.userId,
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
                               verticalSpace(5),
@@ -216,9 +238,8 @@ class PostItem extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8),
                                   child: Image.network(
                                     postData['imgUrl'],
-                                    width: 200.w,
-                                    height: 272.h,
-                                    fit: BoxFit.cover,
+                                    fit: BoxFit.fitWidth,
+                                    width: double.infinity,
                                   ),
                                 ),
                               verticalSpace(5),
@@ -237,17 +258,24 @@ class PostItem extends StatelessWidget {
                     ),
                   ),
                 if (!fromComments)
-                  InkWell(
-                    onTap: () {
-                      context.push('/${Routes.commentsScreen}?postId=$postId');
-                    },
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        SizedBox(width: 10.w),
-                        Flexible(
-                          child: Container(
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.w,
+                      vertical: 8.h,
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => Comments(postId: postId),
+                          ),
+                        );
+                      },
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
                             width: 56.w,
                             height: 55.h,
                             decoration: ShapeDecoration(
@@ -258,17 +286,452 @@ class PostItem extends StatelessWidget {
                               shape: OvalBorder(),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          flex: 4,
-                          child: Padding(
-                            padding: EdgeInsets.only(right: 10.w),
+                          SizedBox(width: 12.w),
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  myuser.name,
-                                  style: TextStyles.abeezee16px400wPblack,
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        myuser.name,
+                                        style: TextStyles.abeezee16px400wPblack,
+                                      ),
+                                    ),
+                                    if (showMoreButton) ...[
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.more_horiz,
+                                          color: Colors.black,
+                                          size: 22.sp,
+                                        ),
+                                        onPressed: () {
+                                          if (isMyPost) {
+                                            showModalBottomSheet(
+                                              context: context,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.only(
+                                                  topLeft: Radius.circular(16),
+                                                  topRight: Radius.circular(16),
+                                                ),
+                                              ),
+                                              backgroundColor:
+                                                  ColorsManager.primary50,
+                                              builder: (context) {
+                                                return Padding(
+                                                  padding: EdgeInsets.all(16),
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      // Edit Option
+                                                      InkWell(
+                                                        onTap: () async {
+                                                          Navigator.pop(
+                                                            context,
+                                                          );
+                                                          TextEditingController
+                                                          _controller =
+                                                              TextEditingController(
+                                                                text:
+                                                                    postData['text'],
+                                                              );
+                                                          await showDialog(
+                                                            context: context,
+                                                            builder: (context) {
+                                                              return Dialog(
+                                                                backgroundColor:
+                                                                    Colors
+                                                                        .white,
+                                                                shape: RoundedRectangleBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(
+                                                                        16,
+                                                                      ),
+                                                                ),
+                                                                child: Padding(
+                                                                  padding:
+                                                                      EdgeInsets.all(
+                                                                        20,
+                                                                      ),
+                                                                  child: Column(
+                                                                    mainAxisSize:
+                                                                        MainAxisSize
+                                                                            .min,
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .start,
+                                                                    children: [
+                                                                      Text(
+                                                                        '게시글 수정',
+                                                                        style: TextStyle(
+                                                                          fontSize:
+                                                                              18.sp,
+                                                                          fontWeight:
+                                                                              FontWeight.bold,
+                                                                          color:
+                                                                              Colors.black,
+                                                                        ),
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height:
+                                                                            16,
+                                                                      ),
+                                                                      TextField(
+                                                                        controller:
+                                                                            _controller,
+                                                                        maxLines:
+                                                                            4,
+                                                                        style: TextStyle(
+                                                                          color:
+                                                                              Colors.black,
+                                                                          fontSize:
+                                                                              16.sp,
+                                                                        ),
+                                                                        decoration: InputDecoration(
+                                                                          filled:
+                                                                              true,
+                                                                          fillColor:
+                                                                              Colors.white,
+                                                                          border: OutlineInputBorder(
+                                                                            borderRadius: BorderRadius.circular(
+                                                                              8,
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height:
+                                                                            20,
+                                                                      ),
+                                                                      Row(
+                                                                        mainAxisAlignment:
+                                                                            MainAxisAlignment.end,
+                                                                        children: [
+                                                                          TextButton(
+                                                                            onPressed:
+                                                                                () => Navigator.pop(
+                                                                                  context,
+                                                                                ),
+                                                                            child: Text(
+                                                                              '취소',
+                                                                              style: TextStyle(
+                                                                                color:
+                                                                                    Colors.black,
+                                                                                fontSize:
+                                                                                    16.sp,
+                                                                              ),
+                                                                            ),
+                                                                          ),
+                                                                          SizedBox(
+                                                                            width:
+                                                                                12,
+                                                                          ),
+                                                                          ElevatedButton(
+                                                                            style: ElevatedButton.styleFrom(
+                                                                              backgroundColor:
+                                                                                  Colors.black,
+                                                                              foregroundColor:
+                                                                                  Colors.white,
+                                                                              shape: RoundedRectangleBorder(
+                                                                                borderRadius: BorderRadius.circular(
+                                                                                  8,
+                                                                                ),
+                                                                              ),
+                                                                            ),
+                                                                            onPressed: () async {
+                                                                              await FirebaseFirestore.instance
+                                                                                  .collection(
+                                                                                    'posts',
+                                                                                  )
+                                                                                  .doc(
+                                                                                    postId,
+                                                                                  )
+                                                                                  .update(
+                                                                                    {
+                                                                                      'text':
+                                                                                          _controller.text,
+                                                                                    },
+                                                                                  );
+                                                                              Navigator.pop(
+                                                                                context,
+                                                                              );
+                                                                              ScaffoldMessenger.of(
+                                                                                context,
+                                                                              ).showSnackBar(
+                                                                                SnackBar(
+                                                                                  content: Text(
+                                                                                    '게시글이 수정되었습니다.',
+                                                                                  ),
+                                                                                ),
+                                                                              );
+                                                                            },
+                                                                            child: Text(
+                                                                              '수정',
+                                                                            ),
+                                                                          ),
+                                                                        ],
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              );
+                                                            },
+                                                          );
+                                                        },
+                                                        child: Container(
+                                                          width:
+                                                              double.infinity,
+                                                          padding:
+                                                              EdgeInsets.symmetric(
+                                                                horizontal:
+                                                                    14.w,
+                                                                vertical: 8.h,
+                                                              ),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.white,
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .spaceBetween,
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .center,
+                                                            children: [
+                                                              Text(
+                                                                '수정하기',
+                                                                style: TextStyle(
+                                                                  color: const Color(
+                                                                    0xFF343434,
+                                                                  ),
+                                                                  fontSize:
+                                                                      16.sp,
+                                                                  fontFamily:
+                                                                      'NotoSans',
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                  height:
+                                                                      1.40.h,
+                                                                ),
+                                                              ),
+                                                              Icon(
+                                                                Icons.edit,
+                                                                color:
+                                                                    ColorsManager
+                                                                        .primary600,
+                                                                size: 20.sp,
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      SizedBox(height: 8),
+                                                      // Delete Option
+                                                      InkWell(
+                                                        onTap: () async {
+                                                          Navigator.pop(
+                                                            context,
+                                                          );
+                                                          await showDialog(
+                                                            context: context,
+                                                            builder: (context) {
+                                                              return Dialog(
+                                                                backgroundColor:
+                                                                    Colors
+                                                                        .white,
+                                                                shape: RoundedRectangleBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(
+                                                                        16,
+                                                                      ),
+                                                                ),
+                                                                child: Padding(
+                                                                  padding:
+                                                                      EdgeInsets.all(
+                                                                        20,
+                                                                      ),
+                                                                  child: Column(
+                                                                    mainAxisSize:
+                                                                        MainAxisSize
+                                                                            .min,
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .start,
+                                                                    children: [
+                                                                      Text(
+                                                                        '게시글 삭제',
+                                                                        style: TextStyle(
+                                                                          fontSize:
+                                                                              18.sp,
+                                                                          fontWeight:
+                                                                              FontWeight.bold,
+                                                                          color:
+                                                                              Colors.black,
+                                                                        ),
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height:
+                                                                            16,
+                                                                      ),
+                                                                      Text(
+                                                                        '정말로 이 게시글을 삭제하시겠습니까?',
+                                                                        style: TextStyle(
+                                                                          fontSize:
+                                                                              16.sp,
+                                                                          color:
+                                                                              Colors.black,
+                                                                        ),
+                                                                      ),
+                                                                      SizedBox(
+                                                                        height:
+                                                                            20,
+                                                                      ),
+                                                                      Row(
+                                                                        mainAxisAlignment:
+                                                                            MainAxisAlignment.end,
+                                                                        children: [
+                                                                          TextButton(
+                                                                            onPressed:
+                                                                                () => Navigator.pop(
+                                                                                  context,
+                                                                                ),
+                                                                            child: Text(
+                                                                              '취소',
+                                                                              style: TextStyle(
+                                                                                color:
+                                                                                    Colors.black,
+                                                                                fontSize:
+                                                                                    16.sp,
+                                                                              ),
+                                                                            ),
+                                                                          ),
+                                                                          SizedBox(
+                                                                            width:
+                                                                                12,
+                                                                          ),
+                                                                          ElevatedButton(
+                                                                            style: ElevatedButton.styleFrom(
+                                                                              backgroundColor:
+                                                                                  Colors.black,
+                                                                              foregroundColor:
+                                                                                  Colors.white,
+                                                                              shape: RoundedRectangleBorder(
+                                                                                borderRadius: BorderRadius.circular(
+                                                                                  8,
+                                                                                ),
+                                                                              ),
+                                                                            ),
+                                                                            onPressed: () async {
+                                                                              await FirebaseFirestore.instance
+                                                                                  .collection(
+                                                                                    'posts',
+                                                                                  )
+                                                                                  .doc(
+                                                                                    postId,
+                                                                                  )
+                                                                                  .delete();
+                                                                              Navigator.pop(
+                                                                                context,
+                                                                              );
+                                                                              ScaffoldMessenger.of(
+                                                                                context,
+                                                                              ).showSnackBar(
+                                                                                SnackBar(
+                                                                                  content: Text(
+                                                                                    '게시물이 삭제되었습니다.',
+                                                                                  ),
+                                                                                ),
+                                                                              );
+                                                                            },
+                                                                            child: Text(
+                                                                              '삭제',
+                                                                            ),
+                                                                          ),
+                                                                        ],
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              );
+                                                            },
+                                                          );
+                                                        },
+                                                        child: Container(
+                                                          width:
+                                                              double.infinity,
+                                                          padding:
+                                                              EdgeInsets.symmetric(
+                                                                horizontal:
+                                                                    14.w,
+                                                                vertical: 8.h,
+                                                              ),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.white,
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .spaceBetween,
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .center,
+                                                            children: [
+                                                              Text(
+                                                                '삭제하기',
+                                                                style: TextStyle(
+                                                                  color: const Color(
+                                                                    0xFFDA3A48,
+                                                                  ),
+                                                                  fontSize:
+                                                                      16.sp,
+                                                                  fontFamily:
+                                                                      'NotoSans',
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                  height:
+                                                                      1.40.h,
+                                                                ),
+                                                              ),
+                                                              Icon(
+                                                                Icons.delete,
+                                                                color:
+                                                                    const Color(
+                                                                      0xFFDA3A48,
+                                                                    ),
+                                                                size: 20.sp,
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                            );
+                                          } else {
+                                            showPostMenu(
+                                              context,
+                                              postId,
+                                              myuser.userId,
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ],
                                 ),
                                 if (postData['text'].toString().isNotEmpty)
                                   Padding(
@@ -291,9 +754,8 @@ class PostItem extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(8),
                                     child: Image.network(
                                       postData['imgUrl'],
-                                      width: 200.w,
-                                      height: 272.h,
-                                      fit: BoxFit.cover,
+                                      fit: BoxFit.fitWidth,
+                                      width: double.infinity,
                                     ),
                                   ),
                                 verticalSpace(5),
@@ -308,8 +770,8 @@ class PostItem extends StatelessWidget {
                               ],
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
               ],

@@ -322,123 +322,85 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
             }
             return Container(
               margin: const EdgeInsets.only(bottom: 16),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 25.sp,
-                    backgroundImage: NetworkImage(user.url),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
-                        ),
-                        if (user.bio != null && user.bio!.isNotEmpty) ...{
-                          const SizedBox(height: 2),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 25.sp,
+                      backgroundImage: NetworkImage(user.url),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            user.bio.toString(),
+                            user.name,
                             style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
                             ),
                           ),
-                        },
-                      ],
+                          if (user.bio != null && user.bio!.isNotEmpty) ...{
+                            const SizedBox(height: 2),
+                            Text(
+                              user.bio.toString(),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          },
+                        ],
+                      ),
                     ),
-                  ),
-                  StreamBuilder<DocumentSnapshot>(
-                    stream:
-                        FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(FirebaseAuth.instance.currentUser?.uid)
-                            .collection('following')
-                            .doc(user.userId)
-                            .snapshots(),
-                    builder: (context, snapshot) {
-                      final isFollowing =
-                          snapshot.hasData && snapshot.data!.exists;
-                      return ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              isFollowing
-                                  ? Colors.grey[300]
-                                  : ColorsManager.primary600,
-                          foregroundColor:
-                              isFollowing ? Colors.black : Colors.white,
-                          minimumSize: Size(47.w, 33.h),
-                          textStyle: TextStyle(
-                            fontSize: 12.sp,
-                            fontFamily: 'NotoSans',
-                            fontWeight: FontWeight.w500,
+                    StreamBuilder<DocumentSnapshot>(
+                      stream:
+                          FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(FirebaseAuth.instance.currentUser?.uid)
+                              .collection('following')
+                              .doc(user.userId)
+                              .snapshots(),
+                      builder: (context, snapshot) {
+                        final isFollowing =
+                            snapshot.hasData && snapshot.data!.exists;
+                        return ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                isFollowing
+                                    ? Colors.grey[300]
+                                    : ColorsManager.primary600,
+                            foregroundColor:
+                                isFollowing ? Colors.black : Colors.white,
+                            minimumSize: Size(47.w, 33.h),
+                            textStyle: TextStyle(
+                              fontSize: 12.sp,
+                              fontFamily: 'NotoSans',
+                              fontWeight: FontWeight.w500,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                          onPressed: () async {
+                            FollowService().toggleFollow(user.userId);
+                          },
+                          child: Text(
+                            isFollowing ? '구독 취소' : '구독',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontFamily: 'NotoSans',
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        onPressed: () async {
-                          FollowService().toggleFollow(user.userId);
-                          /* final batch =
-                                                FirebaseFirestore.instance
-                                                    .batch();
-
-                                            final followingRef =
-                                                FirebaseFirestore.instance
-                                                    .collection('users')
-                                                    .doc(
-                                                      FirebaseAuth
-                                                          .instance
-                                                          .currentUser
-                                                          ?.uid,
-                                                    )
-                                                    .collection('following')
-                                                    .doc(myuser.userId);
-                                            final followerRef =
-                                                FirebaseFirestore.instance
-                                                    .collection('users')
-                                                    .doc(myuser.userId)
-                                                    .collection('followers')
-                                                    .doc(
-                                                      FirebaseAuth
-                                                          .instance
-                                                          .currentUser
-                                                          ?.uid,
-                                                    );
-                                            if (isFollowing) {
-                                              batch.delete(followingRef);
-                                              batch.delete(followerRef);
-                                            } else {
-                                              batch.set(followingRef, {
-                                                'createdAt':
-                                                    FieldValue.serverTimestamp(),
-                                              });
-                                              batch.set(followerRef, {
-                                                'createdAt':
-                                                    FieldValue.serverTimestamp(),
-                                              });
-                                            }
-
-                                            await batch.commit(); */
-                        },
-                        child: Text(
-                          isFollowing ? '구독 취소' : '구독',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontFamily: 'NotoSans',
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             );
           },
