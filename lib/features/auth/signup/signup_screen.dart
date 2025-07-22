@@ -119,7 +119,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           UnderlineTextField(
                             controller: nameController,
-                            hintText: '팽이마켓',
+                            hintText: '',
                             obscureText: false,
                             keyboardType: TextInputType.name,
                             validator: (val) {
@@ -137,7 +137,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           verticalSpace(8),
                           UnderlineTextField(
                             controller: phoneController,
-                            hintText: '전화번호를 입력하세요',
+                            hintText: '',
                             obscureText: false,
                             keyboardType: TextInputType.phone,
                             validator: (val) {
@@ -159,7 +159,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           verticalSpace(8),
                           UnderlineTextField(
                             controller: emailController,
-                            hintText: '이메일을 입력하세요',
+                            hintText: '',
                             obscureText: false,
                             keyboardType: TextInputType.emailAddress,
                             validator: (val) {
