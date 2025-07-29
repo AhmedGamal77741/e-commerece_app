@@ -143,46 +143,45 @@ class _ShopState extends State<Shop> {
       initialIndex: initialIndex,
       child: Scaffold(
         appBar: AppBar(
-          toolbarHeight: isSub ? 100.h : 70.h,
+          toolbarHeight: 42.h,
           backgroundColor: ColorsManager.white,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-
-            children: [
-              if (isSub) ...{
-                SizedBox(height: 8.h),
-                FutureBuilder<DocumentSnapshot>(
-                  future:
-                      (userData['defaultAddressId'] != null &&
-                              userData['defaultAddressId'] != '')
-                          ? FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(userData['userId'])
-                              .collection('addresses')
-                              .doc(userData['defaultAddressId'])
-                              .get()
-                          : Future.value(null),
-                  builder: (context, snapshot) {
-                    String displayName = '배송지 선택';
-                    if (snapshot.hasData &&
-                        snapshot.data != null &&
-                        snapshot.data!.exists) {
-                      final addressData =
-                          snapshot.data!.data() as Map<String, dynamic>;
-                      displayName = addressData['name'] ?? '배송지 선택';
-                    }
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: 8.0.h),
-                      child: SizedBox(
-                        height: 36.h,
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.grey.shade300),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
+          title: Text(''),
+          centerTitle: false,
+          bottom: PreferredSize(
+            preferredSize: Size.fromHeight(isSub ? 48.h : 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isSub)
+                  Padding(
+                    padding: EdgeInsets.only(left: 8.w, bottom: 4.h, top: 4.h),
+                    child: FutureBuilder<DocumentSnapshot<Object?>>(
+                      future:
+                          (userData['defaultAddressId'] != null &&
+                                  userData['defaultAddressId'] != '')
+                              ? FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(userData['userId'])
+                                  .collection('addresses')
+                                  .doc(userData['defaultAddressId'])
+                                  .get()
+                              : null,
+                      builder: (context, snapshot) {
+                        String displayName = '배송지 선택';
+                        final addressSnap = snapshot.data;
+                        if (addressSnap != null && addressSnap.exists) {
+                          final addressData =
+                              addressSnap.data() as Map<String, dynamic>?;
+                          displayName = addressData?['name'] ?? '배송지 선택';
+                        }
+                        return TextButton(
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 2.w,
+                              vertical: 0,
                             ),
-                            backgroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            minimumSize: Size(0, 32.h),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           onPressed: () async {
                             await Navigator.of(context).push(
@@ -190,7 +189,6 @@ class _ShopState extends State<Shop> {
                                 builder: (_) => AddressListScreen(),
                               ),
                             );
-                            // Optionally, you can refresh the Shop screen after returning
                             setState(() {});
                           },
                           child: Row(
@@ -200,57 +198,62 @@ class _ShopState extends State<Shop> {
                                 displayName,
                                 style: TextStyle(
                                   color: Colors.black,
-                                  fontSize: 14.sp,
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               SizedBox(width: 6.w),
-                              Icon(Icons.arrow_drop_down, color: Colors.black),
+                              Icon(
+                                Icons.arrow_drop_down,
+                                color: Colors.black,
+                                size: 18,
+                              ),
                             ],
                           ),
-                        ),
-                      ),
-                    );
-                  },
+                        );
+                      },
+                    ),
+                  ),
+                TabBar(
+                  tabAlignment: TabAlignment.start,
+                  padding: EdgeInsets.zero,
+                  labelStyle: TextStyle(
+                    fontSize: 16.sp,
+                    decoration: TextDecoration.none,
+                    fontFamily: 'NotoSans',
+                    fontStyle: FontStyle.normal,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0,
+                    color: ColorsManager.primaryblack,
+                  ),
+                  unselectedLabelColor: ColorsManager.primary600,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicatorColor: ColorsManager.primaryblack,
+                  isScrollable: _categories.length > 4,
+                  tabs:
+                      _categories
+                          .map((category) => Tab(text: category['name']))
+                          .toList(),
                 ),
-              },
-              TabBar(
-                tabAlignment: TabAlignment.start,
-                padding: EdgeInsets.zero,
-                labelStyle: TextStyle(
-                  fontSize: 16.sp,
-                  decoration: TextDecoration.none,
-                  fontFamily: 'NotoSans',
-                  fontStyle: FontStyle.normal,
-                  fontWeight: FontWeight.w400,
-                  letterSpacing: 0,
-                  color: ColorsManager.primaryblack,
-                ),
-                unselectedLabelColor: ColorsManager.primary600,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicatorColor: ColorsManager.primaryblack,
-                isScrollable: _categories.length > 4,
-                tabs:
-                    _categories
-                        .map((category) => Tab(text: category['name']))
-                        .toList(),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-        body: TabBarView(
-          children:
-              _categories
-                  .map(
-                    (category) => CategoryProductsScreen(
-                      categoryId: category['id'],
-                      categoryName: category['name'],
-                      userData: userData,
-
-                      isSub: isSub,
-                    ),
-                  )
-                  .toList(),
+        body: Padding(
+          padding: EdgeInsets.only(right: 8.w, top: 15.h, bottom: 4.h),
+          child: TabBarView(
+            children:
+                _categories
+                    .map(
+                      (category) => CategoryProductsScreen(
+                        categoryId: category['id'],
+                        categoryName: category['name'],
+                        userData: userData,
+                        isSub: isSub,
+                      ),
+                    )
+                    .toList(),
+          ),
         ),
       ),
     );
