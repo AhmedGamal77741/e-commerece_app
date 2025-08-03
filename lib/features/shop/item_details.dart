@@ -1,4 +1,5 @@
 import 'package:ecommerece_app/core/helpers/extensions.dart';
+import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
@@ -21,8 +22,7 @@ class ItemDetails extends StatefulWidget {
     super.key,
     required this.product,
     required this.arrivalDay,
-    String?
-    itemId, // Note: itemId is declared but not used in the provided snippet
+    String? itemId,
     required this.isSub,
   });
 
@@ -31,13 +31,10 @@ class ItemDetails extends StatefulWidget {
 }
 
 class _ItemDetailsState extends State<ItemDetails> {
-  // late List<PricePoint> _options = widget.product.pricePoints; // Not used, can be removed
-
   late bool liked = false;
   @override
   void initState() {
     super.initState();
-    // Ensure currentUser is not null before accessing uid
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
       liked = isFavoritedByUser(p: widget.product, userId: currentUser.uid);
@@ -45,9 +42,7 @@ class _ItemDetailsState extends State<ItemDetails> {
   }
 
   final PageController _pageController = PageController();
-  // int _currentPage = 0; // _currentPage is updated but not used elsewhere. Can be removed if not needed for other logic.
-
-  String? _selectedOption; // Stores the selected value (index as string)
+  String? _selectedOption;
 
   @override
   void dispose() {
@@ -67,7 +62,6 @@ class _ItemDetailsState extends State<ItemDetails> {
       if (widget.product.imgUrl != null) widget.product.imgUrl,
       ...widget.product.imgUrls,
     ];
-
     final formatCurrency = NumberFormat('#,###');
     return Scaffold(
       body: ListView(
@@ -80,32 +74,23 @@ class _ItemDetailsState extends State<ItemDetails> {
                   PageView.builder(
                     controller: _pageController,
                     itemCount: imageUrls.length,
-                    onPageChanged:
-                        (index) => setState(
-                          () {},
-                        ), // _currentPage = index (if _currentPage is needed)
+                    onPageChanged: (index) => setState(() {}),
                     itemBuilder:
                         (context, index) => Image.network(
                           imageUrls[index],
                           fit: BoxFit.cover,
-                          errorBuilder:
-                              (_, __, ___) => const Placeholder(), // Fallback
+                          errorBuilder: (_, __, ___) => const Placeholder(),
                         ),
                   )
                 else
-                  const Center(
-                    child: Text("No images available"),
-                  ), // Handle empty image list
-                // Indicator with gradient background
-                if (imageUrls
-                    .isNotEmpty) // Show indicator only if there are images
+                  const Center(child: Text("No images available")),
+                if (imageUrls.isNotEmpty)
                   Positioned.fill(
                     bottom: 0,
                     child: Align(
                       alignment: Alignment.bottomCenter,
                       child: Container(
                         height: 60.h,
-                        // decoration: BoxDecoration(), // Empty decoration, can be removed
                         child: Center(
                           child: SmoothPageIndicator(
                             controller: _pageController,
@@ -128,14 +113,9 @@ class _ItemDetailsState extends State<ItemDetails> {
             GestureDetector(
               onTap: () {
                 final currentUser = FirebaseAuth.instance.currentUser;
-
                 if (currentUser != null) {
-                  _launchPaymentPage(
-                    '3000', // This seems like a fixed amount
-                    currentUser.uid,
-                  );
+                  _launchPaymentPage('3000', currentUser.uid);
                 } else {
-                  // Handle case where user is not logged in, e.g., show a message
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
                   );
@@ -145,12 +125,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                 width: double.infinity,
                 height: 33.h,
                 color: Colors.black,
-                child: Center(
-                  child: Text(
-                    '프리미엄 회원 모든 제품 10% 할인',
-                    style: TextStyles.abeezee16px400wW,
-                  ),
-                ),
+                child: Center(child: _ShiningPremiumBanner()),
               ),
             ),
           Padding(
@@ -163,7 +138,6 @@ class _ItemDetailsState extends State<ItemDetails> {
                   flex: 5,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    // spacing: 10.h, // Column doesn't have a spacing property directly. Use SizedBox.
                     children: [
                       Text(
                         widget.product.sellerName,
@@ -172,7 +146,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                           fontSize: 14.sp,
                           fontFamily: 'NotoSans',
                           fontWeight: FontWeight.w400,
-                          height: 1.40, // Removed .h as height is a factor
+                          height: 1.40,
                         ),
                       ),
                       SizedBox(height: 10.h),
@@ -183,7 +157,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                           fontSize: 16.sp,
                           fontFamily: 'NotoSans',
                           fontWeight: FontWeight.w400,
-                          height: 1.40, // Removed .h
+                          height: 1.40,
                         ),
                       ),
                       SizedBox(height: 10.h),
@@ -196,23 +170,20 @@ class _ItemDetailsState extends State<ItemDetails> {
                           fontSize: 14.sp,
                           fontFamily: 'NotoSans',
                           fontWeight: FontWeight.w400,
-                          height: 1.40, // Removed .h
+                          height: 1.40,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Spacer(), // Spacer is fine here
+                const Spacer(),
                 Row(
                   children: [
                     IconButton(
-                      onPressed: () {
-                        // Share functionality to be implemented
-                      },
+                      onPressed: () {},
                       icon: ImageIcon(
                         const AssetImage('assets/grey_006m.png'),
                         size: 32.sp,
-                        // color: liked ? Colors.black : Colors.grey, // This icon seems to be for sharing, color shouldn't depend on 'liked'
                         color: liked ? Colors.black : Colors.grey,
                       ),
                     ),
@@ -243,9 +214,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         });
                       },
                       icon: ImageIcon(
-                        const AssetImage(
-                          'assets/grey_007m.png',
-                        ), // Favorite icon
+                        const AssetImage('assets/grey_007m.png'),
                         size: 32.sp,
                         color: liked ? Colors.black : Colors.grey,
                       ),
@@ -282,10 +251,10 @@ class _ItemDetailsState extends State<ItemDetails> {
                                   fontFamily: 'NotoSans',
                                   fontWeight: FontWeight.w400,
                                   fontSize: 16.sp,
-                                  height: 1.4, // Removed .h
+                                  height: 1.4,
                                 ),
                               ),
-                              SizedBox(width: 5.w), // Spacing
+                              SizedBox(width: 5.w),
                               Text(
                                 '(1개 ${formatCurrency.format(widget.isSub ? perUnit.round() : (perUnit / 0.9).round())}원)',
                                 style: TextStyles.abeezee14px400wP600,
@@ -299,14 +268,12 @@ class _ItemDetailsState extends State<ItemDetails> {
                               _selectedOption = value;
                             });
                           },
-                          activeColor:
-                              ColorsManager
-                                  .primaryblack, // Example active color
+                          activeColor: ColorsManager.primaryblack,
                         ),
                         if (index < widget.product.pricePoints.length - 1)
                           const Divider(
                             height: 1,
-                            thickness: 0.27,
+                            thickness: 0.40,
                             color: Color(0xFF747474),
                           ),
                       ],
@@ -324,7 +291,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                 top: 15.h,
                 bottom: 15.h,
                 right: 15.w,
-              ), // Added right padding
+              ),
               decoration: ShapeDecoration(
                 color: Colors.white,
                 shape: RoundedRectangleBorder(
@@ -336,13 +303,20 @@ class _ItemDetailsState extends State<ItemDetails> {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                // spacing: 10.h, // Column doesn't have a spacing property. Use SizedBox between children.
                 children: [
+                  _buildInfoRow('배송', widget.product.arrivalDate ?? ''),
+                  SizedBox(height: 10.h),
+                  const Divider(
+                    height: 1,
+                    thickness: 0.40,
+                    color: Color(0xFF747474),
+                  ),
+                  SizedBox(height: 10.h),
                   _buildInfoRow('보관법 및 소비기한', widget.product.instructions),
                   SizedBox(height: 10.h),
                   const Divider(
                     height: 1,
-                    thickness: 0.27,
+                    thickness: 0.40,
                     color: Color(0xFF747474),
                   ),
                   SizedBox(height: 10.h),
@@ -353,7 +327,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                   SizedBox(height: 10.h),
                   const Divider(
                     height: 1,
-                    thickness: 0.27,
+                    thickness: 0.40,
                     color: Color(0xFF747474),
                   ),
                   SizedBox(height: 10.h),
@@ -365,13 +339,10 @@ class _ItemDetailsState extends State<ItemDetails> {
               ),
             ),
           ),
-          // Padding(padding: EdgeInsets.symmetric(horizontal: 20.w)), // This empty padding does nothing
         ],
       ),
       bottomNavigationBar: Padding(
-        padding: EdgeInsets.all(
-          16.w,
-        ), // Use .w for consistency if desired, or just 16
+        padding: EdgeInsets.all(16.w),
         child: Row(
           children: [
             Expanded(
@@ -387,7 +358,6 @@ class _ItemDetailsState extends State<ItemDetails> {
                   if (_selectedOption == null) {
                     _showQuantityRequiredMessage();
                   } else {
-                    // Stock validation before adding to cart
                     final pricePoint =
                         widget.product.pricePoints[int.parse(_selectedOption!)];
                     final productRef = FirebaseFirestore.instance
@@ -414,7 +384,6 @@ class _ItemDetailsState extends State<ItemDetails> {
                               : (pricePoint.price / 0.9).round(),
                     );
                     if (mounted) {
-                      // Check if the widget is still in the tree
                       Navigation(context).pop();
                     }
                   }
@@ -442,7 +411,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                 ),
               ),
             ),
-            SizedBox(width: 10.w), // Use .w for consistency
+            SizedBox(width: 10.w),
             Expanded(
               child: TextButton(
                 onPressed: () async {
@@ -456,7 +425,6 @@ class _ItemDetailsState extends State<ItemDetails> {
                   if (_selectedOption == null) {
                     _showQuantityRequiredMessage();
                   } else {
-                    // Stock validation before Buy Now
                     final pricePoint =
                         widget.product.pricePoints[int.parse(_selectedOption!)];
                     final productRef = FirebaseFirestore.instance
@@ -473,7 +441,6 @@ class _ItemDetailsState extends State<ItemDetails> {
                       );
                       return;
                     }
-                    // Navigate to BuyNow page with product info
                     context.go(
                       '/buy-now',
                       extra: {
@@ -512,7 +479,6 @@ class _ItemDetailsState extends State<ItemDetails> {
     );
   }
 
-  // Helper widget to reduce repetition for info rows
   Widget _buildInfoRow(String title, String content) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -529,7 +495,7 @@ class _ItemDetailsState extends State<ItemDetails> {
             height: 1.40,
           ),
         ),
-        SizedBox(height: 12.h / 2), // Adjust spacing as needed
+        SizedBox(height: 12.h / 2),
         Text(
           content,
           style: TextStyle(
@@ -551,16 +517,95 @@ void _launchPaymentPage(String amount, String userId) async {
   );
 
   if (await canLaunchUrl(url)) {
-    await launchUrl(
-      url,
-      // mode: LaunchMode.externalApplication, // Consider if this is needed
-    );
+    await launchUrl(url);
   } else {
-    // It's good practice to give feedback to the user if launching fails.
-    // This could be a SnackBar or an AlertDialog.
-    // For example:
-    // ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not launch payment page.')));
-    debugPrint('Could not launch $url'); // For debugging
+    debugPrint('Could not launch $url');
     throw 'Could not launch $url';
+  }
+}
+
+// Shining animation widget for premium banner
+class _ShiningPremiumBanner extends StatefulWidget {
+  @override
+  State<_ShiningPremiumBanner> createState() => _ShiningPremiumBannerState();
+}
+
+class _ShiningPremiumBannerState extends State<_ShiningPremiumBanner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _shineAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    )..repeat(reverse: false);
+    _shineAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        AnimatedBuilder(
+          animation: _shineAnimation,
+          builder: (context, child) {
+            return ShaderMask(
+              shaderCallback: (Rect bounds) {
+                final double shineWidth = bounds.width * 0.35;
+                final double shinePosition =
+                    bounds.width * _shineAnimation.value;
+                return LinearGradient(
+                  colors: [
+                    Colors.grey.shade700,
+                    Colors.white,
+                    Colors.grey.shade700,
+                  ],
+                  stops: [0.0, 0.5, 1.0],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ).createShader(
+                  Rect.fromLTWH(
+                    shinePosition - shineWidth / 2,
+                    0,
+                    shineWidth,
+                    bounds.height,
+                  ),
+                );
+              },
+              blendMode: BlendMode.srcATop,
+              child: Text(
+                '프리미엄 회원 모든 제품 10% 할인',
+                style: TextStyles.abeezee16px400wW.copyWith(
+                  color: Colors.black,
+                ),
+              ),
+            );
+          },
+        ),
+        horizontalSpace(3),
+        AnimatedBuilder(
+          animation: _shineAnimation,
+          builder: (context, child) {
+            return Opacity(
+              opacity: 1.0,
+              child: Image.asset('assets/sub_bar.png'),
+            );
+          },
+        ),
+      ],
+    );
   }
 }
