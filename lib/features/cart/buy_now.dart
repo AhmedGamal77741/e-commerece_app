@@ -145,6 +145,7 @@ class _BuyNowState extends State<BuyNow> {
         'deliveryManagerIds': [widget.product.deliveryManagerId],
         'carrierId': '',
         'isSent': false,
+        'confirmed': false,
         'phoneNo': phoneController.text.trim(),
         'name': nameController.text.trim(),
         'email': emailController.text.trim(),
@@ -427,6 +428,7 @@ class _BuyNowState extends State<BuyNow> {
           'deliveryManagerId': deliveryManagerIds[i],
           'carrierId': '',
           'isSent': false,
+          'confirmed': false,
           'phoneNo': data['phoneNo'],
         };
         await orderRef.set(orderData);
