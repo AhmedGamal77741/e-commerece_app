@@ -382,6 +382,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                           widget.isSub
                               ? pricePoint.price
                               : (pricePoint.price / 0.9).round(),
+                      deliveryManagerId: widget.product.deliveryManagerId ?? '',
                     );
                     if (mounted) {
                       Navigation(context).pop();
@@ -540,7 +541,7 @@ class _ShiningPremiumBannerState extends State<_ShiningPremiumBanner>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: false);
     _shineAnimation = Tween<double>(
       begin: 0.0,
