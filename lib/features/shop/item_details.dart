@@ -63,420 +63,468 @@ class _ItemDetailsState extends State<ItemDetails> {
       ...widget.product.imgUrls,
     ];
     final formatCurrency = NumberFormat('#,###');
-    return Scaffold(
-      body: ListView(
-        children: [
-          SizedBox(
-            height: 428.h,
-            child: Stack(
-              children: [
-                if (imageUrls.isNotEmpty)
-                  PageView.builder(
-                    controller: _pageController,
-                    itemCount: imageUrls.length,
-                    onPageChanged: (index) => setState(() {}),
-                    itemBuilder:
-                        (context, index) => Image.network(
-                          imageUrls[index],
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Placeholder(),
-                        ),
-                  )
-                else
-                  const Center(child: Text("No images available")),
-                if (imageUrls.isNotEmpty)
-                  Positioned.fill(
-                    bottom: 0,
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Container(
-                        height: 60.h,
-                        child: Center(
-                          child: SmoothPageIndicator(
-                            controller: _pageController,
-                            count: imageUrls.length,
-                            effect: ScrollingDotsEffect(
-                              activeDotColor: Colors.black,
-                              dotColor: Colors.grey,
-                              dotHeight: 10.h,
-                              dotWidth: 10.w,
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      // Not logged in, fallback to widget.isSub
+      bool isSub = widget.isSub;
+      return Scaffold(
+        // ...existing code for body and bottomNavigationBar, using isSub...
+      );
+    }
+    return StreamBuilder<DocumentSnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser.uid)
+              .snapshots(),
+      builder: (context, snapshot) {
+        bool isSub = widget.isSub;
+        if (snapshot.hasData &&
+            snapshot.data != null &&
+            snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>?;
+          if (data != null && data.containsKey('isSub')) {
+            isSub = data['isSub'] == true;
+          }
+        }
+        return Scaffold(
+          body: ListView(
+            children: [
+              SizedBox(
+                height: 428.h,
+                child: Stack(
+                  children: [
+                    if (imageUrls.isNotEmpty)
+                      PageView.builder(
+                        controller: _pageController,
+                        itemCount: imageUrls.length,
+                        onPageChanged: (index) => setState(() {}),
+                        itemBuilder:
+                            (context, index) => Image.network(
+                              imageUrls[index],
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Placeholder(),
+                            ),
+                      )
+                    else
+                      const Center(child: Text("No images available")),
+                    if (imageUrls.isNotEmpty)
+                      Positioned.fill(
+                        bottom: 0,
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Container(
+                            height: 60.h,
+                            child: Center(
+                              child: SmoothPageIndicator(
+                                controller: _pageController,
+                                count: imageUrls.length,
+                                effect: ScrollingDotsEffect(
+                                  activeDotColor: Colors.black,
+                                  dotColor: Colors.grey,
+                                  dotHeight: 10.h,
+                                  dotWidth: 10.w,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
+                  ],
+                ),
+              ),
+              if (!isSub)
+                GestureDetector(
+                  onTap: () {
+                    final currentUser = FirebaseAuth.instance.currentUser;
+                    if (currentUser != null) {
+                      _launchPaymentPage('3000', currentUser.uid);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: 33.h,
+                    color: Colors.black,
+                    child: Center(child: _ShiningPremiumBanner()),
+                  ),
+                ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 14.h),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      flex: 5,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.product.sellerName,
+                            style: TextStyle(
+                              color: const Color(0xFF121212),
+                              fontSize: 14.sp,
+                              fontFamily: 'NotoSans',
+                              fontWeight: FontWeight.w400,
+                              height: 1.40,
+                            ),
+                          ),
+                          SizedBox(height: 10.h),
+                          Text(
+                            widget.product.productName,
+                            style: TextStyle(
+                              color: const Color(0xFF121212),
+                              fontSize: 16.sp,
+                              fontFamily: 'NotoSans',
+                              fontWeight: FontWeight.w400,
+                              height: 1.40,
+                            ),
+                          ),
+                          SizedBox(height: 10.h),
+                          Text(
+                            widget.product.stock == 0
+                                ? '품절'
+                                : widget.product.arrivalDate ?? '',
+                            style: TextStyle(
+                              color: const Color(0xFF747474),
+                              fontSize: 14.sp,
+                              fontFamily: 'NotoSans',
+                              fontWeight: FontWeight.w400,
+                              height: 1.40,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {},
+                          icon: ImageIcon(
+                            const AssetImage('assets/grey_006m.png'),
+                            size: 32.sp,
+                            color: liked ? Colors.black : Colors.grey,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () async {
+                            final currentUser =
+                                FirebaseAuth.instance.currentUser;
+                            if (currentUser == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
+                                ),
+                              );
+                              return;
+                            }
+                            if (liked) {
+                              await removeProductFromFavorites(
+                                userId: currentUser.uid,
+                                productId: widget.product.product_id,
+                              );
+                            } else {
+                              await addProductToFavorites(
+                                userId: currentUser.uid,
+                                productId: widget.product.product_id,
+                              );
+                            }
+                            setState(() {
+                              liked = !liked;
+                            });
+                          },
+                          icon: ImageIcon(
+                            const AssetImage('assets/grey_007m.png'),
+                            size: 32.sp,
+                            color: liked ? Colors.black : Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12),
+                child: Container(
+                  decoration: ShapeDecoration(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      side: const BorderSide(
+                        width: 0.27,
+                        color: Color(0xFF747474),
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-              ],
-            ),
-          ),
-          if (!widget.isSub)
-            GestureDetector(
-              onTap: () {
-                final currentUser = FirebaseAuth.instance.currentUser;
-                if (currentUser != null) {
-                  _launchPaymentPage('3000', currentUser.uid);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
-                  );
-                }
-              },
-              child: Container(
-                width: double.infinity,
-                height: 33.h,
-                color: Colors.black,
-                child: Center(child: _ShiningPremiumBanner()),
-              ),
-            ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 14.h),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Flexible(
-                  flex: 5,
                   child: Column(
+                    children: [
+                      ...widget.product.pricePoints.asMap().entries.map((
+                        entry,
+                      ) {
+                        int index = entry.key;
+                        PricePoint pricePoint = entry.value;
+                        double perUnit = pricePoint.price / pricePoint.quantity;
+                        return Column(
+                          children: [
+                            RadioListTile<String>(
+                              title: Row(
+                                children: [
+                                  Text(
+                                    '${pricePoint.quantity}개 ${formatCurrency.format(isSub ? pricePoint.price : (pricePoint.price / 0.9).round())}원',
+                                    style: TextStyle(
+                                      fontFamily: 'NotoSans',
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 16.sp,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                  SizedBox(width: 5.w),
+                                  Text(
+                                    '(1개 ${formatCurrency.format(isSub ? perUnit.round() : (perUnit / 0.9).round())}원)',
+                                    style: TextStyles.abeezee14px400wP600,
+                                  ),
+                                ],
+                              ),
+                              value: index.toString(),
+                              groupValue: _selectedOption,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedOption = value;
+                                });
+                              },
+                              activeColor: ColorsManager.primaryblack,
+                            ),
+                            if (index < widget.product.pricePoints.length - 1)
+                              const Divider(
+                                height: 1,
+                                thickness: 0.40,
+                                color: Color(0xFF747474),
+                              ),
+                          ],
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 30.h),
+                child: Container(
+                  padding: EdgeInsets.only(
+                    left: 15.w,
+                    top: 15.h,
+                    bottom: 15.h,
+                    right: 15.w,
+                  ),
+                  decoration: ShapeDecoration(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      side: const BorderSide(
+                        width: 0.27,
+                        color: Color(0xFF747474),
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.product.sellerName,
-                        style: TextStyle(
-                          color: const Color(0xFF121212),
-                          fontSize: 14.sp,
-                          fontFamily: 'NotoSans',
-                          fontWeight: FontWeight.w400,
-                          height: 1.40,
-                        ),
+                      _buildInfoRow('배송', widget.product.arrivalDate ?? ''),
+                      SizedBox(height: 10.h),
+                      const Divider(
+                        height: 1,
+                        thickness: 0.40,
+                        color: Color(0xFF747474),
                       ),
                       SizedBox(height: 10.h),
-                      Text(
-                        widget.product.productName,
-                        style: TextStyle(
-                          color: const Color(0xFF121212),
-                          fontSize: 16.sp,
-                          fontFamily: 'NotoSans',
-                          fontWeight: FontWeight.w400,
-                          height: 1.40,
-                        ),
+                      _buildInfoRow('보관법 및 소비기한', widget.product.instructions),
+                      SizedBox(height: 10.h),
+                      const Divider(
+                        height: 1,
+                        thickness: 0.40,
+                        color: Color(0xFF747474),
                       ),
                       SizedBox(height: 10.h),
-                      Text(
-                        widget.product.stock == 0
-                            ? '품절'
-                            : '${widget.arrivalDay} 도착예정 - ${widget.product.freeShipping == true ? '무료 배송' : '배송료가 부과됩니다'}',
-                        style: TextStyle(
-                          color: const Color(0xFF747474),
-                          fontSize: 14.sp,
-                          fontFamily: 'NotoSans',
-                          fontWeight: FontWeight.w400,
-                          height: 1.40,
-                        ),
+                      _buildInfoRow(
+                        '남은 수량',
+                        '${widget.product.stock.toString()} 개',
+                      ),
+                      SizedBox(height: 10.h),
+                      const Divider(
+                        height: 1,
+                        thickness: 0.40,
+                        color: Color(0xFF747474),
+                      ),
+                      SizedBox(height: 10.h),
+                      _buildInfoRow(
+                        '남은 수량, 제품안내',
+                        widget.product.description ?? '',
                       ),
                     ],
                   ),
                 ),
-                const Spacer(),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {},
-                      icon: ImageIcon(
-                        const AssetImage('assets/grey_006m.png'),
-                        size: 32.sp,
-                        color: liked ? Colors.black : Colors.grey,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () async {
-                        final currentUser = FirebaseAuth.instance.currentUser;
-                        if (currentUser == null) {
+              ),
+            ],
+          ),
+          bottomNavigationBar: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () async {
+                      final currentUser = FirebaseAuth.instance.currentUser;
+                      if (currentUser == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
+                          ),
+                        );
+                        return;
+                      }
+                      if (_selectedOption == null) {
+                        _showQuantityRequiredMessage();
+                      } else {
+                        final pricePoint =
+                            widget.product.pricePoints[int.parse(
+                              _selectedOption!,
+                            )];
+                        final productRef = FirebaseFirestore.instance
+                            .collection('products')
+                            .doc(widget.product.product_id);
+                        final productSnapshot = await productRef.get();
+                        final currentStock =
+                            productSnapshot.data()?['stock'] ?? 0;
+                        if (pricePoint.quantity > currentStock) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
+                              content: Text('수량 부족'),
+                              backgroundColor: Colors.red,
                             ),
                           );
                           return;
                         }
-                        if (liked) {
-                          await removeProductFromFavorites(
-                            userId: currentUser.uid,
-                            productId: widget.product.product_id,
-                          );
-                        } else {
-                          await addProductToFavorites(
-                            userId: currentUser.uid,
-                            productId: widget.product.product_id,
-                          );
+                        await addProductAsNewEntryToCart(
+                          userId: currentUser.uid,
+                          productId: widget.product.product_id,
+                          quantity: pricePoint.quantity,
+                          price:
+                              isSub
+                                  ? pricePoint.price
+                                  : (pricePoint.price / 0.9).round(),
+                          deliveryManagerId:
+                              widget.product.deliveryManagerId ?? '',
+                        );
+                        if (mounted) {
+                          Navigation(context).pop();
                         }
-                        setState(() {
-                          liked = !liked;
-                        });
-                      },
-                      icon: ImageIcon(
-                        const AssetImage('assets/grey_007m.png'),
-                        size: 32.sp,
-                        color: liked ? Colors.black : Colors.grey,
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: ColorsManager.white,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 6.w,
+                        vertical: 10.h,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        side: const BorderSide(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                  ],
+                    child: Text(
+                      '장바구니 담기',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontFamily: 'NotoSans',
+                        fontSize: 18.sp,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () async {
+                      final currentUser = FirebaseAuth.instance.currentUser;
+                      if (currentUser == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
+                          ),
+                        );
+                        return;
+                      }
+                      if (_selectedOption == null) {
+                        _showQuantityRequiredMessage();
+                      } else {
+                        final pricePoint =
+                            widget.product.pricePoints[int.parse(
+                              _selectedOption!,
+                            )];
+                        final productRef = FirebaseFirestore.instance
+                            .collection('products')
+                            .doc(widget.product.product_id);
+                        final productSnapshot = await productRef.get();
+                        final currentStock =
+                            productSnapshot.data()?['stock'] ?? 0;
+                        if (pricePoint.quantity > currentStock) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('수량 부족'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+                        context.go(
+                          '/buy-now',
+                          extra: {
+                            'product': widget.product,
+                            'quantity': pricePoint.quantity,
+                            'price':
+                                isSub
+                                    ? pricePoint.price
+                                    : (pricePoint.price / 0.9).round(),
+                          },
+                        );
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: ColorsManager.primaryblack,
+                      padding: EdgeInsets.symmetric(vertical: 10.h),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      '바로 구매',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'NotoSans',
+                        fontSize: 18.sp,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12),
-            child: Container(
-              decoration: ShapeDecoration(
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  side: const BorderSide(width: 0.27, color: Color(0xFF747474)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Column(
-                children: [
-                  ...widget.product.pricePoints.asMap().entries.map((entry) {
-                    int index = entry.key;
-                    PricePoint pricePoint = entry.value;
-                    double perUnit = pricePoint.price / pricePoint.quantity;
-                    return Column(
-                      children: [
-                        RadioListTile<String>(
-                          title: Row(
-                            children: [
-                              Text(
-                                '${pricePoint.quantity}개 ${formatCurrency.format(widget.isSub ? pricePoint.price : (pricePoint.price / 0.9).round())}원',
-                                style: TextStyle(
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 16.sp,
-                                  height: 1.4,
-                                ),
-                              ),
-                              SizedBox(width: 5.w),
-                              Text(
-                                '(1개 ${formatCurrency.format(widget.isSub ? perUnit.round() : (perUnit / 0.9).round())}원)',
-                                style: TextStyles.abeezee14px400wP600,
-                              ),
-                            ],
-                          ),
-                          value: index.toString(),
-                          groupValue: _selectedOption,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedOption = value;
-                            });
-                          },
-                          activeColor: ColorsManager.primaryblack,
-                        ),
-                        if (index < widget.product.pricePoints.length - 1)
-                          const Divider(
-                            height: 1,
-                            thickness: 0.40,
-                            color: Color(0xFF747474),
-                          ),
-                      ],
-                    );
-                  }).toList(),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 30.h),
-            child: Container(
-              padding: EdgeInsets.only(
-                left: 15.w,
-                top: 15.h,
-                bottom: 15.h,
-                right: 15.w,
-              ),
-              decoration: ShapeDecoration(
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  side: const BorderSide(width: 0.27, color: Color(0xFF747474)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildInfoRow('배송', widget.product.arrivalDate ?? ''),
-                  SizedBox(height: 10.h),
-                  const Divider(
-                    height: 1,
-                    thickness: 0.40,
-                    color: Color(0xFF747474),
-                  ),
-                  SizedBox(height: 10.h),
-                  _buildInfoRow('보관법 및 소비기한', widget.product.instructions),
-                  SizedBox(height: 10.h),
-                  const Divider(
-                    height: 1,
-                    thickness: 0.40,
-                    color: Color(0xFF747474),
-                  ),
-                  SizedBox(height: 10.h),
-                  _buildInfoRow(
-                    '오늘출발 마감 시간',
-                    '${widget.product.meridiem == 'AM' ? '오전' : '오후'} ${widget.product.baselineTime}시',
-                  ),
-                  SizedBox(height: 10.h),
-                  const Divider(
-                    height: 1,
-                    thickness: 0.40,
-                    color: Color(0xFF747474),
-                  ),
-                  SizedBox(height: 10.h),
-                  _buildInfoRow(
-                    '남은 수량',
-                    '${widget.product.stock.toString()} 개',
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextButton(
-                onPressed: () async {
-                  final currentUser = FirebaseAuth.instance.currentUser;
-                  if (currentUser == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
-                    );
-                    return;
-                  }
-                  if (_selectedOption == null) {
-                    _showQuantityRequiredMessage();
-                  } else {
-                    final pricePoint =
-                        widget.product.pricePoints[int.parse(_selectedOption!)];
-                    final productRef = FirebaseFirestore.instance
-                        .collection('products')
-                        .doc(widget.product.product_id);
-                    final productSnapshot = await productRef.get();
-                    final currentStock = productSnapshot.data()?['stock'] ?? 0;
-                    if (pricePoint.quantity > currentStock) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('수량 부족'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-                    await addProductAsNewEntryToCart(
-                      userId: currentUser.uid,
-                      productId: widget.product.product_id,
-                      quantity: pricePoint.quantity,
-                      price:
-                          widget.isSub
-                              ? pricePoint.price
-                              : (pricePoint.price / 0.9).round(),
-                      deliveryManagerId: widget.product.deliveryManagerId ?? '',
-                    );
-                    if (mounted) {
-                      Navigation(context).pop();
-                    }
-                  }
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: ColorsManager.white,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 6.w,
-                    vertical: 10.h,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(
-                    side: const BorderSide(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  '장바구니 담기',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontFamily: 'NotoSans',
-                    fontSize: 18.sp,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: 10.w),
-            Expanded(
-              child: TextButton(
-                onPressed: () async {
-                  final currentUser = FirebaseAuth.instance.currentUser;
-                  if (currentUser == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
-                    );
-                    return;
-                  }
-                  if (_selectedOption == null) {
-                    _showQuantityRequiredMessage();
-                  } else {
-                    final pricePoint =
-                        widget.product.pricePoints[int.parse(_selectedOption!)];
-                    final productRef = FirebaseFirestore.instance
-                        .collection('products')
-                        .doc(widget.product.product_id);
-                    final productSnapshot = await productRef.get();
-                    final currentStock = productSnapshot.data()?['stock'] ?? 0;
-                    if (pricePoint.quantity > currentStock) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('수량 부족'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-                    context.go(
-                      '/buy-now',
-                      extra: {
-                        'product': widget.product,
-                        'quantity': pricePoint.quantity,
-                        'price':
-                            widget.isSub
-                                ? pricePoint.price
-                                : (pricePoint.price / 0.9).round(),
-                      },
-                    );
-                  }
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: ColorsManager.primaryblack,
-                  padding: EdgeInsets.symmetric(vertical: 10.h),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  '바로 구매',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'NotoSans',
-                    fontSize: 18.sp,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 

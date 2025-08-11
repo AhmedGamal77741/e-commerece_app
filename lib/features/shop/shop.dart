@@ -148,72 +148,72 @@ class _ShopState extends State<Shop> {
           title: Text(''),
           centerTitle: false,
           bottom: PreferredSize(
-            preferredSize: Size.fromHeight(isSub ? 48.h : 48.h),
+            preferredSize: Size.fromHeight(48.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (isSub)
-                  Padding(
-                    padding: EdgeInsets.only(left: 8.w, bottom: 4.h, top: 4.h),
-                    child: FutureBuilder<DocumentSnapshot<Object?>>(
-                      future:
-                          (userData['defaultAddressId'] != null &&
-                                  userData['defaultAddressId'] != '')
-                              ? FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(userData['userId'])
-                                  .collection('addresses')
-                                  .doc(userData['defaultAddressId'])
-                                  .get()
-                              : null,
-                      builder: (context, snapshot) {
-                        String displayName = '배송지 선택';
-                        final addressSnap = snapshot.data;
-                        if (addressSnap != null && addressSnap.exists) {
-                          final addressData =
-                              addressSnap.data() as Map<String, dynamic>?;
-                          displayName = addressData?['name'] ?? '배송지 선택';
-                        }
-                        return TextButton(
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 2.w,
-                              vertical: 0,
+                Padding(
+                  padding: EdgeInsets.only(left: 8.w, bottom: 4.h, top: 4.h),
+                  child: FutureBuilder<DocumentSnapshot<Object?>>(
+                    future:
+                        (userData != null &&
+                                userData['defaultAddressId'] != null &&
+                                userData['defaultAddressId'] != '')
+                            ? FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(userData['userId'])
+                                .collection('addresses')
+                                .doc(userData['defaultAddressId'])
+                                .get()
+                            : null,
+                    builder: (context, snapshot) {
+                      String displayName = '배송지 선택';
+                      final addressSnap = snapshot.data;
+                      if (addressSnap != null && addressSnap.exists) {
+                        final addressData =
+                            addressSnap.data() as Map<String, dynamic>?;
+                        displayName = addressData?['name'] ?? '배송지 선택';
+                      }
+                      return TextButton(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 2.w,
+                            vertical: 0,
+                          ),
+                          minimumSize: Size(0, 32.h),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => AddressListScreen(),
                             ),
-                            minimumSize: Size(0, 32.h),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          onPressed: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => AddressListScreen(),
-                              ),
-                            );
-                            setState(() {});
-                          },
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                displayName,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              SizedBox(width: 6.w),
-                              Icon(
-                                Icons.arrow_drop_down,
+                          );
+                          setState(() {});
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              displayName,
+                              style: TextStyle(
                                 color: Colors.black,
-                                size: 18,
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w500,
                               ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                            ),
+                            SizedBox(width: 6.w),
+                            Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.black,
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
+                ),
                 TabBar(
                   tabAlignment: TabAlignment.start,
                   padding: EdgeInsets.zero,
