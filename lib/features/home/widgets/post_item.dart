@@ -404,7 +404,7 @@ class PostItem extends StatelessWidget {
                                                                         controller:
                                                                             _controller,
                                                                         maxLines:
-                                                                            4,
+                                                                            20,
                                                                         style: TextStyle(
                                                                           color:
                                                                               Colors.black,
