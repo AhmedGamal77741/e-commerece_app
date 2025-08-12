@@ -22,14 +22,6 @@ class _CommentItemState extends State<CommentItem> {
   Widget build(BuildContext context) {
     List<String> likedBy = List<String>.from(widget.comment.likedBy ?? []);
     bool isLiked = likedBy.contains(currentUser!.uid);
-    final bool isDeleted =
-        widget.comment.userImage == null ||
-        (widget.comment.userImage?.isEmpty ?? true);
-    final String displayName =
-        (widget.comment.userName == null ||
-                (widget.comment.userName?.isEmpty ?? true))
-            ? '삭제된 계정'
-            : widget.comment.userName?.toString() ?? '삭제된 계정';
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,18 +31,10 @@ class _CommentItemState extends State<CommentItem> {
             width: 56.w,
             height: 55.h,
             decoration: ShapeDecoration(
-              image:
-                  isDeleted
-                      ? DecorationImage(
-                        image: AssetImage('assets/avatar.png'),
-                        fit: BoxFit.cover,
-                      )
-                      : DecorationImage(
-                        image: NetworkImage(
-                          widget.comment.userImage.toString(),
-                        ),
-                        fit: BoxFit.cover,
-                      ),
+              image: DecorationImage(
+                image: NetworkImage(widget.comment.userImage.toString()),
+                fit: BoxFit.cover,
+              ),
               shape: OvalBorder(),
             ),
           ),
@@ -69,7 +53,7 @@ class _CommentItemState extends State<CommentItem> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '@$displayName',
+                      '@${widget.comment.userName}',
                       style: TextStyles.abeezee16px400wPblack,
                     ),
                   ],
