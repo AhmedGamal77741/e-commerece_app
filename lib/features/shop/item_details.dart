@@ -366,10 +366,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         color: Color(0xFF747474),
                       ),
                       SizedBox(height: 10.h),
-                      _buildInfoRow(
-                        '남은 수량, 제품안내',
-                        widget.product.description ?? '',
-                      ),
+                      _buildInfoRow('제품안내', widget.product.description ?? ''),
                     ],
                   ),
                 ),
