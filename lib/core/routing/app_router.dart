@@ -16,6 +16,9 @@ import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_comments.dart';
 
+// Chat screen import (needed for chat route)
+import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
+
 class AppRouter {
   static final router = GoRouter(
     initialLocation: Routes.navBar,
@@ -52,7 +55,7 @@ class AppRouter {
       ),
       GoRoute(
         name: Routes.navBar,
-        path: Routes.navBar, // '/nav-bar'
+        path: Routes.navBar, // '/'
         builder: (context, state) => const NavBar(),
         routes: [
           GoRoute(
@@ -98,6 +101,25 @@ class AppRouter {
               return Comments(postId: postId);
             },
           ),
+
+          // --- NEW: Chat route ---
+          GoRoute(
+            name: Routes.chatScreen,
+            path: '/chat/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              String name = '고객센터';
+              final extra = state.extra;
+              if (extra is Map &&
+                  extra['name'] is String &&
+                  (extra['name'] as String).isNotEmpty) {
+                name = extra['name'] as String;
+              }
+              return ChatScreen(chatRoomId: id, chatRoomName: name);
+            },
+          ),
+
+          // --- END chat route ---
           GoRoute(
             name: Routes.cancelSubscription,
             path: Routes.cancelSubscription,
