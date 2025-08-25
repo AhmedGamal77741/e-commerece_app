@@ -87,8 +87,19 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                   .doc(productId)
                                   .get(),
                           builder: (context, productSnapshot) {
-                            if (!productSnapshot.hasData) {
+                            if (productSnapshot.connectionState ==
+                                ConnectionState.waiting) {
                               return ListTile(title: Text('로딩 중...'));
+                            }
+                            if (!productSnapshot.hasData ||
+                                !productSnapshot.data!.exists) {
+                              // delete the cart item if product is gone
+                              WidgetsBinding.instance.addPostFrameCallback((
+                                _,
+                              ) async {
+                                await deleteCartItem(cartDocs[index].id);
+                              });
+                              return SizedBox.shrink(); // don't render anything
                             }
                             final productData =
                                 productSnapshot.data!.data()

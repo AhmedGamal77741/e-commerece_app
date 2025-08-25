@@ -17,11 +17,12 @@ import '../models/message_model.dart';
 class ChatScreen extends StatefulWidget {
   final String chatRoomId;
   final String chatRoomName;
-
+  final bool isDeleted;
   const ChatScreen({
     Key? key,
     required this.chatRoomId,
     required this.chatRoomName,
+    this.isDeleted = false,
   }) : super(key: key);
 
   @override
@@ -282,7 +283,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                     });
                                   },
                                   interactable:
-                                      !(_blocked || _isBlocked), // <-- add this
+                                      !(_blocked || _isBlocked) &&
+                                      !widget.isDeleted,
+                                  isDeleted: widget.isDeleted,
                                 );
                               },
                             );
@@ -328,7 +331,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         ],
                       ),
                     ),
-                  (_blocked || _isBlocked)
+                  widget.isDeleted
+                      ? SizedBox.shrink()
+                      : (_blocked || _isBlocked)
                       ? Container(
                         color: Colors.grey[200],
                         padding: const EdgeInsets.all(16),
@@ -488,13 +493,14 @@ class MessageBubble extends StatelessWidget {
   final bool isMe;
   final VoidCallback onReply;
   final bool interactable;
-
+  final bool isDeleted;
   const MessageBubble({
     Key? key,
     required this.message,
     required this.isMe,
     required this.onReply,
-    required this.interactable, // <-- add this
+    required this.interactable,
+    required this.isDeleted,
   }) : super(key: key);
 
   @override
@@ -516,36 +522,47 @@ class MessageBubble extends StatelessWidget {
                   isMe ? MainAxisAlignment.start : MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (!isMe)
-                  Flexible(
-                    child: FutureBuilder(
-                      future:
-                          FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(message.senderId)
-                              .get(),
-                      builder: (context, asyncSnapshot) {
-                        if (!asyncSnapshot.hasData) {
-                          return SizedBox(
-                            width: 35.sp,
-                            height: 35.sp,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: ColorsManager.primary600,
+                if (!isMe) ...{
+                  if (isDeleted) ...{
+                    Flexible(
+                      child: CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage: AssetImage('assets/avatar.png'),
+                      ),
+                    ),
+                  } else ...{
+                    Flexible(
+                      child: FutureBuilder(
+                        future:
+                            FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(message.senderId)
+                                .get(),
+                        builder: (context, asyncSnapshot) {
+                          if (!asyncSnapshot.hasData) {
+                            return SizedBox(
+                              width: 35.sp,
+                              height: 35.sp,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: ColorsManager.primary600,
+                                ),
                               ),
+                            );
+                          }
+                          return CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.grey[300],
+                            backgroundImage: NetworkImage(
+                              asyncSnapshot.data!.data()!['url'],
                             ),
                           );
-                        }
-                        return CircleAvatar(
-                          radius: 20,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: NetworkImage(
-                            asyncSnapshot.data!.data()!['url'],
-                          ),
-                        );
-                      },
+                        },
+                      ),
                     ),
-                  ),
+                  },
+                },
                 Expanded(
                   child: Column(
                     crossAxisAlignment:
@@ -553,18 +570,33 @@ class MessageBubble extends StatelessWidget {
                             ? CrossAxisAlignment.end
                             : CrossAxisAlignment.start,
                     children: [
-                      if (!isMe)
-                        Padding(
-                          padding: EdgeInsets.only(left: 8, right: 5),
-                          child: Text(
-                            message.senderName,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: isMe ? Colors.white70 : Colors.black54,
+                      if (!isMe) ...{
+                        if (isDeleted) ...{
+                          Padding(
+                            padding: EdgeInsets.only(left: 8, right: 5),
+                            child: Text(
+                              '삭제된 사용자',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isMe ? Colors.white70 : Colors.black54,
+                              ),
                             ),
                           ),
-                        ),
+                        } else ...{
+                          Padding(
+                            padding: EdgeInsets.only(left: 8, right: 5),
+                            child: Text(
+                              message.senderName,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isMe ? Colors.white70 : Colors.black54,
+                              ),
+                            ),
+                          ),
+                        },
+                      },
                       SizedBox(height: 4),
                       Row(
                         mainAxisSize: MainAxisSize.min,
