@@ -64,17 +64,8 @@ class _FriendsScreenState extends State<FriendsScreen>
     });
 
     try {
-      final addedCount = await _contactService.syncAndAddFriendsFromContacts();
-      if (addedCount > 0) {
-        // Show a subtle notification
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$addedCount명의 친구가 연락처에서 자동으로 추가되었습니다'),
-            duration: const Duration(seconds: 2),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      print('Syncing contacts...');
+      _contactService.syncAndAddFriendsFromContacts();
     } catch (e) {
       print('Contact sync error: $e');
     } finally {

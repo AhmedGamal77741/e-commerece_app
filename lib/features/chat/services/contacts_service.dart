@@ -25,7 +25,7 @@ class ContactService {
       throw Exception('Contact permission denied');
     }
 
-    final contacts = await FlutterContacts.getContacts();
+    final contacts = await FlutterContacts.getContacts(withProperties: true);
     return contacts
         .where((contact) => contact.phones.isNotEmpty == true)
         .toList();
@@ -38,10 +38,10 @@ class ContactService {
     for (final contact in contacts) {
       if (contact.phones.isNotEmpty) {
         for (final phone in contact.phones) {
-          final normalizedNumber = _normalizePhoneNumber(phone.number);
-          if (normalizedNumber.isNotEmpty &&
-              !phoneNumbers.contains(normalizedNumber)) {
-            phoneNumbers.add(normalizedNumber);
+          final normalizedNumber = expandEgKrNumber(phone.number);
+          if (phone.number.isNotEmpty &&
+              !phoneNumbers.contains(normalizedNumber.first)) {
+            phoneNumbers.addAll(normalizedNumber);
           }
         }
       }
@@ -50,19 +50,42 @@ class ContactService {
     return phoneNumbers;
   }
 
-  // Normalize phone number
-  String _normalizePhoneNumber(String phoneNumber) {
-    String normalized = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+  /// Normalizes a phone number to E.164 format
+  /// Example:
+  ///   normalizeNumber("01062675821", "EG") -> +201062675821
+  ///   normalizeNumber("01012345678", "KR") -> +821012345678
+  List<String> expandEgKrNumber(String input) {
+    final List<String> results = [];
+    final cleaned = input.replaceAll(
+      RegExp(r'\s+|-'),
+      "",
+    ); // remove spaces/dashes
 
-    if (normalized.startsWith('0')) {
-      normalized = '+82${normalized.substring(1)}';
-    } else if (normalized.startsWith('1') && normalized.length == 10) {
-      normalized = '+1$normalized';
-    } else if (!normalized.startsWith('+')) {
-      normalized = '+1$normalized';
+    // Case 1: Egyptian number (+20… or 01…)
+    if (cleaned.startsWith("+20")) {
+      final local = cleaned.replaceFirst("+20", "0"); // local format
+      results.add(cleaned); // keep international
+      results.add(local);
+    }
+    // Case 2: Korean number (+82… or 010…)
+    else if (cleaned.startsWith("+82")) {
+      final local = cleaned.replaceFirst("+82", "0"); // 010...
+      results.add(cleaned);
+      results.add(local);
+    }
+    // Case 3: Ambiguous (doesn't start with +20/+82/01/010)
+    else {
+      // Try Egypt interpretation
+      final egIntl = "+20$cleaned".replaceFirst("0", "");
+      results.add(cleaned);
+      results.add(egIntl);
+
+      // Try Korea interpretation
+      final krIntl = "+82$cleaned".replaceFirst("0", "");
+      results.add(krIntl);
     }
 
-    return normalized;
+    return results.toSet().toList(); // remove duplicates
   }
 
   // Find users by phone numbers
@@ -80,7 +103,6 @@ class ContactService {
           await _firestore
               .collection('users')
               .where('phoneNumber', whereIn: batch)
-              .where('phoneVerified', isEqualTo: true)
               .get();
 
       final users =
