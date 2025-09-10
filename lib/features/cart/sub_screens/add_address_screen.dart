@@ -184,6 +184,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
 
       // Create address document data
       final addressData = {
+        'id': addressesRef.doc().id,
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'address': _addressController.text.trim(),
