@@ -190,6 +190,7 @@ class _BuyNowState extends State<BuyNow> {
         'paymentId': paymentId,
         'deliveryAddressId': address.id,
         'deliveryAddress': deliveryAddressController.text.trim(),
+        'deliveryAddressDetail': address.detailAddress,
         'deliveryInstructions':
             selectedRequest == '직접입력'
                 ? manualRequest?.trim() ?? ''
@@ -439,6 +440,7 @@ class _BuyNowState extends State<BuyNow> {
           'paymentId': data['paymentId'],
           'deliveryAddressId': data['deliveryAddressId'],
           'deliveryAddress': data['deliveryAddress'],
+          'deliveryAddressDetail': data['deliveryAddressDetail'],
           'deliveryInstructions': data['deliveryInstructions'],
           'cashReceipt': data['cashReceipt'],
           'paymentMethod': data['paymentMethod'],
