@@ -142,6 +142,19 @@ class _ShopState extends State<Shop> {
       length: _categories.length,
       initialIndex: initialIndex,
       child: Scaffold(
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            context.go(Routes.shopSearchScreen);
+          },
+          elevation: 0,
+          backgroundColor: Colors.black,
+          shape: const CircleBorder(),
+          child: ImageIcon(
+            AssetImage('assets/010no.png'),
+            color: Colors.white,
+            size: 60.sp,
+          ),
+        ),
         appBar: AppBar(
           toolbarHeight: 42.h,
           backgroundColor: ColorsManager.white,
@@ -338,19 +351,6 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   Widget build(BuildContext context) {
     // Display products in a grid
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          context.go(Routes.shopSearchScreen);
-        },
-        elevation: 0,
-        backgroundColor: Colors.black,
-        shape: const CircleBorder(),
-        child: ImageIcon(
-          AssetImage('assets/010no.png'),
-          color: Colors.white,
-          size: 60.sp,
-        ),
-      ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 12.w),
         child: StreamBuilder<QuerySnapshot>(
