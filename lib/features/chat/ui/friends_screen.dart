@@ -78,7 +78,6 @@ class _FriendsScreenState extends State<FriendsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         actionsPadding: EdgeInsets.only(right: 5.w),
 
@@ -98,7 +97,6 @@ class _FriendsScreenState extends State<FriendsScreen>
                   },
                 )
                 : null,
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),

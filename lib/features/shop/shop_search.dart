@@ -73,7 +73,6 @@ class _ShopSearchState extends State<ShopSearch> {
     return Scaffold(
       appBar: AppBar(
         leadingWidth: 40.w,
-        backgroundColor: Colors.white,
         titleSpacing: 0,
 
         leading: IconButton(

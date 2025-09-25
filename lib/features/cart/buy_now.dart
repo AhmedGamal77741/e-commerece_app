@@ -421,7 +421,6 @@ class _BuyNowState extends State<BuyNow> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
           centerTitle: true,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),

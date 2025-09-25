@@ -607,7 +607,6 @@ class _PlaceOrderState extends State<PlaceOrder> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
           centerTitle: true,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),

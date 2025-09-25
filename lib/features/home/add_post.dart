@@ -64,7 +64,6 @@ class _AddPostState extends State<AddPost> {
         ),
         appBar: AppBar(
           titleSpacing: 0,
-          backgroundColor: Colors.white,
           automaticallyImplyLeading: false, // Don't show the leading button
           title: Row(
             mainAxisAlignment: MainAxisAlignment.start,

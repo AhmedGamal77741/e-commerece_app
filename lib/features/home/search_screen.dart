@@ -56,7 +56,6 @@ class _HomeSearchState extends State<HomeSearch> {
         appBar: AppBar(
           automaticallyImplyLeading: false,
           toolbarHeight: 130.h,
-          backgroundColor: ColorsManager.white,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [

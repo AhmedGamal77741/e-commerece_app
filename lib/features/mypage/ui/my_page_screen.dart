@@ -31,7 +31,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
         children: [
           Scaffold(
             appBar: AppBar(
-              backgroundColor: Colors.white,
               centerTitle: true,
 
               // ← Give the toolbar the full height you need

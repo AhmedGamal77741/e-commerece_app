@@ -1,4 +1,5 @@
 import 'package:ecommerece_app/core/routing/app_router.dart';
+import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -87,7 +88,10 @@ class _EcommerceAppState extends State<EcommerceApp> {
                           // scaffoldMessengerKey: scaffoldMessengerKey,
                           title: 'E-commerce App (Web)',
                           theme: ThemeData(
-                            scaffoldBackgroundColor: Colors.white,
+                            scaffoldBackgroundColor: ColorsManager.primary,
+                            appBarTheme: AppBarTheme(
+                              backgroundColor: ColorsManager.primary,
+                            ),
                             unselectedWidgetColor: Colors.grey,
                             radioTheme: RadioThemeData(
                               fillColor: WidgetStateColor.resolveWith(
@@ -112,7 +116,10 @@ class _EcommerceAppState extends State<EcommerceApp> {
                   // scaffoldMessengerKey: scaffoldMessengerKey,
                   title: 'E-commerce App',
                   theme: ThemeData(
-                    scaffoldBackgroundColor: Colors.white,
+                    scaffoldBackgroundColor: ColorsManager.primary,
+                    appBarTheme: AppBarTheme(
+                      backgroundColor: ColorsManager.primary,
+                    ),
                     unselectedWidgetColor: Colors.grey,
                     radioTheme: RadioThemeData(
                       fillColor: WidgetStateColor.resolveWith(

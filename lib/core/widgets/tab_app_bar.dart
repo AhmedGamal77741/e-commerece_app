@@ -20,7 +20,6 @@ class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
     return imgUrl == null
         ? AppBar(
           toolbarHeight: 130.h,
-          backgroundColor: ColorsManager.white,
           title: TabBar(
             labelStyle: TextStyle(
               fontSize: 16.sp,
@@ -41,7 +40,6 @@ class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         )
         : AppBar(
-          backgroundColor: ColorsManager.white,
           title: Image.asset('assets/$imgUrl', width: 39.w, height: 39.h),
           centerTitle: true,
           bottom: TabBar(
