@@ -23,6 +23,8 @@ class PlaceOrder extends StatefulWidget {
 }
 
 class _PlaceOrderState extends State<PlaceOrder> {
+  bool isCheckoutValid = true;
+  String? checkoutErrorMessage;
   void _showBankAccountDialog() {
     showDialog(
       context: context,
@@ -118,6 +120,73 @@ class _PlaceOrderState extends State<PlaceOrder> {
     );
   }
 
+  Future<void> _validateCheckout() async {
+    // Address check
+
+    // Cart check
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      setState(() {
+        isCheckoutValid = false;
+        checkoutErrorMessage = '로그인이 필요합니다.';
+      });
+      return;
+    }
+    final cartSnapshot =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('cart')
+            .get();
+    final cartItems = cartSnapshot.docs.map((doc) => doc.data()).toList();
+    if (cartItems.isEmpty) {
+      setState(() {
+        isCheckoutValid = false;
+        checkoutErrorMessage = '장바구니가 비어 있습니다.';
+      });
+      return;
+    }
+
+    // Product existence and stock check
+    for (var item in cartItems) {
+      final productId = item['product_id'];
+      final quantityOrdered = item['quantity'];
+      final productRef = FirebaseFirestore.instance
+          .collection('products')
+          .doc(productId);
+      final productSnapshot = await productRef.get();
+      if (!productSnapshot.exists) {
+        setState(() {
+          isCheckoutValid = false;
+          checkoutErrorMessage = '상품이 더 이상 존재하지 않습니다.';
+        });
+        return;
+      }
+      final currentStock = productSnapshot.data()?['stock'] ?? 0;
+      if (quantityOrdered is! int || quantityOrdered <= 0) {
+        setState(() {
+          isCheckoutValid = false;
+          checkoutErrorMessage = '주문 수량이 올바르지 않습니다.';
+        });
+        return;
+      }
+      if (currentStock < quantityOrdered) {
+        setState(() {
+          isCheckoutValid = false;
+          checkoutErrorMessage =
+              '재고가 부족한 상품이 있습니다. (주문 수량: $quantityOrdered, 남은 재고: $currentStock)';
+        });
+        return;
+      }
+    }
+
+    // All checks passed
+    setState(() {
+      isCheckoutValid = true;
+      checkoutErrorMessage = null;
+    });
+  }
+
   Future<void> _fetchBankAccounts() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -174,8 +243,6 @@ class _PlaceOrderState extends State<PlaceOrder> {
   int paymentMethod = 0;
   Map<String, dynamic>? userBank;
   Map<String, dynamic>? userCard;
-  Timer? _paymentTimeoutTimer;
-  String? _timeoutPaymentId;
 
   Future<void> _selectAddress() async {
     final result = await Navigator.push(
@@ -195,144 +262,15 @@ class _PlaceOrderState extends State<PlaceOrder> {
   Future<void> _handlePlaceOrder(int totalPrice, String uid) async {
     if (!_formKey.currentState!.validate()) return;
     // Save name/phone/email to cache before placing order
-    await _saveCachedUserValues();
+
     setState(() {
       isProcessing = true;
     });
     try {
-      if (deliveryAddressController.text.isEmpty) {
-        final userData =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(FirebaseAuth.instance.currentUser!.uid)
-                .get();
-        if (userData['defaultAddressId'] == null ||
-            userData['defaultAddressId'] == '') {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('배송 주소를 선택해주세요.')));
-          setState(() {
-            isProcessing = false;
-          });
-          return;
-        } else {
-          final defaultAddressDoc =
-              await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(uid)
-                  .collection('addresses')
-                  .doc(userData['defaultAddressId'])
-                  .get();
-          final defaultAddress =
-              defaultAddressDoc.data() as Map<String, dynamic>;
-          deliveryAddressController.text = defaultAddress['address'];
-          address = Address(
-            id: defaultAddress['id'],
-            name: defaultAddress['name'],
-            phone: defaultAddress['phone'],
-            address: defaultAddress['address'],
-            detailAddress: defaultAddress['detailAddress'],
-            isDefault: defaultAddress['isDefault'],
-            addressMap: defaultAddress['addressMap'],
-          );
-        }
-      }
-
-      final cartSnapshot =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('cart')
-              .get();
-      final cartItems = cartSnapshot.docs.map((doc) => doc.data()).toList();
-      if (cartItems.isEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('장바구니가 비어 있습니다.')));
-        setState(() {
-          isProcessing = false;
-        });
-        return;
-      }
-      for (var item in cartItems) {
-        final productId = item['product_id'];
-        final quantityOrdered = item['quantity'];
-        final productRef = FirebaseFirestore.instance
-            .collection('products')
-            .doc(productId);
-        final productSnapshot = await productRef.get();
-        if (!productSnapshot.exists) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('상품이 더 이상 존재하지 않습니다.')));
-          setState(() {
-            isProcessing = false;
-          });
-          return;
-        }
-        final currentStock = productSnapshot.data()?['stock'] ?? 0;
-        if (quantityOrdered is! int || quantityOrdered <= 0) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('주문 수량이 올바르지 않습니다.')));
-          setState(() {
-            isProcessing = false;
-          });
-          return;
-        }
-        if (currentStock < quantityOrdered) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '재고가 부족한 상품이 있습니다. (주문 수량: $quantityOrdered, 남은 재고: $currentStock)',
-              ),
-            ),
-          );
-          setState(() {
-            isProcessing = false;
-          });
-          return;
-        }
-      }
       final docRef = FirebaseFirestore.instance.collection('orders').doc();
       final paymentId = docRef.id;
       currentPaymentId = paymentId;
-      final pendingOrderRef =
-          FirebaseFirestore.instance.collection('pending_orders').doc();
-      final productIds = cartItems.map((item) => item['product_id']).toList();
-      final quantities = cartItems.map((item) => item['quantity']).toList();
-      final prices = cartItems.map((item) => item['price']).toList();
-      final deliveryManagerIds =
-          cartItems.map((item) => item['deliveryManagerId']).toList();
-      final orderData = {
-        'pendingOrderId': pendingOrderRef.id,
-        'userId': uid,
-        'paymentId': paymentId,
-        'deliveryAddressId': address.id,
-        'deliveryAddress': deliveryAddressController.text.trim(),
-        'deliveryAddressDetail': address.detailAddress,
-        'deliveryInstructions':
-            selectedRequest == '직접입력'
-                ? manualRequest?.trim() ?? ''
-                : selectedRequest.trim(),
-        'cashReceipt': cashReceiptController.text.trim(),
-        'paymentMethod': 'bank',
-        'orderDate': DateTime.now().toIso8601String(),
-        'createdAt': FieldValue.serverTimestamp(),
-        'totalPrice': totalPrice,
-        'productIds': productIds,
-        'quantities': quantities,
-        'prices': prices,
-        'orderStatus': 'pending',
-        'status': 'pending',
-        'isRequested': false,
-        'deliveryManagerIds': deliveryManagerIds,
-        'carrierId': '',
-        'isSent': false,
-        'confirmed': false,
-        'phoneNo': phoneController.text.trim(),
-      };
-      await pendingOrderRef.set(orderData);
+
       String? payerId;
       if (bankAccounts.isNotEmpty &&
           selectedBankIndex >= 0 &&
@@ -341,8 +279,9 @@ class _PlaceOrderState extends State<PlaceOrder> {
       } else {
         payerId = null;
       }
-      _startPaymentTimeout(paymentId, pendingOrderRef);
+      // Removed payment timeout logic
 
+      // Show dialog for user to launch payment page and view order summary
       if (payerId != null && payerId.isNotEmpty) {
         _launchBankRpaymentPage(
           totalPrice.toString(),
@@ -405,56 +344,21 @@ class _PlaceOrderState extends State<PlaceOrder> {
           );
         }
         if (status == 'failed') {
-          _cancelPaymentTimeoutIfNeeded(
-            pendingDoc['paymentId'] as String?,
-            status,
-          );
-          return Column(
-            children: [
-              WideTextButton(
-                txt: '주문',
-                func: () async {
-                  await pendingDoc.reference.update({'status': 'pending'});
-                  final data = pendingDoc.data() as Map<String, dynamic>;
-                  final payerId =
-                      (userBank != null
-                          ? userBank!['payerId'] as String?
-                          : null);
-
-                  if (payerId != null && payerId.isNotEmpty) {
-                    _launchBankRpaymentPage(
-                      (data['totalPrice'] ?? '').toString(),
-                      data['userId'] ?? uid,
-                      data['phoneNo'] ?? '',
-                      data['paymentId'] ?? '',
-                      payerId,
-                      nameController.text.trim(), // pass name
-                      emailController.text.trim(), // pass email
-                    );
-                  } else {
-                    _launchBankPaymentPage(
-                      (data['totalPrice'] ?? '').toString(),
-                      data['userId'] ?? uid,
-                      data['phoneNo'] ?? '',
-                      data['paymentId'] ?? '',
-                      nameController.text.trim(), // pass name
-                      emailController.text.trim(), // pass email
-                    );
-                  }
-                },
-                color: Colors.black,
-                txtColor: Colors.white,
-              ),
-              SizedBox(height: 8.h),
-              Text('결제 실패. 다시 시도해주세요.', style: TextStyle(color: Colors.red)),
-            ],
-          );
+          Future.microtask(() async {
+            await pendingDoc.reference.delete();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('결제 실패. 다시 시도해주세요.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              Navigator.pop(context);
+            }
+          });
+          return SizedBox.shrink();
         }
         if (status == 'success') {
-          _cancelPaymentTimeoutIfNeeded(
-            pendingDoc['paymentId'] as String?,
-            status,
-          );
           final paymentId = pendingDoc['paymentId'] as String?;
           if (paymentId != null && !_finalizedPayments.contains(paymentId)) {
             _finalizedPayments.add(paymentId);
@@ -526,13 +430,44 @@ class _PlaceOrderState extends State<PlaceOrder> {
       isProcessing = true;
     });
     try {
+      final userData =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .get();
+      final defaultAddressDoc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('addresses')
+              .doc(userData['defaultAddressId'])
+              .get();
+      final defaultAddress = defaultAddressDoc.data() as Map<String, dynamic>;
+      deliveryAddressController.text = defaultAddress['address'];
+      address = Address(
+        id: defaultAddress['id'],
+        name: defaultAddress['name'],
+        phone: defaultAddress['phone'],
+        address: defaultAddress['address'],
+        detailAddress: defaultAddress['detailAddress'],
+        isDefault: defaultAddress['isDefault'],
+        addressMap: defaultAddress['addressMap'],
+      );
+      final cartSnapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('cart')
+              .get();
+      final cartItems = cartSnapshot.docs.map((doc) => doc.data()).toList();
+      final productIds = cartItems.map((item) => item['product_id']).toList();
+      final quantities = cartItems.map((item) => item['quantity']).toList();
+      final prices = cartItems.map((item) => item['price']).toList();
+      final deliveryManagerIds =
+          cartItems.map((item) => item['deliveryManagerId']).toList();
       if (pendingDocs.isEmpty) return;
       final doc = pendingDocs.first;
-      final data = doc.data() as Map<String, dynamic>;
-      final productIds = List.from(data['productIds'] ?? []);
-      final quantities = List.from(data['quantities'] ?? []);
-      final prices = List.from(data['prices'] ?? []);
-      final deliveryManagerIds = List.from(data['deliveryManagerIds'] ?? []);
+
       for (int i = 0; i < productIds.length; i++) {
         final productRef = FirebaseFirestore.instance
             .collection('products')
@@ -546,15 +481,19 @@ class _PlaceOrderState extends State<PlaceOrder> {
         final orderRef = FirebaseFirestore.instance.collection('orders').doc();
         final orderData = {
           'orderId': orderRef.id,
-          'userId': data['userId'],
-          'paymentId': data['paymentId'],
-          'deliveryAddressId': data['deliveryAddressId'],
-          'deliveryAddress': data['deliveryAddress'],
-          'deliveryAddressDetail': data['deliveryAddressDetail'],
-          'deliveryInstructions': data['deliveryInstructions'],
-          'cashReceipt': data['cashReceipt'],
-          'paymentMethod': data['paymentMethod'],
-          'orderDate': data['orderDate'],
+          'userId': uid,
+          'paymentId': currentPaymentId,
+          'deliveryAddressId': address.id,
+          'deliveryAddress': deliveryAddressController.text.trim(),
+          'deliveryAddressDetail': address.detailAddress,
+
+          'deliveryInstructions':
+              selectedRequest == '직접입력'
+                  ? manualRequest?.trim() ?? ''
+                  : selectedRequest.trim(),
+          'cashReceipt': cashReceiptController.text.trim(),
+          'paymentMethod': 'bank',
+          'orderDate': DateTime.now().toIso8601String(),
           'totalPrice': prices[i],
           'productId': productIds[i],
           'quantity': orderQty,
@@ -562,12 +501,12 @@ class _PlaceOrderState extends State<PlaceOrder> {
           'trackingNumber': '',
           'trackingEvents': {},
           'orderStatus': 'orderComplete',
-          'isRequested': data['isRequested'],
+          'isRequested': false,
           'deliveryManagerId': deliveryManagerIds[i],
           'carrierId': '',
           'isSent': false,
           'confirmed': false,
-          'phoneNo': data['phoneNo'],
+          'phoneNo': phoneController.text.trim(),
         };
         await orderRef.set(orderData);
         await productRef.update({'stock': FieldValue.increment(-orderQty)});
@@ -584,12 +523,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
         });
       }
       await doc.reference.delete();
-      final cartSnapshot =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('cart')
-              .get();
+
       for (var doc in cartSnapshot.docs) {
         await doc.reference.delete();
       }
@@ -610,38 +544,13 @@ class _PlaceOrderState extends State<PlaceOrder> {
     }
   }
 
-  void _startPaymentTimeout(
-    String paymentId,
-    DocumentReference pendingOrderRef,
-  ) {
-    _paymentTimeoutTimer?.cancel();
-    _timeoutPaymentId = paymentId;
-    _paymentTimeoutTimer = Timer(Duration(minutes: 2), () async {
-      final doc = await pendingOrderRef.get();
-      if (doc.exists &&
-          (doc.data() as Map<String, dynamic>)['status'] == 'pending') {
-        await pendingOrderRef.update({'status': 'failed'});
-        if (mounted) setState(() {});
-      }
-    });
-  }
-
-  void _cancelPaymentTimeoutIfNeeded(String? paymentId, String? status) {
-    if (_paymentTimeoutTimer != null &&
-        _timeoutPaymentId == paymentId &&
-        status != 'pending') {
-      _paymentTimeoutTimer?.cancel();
-      _paymentTimeoutTimer = null;
-      _timeoutPaymentId = null;
-    }
-  }
-
   @override
   void initState() {
     super.initState();
     _fetchBankAccounts();
     _fetchUserPaymentInfo();
-    _loadCachedUserValues(); // NEW: load cached name/phone
+    _loadCachedUserValues();
+    // NEW: load cached name/phone
   }
 
   Future<void> _loadCachedUserValues() async {
@@ -707,7 +616,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
           title: Text("주문 결제", style: TextStyle(fontFamily: 'NotoSans')),
         ),
         body: Padding(
-          padding: EdgeInsets.only(left: 15.w, top: 30.h, right: 15.w),
+          padding: EdgeInsets.only(left: 15.w, top: 10.h, right: 15.w),
           child: ListView(
             children: [
               Container(
@@ -1224,7 +1133,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                   ),
                 ),
               ),
-              verticalSpace(20.h),
+              verticalSpace(10.h),
               Container(
                 padding: EdgeInsets.only(left: 15.w, top: 15.h, bottom: 15.h),
                 decoration: ShapeDecoration(
@@ -1321,31 +1230,52 @@ class _PlaceOrderState extends State<PlaceOrder> {
                   ],
                 ),
               ),
-              StreamBuilder<QuerySnapshot>(
-                stream:
-                    FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(FirebaseAuth.instance.currentUser?.uid ?? '')
-                        .collection('cart')
-                        .snapshots(),
-                builder: (context3, cartSnapshot) {
-                  if (!cartSnapshot.hasData ||
-                      cartSnapshot.data!.docs.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  return FutureBuilder<int>(
-                    future: calculateCartTotal(cartSnapshot.data!.docs),
-                    builder: (context2, totalSnapshot) {
-                      final totalPrice = totalSnapshot.data ?? 0;
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+            ],
+          ),
+        ),
+        bottomNavigationBar: StreamBuilder<QuerySnapshot>(
+          stream:
+              FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(FirebaseAuth.instance.currentUser?.uid ?? '')
+                  .collection('cart')
+                  .snapshots(),
+          builder: (context3, cartSnapshot) {
+            if (!cartSnapshot.hasData || cartSnapshot.data!.docs.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            return FutureBuilder<int>(
+              future: calculateCartTotal(cartSnapshot.data!.docs),
+              builder: (context2, totalSnapshot) {
+                final totalPrice = totalSnapshot.data ?? 0;
+                return Container(
+                  padding: EdgeInsets.fromLTRB(
+                    16.w,
+                    10.h,
+                    16.w,
+                    28.h,
+                  ), // Extra bottom padding for iOS PWA
+                  decoration: BoxDecoration(color: Colors.white),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          verticalSpace(20.h),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '총 결제 금액 ',
+                          Text(
+                            '총 결제 금액 ',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 18.sp,
+                              fontFamily: 'NotoSans',
+                              fontWeight: FontWeight.w400,
+                              height: 1.40.h,
+                            ),
+                          ),
+                          totalSnapshot.hasData
+                              ? Text(
+                                '${formatCurrency.format(totalPrice)} 원',
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontSize: 18.sp,
@@ -1353,30 +1283,18 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                   fontWeight: FontWeight.w400,
                                   height: 1.40.h,
                                 ),
-                              ),
-                              totalSnapshot.hasData
-                                  ? Text(
-                                    '${formatCurrency.format(totalPrice)} 원',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 18.sp,
-                                      fontFamily: 'NotoSans',
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.40.h,
-                                    ),
-                                  )
-                                  : CircularProgressIndicator(),
-                            ],
-                          ),
-                          _buildPaymentButton(totalPrice, uid),
+                              )
+                              : CircularProgressIndicator(),
                         ],
-                      );
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
+                      ),
+                      SizedBox(height: 8.h),
+                      _buildPaymentButton(totalPrice, uid),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
         ),
       ),
     );

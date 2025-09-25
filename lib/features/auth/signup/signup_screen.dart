@@ -12,6 +12,7 @@ import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -21,6 +22,8 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  bool agreedToTerms = false;
+  bool agreedToPrivacy = false;
   final passwordController = TextEditingController();
   final emailController = TextEditingController();
   final nameController = TextEditingController();
@@ -209,7 +212,81 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
                 ),
-                verticalSpace(30),
+                verticalSpace(10),
+                // Terms and Privacy checkboxes
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: agreedToTerms,
+                          onChanged: (value) {
+                            setState(() {
+                              agreedToTerms = value ?? false;
+                            });
+                          },
+                          checkColor:
+                              agreedToTerms ? Colors.white : Colors.black,
+                          fillColor: WidgetStateProperty.resolveWith<Color>((
+                            states,
+                          ) {
+                            if (states.contains(WidgetState.selected)) {
+                              return Colors.black;
+                            }
+                            return Colors.white;
+                          }),
+                          side: BorderSide(color: Colors.black, width: 2.w),
+                        ),
+                        GestureDetector(
+                          onTap: () async {
+                            final url = Uri.parse(
+                              'https://flowery-tub-f11.notion.site/1d938af9230b80fa9d64ce280f6eacbd',
+                            );
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url);
+                            }
+                          },
+                          child: Text(
+                            '이용약관 동의',
+                            style: TextStyle(
+                              color: Colors.black,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: agreedToPrivacy,
+                          onChanged: (value) {
+                            setState(() {
+                              agreedToPrivacy = value ?? false;
+                            });
+                          },
+                          checkColor:
+                              agreedToPrivacy ? Colors.white : Colors.black,
+                          fillColor: WidgetStateProperty.resolveWith<Color>((
+                            states,
+                          ) {
+                            if (states.contains(WidgetState.selected)) {
+                              return Colors.black;
+                            }
+                            return Colors.white;
+                          }),
+                          side: BorderSide(color: Colors.black, width: 2.w),
+                        ),
+                        Text(
+                          '개인정보 수집 및 이용 동의',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                verticalSpace(20),
                 Text(error, style: TextStyles.abeezee16px400wPred),
 
                 // Container(
@@ -249,6 +326,12 @@ class _SignupScreenState extends State<SignupScreen> {
                 WideTextButton(
                   txt: '가입하기',
                   func: () async {
+                    if (!agreedToTerms || !agreedToPrivacy) {
+                      setState(() {
+                        error = '모든 약관에 동의해야 가입할 수 있습니다.';
+                      });
+                      return;
+                    }
                     if (_formKey.currentState!.validate()) {
                       LoadingService().showLoading();
 

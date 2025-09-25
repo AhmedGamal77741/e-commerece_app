@@ -415,34 +415,13 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                 final data2 = sortedProducts[index];
                 Product p = data2;
                 return InkWell(
-                  onTap: () async {
-                    final currentUser = FirebaseAuth.instance.currentUser;
-                    if (currentUser == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '로그인 후에 상품 상세를 볼 수 있습니다.',
-                            style: TextStyle(fontSize: 16.sp),
-                          ),
-                          backgroundColor: Colors.black,
-                        ),
-                      );
-                      return;
-                    }
-                    String arrivalTime = await getArrivalDay(
-                      p.meridiem,
-                      p.baselineTime,
-                    );
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => ItemDetails(
-                              product: p,
-                              arrivalDay: arrivalTime,
-                              isSub: widget.isSub,
-                            ),
-                      ),
+                  onTap: () {
+                    GoRouter.of(context).pushNamed(
+                      'productDetails',
+                      pathParameters: {
+                        'productId':
+                            p.product_id.toString(), // <- fills :productId
+                      },
                     );
                   },
                   child: Padding(
