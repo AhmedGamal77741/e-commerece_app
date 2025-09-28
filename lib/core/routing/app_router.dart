@@ -1,3 +1,4 @@
+import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/cart/order_complete.dart';
 import 'package:ecommerece_app/features/cart/place_order.dart';
@@ -9,6 +10,7 @@ import 'package:ecommerece_app/features/mypage/ui/cancel_subscription.dart';
 import 'package:ecommerece_app/features/mypage/ui/delete_account_screen.dart';
 import 'package:ecommerece_app/features/navBar/nav_bar.dart';
 import 'package:ecommerece_app/features/review/ui/review_screen.dart';
+import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/shop/shop_search.dart';
 import 'package:ecommerece_app/landing.dart';
 import 'package:flutter/material.dart';
@@ -153,6 +155,40 @@ class AppRouter {
             },
           ),
         ],
+      ),
+      GoRoute(
+        name: 'productDetails',
+        path: '/product/:productId',
+        builder: (context, state) {
+          final productId = state.pathParameters['productId'] ?? '';
+          return FutureBuilder<DocumentSnapshot>(
+            future:
+                FirebaseFirestore.instance
+                    .collection('products')
+                    .doc(productId)
+                    .get(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (!snapshot.hasData || snapshot.data?.data() == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Product not found')),
+                );
+              }
+              final productMap = snapshot.data!.data() as Map<String, dynamic>;
+              // You may need to adjust this to match your Product model constructor
+              final product = Product.fromMap(productMap);
+              return ItemDetails(
+                product: product,
+                arrivalDay: productMap['arrivalDay'] ?? '',
+                isSub: false, // Or derive from productMap if needed
+              );
+            },
+          );
+        },
       ),
     ],
     errorBuilder:

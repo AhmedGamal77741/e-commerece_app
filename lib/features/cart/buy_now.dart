@@ -32,6 +32,10 @@ class BuyNow extends StatefulWidget {
 }
 
 class _BuyNowState extends State<BuyNow> {
+  String invoiceeType = '사업자'; // 사업자 / 개인 / 외국인
+  final invoiceeCorpNumController = TextEditingController(); // 사업자번호
+  final invoiceeCorpNameController = TextEditingController(); // 상호명 or 개인 이름
+  final invoiceeCEONameController = TextEditingController(); //
   bool isAddingNewBank = false; // True if 'Add New' selected
   final deliveryAddressController = TextEditingController();
   final deliveryInstructionsController = TextEditingController();
@@ -131,8 +135,7 @@ class _BuyNowState extends State<BuyNow> {
           phoneController.text.trim(),
           paymentId,
           payerId,
-          nameController.text.trim(),
-          emailController.text.trim(),
+          selectedOption.toString(),
         );
       } else {
         _launchBankPaymentPage(
@@ -140,8 +143,7 @@ class _BuyNowState extends State<BuyNow> {
           uid,
           phoneController.text.trim(),
           paymentId,
-          nameController.text.trim(),
-          emailController.text.trim(),
+          selectedOption.toString(),
         );
       }
     } catch (e) {
@@ -399,6 +401,10 @@ class _BuyNowState extends State<BuyNow> {
         nameController.text = data['name'] ?? '';
         emailController.text = data['email'] ?? '';
         phoneController.text = data['phone'] ?? '';
+        invoiceeType = data['invoiceeType'];
+        invoiceeCorpNumController.text = data['invoiceeCorpNum'];
+        invoiceeCorpNameController.text = data['invoiceeCorpName'];
+        invoiceeCEONameController.text = data['invoiceeCEOName'];
       }
     }
   }
@@ -994,8 +1000,9 @@ class _BuyNowState extends State<BuyNow> {
                                     onChanged: (value) {
                                       setStateRadio(() {
                                         selectedOption = value!;
-                                        print("Button value: $value");
                                       });
+                                      // Also trigger parent rebuild:
+                                      setState(() {});
                                     },
                                   ),
                                   Text(
@@ -1017,8 +1024,9 @@ class _BuyNowState extends State<BuyNow> {
                                     onChanged: (value) {
                                       setStateRadio(() {
                                         selectedOption = value!;
-                                        print("Button value: $value");
                                       });
+                                      // Also trigger parent rebuild:
+                                      setState(() {});
                                     },
                                   ),
                                   Text(
@@ -1036,58 +1044,216 @@ class _BuyNowState extends State<BuyNow> {
                           );
                         },
                       ),
-                      UnderlineTextField(
-                        controller: nameController,
-                        hintText: '이름',
-                        obscureText: false,
-                        keyboardType: TextInputType.text,
-                        validator: (val) {
-                          if (val!.isEmpty) {
-                            return '이름을 입력하세요';
-                          } else if (val.length > 30) {
-                            return '이름이 너무 깁니다';
-                          }
-                          return null;
-                        },
-                      ),
-                      SizedBox(height: 10.h),
-                      UnderlineTextField(
-                        controller: emailController,
-                        hintText: '이메일',
-                        obscureText: false,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (val) {
-                          if (val!.isEmpty) {
-                            return '이메일을 입력하세요';
-                          }
-                          return null;
-                        },
-                        onChanged: (val) {
-                          _saveCachedUserValues();
-                        },
-                      ),
-                      SizedBox(height: 10.h),
-                      UnderlineTextField(
-                        controller: phoneController,
-                        hintText: '전화번호',
-                        obscureText: false,
-                        keyboardType: TextInputType.phone,
-                        validator: (val) {
-                          if (val == null || val.trim().isEmpty) {
-                            return '전화번호를 입력해주세요';
-                          }
-                          final koreanReg = RegExp(
-                            r'^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$',
-                          );
-                          if (!koreanReg.hasMatch(val)) {
-                            return '유효한 한국 전화번호를 입력하세요';
-                          }
-                          return null;
-                        },
-                        onChanged: (val) {
-                          _saveCachedUserValues();
-                        },
-                      ),
+                      // --- conditional: cash receipt (selectedOption == 1) OR tax invoice (selectedOption == 2) ---
+                      if (selectedOption == 1) ...[
+                        // Cash receipt — keep your existing fields (unchanged)
+                        UnderlineTextField(
+                          controller: nameController,
+                          hintText: '이름',
+                          obscureText: false,
+                          keyboardType: TextInputType.text,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return '이름을 입력해주세요';
+                            }
+                            return null;
+                          },
+                          onChanged: (val) {
+                            _saveCachedUserValues();
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 10.h),
+                        UnderlineTextField(
+                          controller: emailController,
+                          hintText: '이메일',
+                          obscureText: false,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return '이메일을 입력해주세요';
+                            }
+                            if (!RegExp(r'^.+@.+\..+$').hasMatch(val.trim())) {
+                              return '유효한 이메일을 입력해주세요';
+                            }
+                            return null;
+                          },
+                          onChanged: (val) {
+                            _saveCachedUserValues();
+                          },
+                        ),
+                        SizedBox(height: 10.h),
+                        UnderlineTextField(
+                          controller: phoneController,
+                          hintText: '전화번호 ',
+                          obscureText: false,
+                          keyboardType: TextInputType.phone,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return '전화번호를 입력해주세요';
+                            }
+                            final koreanReg = RegExp(
+                              r'^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$',
+                            );
+                            if (!koreanReg.hasMatch(val)) {
+                              return '유효한 한국 전화번호를 입력하세요';
+                            }
+                            return null;
+                          },
+                          onChanged: (val) {
+                            _saveCachedUserValues();
+                          },
+                        ),
+                      ] else ...[
+                        // Tax invoice UI
+                        DropdownButtonFormField<String>(
+                          dropdownColor: Colors.white,
+                          value: invoiceeType,
+                          items:
+                              ['사업자', '개인', '외국인']
+                                  .map(
+                                    (t) => DropdownMenuItem(
+                                      value: t,
+                                      child: Text(t),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged: (val) {
+                            setState(() => invoiceeType = val ?? '사업자');
+                            _saveCachedUserValues();
+                          },
+
+                          decoration: const InputDecoration(
+                            border: UnderlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 0,
+                              vertical: 8,
+                            ),
+                          ),
+                          icon: Icon(Icons.keyboard_arrow_down),
+                        ),
+                        SizedBox(height: 10.h),
+
+                        // 사업자번호 only when 사업자
+                        if (invoiceeType == '사업자') ...[
+                          UnderlineTextField(
+                            obscureText: false,
+                            controller: invoiceeCorpNumController,
+                            hintText: '사업자번호 (숫자만)',
+                            keyboardType: TextInputType.number,
+                            validator: (val) {
+                              if (invoiceeType == '사업자') {
+                                if (val == null || val.trim().isEmpty) {
+                                  return '사업자번호를 입력해주세요';
+                                }
+                                if (!RegExp(
+                                  r'^[0-9]{10}$',
+                                ).hasMatch(val.trim())) {
+                                  return '사업자번호는 숫자 10자리여야 합니다';
+                                }
+                                // optional: add basic format check (remove non-digits)
+                              }
+                              return null;
+                            },
+                            onChanged: (val) {
+                              _saveCachedUserValues();
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 10.h),
+                        ],
+
+                        UnderlineTextField(
+                          obscureText: false,
+                          controller:
+                              invoiceeType == '사업자'
+                                  ? invoiceeCorpNameController
+                                  : nameController,
+                          hintText: invoiceeType == '사업자' ? '상호명 (회사명)' : '이름',
+                          keyboardType: TextInputType.text,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return invoiceeType == '사업자'
+                                  ? '상호명을 입력해주세요'
+                                  : '이름을 입력해주세요';
+                            }
+                            if (val.trim().length > 200) {
+                              return '입력은 최대 200자까지 가능합니다';
+                            }
+                            return null;
+                          },
+                          onChanged: (val) {
+                            _saveCachedUserValues();
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 10.h),
+
+                        UnderlineTextField(
+                          obscureText: false,
+                          controller: invoiceeCEONameController,
+                          hintText: '대표자 성명',
+                          keyboardType: TextInputType.text,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return '대표자 성명을 입력해주세요';
+                            }
+                            if (val.trim().length > 200) {
+                              return '입력은 최대 200자까지 가능합니다';
+                            }
+
+                            return null;
+                          },
+                          onChanged: (val) {
+                            _saveCachedUserValues();
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 10.h),
+
+                        UnderlineTextField(
+                          controller: emailController,
+                          hintText: '이메일',
+                          obscureText: false,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return '이메일을 입력해주세요';
+                            }
+                            if (!RegExp(r'^.+@.+\..+$').hasMatch(val.trim())) {
+                              return '유효한 이메일을 입력해주세요';
+                            }
+                            return null;
+                          },
+                          onChanged: (val) {
+                            _saveCachedUserValues();
+                          },
+                        ),
+                        SizedBox(height: 10.h),
+                        UnderlineTextField(
+                          controller: phoneController,
+                          hintText: '전화번호 ',
+                          obscureText: false,
+                          keyboardType: TextInputType.phone,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return '전화번호를 입력해주세요';
+                            }
+                            final koreanReg = RegExp(
+                              r'^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$',
+                            );
+                            if (!koreanReg.hasMatch(val)) {
+                              return '유효한 한국 전화번호를 입력하세요';
+                            }
+                            return null;
+                          },
+                          onChanged: (val) {
+                            _saveCachedUserValues();
+                          },
+                        ),
+                        SizedBox(height: 10.h),
+                      ],
                     ],
                   ),
                 ),
@@ -1257,11 +1423,10 @@ class _BuyNowState extends State<BuyNow> {
     String userId,
     String phoneNo,
     String paymentId,
-    String userName,
-    String email,
+    String option,
   ) async {
     final url = Uri.parse(
-      'https://pay.pang2chocolate.com/b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&userName=$userName&email=$email',
+      'https://pay.pang2chocolate.com/b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&option=$option',
     );
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
@@ -1276,11 +1441,10 @@ class _BuyNowState extends State<BuyNow> {
     String phoneNo,
     String paymentId,
     String payerId,
-    String userName,
-    String email,
+    String option,
   ) async {
     final url = Uri.parse(
-      'https://pay.pang2chocolate.com/r-b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&payerId=$payerId&userName=$userName&email=$email',
+      'https://pay.pang2chocolate.com/r-b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&payerId=$payerId&option=$option',
     );
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
@@ -1300,6 +1464,10 @@ class _BuyNowState extends State<BuyNow> {
           'name': nameController.text.trim(),
           'email': emailController.text.trim(),
           'phone': phoneController.text.trim(),
+          'invoiceeType': invoiceeType,
+          'invoiceeCorpNum': invoiceeCorpNumController.text.trim(),
+          'invoiceeCorpName': invoiceeCorpNameController.text.trim(),
+          'invoiceeCEOName': invoiceeCEONameController.text.trim(),
         }, SetOptions(merge: true));
   }
 
