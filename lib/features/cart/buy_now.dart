@@ -136,6 +136,7 @@ class _BuyNowState extends State<BuyNow> {
           paymentId,
           payerId,
           selectedOption.toString(),
+          widget.product.deliveryManagerId.toString(),
         );
       } else {
         _launchBankPaymentPage(
@@ -144,6 +145,7 @@ class _BuyNowState extends State<BuyNow> {
           phoneController.text.trim(),
           paymentId,
           selectedOption.toString(),
+          widget.product.deliveryManagerId.toString(),
         );
       }
     } catch (e) {
@@ -1136,47 +1138,40 @@ class _BuyNowState extends State<BuyNow> {
                         SizedBox(height: 10.h),
 
                         // 사업자번호 only when 사업자
-                        if (invoiceeType == '사업자') ...[
-                          UnderlineTextField(
-                            obscureText: false,
-                            controller: invoiceeCorpNumController,
-                            hintText: '사업자번호 (숫자만)',
-                            keyboardType: TextInputType.number,
-                            validator: (val) {
-                              if (invoiceeType == '사업자') {
-                                if (val == null || val.trim().isEmpty) {
-                                  return '사업자번호를 입력해주세요';
-                                }
-                                if (!RegExp(
-                                  r'^[0-9]{10}$',
-                                ).hasMatch(val.trim())) {
-                                  return '사업자번호는 숫자 10자리여야 합니다';
-                                }
-                                // optional: add basic format check (remove non-digits)
+                        UnderlineTextField(
+                          obscureText: false,
+                          controller: invoiceeCorpNumController,
+                          hintText: '공급받는자 사업자번호',
+                          keyboardType: TextInputType.number,
+                          validator: (val) {
+                            if (invoiceeType == '사업자') {
+                              if (val == null || val.trim().isEmpty) {
+                                return '사업자번호를 입력해주세요';
                               }
-                              return null;
-                            },
-                            onChanged: (val) {
-                              _saveCachedUserValues();
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 10.h),
-                        ],
+                              if (!RegExp(
+                                r'^[0-9]{10}$',
+                              ).hasMatch(val.trim())) {
+                                return '사업자번호는 숫자 10자리여야 합니다';
+                              }
+                              // optional: add basic format check (remove non-digits)
+                            }
+                            return null;
+                          },
+                          onChanged: (val) {
+                            _saveCachedUserValues();
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 10.h),
 
                         UnderlineTextField(
                           obscureText: false,
-                          controller:
-                              invoiceeType == '사업자'
-                                  ? invoiceeCorpNameController
-                                  : nameController,
-                          hintText: invoiceeType == '사업자' ? '상호명 (회사명)' : '이름',
+                          controller: invoiceeCorpNameController,
+                          hintText: '공급받는자 상호',
                           keyboardType: TextInputType.text,
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
-                              return invoiceeType == '사업자'
-                                  ? '상호명을 입력해주세요'
-                                  : '이름을 입력해주세요';
+                              return '이름을 입력해주세요';
                             }
                             if (val.trim().length > 200) {
                               return '입력은 최대 200자까지 가능합니다';
@@ -1193,7 +1188,7 @@ class _BuyNowState extends State<BuyNow> {
                         UnderlineTextField(
                           obscureText: false,
                           controller: invoiceeCEONameController,
-                          hintText: '대표자 성명',
+                          hintText: '공급받는자 대표자 성명',
                           keyboardType: TextInputType.text,
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
@@ -1424,9 +1419,10 @@ class _BuyNowState extends State<BuyNow> {
     String phoneNo,
     String paymentId,
     String option,
+    String dm,
   ) async {
     final url = Uri.parse(
-      'https://pay.pang2chocolate.com/b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&option=$option',
+      'https://pay.pang2chocolate.com/b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&option=$option&dm=$dm',
     );
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
@@ -1442,9 +1438,10 @@ class _BuyNowState extends State<BuyNow> {
     String paymentId,
     String payerId,
     String option,
+    String dm,
   ) async {
     final url = Uri.parse(
-      'https://pay.pang2chocolate.com/r-b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&payerId=$payerId&option=$option',
+      'https://pay.pang2chocolate.com/r-b-payment.html?paymentId=$paymentId&amount=$amount&userId=$userId&phoneNo=$phoneNo&payerId=$payerId&option=$option&dm=$dm',
     );
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
