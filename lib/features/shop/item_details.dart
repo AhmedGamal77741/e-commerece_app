@@ -2,6 +2,7 @@ import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
+import 'package:ecommerece_app/core/services/share_service.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/shop/cart_func.dart';
@@ -526,7 +527,12 @@ class _ItemDetailsState extends State<ItemDetails> {
                     Row(
                       children: [
                         IconButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            ShareService.shareProduct(
+                              widget.product.product_id,
+                              widget.product.productName,
+                            );
+                          },
                           icon: ImageIcon(
                             const AssetImage('assets/grey_006m.png'),
                             size: 32.sp,
