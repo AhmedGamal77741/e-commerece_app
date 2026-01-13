@@ -91,4 +91,14 @@ class TextStyles {
     fontWeight: FontWeight.w400,
     color: ColorsManager.white,
   );
+  static final TextStyle abeezee30px800wW = _textStyle(
+    color: ColorsManager.white,
+    fontSize: 30.sp,
+    fontWeight: FontWeight.w900,
+  );
+  static final TextStyle abeezee23px800wW = _textStyle(
+    color: ColorsManager.white,
+    fontSize: 23.sp,
+    fontWeight: FontWeight.w800,
+  );
 }

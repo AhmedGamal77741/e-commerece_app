@@ -5,6 +5,7 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/services/share_service.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:ecommerece_app/features/shop/cart_func.dart';
 import 'package:ecommerece_app/features/shop/fav_fnc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -226,7 +227,8 @@ class _ItemDetailsState extends State<ItemDetails> {
                     ...widget.product.pricePoints.asMap().entries.map((entry) {
                       int index = entry.key;
                       PricePoint pricePoint = entry.value;
-                      double perUnit = pricePoint.price / pricePoint.quantity;
+                      double perUnit =
+                          (pricePoint.price / 0.20) / pricePoint.quantity;
                       // Show non-premium price (no discount)
                       return Column(
                         children: [
@@ -234,7 +236,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                             title: Row(
                               children: [
                                 Text(
-                                  '${pricePoint.quantity}개 ${formatCurrency.format((pricePoint.price / 0.9).round())}원',
+                                  '${pricePoint.quantity}개 ${formatCurrency.format((pricePoint.price / 0.20).round())}원',
                                   style: TextStyle(
                                     fontFamily: 'NotoSans',
                                     fontWeight: FontWeight.w400,
@@ -455,26 +457,13 @@ class _ItemDetailsState extends State<ItemDetails> {
                 ),
               ),
               if (!isSub)
-                GestureDetector(
-                  onTap: () {
-                    final currentUser = FirebaseAuth.instance.currentUser;
-                    if (currentUser != null) {
-                      _launchPaymentPage('3000', currentUser.uid);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
-                        ),
-                      );
-                    }
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    height: 33.h,
-                    color: Colors.black,
-                    child: Center(child: _ShiningPremiumBanner()),
-                  ),
+                Container(
+                  width: double.infinity,
+                  height: 500.h,
+                  color: Colors.black,
+                  child: Center(child: _ShiningPremiumBanner()),
                 ),
+
               Padding(
                 padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 14.h),
                 child: Row(
@@ -598,27 +587,102 @@ class _ItemDetailsState extends State<ItemDetails> {
                         int index = entry.key;
                         PricePoint pricePoint = entry.value;
                         double perUnit = pricePoint.price / pricePoint.quantity;
+                        double perunitn =
+                            (pricePoint.price / 0.20) / pricePoint.quantity;
+
                         return Column(
                           children: [
                             RadioListTile<String>(
-                              title: Row(
-                                children: [
-                                  Text(
-                                    '${pricePoint.quantity}개 ${formatCurrency.format(isSub ? pricePoint.price : (pricePoint.price / 0.9).round())}원',
-                                    style: TextStyle(
-                                      fontFamily: 'NotoSans',
-                                      fontWeight: FontWeight.w400,
-                                      fontSize: 16.sp,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                  SizedBox(width: 5.w),
-                                  Text(
-                                    '(1개 ${formatCurrency.format(isSub ? perUnit.round() : (perUnit / 0.9).round())}원)',
-                                    style: TextStyles.abeezee14px400wP600,
-                                  ),
-                                ],
-                              ),
+                              title:
+                                  isSub
+                                      ? Row(
+                                        children: [
+                                          Text(
+                                            '${pricePoint.quantity}개 ${formatCurrency.format(pricePoint.price)}원',
+                                            style: TextStyle(
+                                              fontFamily: 'NotoSans',
+                                              fontWeight: FontWeight.w400,
+                                              fontSize: 16.sp,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                          SizedBox(width: 5.w),
+                                          Text(
+                                            '(1개 ${formatCurrency.format(perUnit.round())}원)',
+                                            style:
+                                                TextStyles.abeezee14px400wP600,
+                                          ),
+                                        ],
+                                      )
+                                      : Row(
+                                        children: [
+                                          Text(
+                                            '${pricePoint.quantity}개 ',
+                                            style: TextStyle(
+                                              fontFamily: 'NotoSans',
+                                              fontWeight: FontWeight.w400,
+                                              fontSize: 18.sp,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                          SizedBox(width: 5.w),
+
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    '일반가 ${formatCurrency.format((pricePoint.price / 0.20).round())} 원',
+                                                    style: TextStyle(
+                                                      fontFamily: 'NotoSans',
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      fontSize: 16.sp,
+                                                      height: 1.4,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 5.w),
+                                                  Text(
+                                                    '(1개 ${formatCurrency.format(perunitn.round())}원)',
+                                                    style:
+                                                        TextStyles
+                                                            .abeezee14px400wP600,
+                                                  ),
+                                                ],
+                                              ),
+                                              Container(
+                                                color: Colors.black,
+                                                child: Row(
+                                                  children: [
+                                                    Text(
+                                                      '멤버십 ${formatCurrency.format(pricePoint.price)} 원',
+                                                      style: TextStyle(
+                                                        fontFamily: 'NotoSans',
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                        fontSize: 16.sp,
+                                                        height: 1.4,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 5.w),
+                                                    Text(
+                                                      '(1개 ${formatCurrency.format(perUnit.round())}원)',
+                                                      style: TextStyles
+                                                          .abeezee14px400wP600
+                                                          .copyWith(
+                                                            color: Colors.white,
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                               value: index.toString(),
                               groupValue: _selectedOption,
                               onChanged: (value) {
@@ -773,7 +837,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                           price:
                               isSub
                                   ? pricePoint.price
-                                  : (pricePoint.price / 0.9).round(),
+                                  : (pricePoint.price / 0.20).round(),
                           deliveryManagerId:
                               widget.product.deliveryManagerId ?? '',
                           productName: widget.product.productName,
@@ -879,7 +943,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                             'price':
                                 isSub
                                     ? pricePoint.price
-                                    : (pricePoint.price / 0.9).round(),
+                                    : (pricePoint.price / 0.20).round(),
                           },
                         );
                       }
@@ -956,88 +1020,87 @@ void _launchPaymentPage(String amount, String userId) async {
   }
 }
 
-// Shining animation widget for premium banner
-class _ShiningPremiumBanner extends StatefulWidget {
-  @override
-  State<_ShiningPremiumBanner> createState() => _ShiningPremiumBannerState();
-}
-
-class _ShiningPremiumBannerState extends State<_ShiningPremiumBanner>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _shineAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: false);
-    _shineAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
+// Plain black container for premium banner
+class _ShiningPremiumBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        AnimatedBuilder(
-          animation: _shineAnimation,
-          builder: (context, child) {
-            return ShaderMask(
-              shaderCallback: (Rect bounds) {
-                final double shineWidth = bounds.width * 0.35;
-                final double shinePosition =
-                    bounds.width * _shineAnimation.value;
-                return LinearGradient(
-                  colors: [
-                    Colors.grey.shade700,
-                    Colors.white,
-                    Colors.grey.shade700,
-                  ],
-                  stops: [0.0, 0.5, 1.0],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ).createShader(
-                  Rect.fromLTWH(
-                    shinePosition - shineWidth / 2,
-                    0,
-                    shineWidth,
-                    bounds.height,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: double.infinity,
+            height: 370.h,
+            decoration: ShapeDecoration(
+              color: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                side: const BorderSide(width: 2, color: Colors.white),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  verticalSpace(15),
+                  Text(
+                    '멤버십 혜택',
+                    style: TextStyles.abeezee30px800wW.copyWith(
+                      fontFamily: 'ABeeZee',
+                    ),
                   ),
+                  verticalSpace(50),
+                  Text(
+                    '월회비 10,000원\n모든 제품 20% 할인',
+                    textAlign: TextAlign.center,
+                    style: TextStyles.abeezee18px400wPblack.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                  verticalSpace(50),
+                  Text(
+                    '매월 5만원 이상 구매하시는 분은 멤버십 가입을 권합니다.',
+                    textAlign: TextAlign.center,
+                    style: TextStyles.abeezee18px400wPblack.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          verticalSpace(15),
+
+          TextButton(
+            onPressed: () {
+              final currentUser = FirebaseAuth.instance.currentUser;
+              if (currentUser != null) {
+                _launchPaymentPage('10000', currentUser.uid);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
                 );
-              },
-              blendMode: BlendMode.srcATop,
-              child: Text(
-                '프리미엄 회원 모든 제품 10% 할인',
-                style: TextStyles.abeezee16px400wW.copyWith(
-                  color: Colors.black,
+              }
+            },
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.all(Colors.white),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              minimumSize: WidgetStateProperty.all(Size(double.infinity, 80.h)),
+              shape: WidgetStateProperty.all(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50),
+                  side: BorderSide(color: Colors.black, width: 0.6),
                 ),
               ),
-            );
-          },
-        ),
-        horizontalSpace(3),
-        AnimatedBuilder(
-          animation: _shineAnimation,
-          builder: (context, child) {
-            return Opacity(
-              opacity: 1.0,
-              child: Image.asset('assets/sub_bar.png'),
-            );
-          },
-        ),
-      ],
+            ),
+            child: Text(
+              '멤버십 가입하기',
+              style: TextStyles.abeezee23px800wW.copyWith(color: Colors.black),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

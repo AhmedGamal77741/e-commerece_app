@@ -282,11 +282,11 @@ class _UserOptionsContainerState extends State<UserOptionsContainer>
                     subStatus == 'canceled' &&
                     (nextBillingDate?.isAfter(DateTime.now()) ?? false))
                   InkWell(
-                    child: Text('재구독', style: TextStyles.abeezee17px800wPblack),
                     onTap:
                         nextBillingDate == null
                             ? null
                             : () => resubscribeDialog(nextBillingDate!),
+                    child: Text('재구독', style: TextStyles.abeezee17px800wPblack),
                   )
                 else
                   InkWell(
@@ -295,7 +295,7 @@ class _UserOptionsContainerState extends State<UserOptionsContainer>
                       style: TextStyles.abeezee17px800wPblack,
                     ),
                     onTap: () async {
-                      _launchPaymentPage('3000', user!.uid);
+                      _launchPaymentPage('10000', user!.uid);
                     },
                   ),
                 if (isSub == true && nextBillingDate != null)
