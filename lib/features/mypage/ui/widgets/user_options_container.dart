@@ -307,7 +307,7 @@ class _UserOptionsContainerState extends State<UserOptionsContainer>
                     ),
                   ),
                 Text(
-                  '월 회비 : 3,000원 혜택 : 전 제품 10% 할인',
+                  '월 회비 : 10,000원 혜택 : 전 제품 20% 할인',
                   style: TextStyles.abeezee11px400wP600,
                 ),
                 Divider(color: ColorsManager.primary100),
