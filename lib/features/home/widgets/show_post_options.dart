@@ -1,3 +1,4 @@
+import 'package:ecommerece_app/core/services/share_service.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
@@ -43,33 +44,38 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 14.w,
-                          vertical: 8.h,
-                        ),
-                        decoration: BoxDecoration(color: Colors.white),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '링크 복사',
-                              style: TextStyle(
-                                color: const Color(0xFF343434),
-                                fontSize: 16.sp,
-                                fontFamily: 'NotoSans',
-                                fontWeight: FontWeight.w400,
-                                height: 1.40.h,
+                      InkWell(
+                        onTap: () {
+                          ShareService.sharePost(postId);
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 14.w,
+                            vertical: 8.h,
+                          ),
+                          decoration: BoxDecoration(color: Colors.white),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                '링크 복사',
+                                style: TextStyle(
+                                  color: const Color(0xFF343434),
+                                  fontSize: 16.sp,
+                                  fontFamily: 'NotoSans',
+                                  fontWeight: FontWeight.w400,
+                                  height: 1.40.h,
+                                ),
                               ),
-                            ),
-                            ImageIcon(
-                              AssetImage('assets/icon=link.png'),
-                              size: 20.sp,
-                            ),
-                          ],
+                              ImageIcon(
+                                AssetImage('assets/icon=link.png'),
+                                size: 20.sp,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       InkWell(
