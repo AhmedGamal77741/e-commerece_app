@@ -228,7 +228,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       int index = entry.key;
                       PricePoint pricePoint = entry.value;
                       double perUnit =
-                          (pricePoint.price / 0.20) / pricePoint.quantity;
+                          (pricePoint.price / 0.8) / pricePoint.quantity;
                       // Show non-premium price (no discount)
                       return Column(
                         children: [
@@ -236,7 +236,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                             title: Row(
                               children: [
                                 Text(
-                                  '${pricePoint.quantity}개 ${formatCurrency.format((pricePoint.price / 0.20).round())}원',
+                                  '${pricePoint.quantity}개 ${formatCurrency.format((pricePoint.price / 0.8).round())}원',
                                   style: TextStyle(
                                     fontFamily: 'NotoSans',
                                     fontWeight: FontWeight.w400,
@@ -588,7 +588,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                         PricePoint pricePoint = entry.value;
                         double perUnit = pricePoint.price / pricePoint.quantity;
                         double perunitn =
-                            (pricePoint.price / 0.20) / pricePoint.quantity;
+                            (pricePoint.price / 0.8) / pricePoint.quantity;
 
                         return Column(
                           children: [
@@ -634,7 +634,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                                               Row(
                                                 children: [
                                                   Text(
-                                                    '일반가 ${formatCurrency.format((pricePoint.price / 0.20).round())} 원',
+                                                    '일반가 ${formatCurrency.format((pricePoint.price / 0.8).round())} 원',
                                                     style: TextStyle(
                                                       fontFamily: 'NotoSans',
                                                       fontWeight:
@@ -837,7 +837,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                           price:
                               isSub
                                   ? pricePoint.price
-                                  : (pricePoint.price / 0.20).round(),
+                                  : (pricePoint.price / 0.8).round(),
                           deliveryManagerId:
                               widget.product.deliveryManagerId ?? '',
                           productName: widget.product.productName,
@@ -943,7 +943,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                             'price':
                                 isSub
                                     ? pricePoint.price
-                                    : (pricePoint.price / 0.20).round(),
+                                    : (pricePoint.price / 0.8).round(),
                           },
                         );
                       }
