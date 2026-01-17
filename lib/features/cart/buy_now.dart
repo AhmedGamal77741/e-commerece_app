@@ -79,7 +79,7 @@ class _BuyNowState extends State<BuyNow> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return Padding(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.all(20.r),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,12 +87,12 @@ class _BuyNowState extends State<BuyNow> {
                   Text(
                     '계좌 선택',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
-                  SizedBox(height: 16),
+                  verticalSpace(16),
                   if (bankAccounts.isEmpty)
                     Text(
                       '등록된 계좌가 없습니다.',
@@ -125,7 +125,7 @@ class _BuyNowState extends State<BuyNow> {
                             Navigator.of(context).pop();
                           },
                         ),
-                        SizedBox(height: 5),
+                        verticalSpace(5),
                       ],
                     );
                   }),
