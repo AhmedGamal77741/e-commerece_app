@@ -138,7 +138,7 @@ class _ItemDetailsState extends State<ItemDetails> {
               ),
             ),
             Padding(
-              padding: EdgeInsets.fromLTRB(20, 14, 20, 14),
+              padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 14.h),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,7 +210,7 @@ class _ItemDetailsState extends State<ItemDetails> {
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
               child: Container(
                 decoration: ShapeDecoration(
                   color: Colors.white,
@@ -274,13 +274,13 @@ class _ItemDetailsState extends State<ItemDetails> {
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 30.h),
               child: Container(
                 padding: EdgeInsets.only(
-                  left: 15,
-                  top: 15,
-                  bottom: 15,
-                  right: 15,
+                  left: 15.w,
+                  top: 15.h,
+                  bottom: 15.h,
+                  right: 15.w,
                 ),
                 decoration: ShapeDecoration(
                   color: Colors.white,
@@ -332,7 +332,7 @@ class _ItemDetailsState extends State<ItemDetails> {
           ],
         ),
         bottomNavigationBar: Padding(
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           child: Row(
             children: [
               Expanded(
@@ -344,7 +344,10 @@ class _ItemDetailsState extends State<ItemDetails> {
                   },
                   style: TextButton.styleFrom(
                     backgroundColor: ColorsManager.white,
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 6.w,
+                      vertical: 10.h,
+                    ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     shape: RoundedRectangleBorder(
@@ -372,7 +375,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                   },
                   style: TextButton.styleFrom(
                     backgroundColor: ColorsManager.primaryblack,
-                    padding: EdgeInsets.symmetric(vertical: 10),
+                    padding: EdgeInsets.symmetric(vertical: 10.h),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     shape: RoundedRectangleBorder(
@@ -567,7 +570,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
                 child: Container(
                   decoration: ShapeDecoration(
                     color: Colors.white,
@@ -764,7 +767,7 @@ class _ItemDetailsState extends State<ItemDetails> {
             ],
           ),
           bottomNavigationBar: Padding(
-            padding: EdgeInsets.all(16.w),
+            padding: EdgeInsets.all(16.r),
             child: Row(
               children: [
                 Expanded(
@@ -1025,7 +1028,7 @@ class _ShiningPremiumBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+      padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 1.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -1040,7 +1043,7 @@ class _ShiningPremiumBanner extends StatelessWidget {
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20.r),
               child: Column(
                 children: [
                   verticalSpace(15),
