@@ -618,7 +618,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
                 child: Container(
                   decoration: ShapeDecoration(
                     color: Colors.white,
