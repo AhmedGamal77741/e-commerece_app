@@ -144,7 +144,7 @@ class _ItemDetailsState extends State<ItemDetails> {
               child: Center(child: _ShiningPremiumBanner()),
             ),
             Padding(
-              padding: EdgeInsets.fromLTRB(20, 14, 20, 14),
+              padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 14.h),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +216,7 @@ class _ItemDetailsState extends State<ItemDetails> {
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
               child: Container(
                 decoration: ShapeDecoration(
                   color: Colors.white,
@@ -1076,7 +1076,7 @@ class _ShiningPremiumBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+      padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 10.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
