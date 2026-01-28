@@ -1,4 +1,4 @@
-package com.example.ecommerece_app
+package com.pang2chocolate.pang2chocolate
 
 import io.flutter.embedding.android.FlutterActivity
 

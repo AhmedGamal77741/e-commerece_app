@@ -29,6 +29,7 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   app_links: ^6.4.0
+  change_app_package_name: ^1.5.0
   cloud_firestore: ^5.6.6
   cloud_functions: ^5.5.0
   cupertino_icons: ^1.0.8

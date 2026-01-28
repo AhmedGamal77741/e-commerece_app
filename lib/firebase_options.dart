@@ -23,20 +23,11 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -60,9 +51,37 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBhl_S1tHZwdiRnz9VXt5f0bzORzha8Ch0',
-    appId: '1:944685668832:android:9898bf2c69e8ec53eaf385',
+    appId: '1:944685668832:android:971836bb2dd7a589eaf385',
     messagingSenderId: '944685668832',
     projectId: 'e-commerce-app-34fb2',
     storageBucket: 'e-commerce-app-34fb2.firebasestorage.app',
   );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyCTUUNxtVGTr6Ao-K7H2Aq_uGBTDP9rDBE',
+    appId: '1:944685668832:ios:8e786de05f1768b8eaf385',
+    messagingSenderId: '944685668832',
+    projectId: 'e-commerce-app-34fb2',
+    storageBucket: 'e-commerce-app-34fb2.firebasestorage.app',
+    iosBundleId: 'com.example.ecommereceApp',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyCTUUNxtVGTr6Ao-K7H2Aq_uGBTDP9rDBE',
+    appId: '1:944685668832:ios:da00e1317212fba6eaf385',
+    messagingSenderId: '944685668832',
+    projectId: 'e-commerce-app-34fb2',
+    storageBucket: 'e-commerce-app-34fb2.firebasestorage.app',
+    iosBundleId: 'com.pang2chocolate.pang2chocolate',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDdVBrcwkQzcu3YgHaUUrUZA4L_8pZC4wk',
+    appId: '1:944685668832:web:42043787ea60e2c8eaf385',
+    messagingSenderId: '944685668832',
+    projectId: 'e-commerce-app-34fb2',
+    authDomain: 'e-commerce-app-34fb2.firebaseapp.com',
+    storageBucket: 'e-commerce-app-34fb2.firebasestorage.app',
+  );
+
 }
