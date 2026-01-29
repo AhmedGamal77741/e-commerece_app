@@ -549,7 +549,10 @@ class MessageBubble extends StatelessWidget {
                               ),
                             );
                           }
-                          if (!asyncSnapshot.data!.exists) {
+                          if (!asyncSnapshot.data!.exists ||
+                              !(asyncSnapshot.data!.data()!
+                                      as Map<String, dynamic>)
+                                  .containsKey('url')) {
                             return CircleAvatar(
                               radius: 20,
                               backgroundColor: Colors.grey[300],
