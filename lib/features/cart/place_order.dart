@@ -792,88 +792,94 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                           fit: BoxFit.cover,
                                         ),
                                         horizontalSpace(10),
-                                        Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              '${productData['productName']} ',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 16.sp,
-                                                fontFamily: 'NotoSans',
-                                                fontWeight: FontWeight.w400,
-                                                height: 1.40.h,
+                                        Flexible(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '${productData['productName']} ',
+                                                maxLines: 1,
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 16.sp,
+                                                  fontFamily: 'NotoSans',
+                                                  fontWeight: FontWeight.w400,
+                                                  height: 1.40.h,
+                                                ),
                                               ),
-                                            ),
-                                            verticalSpace(8),
-                                            StreamBuilder<int>(
-                                              stream: getProductQuantityStream(
-                                                cartData['product_id'],
-                                                cartData['pricePointIndex'],
-                                              ),
-                                              builder: (context, snapshot) {
-                                                final quan = snapshot.data ?? 0;
+                                              verticalSpace(8),
+                                              StreamBuilder<int>(
+                                                stream: getProductQuantityStream(
+                                                  cartData['product_id'],
+                                                  cartData['pricePointIndex'],
+                                                ),
+                                                builder: (context, snapshot) {
+                                                  final quan =
+                                                      snapshot.data ?? 0;
 
-                                                return Text(
-                                                  '${quan.toString()} 개',
-                                                  style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontSize: 16.sp,
-                                                    fontFamily: 'NotoSans',
-                                                    fontWeight: FontWeight.w400,
-                                                    height: 1.40.h,
-                                                  ),
-                                                );
-                                              },
-                                            ),
+                                                  return Text(
+                                                    '${quan.toString()} 개',
+                                                    style: TextStyle(
+                                                      color: Colors.black,
+                                                      fontSize: 16.sp,
+                                                      fontFamily: 'NotoSans',
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      height: 1.40.h,
+                                                    ),
+                                                  );
+                                                },
+                                              ),
 
-                                            /*                                             Text(
-                                              '${cartData['quantity'].toString()} 개',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 16.sp,
-                                                fontFamily: 'NotoSans',
-                                                fontWeight: FontWeight.w400,
-                                                height: 1.40.h,
+                                              /*                                             Text(
+                                                '${cartData['quantity'].toString()} 개',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 16.sp,
+                                                  fontFamily: 'NotoSans',
+                                                  fontWeight: FontWeight.w400,
+                                                  height: 1.40.h,
+                                                ),
+                                              ), */
+                                              SizedBox(height: 8.h),
+                                              StreamBuilder<double>(
+                                                stream: getProductPriceStream(
+                                                  cartData['product_id'],
+                                                  cartData['pricePointIndex'],
+                                                  isSub,
+                                                ),
+                                                builder: (context, snapshot) {
+                                                  final price =
+                                                      snapshot.data ?? 0.0;
+                                                  return Text(
+                                                    '${formatCurrency.format(price)} 원',
+                                                    style: TextStyle(
+                                                      color: Colors.black,
+                                                      fontSize: 16.sp,
+                                                      fontFamily: 'NotoSans',
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      height: 1.40.h,
+                                                    ),
+                                                  );
+                                                },
                                               ),
-                                            ), */
-                                            SizedBox(height: 8.h),
-                                            StreamBuilder<double>(
-                                              stream: getProductPriceStream(
-                                                cartData['product_id'],
-                                                cartData['pricePointIndex'],
-                                                isSub,
-                                              ),
-                                              builder: (context, snapshot) {
-                                                final price =
-                                                    snapshot.data ?? 0.0;
-                                                return Text(
-                                                  '${formatCurrency.format(price)} 원',
-                                                  style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontSize: 16.sp,
-                                                    fontFamily: 'NotoSans',
-                                                    fontWeight: FontWeight.w400,
-                                                    height: 1.40.h,
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                            /*                                             Text(
-                                              '${formatCurrency.format(cartData['price'] ?? 0)} 원',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 16.sp,
-                                                fontFamily: 'NotoSans',
-                                                fontWeight: FontWeight.w400,
-                                                height: 1.40.h,
-                                              ),
-                                            ), */
-                                          ],
+                                              /*                                             Text(
+                                                '${formatCurrency.format(cartData['price'] ?? 0)} 원',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 16.sp,
+                                                  fontFamily: 'NotoSans',
+                                                  fontWeight: FontWeight.w400,
+                                                  height: 1.40.h,
+                                                ),
+                                              ), */
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     );
