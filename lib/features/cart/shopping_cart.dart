@@ -297,21 +297,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                 ),
                               ),
                               Spacer(),
-                              totalSnapshot.hasData
-                                  ? Padding(
-                                    padding: EdgeInsets.only(right: 10.w),
-                                    child: Text(
-                                      '총 금액: ',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 18.sp,
-                                        fontFamily: 'NotoSans',
-                                        fontWeight: FontWeight.w400,
-                                        height: 1.40.h,
-                                      ),
-                                    ),
-                                  )
-                                  : Spacer(),
+
                               totalSnapshot.hasData
                                   ? Padding(
                                     padding: EdgeInsets.only(right: 10.w),

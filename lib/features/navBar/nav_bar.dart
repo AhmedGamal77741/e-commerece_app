@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/cart/cart.dart';
 import 'package:ecommerece_app/features/cart/sub_screens/add_address_screen.dart';
+import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
+import 'package:ecommerece_app/features/chat/ui/chats_navbar.dart';
 import 'package:ecommerece_app/features/home/home_screen.dart';
 import 'package:ecommerece_app/features/mypage/ui/my_page_screen.dart';
 import 'package:ecommerece_app/features/review/ui/review_screen.dart';
@@ -10,6 +12,7 @@ import 'package:ecommerece_app/landing.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:ecommerece_app/core/widgets/deleted_account.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class NavBar extends StatefulWidget {
   const NavBar({super.key});
@@ -30,11 +33,11 @@ class _NavBarState extends State<NavBar> {
   void initState() {
     super.initState();
     widgetOptions = [
+      _buildMainWidget(() => Center(child: Text('home'))),
+      _buildMainWidget(() => Shop(key: shopKey)),
       _buildMainWidget(
         () => HomeScreen(scrollController: homeScrollController),
       ),
-      _buildMainWidget(() => Shop(key: shopKey)),
-      _buildMainWidget(() => Cart()),
       _buildMainWidget(() => ReviewScreen()),
       _buildMainWidget(() => LandingScreen()),
     ];
@@ -102,7 +105,7 @@ class _NavBarState extends State<NavBar> {
       });
       return;
     }
-    if (_selectedIndex == index && index == 0) {
+    if (_selectedIndex == index && index == 2) {
       if (homeScrollController.hasClients) {
         homeScrollController.animateTo(
           0,
@@ -110,6 +113,20 @@ class _NavBarState extends State<NavBar> {
           curve: Curves.easeInOut,
         );
       }
+    } else if (index == 3) {
+      // Chat tab tapped
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('로그인 후 채팅을 이용할 수 있습니다')));
+        return;
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ChatsNavbar()),
+      );
+      return;
     } else if (index == 1) {
       // Shop tab tapped
       final user = FirebaseAuth.instance.currentUser;
@@ -164,8 +181,8 @@ class _NavBarState extends State<NavBar> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.black, // Same as unselected color
         unselectedItemColor: Colors.grey[400],
-        selectedLabelStyle: TextStyle(fontSize: 10),
-        unselectedLabelStyle: TextStyle(fontSize: 10),
+        selectedLabelStyle: TextStyle(fontSize: 10.sp),
+        unselectedLabelStyle: TextStyle(fontSize: 10.sp),
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: ImageIcon(
@@ -174,9 +191,9 @@ class _NavBarState extends State<NavBar> {
                     ? 'assets/001m.png'
                     : 'assets/grey_001m.png',
               ),
-              size: 21,
+              size: 30.r,
             ),
-            label: '홈',
+            label: '상점',
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(
@@ -185,31 +202,143 @@ class _NavBarState extends State<NavBar> {
                     ? 'assets/002m.png'
                     : 'assets/grey_002m.png',
               ),
-              size: 21,
-            ),
-            label: '상점',
-          ),
-          BottomNavigationBarItem(
-            icon: ImageIcon(
-              AssetImage(
-                _selectedIndex == 2
-                    ? 'assets/003m.png'
-                    : 'assets/grey_003m.png',
-              ),
-              size: 21,
+              size: 30.r,
             ),
             label: '장바구니',
           ),
           BottomNavigationBarItem(
-            icon: ImageIcon(
-              AssetImage(
-                _selectedIndex == 3
-                    ? 'assets/004m.png'
-                    : 'assets/grey_004m.png',
-              ),
-              size: 21,
+            icon: CircleAvatar(
+              radius: 30.r,
+              backgroundColor: Colors.transparent,
+              backgroundImage: AssetImage('assets/mypage_avatar_grey.png'),
             ),
-            label: '주문내역',
+            activeIcon: CircleAvatar(
+              radius: 30.r,
+              backgroundColor: Colors.transparent,
+              backgroundImage: AssetImage('assets/mypage_avatar.png'),
+            ),
+            label: '홈',
+          ),
+          BottomNavigationBarItem(
+            icon: StreamBuilder<User?>(
+              stream: FirebaseAuth.instance.authStateChanges(),
+              builder: (context, authSnapshot) {
+                final user = authSnapshot.data;
+                if (user == null) {
+                  return CircleAvatar(
+                    radius: 20.r,
+                    backgroundColor: Colors.transparent,
+                    backgroundImage: AssetImage(
+                      'assets/chat_with_seller_grey.png',
+                    ),
+                  );
+                }
+                return StreamBuilder(
+                  stream: FirebaseFirestore.instance
+                      .collection('chatRooms')
+                      .where('participants', arrayContains: user.uid)
+                      .orderBy('lastMessageTime', descending: true)
+                      .snapshots()
+                      .map(
+                        (snapshot) =>
+                            snapshot.docs
+                                .map((doc) => ChatRoomModel.fromMap(doc.data()))
+                                .toList(),
+                      ),
+                  builder: (context, snapshot) {
+                    final currentUserId = user.uid;
+                    bool hasUnread = false;
+                    if (snapshot.hasData) {
+                      final chatRooms = snapshot.data!;
+                      hasUnread = chatRooms.any(
+                        (room) => (room.unreadCount[currentUserId] ?? 0) > 0,
+                      );
+                    }
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        CircleAvatar(
+                          radius: 20.r,
+                          backgroundColor: Colors.transparent,
+                          backgroundImage: AssetImage(
+                            'assets/chat_with_seller_grey.png',
+                          ),
+                        ),
+                        if (hasUnread)
+                          Positioned(
+                            left: -10.w,
+                            top: -5.h,
+                            child: Image.asset(
+                              'assets/notification.png',
+                              width: 18.w,
+                              height: 18.h,
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+            activeIcon: StreamBuilder<User?>(
+              stream: FirebaseAuth.instance.authStateChanges(),
+              builder: (context, authSnapshot) {
+                final user = authSnapshot.data;
+                if (user == null) {
+                  return CircleAvatar(
+                    radius: 20.r,
+                    backgroundColor: Colors.transparent,
+                    backgroundImage: AssetImage('assets/chat_with_seller.png'),
+                  );
+                }
+                return StreamBuilder(
+                  stream: FirebaseFirestore.instance
+                      .collection('chatRooms')
+                      .where('participants', arrayContains: user.uid)
+                      .orderBy('lastMessageTime', descending: true)
+                      .snapshots()
+                      .map(
+                        (snapshot) =>
+                            snapshot.docs
+                                .map((doc) => ChatRoomModel.fromMap(doc.data()))
+                                .toList(),
+                      ),
+                  builder: (context, snapshot) {
+                    final currentUserId = user.uid;
+                    bool hasUnread = false;
+                    if (snapshot.hasData) {
+                      final chatRooms = snapshot.data!;
+                      hasUnread = chatRooms.any(
+                        (room) => (room.unreadCount[currentUserId] ?? 0) > 0,
+                      );
+                    }
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        CircleAvatar(
+                          radius: 20.r,
+                          backgroundColor: Colors.transparent,
+                          backgroundImage: AssetImage(
+                            'assets/chat_with_seller.png',
+                          ),
+                        ),
+                        if (hasUnread)
+                          Positioned(
+                            left: -10.w,
+                            top: -5.h,
+                            child: Image.asset(
+                              'assets/notification.png',
+                              width: 18.w,
+                              height: 18.h,
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+            label: '채팅',
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(
@@ -218,7 +347,7 @@ class _NavBarState extends State<NavBar> {
                     ? 'assets/005m.png'
                     : 'assets/grey_005m.png',
               ),
-              size: 21,
+              size: 30.r,
             ),
             label: '내페이지',
           ),
