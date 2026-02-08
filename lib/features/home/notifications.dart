@@ -35,91 +35,74 @@ class _NotificationsState extends State<Notifications> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          titleSpacing: 0,
-          automaticallyImplyLeading: false, // Don't show the leading button
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.arrow_back_ios),
+      child:
+          user == null
+              ? Center(child: Text('로그인이 필요합니다'))
+              : StreamBuilder<QuerySnapshot>(
+                stream:
+                    FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('notifications')
+                        .orderBy('timestamp', descending: true)
+                        .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(child: Text('알림이 없습니다.'));
+                  }
+                  final notifications = snapshot.data!.docs;
+                  return ListView.separated(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 5.w,
+                      vertical: 10.h,
+                    ),
+                    itemCount: notifications.length,
+                    separatorBuilder: (_, __) => Divider(),
+                    itemBuilder: (context, index) {
+                      final data =
+                          notifications[index].data() as Map<String, dynamic>;
+                      return ListTile(
+                        title: Text(
+                          data['title'] ?? '',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 18.sp,
+                            fontFamily: 'NotoSans',
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        subtitle:
+                            data['body'] != null
+                                ? Text(
+                                  data['body'],
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 15.sp,
+                                    fontFamily: 'NotoSans',
+                                  ),
+                                )
+                                : null,
+                        trailing:
+                            data['isRead'] == false
+                                ? Icon(
+                                  Icons.circle,
+                                  color: Colors.red,
+                                  size: 12,
+                                )
+                                : null,
+                        dense: true,
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: 6.h,
+                          horizontal: 8.w,
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
-              Text("알림", style: TextStyle(fontFamily: 'ABeeZee')),
-            ],
-          ),
-        ),
-        body:
-            user == null
-                ? Center(child: Text('로그인이 필요합니다'))
-                : StreamBuilder<QuerySnapshot>(
-                  stream:
-                      FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(user.uid)
-                          .collection('notifications')
-                          .orderBy('timestamp', descending: true)
-                          .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
-                    }
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return Center(child: Text('알림이 없습니다.'));
-                    }
-                    final notifications = snapshot.data!.docs;
-                    return ListView.separated(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 5.w,
-                        vertical: 10.h,
-                      ),
-                      itemCount: notifications.length,
-                      separatorBuilder: (_, __) => Divider(),
-                      itemBuilder: (context, index) {
-                        final data =
-                            notifications[index].data() as Map<String, dynamic>;
-                        return ListTile(
-                          title: Text(
-                            data['title'] ?? '',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 18.sp,
-                              fontFamily: 'NotoSans',
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          subtitle:
-                              data['body'] != null
-                                  ? Text(
-                                    data['body'],
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 15.sp,
-                                      fontFamily: 'NotoSans',
-                                    ),
-                                  )
-                                  : null,
-                          trailing:
-                              data['isRead'] == false
-                                  ? Icon(
-                                    Icons.circle,
-                                    color: Colors.red,
-                                    size: 12,
-                                  )
-                                  : null,
-                          dense: true,
-                          contentPadding: EdgeInsets.symmetric(
-                            vertical: 6.h,
-                            horizontal: 8.w,
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-      ),
     );
   }
 }

@@ -41,88 +41,18 @@ class _HomeScreenState extends State<HomeScreen>
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              StreamBuilder<User?>(
-                stream: FirebaseAuth.instance.authStateChanges(),
-                builder: (context, authSnapshot) {
-                  final user = authSnapshot.data;
-                  if (user == null) {
-                    // Not authenticated: show disabled chat icon with tooltip
-                    return Tooltip(
-                      message: '로그인 후 채팅을 이용할 수 있습니다',
-                      child: Opacity(
-                        opacity: 0.4,
-                        child: InkWell(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('로그인 후 채팅을 이용할 수 있습니다'),
-                              ),
-                            );
-                          },
-                          child: ImageIcon(
-                            AssetImage('assets/005 3.png'),
-                            size: 21,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  // Authenticated: show chat icon with unread badge
-                  return StreamBuilder(
-                    stream: FirebaseFirestore.instance
-                        .collection('chatRooms')
-                        .where('participants', arrayContains: user.uid)
-                        .orderBy('lastMessageTime', descending: true)
-                        .snapshots()
-                        .map(
-                          (snapshot) =>
-                              snapshot.docs
-                                  .map(
-                                    (doc) => ChatRoomModel.fromMap(doc.data()),
-                                  )
-                                  .toList(),
-                        ),
-                    builder: (context, snapshot) {
-                      final currentUserId = user.uid;
-                      bool hasUnread = false;
-                      if (snapshot.hasData) {
-                        final chatRooms = snapshot.data!;
-                        hasUnread = chatRooms.any(
-                          (room) => (room.unreadCount[currentUserId] ?? 0) > 0,
-                        );
-                      }
-                      return InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ChatsNavbar(),
-                            ),
-                          );
-                        },
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            ImageIcon(
-                              AssetImage('assets/005 3.png'),
-                              size: 24.sp,
-                            ),
-                            if (hasUnread)
-                              Positioned(
-                                left: -10.w,
-                                top: -5.h,
-                                child: Image.asset(
-                                  'assets/notification.png',
-                                  width: 18.w,
-                                  height: 18.h,
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomeSearch()),
                   );
                 },
+                child: ImageIcon(
+                  AssetImage('assets/search.png'),
+                  color: Colors.black,
+                  size: 25.sp,
+                ),
               ),
               TabBar(
                 labelStyle: TextStyle(
@@ -433,25 +363,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                                   TextStyles
                                                       .abeezee16px400wPblack,
                                             ),
-                                            Spacer(),
-                                            InkWell(
-                                              onTap: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder:
-                                                        (context) =>
-                                                            HomeSearch(),
-                                                  ),
-                                                );
-                                              },
-                                              child: ImageIcon(
-                                                AssetImage('assets/search.png'),
-                                                color: Colors.black,
-                                                size: 25.sp,
-                                              ),
-                                            ),
-                                            SizedBox(width: 5.w),
                                           ],
                                         ),
                                         SizedBox(height: 10.h),
@@ -588,9 +499,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                               Flexible(
                                 child: InkWell(
                                   onTap: () {
-                                    context.pushNamed(
-                                      Routes.notificationsScreen,
-                                    );
+                                    context.pushNamed(Routes.alertsScreen);
                                   },
                                   child: StreamBuilder<QuerySnapshot>(
                                     stream:
@@ -662,25 +571,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                                   TextStyles
                                                       .abeezee16px400wPblack,
                                             ),
-                                            Spacer(),
-                                            InkWell(
-                                              onTap: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder:
-                                                        (context) =>
-                                                            HomeSearch(),
-                                                  ),
-                                                );
-                                              },
-                                              child: ImageIcon(
-                                                AssetImage('assets/search.png'),
-                                                color: Colors.black,
-                                                size: 25.sp,
-                                              ),
-                                            ),
-                                            SizedBox(width: 5.w),
                                           ],
                                         ),
                                         SizedBox(height: 10.h),

@@ -16,7 +16,7 @@ class Routes {
   static const String authScreen = '/auth';
   static const String deleteAccount = '/delete-account';
   static const String buyNowScreen = '/buy-now';
-
+  static const String alertsScreen = '/alerts';
   // Chat route constant (use AppRouter.router.push('/chat/$id') or pushNamed with this name)
   static const String chatScreen = 'chatScreen';
 }

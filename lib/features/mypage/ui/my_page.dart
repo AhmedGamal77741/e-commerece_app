@@ -3,6 +3,7 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/mypage/data/firebas_funcs.dart';
+import 'package:ecommerece_app/features/mypage/ui/widgets/profile_type.dart';
 import 'package:ecommerece_app/features/mypage/ui/widgets/user_info_container.dart';
 import 'package:ecommerece_app/features/mypage/ui/widgets/user_options_container.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -45,8 +46,11 @@ class MyPage extends StatelessWidget {
                     : Text('일반 회원', style: TextStyles.abeezee17px800wPblack),
                 verticalSpace(20),
                 UserOptionsContainer(isSub: isSub),
-
-                verticalSpace(30),
+                verticalSpace(20),
+                ProfileType(isPrivate: myuser.isPrivate, userId: userId),
+                verticalSpace(20),
+                Text('개인정보', style: TextStyles.abeezee17px800wPblack),
+                verticalSpace(20),
                 UserInfoContainer(),
                 verticalSpace(20),
                 Row(
