@@ -168,11 +168,11 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
               ),
             ),
             appBar: AppBar(
-              toolbarHeight: 42.h,
+              toolbarHeight: 40.h,
               title: Text(''),
               centerTitle: false,
               bottom: PreferredSize(
-                preferredSize: Size.fromHeight(65.h),
+                preferredSize: Size.fromHeight(100.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
