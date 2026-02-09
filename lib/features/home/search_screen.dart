@@ -124,7 +124,6 @@ class _HomeFeedSearchTab extends StatefulWidget {
   final bool useGuestPostItem;
 
   const _HomeFeedSearchTab({
-    super.key,
     required this.searchQuery,
     this.useGuestPostItem = false,
   });
@@ -643,17 +642,133 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
                               .collection('following')
                               .doc(user.userId)
                               .snapshots(),
-                      builder: (context, snapshot) {
+                      builder: (context, followingSnapshot) {
                         final isFollowing =
-                            snapshot.hasData && snapshot.data!.exists;
+                            followingSnapshot.hasData &&
+                            followingSnapshot.data!.exists;
+
+                        // Check if user is private
+                        final isPrivate = user.isPrivate ?? false;
+
+                        if (isFollowing) {
+                          // Already following
+                          return ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[300],
+                              foregroundColor: Colors.black,
+                              minimumSize: Size(47.w, 33.h),
+                              textStyle: TextStyle(
+                                fontSize: 12.sp,
+                                fontFamily: 'NotoSans',
+                                fontWeight: FontWeight.w500,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            onPressed: () async {
+                              FollowService().toggleFollow(user.userId);
+                            },
+                            child: Text(
+                              '구독 취소',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                fontFamily: 'NotoSans',
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }
+
+                        // Not following - check if private
+                        if (isPrivate) {
+                          // Check for pending follow request
+                          return StreamBuilder<DocumentSnapshot>(
+                            stream:
+                                FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(user.userId)
+                                    .collection('followRequests')
+                                    .doc(FirebaseAuth.instance.currentUser?.uid)
+                                    .snapshots(),
+                            builder: (context, requestSnapshot) {
+                              final hasRequest =
+                                  requestSnapshot.hasData &&
+                                  requestSnapshot.data!.exists;
+
+                              return ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      hasRequest
+                                          ? Colors.grey[300]
+                                          : ColorsManager.primary600,
+                                  foregroundColor:
+                                      hasRequest ? Colors.black : Colors.white,
+                                  minimumSize: Size(47.w, 33.h),
+                                  textStyle: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontFamily: 'NotoSans',
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  if (hasRequest) {
+                                    // Cancel request
+                                    await FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(user.userId)
+                                        .collection('followRequests')
+                                        .doc(
+                                          FirebaseAuth
+                                              .instance
+                                              .currentUser
+                                              ?.uid,
+                                        )
+                                        .delete();
+                                  } else {
+                                    // Send request
+                                    await FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(user.userId)
+                                        .collection('followRequests')
+                                        .doc(
+                                          FirebaseAuth
+                                              .instance
+                                              .currentUser
+                                              ?.uid,
+                                        )
+                                        .set({
+                                          'userId':
+                                              FirebaseAuth
+                                                  .instance
+                                                  .currentUser
+                                                  ?.uid,
+                                          'createdAt':
+                                              FieldValue.serverTimestamp(),
+                                        });
+                                  }
+                                },
+                                child: Text(
+                                  hasRequest ? '요청 취소' : '요청',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontFamily: 'NotoSans',
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        }
+
+                        // Public profile - show follow button
                         return ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isFollowing
-                                    ? Colors.grey[300]
-                                    : ColorsManager.primary600,
-                            foregroundColor:
-                                isFollowing ? Colors.black : Colors.white,
+                            backgroundColor: ColorsManager.primary600,
+                            foregroundColor: Colors.white,
                             minimumSize: Size(47.w, 33.h),
                             textStyle: TextStyle(
                               fontSize: 12.sp,
@@ -668,7 +783,7 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
                             FollowService().toggleFollow(user.userId);
                           },
                           child: Text(
-                            isFollowing ? '구독 취소' : '구독',
+                            '구독',
                             style: TextStyle(
                               fontSize: 12.sp,
                               fontFamily: 'NotoSans',

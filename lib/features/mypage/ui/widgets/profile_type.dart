@@ -26,8 +26,14 @@ class _ProfileTypeState extends State<ProfileType> {
   }
 
   Future<void> _updatePrivacy(bool value) async {
+    final wasPrivate = isPrivate;
     setState(() => isPrivate = value);
     try {
+      // If changing from private to public, accept all pending requests
+      if (wasPrivate && !value) {
+        await _acceptAllPendingRequests();
+      }
+
       await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.userId)
@@ -38,6 +44,61 @@ class _ProfileTypeState extends State<ProfileType> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('설정 업데이트에 실패했습니다. 다시 시도해 주세요.')));
+    }
+  }
+
+  Future<void> _acceptAllPendingRequests() async {
+    try {
+      final requestsSnapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(widget.userId)
+              .collection('followRequests')
+              .get();
+
+      if (requestsSnapshot.docs.isEmpty) {
+        return;
+      }
+
+      final batch = FirebaseFirestore.instance.batch();
+
+      for (var requestDoc in requestsSnapshot.docs) {
+        final requestingUserId = requestDoc.id;
+
+        // Add to followers subcollection
+        batch.set(
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(widget.userId)
+              .collection('followers')
+              .doc(requestingUserId),
+          {
+            'userId': requestingUserId,
+            'createdAt': FieldValue.serverTimestamp(),
+          },
+        );
+
+        // Add to requesting user's following subcollection
+        batch.set(
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(requestingUserId)
+              .collection('following')
+              .doc(widget.userId),
+          {'userId': widget.userId, 'createdAt': FieldValue.serverTimestamp()},
+        );
+
+        // Delete the follow request
+        batch.delete(requestDoc.reference);
+      }
+
+      await batch.commit();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('요청 처리 중 오류: $e')));
+      }
     }
   }
 
