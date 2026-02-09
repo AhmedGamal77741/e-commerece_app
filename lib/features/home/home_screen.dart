@@ -31,52 +31,64 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          toolbarHeight: 130.h,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomeSearch()),
-                  );
-                },
-                child: ImageIcon(
-                  AssetImage('assets/search.png'),
-                  color: Colors.black,
-                  size: 25.sp,
-                ),
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, authSnapshot) {
+        final firebaseUser = authSnapshot.data;
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            appBar: AppBar(
+              toolbarHeight: 130.h,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  InkWell(
+                    onTap: () {
+                      if (firebaseUser == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("검색은 회원가입 후 이용가능합니다")),
+                        );
+                        return;
+                      }
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomeSearch()),
+                      );
+                    },
+                    child: ImageIcon(
+                      AssetImage('assets/search.png'),
+                      color: Colors.black,
+                      size: 25.sp,
+                    ),
+                  ),
+                  TabBar(
+                    labelStyle: TextStyle(
+                      fontSize: 16.sp,
+                      decoration: TextDecoration.none,
+                      fontFamily: 'NotoSans',
+                      fontStyle: FontStyle.normal,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0,
+                      color: ColorsManager.primaryblack,
+                    ),
+                    unselectedLabelColor: ColorsManager.primary600,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicatorColor: ColorsManager.primaryblack,
+                    tabs: [Tab(text: '추천'), Tab(text: '구독')],
+                  ),
+                ],
               ),
-              TabBar(
-                labelStyle: TextStyle(
-                  fontSize: 16.sp,
-                  decoration: TextDecoration.none,
-                  fontFamily: 'NotoSans',
-                  fontStyle: FontStyle.normal,
-                  fontWeight: FontWeight.w400,
-                  letterSpacing: 0,
-                  color: ColorsManager.primaryblack,
-                ),
-                unselectedLabelColor: ColorsManager.primary600,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicatorColor: ColorsManager.primaryblack,
-                tabs: [Tab(text: '추천'), Tab(text: '구독')],
-              ),
-            ],
+            ),
+            body: TabBarView(
+              children: [
+                _HomeFeedTab(scrollController: widget.scrollController),
+                FollowingTab(),
+              ],
+            ),
           ),
-        ),
-        body: TabBarView(
-          children: [
-            _HomeFeedTab(scrollController: widget.scrollController),
-            FollowingTab(),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }
