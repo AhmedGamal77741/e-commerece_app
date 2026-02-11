@@ -269,7 +269,12 @@ class _AddPostState extends State<AddPost> {
     return SafeArea(
       child: Scaffold(
         bottomNavigationBar: Padding(
-          padding: EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          padding: EdgeInsets.only(
+            top: 20.h,
+            left: 20.w,
+            right: 20.w,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20.h,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

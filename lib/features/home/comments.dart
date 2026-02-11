@@ -114,7 +114,7 @@ class _CommentsState extends State<Comments> {
               child: ListView(
                 children: [
                   Padding(
-                    padding: EdgeInsets.only(right: 10.w),
+                    padding: EdgeInsets.only(right: 10.w, bottom: 10.h),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -136,61 +136,7 @@ class _CommentsState extends State<Comments> {
                       ],
                     ),
                   ),
-                  Divider(height: 50.h),
-                  Selector<PostsProvider, List<Comment>>(
-                    selector:
-                        (_, provider) => provider.getComments(widget.postId),
-                    builder: (context, comments, child) {
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(left: 20.0.w),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '댓글',
-                                  style: TextStyle(
-                                    color: const Color(0xFF121212),
-                                    fontSize: 16,
-                                    fontFamily: 'NotoSans',
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.40,
-                                  ),
-                                ),
-                                SizedBox(width: 8.w),
-                                Text(
-                                  comments.length.toString(),
-                                  style: TextStyle(
-                                    color: const Color(0xFF5F5F5F),
-                                    fontSize: 16,
-                                    fontFamily: 'NotoSans',
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.40,
-                                    letterSpacing: -0.09,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(right: 20.0.w),
-                            child: InkWell(
-                              onTap: () {
-                                context.pop();
-                              },
-                              child: Icon(Icons.close),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  verticalSpace(30),
+
                   Selector<PostsProvider, List<Comment>>(
                     selector:
                         (_, provider) => provider.getComments(widget.postId),
@@ -227,9 +173,14 @@ class _CommentsState extends State<Comments> {
                         itemCount: comments.length,
                         itemBuilder: (context, index) {
                           final comment = comments[index];
-                          return CommentItem(
-                            comment: comment,
-                            postId: widget.postId,
+                          return Column(
+                            children: [
+                              CommentItem(
+                                comment: comment,
+                                postId: widget.postId,
+                              ),
+                              verticalSpace(10),
+                            ],
                           );
                         },
                       );

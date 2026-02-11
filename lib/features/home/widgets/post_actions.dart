@@ -33,91 +33,68 @@ class _PostActionsState extends State<PostActions> {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 10.w,
+      spacing: 4.w,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 4.w,
-          children: [
-            InkWell(
-              onTap: () {
-                setState(() {
-                  isLiked = !isLiked;
-                });
-                // Use provider to toggle like
-                Provider.of<PostsProvider>(
-                  context,
-                  listen: false,
-                ).togglePostLike(widget.postId);
-              },
-              child: SizedBox(
-                width: 22.w,
-                height: 22.h,
-                child: ImageIcon(
-                  AssetImage(
-                    isLiked
-                        ? "assets/icon=like,status=off (1).png"
-                        : "assets/icon=like,status=off.png",
-                  ),
-                  color: isLiked ? Color(0xFF280404) : Colors.black,
-                ),
+        InkWell(
+          onTap: () {
+            setState(() {
+              isLiked = !isLiked;
+            });
+            // Use provider to toggle like
+            Provider.of<PostsProvider>(
+              context,
+              listen: false,
+            ).togglePostLike(widget.postId);
+          },
+          child: SizedBox(
+            width: 22.w,
+            height: 22.h,
+            child: ImageIcon(
+              AssetImage(
+                isLiked
+                    ? "assets/icon=like,status=off (1).png"
+                    : "assets/icon=like,status=off.png",
               ),
+              color: isLiked ? Color(0xFF280404) : Colors.black,
             ),
-            SizedBox(
-              width: 25,
-              height: 22,
-              child: Text(
-                likeCount.toString(),
-                style: TextStyle(
-                  color: const Color(0xFF343434),
-                  fontSize: 14,
-                  fontFamily: 'NotoSans',
-                  fontWeight: FontWeight.w400,
-                  height: 1.40,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
+        Text(
+          likeCount.toString(),
+          style: TextStyle(
+            color: const Color(0xFF343434),
+            fontSize: 14,
+            fontFamily: 'NotoSans',
+            fontWeight: FontWeight.w400,
+            height: 1.40,
+          ),
+        ),
+
         // Comment section remains the same
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 4,
-          children: [
-            InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => Comments(postId: widget.postId),
-                  ),
-                );
-              },
-              child: SizedBox(
-                width: 22.w,
-                height: 22.h,
-                child: ImageIcon(AssetImage("assets/icon=comment.png")),
+        InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Comments(postId: widget.postId),
               ),
-            ),
-            SizedBox(
-              width: 25,
-              height: 22,
-              child: Text(
-                commentCount.toString(),
-                style: TextStyle(
-                  color: const Color(0xFF343434),
-                  fontSize: 14,
-                  fontFamily: 'NotoSans',
-                  fontWeight: FontWeight.w400,
-                  height: 1.40,
-                ),
-              ),
-            ),
-          ],
+            );
+          },
+          child: SizedBox(
+            width: 22.w,
+            height: 22.h,
+            child: ImageIcon(AssetImage("assets/icon=comment.png")),
+          ),
+        ),
+        Text(
+          commentCount.toString(),
+          style: TextStyle(
+            color: const Color(0xFF343434),
+            fontSize: 14,
+            fontFamily: 'NotoSans',
+            fontWeight: FontWeight.w400,
+            height: 1.40,
+          ),
         ),
       ],
     );

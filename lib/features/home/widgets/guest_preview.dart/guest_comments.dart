@@ -25,66 +25,7 @@ class GuestComments extends StatelessWidget {
                 children: [Expanded(child: GuestPostItem(post: post))],
               ),
             ),
-            Divider(height: 50.h),
-            // Comments count row
-            StreamBuilder<QuerySnapshot>(
-              stream:
-                  FirebaseFirestore.instance
-                      .collection('posts')
-                      .doc(post['postId'])
-                      .collection('comments')
-                      .snapshots(),
-              builder: (context, snapshot) {
-                final comments = snapshot.data?.docs ?? [];
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(left: 20.0.w),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '댓글',
-                            style: TextStyle(
-                              color: const Color(0xFF121212),
-                              fontSize: 16,
-                              fontFamily: 'NotoSans',
-                              fontWeight: FontWeight.w400,
-                              height: 1.40,
-                            ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            comments.length.toString(),
-                            style: TextStyle(
-                              color: const Color(0xFF5F5F5F),
-                              fontSize: 16,
-                              fontFamily: 'NotoSans',
-                              fontWeight: FontWeight.w400,
-                              height: 1.40,
-                              letterSpacing: -0.09,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(right: 20.0.w),
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                        child: Icon(Icons.close),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+
             verticalSpace(30),
             // Comments list
             Expanded(
