@@ -5,7 +5,7 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/services/share_service.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
+// import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:ecommerece_app/features/cart/services/cart_service.dart';
 import 'package:ecommerece_app/features/cart/services/favorites_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -382,65 +382,74 @@ class _ItemDetailsState extends State<ItemDetails> {
             ),
           ],
         ),
-        bottomNavigationBar: Padding(
-          padding: EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
-                    );
-                  },
-                  style: TextButton.styleFrom(
-                    backgroundColor: ColorsManager.white,
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      side: const BorderSide(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(12),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: ColorsManager.white,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 10,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        side: const BorderSide(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    '장바구니 담기',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontFamily: 'NotoSans',
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: TextButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
-                    );
-                  },
-                  style: TextButton.styleFrom(
-                    backgroundColor: ColorsManager.primaryblack,
-                    padding: EdgeInsets.symmetric(vertical: 10),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    '바로 구매',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'NotoSans',
-                      fontSize: 18,
+                    child: Text(
+                      '장바구니 담기',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontFamily: 'NotoSans',
+                        fontSize: 18,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                SizedBox(width: 10),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: ColorsManager.primaryblack,
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      '바로 구매',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'NotoSans',
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -814,211 +823,219 @@ class _ItemDetailsState extends State<ItemDetails> {
               ),
             ],
           ),
-          bottomNavigationBar: Padding(
-            padding: EdgeInsets.all(16.w),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () async {
-                      final currentUser = FirebaseAuth.instance.currentUser;
-                      if (currentUser == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
-                          ),
-                        );
-                        return;
-                      }
-                      if (_selectedOption == null) {
-                        _showQuantityRequiredMessage();
-                      } else {
-                        final pricePoint =
-                            widget.product.pricePoints[int.parse(
-                              _selectedOption!,
-                            )];
-                        final productRef = FirebaseFirestore.instance
-                            .collection('products')
-                            .doc(widget.product.product_id);
-                        final productSnapshot = await productRef.get();
-                        final currentStock =
-                            productSnapshot.data()?['stock'] ?? 0;
-                        if (pricePoint.quantity > currentStock) {
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(16.w),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () async {
+                        final currentUser = FirebaseAuth.instance.currentUser;
+                        if (currentUser == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('수량 부족'),
-                              backgroundColor: Colors.red,
+                              content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
                             ),
                           );
                           return;
                         }
-                        final cartQuery =
-                            await FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(currentUser.uid)
-                                .collection('cart')
-                                .where(
-                                  'product_id',
-                                  isEqualTo: widget.product.product_id,
-                                )
-                                .get();
-
-                        int cartTotalQuantity = 0;
-                        for (var doc in cartQuery.docs) {
-                          final data = doc.data();
-                          cartTotalQuantity += (data['quantity'] ?? 0) as int;
-                        }
-
-                        if (cartTotalQuantity + pricePoint.quantity >
-                            currentStock) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                '해당 상품의 남은 수량은 ${currentStock - cartTotalQuantity}개 입니다.',
+                        if (_selectedOption == null) {
+                          _showQuantityRequiredMessage();
+                        } else {
+                          final pricePoint =
+                              widget.product.pricePoints[int.parse(
+                                _selectedOption!,
+                              )];
+                          final productRef = FirebaseFirestore.instance
+                              .collection('products')
+                              .doc(widget.product.product_id);
+                          final productSnapshot = await productRef.get();
+                          final currentStock =
+                              productSnapshot.data()?['stock'] ?? 0;
+                          if (pricePoint.quantity > currentStock) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('수량 부족'),
+                                backgroundColor: Colors.red,
                               ),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          return;
-                        }
-                        await addProductAsNewEntryToCart(
-                          userId: currentUser.uid,
-                          productId: widget.product.product_id,
-                          pricePointIndex: int.parse(_selectedOption!),
-                          /* price:
+                            );
+                            return;
+                          }
+                          final cartQuery =
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(currentUser.uid)
+                                  .collection('cart')
+                                  .where(
+                                    'product_id',
+                                    isEqualTo: widget.product.product_id,
+                                  )
+                                  .get();
+
+                          int cartTotalQuantity = 0;
+                          for (var doc in cartQuery.docs) {
+                            final data = doc.data();
+                            cartTotalQuantity += (data['quantity'] ?? 0) as int;
+                          }
+
+                          if (cartTotalQuantity + pricePoint.quantity >
+                              currentStock) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '해당 상품의 남은 수량은 ${currentStock - cartTotalQuantity}개 입니다.',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          await addProductAsNewEntryToCart(
+                            userId: currentUser.uid,
+                            productId: widget.product.product_id,
+                            pricePointIndex: int.parse(_selectedOption!),
+                            /* price:
                               isSub
                                   ? pricePoint.price
                                   : (pricePoint.price / 0.8).round(), */
-                          deliveryManagerId:
-                              widget.product.deliveryManagerId ?? '',
-                          productName: widget.product.productName,
-                        );
-                        if (mounted) {
-                          Navigation(context).pop();
+                            deliveryManagerId:
+                                widget.product.deliveryManagerId ?? '',
+                            productName: widget.product.productName,
+                          );
+                          if (mounted) {
+                            Navigation(context).pop();
+                          }
                         }
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      backgroundColor: ColorsManager.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 6.w,
-                        vertical: 10.h,
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor: ColorsManager.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6.w,
+                          vertical: 10.h,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          side: const BorderSide(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        side: const BorderSide(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      '장바구니 담기',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontFamily: 'NotoSans',
-                        fontSize: 18.sp,
+                      child: Text(
+                        '장바구니 담기',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontFamily: 'NotoSans',
+                          fontSize: 18.sp,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: TextButton(
-                    onPressed: () async {
-                      final currentUser = FirebaseAuth.instance.currentUser;
-                      if (currentUser == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
-                          ),
-                        );
-                        return;
-                      }
-                      if (_selectedOption == null) {
-                        _showQuantityRequiredMessage();
-                      } else {
-                        final pricePoint =
-                            widget.product.pricePoints[int.parse(
-                              _selectedOption!,
-                            )];
-                        final productRef = FirebaseFirestore.instance
-                            .collection('products')
-                            .doc(widget.product.product_id);
-                        final productSnapshot = await productRef.get();
-                        final currentStock =
-                            productSnapshot.data()?['stock'] ?? 0;
-                        if (pricePoint.quantity > currentStock) {
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () async {
+                        final currentUser = FirebaseAuth.instance.currentUser;
+                        if (currentUser == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('수량 부족'),
-                              backgroundColor: Colors.red,
+                              content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다"),
                             ),
                           );
                           return;
                         }
-                        final cartQuery =
-                            await FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(currentUser.uid)
-                                .collection('cart')
-                                .where(
-                                  'product_id',
-                                  isEqualTo: widget.product.product_id,
-                                )
-                                .get();
-
-                        int cartTotalQuantity = 0;
-                        for (var doc in cartQuery.docs) {
-                          final data = doc.data();
-                          cartTotalQuantity += (data['quantity'] ?? 0) as int;
-                        }
-
-                        if (cartTotalQuantity + pricePoint.quantity >
-                            currentStock) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                '해당 상품의 남은 수량은 ${currentStock - cartTotalQuantity}개 입니다.',
+                        if (_selectedOption == null) {
+                          _showQuantityRequiredMessage();
+                        } else {
+                          final pricePoint =
+                              widget.product.pricePoints[int.parse(
+                                _selectedOption!,
+                              )];
+                          final productRef = FirebaseFirestore.instance
+                              .collection('products')
+                              .doc(widget.product.product_id);
+                          final productSnapshot = await productRef.get();
+                          final currentStock =
+                              productSnapshot.data()?['stock'] ?? 0;
+                          if (pricePoint.quantity > currentStock) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('수량 부족'),
+                                backgroundColor: Colors.red,
                               ),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          return;
-                        }
+                            );
+                            return;
+                          }
 
-                        context.go(
-                          '/buy-now',
-                          extra: {
-                            'product': widget.product,
-                            'quantity': pricePoint.quantity,
-                            'price':
+                          // Create pending_buynow entry before navigating
+                          try {
+                            final paymentId =
+                                FirebaseFirestore.instance
+                                    .collection('orders')
+                                    .doc()
+                                    .id;
+                            final finalPrice =
                                 isSub
                                     ? pricePoint.price
-                                    : (pricePoint.price / 0.8).round(),
-                          },
-                        );
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      backgroundColor: ColorsManager.primaryblack,
-                      padding: EdgeInsets.symmetric(vertical: 10.h),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                                    : (pricePoint.price / 0.8).round();
+
+                            final pendingColl = FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(currentUser.uid)
+                                .collection('pending_buynow');
+
+                            // Clear any existing pending_buynow documents for this user
+                            final existing = await pendingColl.get();
+                            for (final doc in existing.docs) {
+                              try {
+                                await doc.reference.delete();
+                              } catch (_) {}
+                            }
+
+                            await pendingColl.doc(paymentId).set({
+                              'product_id': widget.product.product_id,
+                              'product_name': widget.product.productName,
+                              'deliveryManagerId':
+                                  widget.product.deliveryManagerId,
+                              'price': finalPrice,
+                              'quantity': pricePoint.quantity,
+                              'pricePointIndex': int.parse(_selectedOption!),
+                              'paymentId': paymentId,
+                              'createdAt': FieldValue.serverTimestamp(),
+                            });
+
+                            // Navigate to buy_now with paymentId
+                            if (mounted) {
+                              context.go('/buy-now?paymentId=$paymentId');
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('오류가 발생했습니다: $e')),
+                            );
+                          }
+                        }
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor: ColorsManager.primaryblack,
+                        padding: EdgeInsets.symmetric(vertical: 10.h),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      '바로 구매',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'NotoSans',
-                        fontSize: 18.sp,
+                      child: Text(
+                        '바로 구매',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'NotoSans',
+                          fontSize: 18.sp,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
