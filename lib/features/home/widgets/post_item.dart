@@ -30,23 +30,222 @@ class PostItem extends StatelessWidget {
     this.showMoreButton = true,
   }) : super(key: key);
 
+  // ── helpers ────────────────────────────────────────────────────────────────
+
+  /// Shows the edit dialog for the current user's post.
+  Future<void> _showEditDialog(BuildContext context, String currentText) async {
+    final controller = TextEditingController(text: currentText);
+    await showDialog(
+      context: context,
+      builder:
+          (ctx) => Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '게시글 수정',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                  TextField(
+                    controller: controller,
+                    maxLines: 12,
+                    style: TextStyle(color: Colors.black, fontSize: 16.sp),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text(
+                          '취소',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16.sp,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () async {
+                          await FirebaseFirestore.instance
+                              .collection('posts')
+                              .doc(postId)
+                              .update({'text': controller.text});
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('게시글이 수정되었습니다.')),
+                          );
+                        },
+                        child: Text('수정'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  /// Shows the delete confirmation dialog for the current user's post.
+  Future<void> _showDeleteDialog(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder:
+          (ctx) => Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '게시글 삭제',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    '정말로 이 게시글을 삭제하시겠습니까?',
+                    style: TextStyle(fontSize: 16.sp, color: Colors.black),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text(
+                          '취소',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16.sp,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () async {
+                          await FirebaseFirestore.instance
+                              .collection('posts')
+                              .doc(postId)
+                              .delete();
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('게시물이 삭제되었습니다.')),
+                          );
+                        },
+                        child: Text('삭제'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  /// Runs [action] while showing a loading dialog, then cleans up safely.
+  Future<void> _runWithLoading(
+    BuildContext context,
+    Future<void> Function() action,
+    String successMsg,
+    String errorPrefix,
+  ) async {
+    // Capture navigator/messenger BEFORE any async gap
+    final nav = Navigator.of(context, rootNavigator: true);
+    final messenger = ScaffoldMessenger.of(context);
+
+    // Show loading
+    nav.push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: false,
+        barrierColor: Colors.black26,
+        pageBuilder:
+            (_, __, ___) => AlertDialog(
+              content: Row(
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 16.w),
+                  Text('신고 처리 중...'),
+                ],
+              ),
+            ),
+      ),
+    );
+
+    try {
+      await action();
+      nav.pop(); // dismiss loading
+      messenger.showSnackBar(SnackBar(content: Text(successMsg)));
+    } catch (e) {
+      nav.pop(); // dismiss loading even on error
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('$errorPrefix: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // ── build ──────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final postsProvider = Provider.of<PostsProvider>(context, listen: false);
-    // Load comments if not already loaded
     if (postsProvider.getComments(postId).isEmpty &&
         !postsProvider.isLoadingComments(postId)) {
-      // Start listening to comments for this post
       postsProvider.listenToComments(postId);
     }
 
-    // Use Selector to only rebuild this widget when this specific post changes
     return Selector<PostsProvider, Map<String, dynamic>?>(
       selector: (_, provider) => provider.getPost(postId),
       builder: (context, postData, child) {
-        if (postData == null) {
-          return SizedBox.shrink(); // Post doesn't exist
-        }
+        if (postData == null) return SizedBox.shrink();
 
         return FutureBuilder<MyUser>(
           future: getUser(postData['userId']),
@@ -58,7 +257,6 @@ class PostItem extends StatelessWidget {
             final myuser = snapshot.data;
             final displayName =
                 myuser?.name.isNotEmpty == true ? myuser!.name : '삭제된 사용자';
-
             final String profileUrl = !userMissing ? (myuser?.url ?? '') : '';
             final bool isMyPost =
                 !userMissing &&
@@ -66,6 +264,7 @@ class PostItem extends StatelessWidget {
 
             return Column(
               children: [
+                // ── fromComments branch (unchanged) ───────────────────────
                 if (fromComments)
                   Padding(
                     padding: EdgeInsets.only(top: 5.h, left: 10.w, right: 10.w),
@@ -100,8 +299,6 @@ class PostItem extends StatelessWidget {
                                     style: TextStyles.abeezee16px400wPblack
                                         .copyWith(fontWeight: FontWeight.bold),
                                   ),
-
-                                  // Only show follower counter if user exists and userId is not empty
                                   if (!userMissing && myuser!.userId.isNotEmpty)
                                     StreamBuilder<QuerySnapshot>(
                                       stream:
@@ -152,7 +349,6 @@ class PostItem extends StatelessWidget {
                               ),
                             ),
                             Spacer(),
-                            // Only show follow button if user exists and is not current user
                             if (!userMissing &&
                                 myuser!.userId !=
                                     FirebaseAuth.instance.currentUser?.uid)
@@ -175,7 +371,6 @@ class PostItem extends StatelessWidget {
                                   final isPrivate = myuser?.isPrivate ?? false;
 
                                   if (isFollowing) {
-                                    // Show more menu when following
                                     return PopupMenuButton<String>(
                                       onSelected: (value) async {
                                         if (value == 'share') {
@@ -221,9 +416,7 @@ class PostItem extends StatelessWidget {
                                     );
                                   }
 
-                                  // Not following
                                   if (isPrivate) {
-                                    // Check for pending follow request
                                     return StreamBuilder<DocumentSnapshot>(
                                       stream:
                                           FirebaseFirestore.instance
@@ -241,7 +434,6 @@ class PostItem extends StatelessWidget {
                                         final hasRequest =
                                             requestSnapshot.hasData &&
                                             requestSnapshot.data!.exists;
-
                                         return ElevatedButton(
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor:
@@ -265,7 +457,6 @@ class PostItem extends StatelessWidget {
                                           ),
                                           onPressed: () async {
                                             if (hasRequest) {
-                                              // Cancel follow request
                                               await FirebaseFirestore.instance
                                                   .collection('users')
                                                   .doc(myuser.userId)
@@ -278,7 +469,6 @@ class PostItem extends StatelessWidget {
                                                   )
                                                   .delete();
                                             } else {
-                                              // Send follow request
                                               await FirebaseFirestore.instance
                                                   .collection('users')
                                                   .doc(myuser.userId)
@@ -308,7 +498,6 @@ class PostItem extends StatelessWidget {
                                     );
                                   }
 
-                                  // Public profile - show follow button
                                   return ElevatedButton(
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.black,
@@ -400,11 +589,8 @@ class PostItem extends StatelessWidget {
                                 color: Colors.grey[600],
                               ),
                             ),
-
                             InkWell(
-                              onTap: () {
-                                context.pop();
-                              },
+                              onTap: () => context.pop(),
                               child: Icon(Icons.close),
                             ),
                           ],
@@ -412,6 +598,8 @@ class PostItem extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                // ── !fromComments branch ──────────────────────────────────
                 if (!fromComments)
                   Padding(
                     padding: EdgeInsets.symmetric(
@@ -430,6 +618,7 @@ class PostItem extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Avatar
                           Container(
                             width: 65.w,
                             height: 65.h,
@@ -447,6 +636,8 @@ class PostItem extends StatelessWidget {
                             ),
                           ),
                           horizontalSpace(8),
+
+                          // Body
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,7 +648,6 @@ class PostItem extends StatelessWidget {
                                   style: TextStyles.abeezee16px400wPblack
                                       .copyWith(fontWeight: FontWeight.bold),
                                 ),
-
                                 if (postData['text'].toString().isNotEmpty)
                                   Padding(
                                     padding: EdgeInsets.only(top: 5.h),
@@ -495,412 +685,25 @@ class PostItem extends StatelessWidget {
                               ],
                             ),
                           ),
-                          if (showMoreButton) ...[
-                            IconButton(
-                              icon: Icon(
-                                Icons.more_horiz,
-                                color: Colors.black,
-                                size: 22.sp,
-                              ),
-                              onPressed: () {
-                                if (isMyPost) {
-                                  showModalBottomSheet(
-                                    context: context,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(16),
-                                        topRight: Radius.circular(16),
+
+                          // ── More button (popup menu) ──────────────────
+                          if (showMoreButton)
+                            isMyPost
+                                ? _OwnPostMenu(
+                                  postId: postId,
+                                  currentText: postData['text'] ?? '',
+                                  onEdit:
+                                      () => _showEditDialog(
+                                        context,
+                                        postData['text'] ?? '',
                                       ),
-                                    ),
-                                    backgroundColor: ColorsManager.primary50,
-                                    builder: (context) {
-                                      return Padding(
-                                        padding: EdgeInsets.all(16),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            // Edit Option
-                                            InkWell(
-                                              onTap: () async {
-                                                Navigator.pop(context);
-                                                TextEditingController
-                                                _controller =
-                                                    TextEditingController(
-                                                      text: postData['text'],
-                                                    );
-                                                await showDialog(
-                                                  context: context,
-                                                  builder: (context) {
-                                                    return Dialog(
-                                                      backgroundColor:
-                                                          Colors.white,
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              16,
-                                                            ),
-                                                      ),
-                                                      child: Padding(
-                                                        padding: EdgeInsets.all(
-                                                          20,
-                                                        ),
-                                                        child: Column(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Text(
-                                                              '게시글 수정',
-                                                              style: TextStyle(
-                                                                fontSize: 18.sp,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                color:
-                                                                    Colors
-                                                                        .black,
-                                                              ),
-                                                            ),
-                                                            SizedBox(
-                                                              height: 16.h,
-                                                            ),
-                                                            TextField(
-                                                              controller:
-                                                                  _controller,
-                                                              maxLines: 12,
-                                                              style: TextStyle(
-                                                                color:
-                                                                    Colors
-                                                                        .black,
-                                                                fontSize: 16.sp,
-                                                              ),
-                                                              decoration: InputDecoration(
-                                                                filled: true,
-                                                                fillColor:
-                                                                    Colors
-                                                                        .white,
-                                                                border: OutlineInputBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius.circular(
-                                                                        8,
-                                                                      ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            SizedBox(
-                                                              height: 20.w,
-                                                            ),
-                                                            Row(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .end,
-                                                              children: [
-                                                                TextButton(
-                                                                  onPressed:
-                                                                      () => Navigator.pop(
-                                                                        context,
-                                                                      ),
-                                                                  child: Text(
-                                                                    '취소',
-                                                                    style: TextStyle(
-                                                                      color:
-                                                                          Colors
-                                                                              .black,
-                                                                      fontSize:
-                                                                          16.sp,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                                SizedBox(
-                                                                  width: 12,
-                                                                ),
-                                                                ElevatedButton(
-                                                                  style: ElevatedButton.styleFrom(
-                                                                    backgroundColor:
-                                                                        Colors
-                                                                            .black,
-                                                                    foregroundColor:
-                                                                        Colors
-                                                                            .white,
-                                                                    shape: RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                            8,
-                                                                          ),
-                                                                    ),
-                                                                  ),
-                                                                  onPressed: () async {
-                                                                    await FirebaseFirestore
-                                                                        .instance
-                                                                        .collection(
-                                                                          'posts',
-                                                                        )
-                                                                        .doc(
-                                                                          postId,
-                                                                        )
-                                                                        .update({
-                                                                          'text':
-                                                                              _controller.text,
-                                                                        });
-                                                                    Navigator.pop(
-                                                                      context,
-                                                                    );
-                                                                    ScaffoldMessenger.of(
-                                                                      context,
-                                                                    ).showSnackBar(
-                                                                      SnackBar(
-                                                                        content:
-                                                                            Text(
-                                                                              '게시글이 수정되었습니다.',
-                                                                            ),
-                                                                      ),
-                                                                    );
-                                                                  },
-                                                                  child: Text(
-                                                                    '수정',
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                );
-                                              },
-                                              child: Container(
-                                                width: double.infinity,
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: 14.w,
-                                                  vertical: 8.h,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.center,
-                                                  children: [
-                                                    Text(
-                                                      '수정하기',
-                                                      style: TextStyle(
-                                                        color: const Color(
-                                                          0xFF343434,
-                                                        ),
-                                                        fontSize: 16.sp,
-                                                        fontFamily: 'NotoSans',
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                        height: 1.40.h,
-                                                      ),
-                                                    ),
-                                                    Icon(
-                                                      Icons.edit,
-                                                      color:
-                                                          ColorsManager
-                                                              .primary600,
-                                                      size: 20.sp,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            SizedBox(height: 8),
-                                            // Delete Option
-                                            InkWell(
-                                              onTap: () async {
-                                                Navigator.pop(context);
-                                                await showDialog(
-                                                  context: context,
-                                                  builder: (context) {
-                                                    return Dialog(
-                                                      backgroundColor:
-                                                          Colors.white,
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              16,
-                                                            ),
-                                                      ),
-                                                      child: Padding(
-                                                        padding: EdgeInsets.all(
-                                                          20,
-                                                        ),
-                                                        child: Column(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Text(
-                                                              '게시글 삭제',
-                                                              style: TextStyle(
-                                                                fontSize: 18.sp,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                color:
-                                                                    Colors
-                                                                        .black,
-                                                              ),
-                                                            ),
-                                                            SizedBox(
-                                                              height: 16,
-                                                            ),
-                                                            Text(
-                                                              '정말로 이 게시글을 삭제하시겠습니까?',
-                                                              style: TextStyle(
-                                                                fontSize: 16.sp,
-                                                                color:
-                                                                    Colors
-                                                                        .black,
-                                                              ),
-                                                            ),
-                                                            SizedBox(
-                                                              height: 20,
-                                                            ),
-                                                            Row(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .end,
-                                                              children: [
-                                                                TextButton(
-                                                                  onPressed:
-                                                                      () => Navigator.pop(
-                                                                        context,
-                                                                      ),
-                                                                  child: Text(
-                                                                    '취소',
-                                                                    style: TextStyle(
-                                                                      color:
-                                                                          Colors
-                                                                              .black,
-                                                                      fontSize:
-                                                                          16.sp,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                                SizedBox(
-                                                                  width: 12,
-                                                                ),
-                                                                ElevatedButton(
-                                                                  style: ElevatedButton.styleFrom(
-                                                                    backgroundColor:
-                                                                        Colors
-                                                                            .black,
-                                                                    foregroundColor:
-                                                                        Colors
-                                                                            .white,
-                                                                    shape: RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                            8,
-                                                                          ),
-                                                                    ),
-                                                                  ),
-                                                                  onPressed: () async {
-                                                                    await FirebaseFirestore
-                                                                        .instance
-                                                                        .collection(
-                                                                          'posts',
-                                                                        )
-                                                                        .doc(
-                                                                          postId,
-                                                                        )
-                                                                        .delete();
-                                                                    Navigator.pop(
-                                                                      context,
-                                                                    );
-                                                                    ScaffoldMessenger.of(
-                                                                      context,
-                                                                    ).showSnackBar(
-                                                                      SnackBar(
-                                                                        content:
-                                                                            Text(
-                                                                              '게시물이 삭제되었습니다.',
-                                                                            ),
-                                                                      ),
-                                                                    );
-                                                                  },
-                                                                  child: Text(
-                                                                    '삭제',
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                );
-                                              },
-                                              child: Container(
-                                                width: double.infinity,
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: 14.w,
-                                                  vertical: 8.h,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.center,
-                                                  children: [
-                                                    Text(
-                                                      '삭제하기',
-                                                      style: TextStyle(
-                                                        color: const Color(
-                                                          0xFFDA3A48,
-                                                        ),
-                                                        fontSize: 16.sp,
-                                                        fontFamily: 'NotoSans',
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                        height: 1.40.h,
-                                                      ),
-                                                    ),
-                                                    Icon(
-                                                      Icons.delete,
-                                                      color: const Color(
-                                                        0xFFDA3A48,
-                                                      ),
-                                                      size: 20.sp,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  );
-                                } else {
-                                  showPostMenu(
-                                    context,
-                                    postId,
-                                    myuser?.userId ?? '',
-                                  );
-                                }
-                              },
-                            ),
-                          ],
+                                  onDelete: () => _showDeleteDialog(context),
+                                )
+                                : _OtherPostMenu(
+                                  postId: postId,
+                                  userId: myuser?.userId ?? '',
+                                  onRunWithLoading: _runWithLoading,
+                                ),
                         ],
                       ),
                     ),
@@ -910,6 +713,156 @@ class PostItem extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+// ── Own-post popup menu (edit / delete) ──────────────────────────────────────
+
+class _OwnPostMenu extends StatelessWidget {
+  final String postId;
+  final String currentText;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _OwnPostMenu({
+    required this.postId,
+    required this.currentText,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      onSelected: (value) {
+        if (value == 'edit') onEdit();
+        if (value == 'delete') onDelete();
+      },
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      itemBuilder:
+          (_) => [
+            PopupMenuItem<String>(
+              value: 'edit',
+              child: Text(
+                '수정하기',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 14.sp,
+                  fontFamily: 'NotoSans',
+                ),
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'delete',
+              child: Text(
+                '삭제하기',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 14.sp,
+                  fontFamily: 'NotoSans',
+                ),
+              ),
+            ),
+          ],
+      child: Icon(Icons.more_horiz, color: Colors.black, size: 22.sp),
+    );
+  }
+}
+
+// ── Other user's post popup menu (구독 / 차단 / 신고 및 차단) ──────────────────────
+
+class _OtherPostMenu extends StatelessWidget {
+  final String postId;
+  final String userId;
+  final Future<void> Function(
+    BuildContext,
+    Future<void> Function(),
+    String,
+    String,
+  )
+  onRunWithLoading;
+
+  const _OtherPostMenu({
+    required this.postId,
+    required this.userId,
+    required this.onRunWithLoading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      onSelected: (value) async {
+        switch (value) {
+          case 'share':
+            ShareService.sharePost(postId);
+            break;
+
+          case 'block':
+            await onRunWithLoading(
+              context,
+              () => blockUser(userIdToBlock: userId),
+              '차단되었습니다.',
+              '오류 발생',
+            );
+            break;
+
+          case 'report_and_block':
+            await onRunWithLoading(
+              context,
+              () async {
+                await reportUser(reportedUserId: userId, postId: postId);
+                await blockUser(userIdToBlock: userId);
+              },
+              '신고가 접수되었습니다.',
+              '신고 처리 중 오류가 발생했습니다',
+            );
+            break;
+        }
+      },
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      itemBuilder:
+          (_) => [
+            // Share
+            PopupMenuItem<String>(
+              value: 'share',
+              child: Text(
+                '공유',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 14.sp,
+                  fontFamily: 'NotoSans',
+                ),
+              ),
+            ),
+            // Block only
+            PopupMenuItem<String>(
+              value: 'block',
+              child: Text(
+                '차단',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 14.sp,
+                  fontFamily: 'NotoSans',
+                ),
+              ),
+            ),
+            // Report + Block combined
+            PopupMenuItem<String>(
+              value: 'report_and_block',
+              child: Text(
+                '신고 및 차단',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 14.sp,
+                  fontFamily: 'NotoSans',
+                ),
+              ),
+            ),
+          ],
+      child: Icon(Icons.more_horiz, color: Colors.black, size: 22.sp),
     );
   }
 }

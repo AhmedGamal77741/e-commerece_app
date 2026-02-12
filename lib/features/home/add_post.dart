@@ -555,7 +555,11 @@ class _AddPostState extends State<AddPost> {
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.settings),
+                        icon: CircleAvatar(
+                          radius: 15.r,
+                          backgroundColor: Colors.transparent,
+                          backgroundImage: AssetImage('assets/settings.png'),
+                        ),
                         onPressed: _showCategoryMenu,
                       ),
                     ],
