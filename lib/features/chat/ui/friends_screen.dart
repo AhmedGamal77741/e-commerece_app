@@ -1,11 +1,15 @@
 // screens/friends_screen.dart
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:ecommerece_app/features/chat/models/story_model.dart';
 import 'package:ecommerece_app/features/chat/services/chat_service.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
+import 'package:ecommerece_app/features/chat/services/story_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/chat/widgets/expandable_FAB.dart';
 import 'package:ecommerece_app/features/chat/services/friends_service.dart';
+import 'package:ecommerece_app/features/chat/widgets/story_bar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -19,6 +23,7 @@ class _FriendsScreenState extends State<FriendsScreen>
   final FriendsService _friendsService = FriendsService();
   final ContactService _contactService = ContactService();
   final ChatService _chatService = ChatService();
+  final StoryService _storyService = StoryService();
 
   bool _isSyncing = false;
   bool editMode = false;
@@ -202,8 +207,35 @@ class _FriendsScreenState extends State<FriendsScreen>
           final brands =
               allUsers.where((user) => user.type == 'brand').toList();
 
+          final List<String> followingIds =
+              allUsers.map((u) => u.userId).toList();
+
+          final String myUid = FirebaseAuth.instance.currentUser!.uid;
+
+          final List<String> queryIds = [...followingIds, myUid];
+
           return Column(
             children: [
+              StreamBuilder<List<StoryModel>>(
+                stream: _storyService.getFriendsStories(queryIds),
+                builder: (context, storySnapshot) {
+                  final groups = _storyService.groupStories(
+                    storySnapshot.data ?? [],
+                  );
+
+                  final myGroupIndex = groups.indexWhere(
+                    (g) => g.authorId == myUid,
+                  );
+                  UserStoryGroup? myGroup;
+
+                  if (myGroupIndex != -1) {
+                    myGroup = groups.removeAt(myGroupIndex);
+                  }
+                  print(groups);
+                  return buildStoryBar(myGroup, groups);
+                },
+              ),
+              Divider(),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
