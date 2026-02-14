@@ -59,6 +59,60 @@ class StoryService {
     }
   }
 
+  Future<void> deleteStory(String storyId, String imageUrl) async {
+    try {
+      print("DEBUG: Starting delete process for $storyId...");
+
+      // 1. Delete the image from Firebase Storage
+      // We create a reference from the URL to find the exact file
+      Reference storageRef = _storage.refFromURL(imageUrl);
+      await storageRef.delete();
+      print("DEBUG: Storage file deleted successfully.");
+
+      // 2. Delete the document from Firestore
+      await _firestore.collection('stories').doc(storyId).delete();
+      print("DEBUG: Firestore document deleted successfully.");
+    } catch (e) {
+      print("DEBUG: DELETE FAILED! Error: $e");
+      rethrow;
+    }
+  }
+
+  // Get a single story once
+  Future<StoryModel?> getStoryById(String storyId) async {
+    try {
+      DocumentSnapshot doc =
+          await _firestore.collection('stories').doc(storyId).get();
+
+      if (doc.exists && doc.data() != null) {
+        final story = StoryModel.fromFirestore(
+          doc.data() as Map<String, dynamic>,
+        );
+
+        /*         if (story.expiresAt > DateTime.now().millisecondsSinceEpoch) {
+          return story;
+        } */
+        return story;
+        /*         print("DEBUG: Story found but it has expired.");
+ */
+      }
+      return null;
+    } catch (e) {
+      print("DEBUG: Error fetching story: $e");
+      return null;
+    }
+  }
+
+  /*  
+  Stream<StoryModel?> getStoryStream(String storyId) {
+    return _firestore.collection('stories').doc(storyId).snapshots().map((doc) {
+      if (doc.exists && doc.data() != null) {
+        return StoryModel.fromFirestore(doc.data() as Map<String, dynamic>);
+      }
+      return null;
+    });
+  } */
+
   Stream<List<StoryModel>> getFriendsStories(List<String> followingIds) {
     if (followingIds.isEmpty) return Stream.value([]);
 

@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:ecommerece_app/core/cache/user_cache.dart';
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
+import 'package:ecommerece_app/features/chat/models/story_model.dart';
+import 'package:ecommerece_app/features/chat/services/story_service.dart';
+import 'package:ecommerece_app/features/chat/ui/story_player_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -693,9 +696,35 @@ class MessageBubble extends StatelessWidget {
                                   if (message.imageUrl!.isNotEmpty) ...[
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
-                                      child: Image.network(
-                                        message.imageUrl!,
-                                        fit: BoxFit.cover,
+                                      child: InkWell(
+                                        onTap: () async {
+                                          if (message.isStory) {
+                                            final story = await StoryService()
+                                                .getStoryById(message.storyId!);
+
+                                            final usg = UserStoryGroup(
+                                              authorId: story!.authorId,
+                                              authorName: story.authorName,
+                                              authorImage: story.authorImage,
+                                              stories: [story],
+                                            );
+
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (context) =>
+                                                        StoryPlayerScreen(
+                                                          group: usg,
+                                                        ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: Image.network(
+                                          message.imageUrl!,
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
                                     ),
                                   ],

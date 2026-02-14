@@ -12,7 +12,8 @@ class MessageModel {
   final bool isEdited;
   final List<String> lovedBy;
   List<String> deletedBy;
-
+  bool isStory = false;
+  final String? storyId;
   MessageModel({
     required this.id,
     required this.chatRoomId,
@@ -26,6 +27,8 @@ class MessageModel {
     this.isEdited = false,
     this.lovedBy = const [],
     this.deletedBy = const [],
+    this.isStory = false,
+    this.storyId,
   });
 
   factory MessageModel.fromMap(Map<String, dynamic> map) {
@@ -42,6 +45,8 @@ class MessageModel {
       isEdited: map['isEdited'] ?? false,
       lovedBy: List<String>.from(map['lovedBy'] ?? []),
       deletedBy: List<String>.from(map['deletedBy'] ?? []),
+      isStory: map['isStory'] ?? false,
+      storyId: map['storyId'] ?? '',
     );
   }
 
@@ -59,6 +64,8 @@ class MessageModel {
       'isEdited': isEdited,
       'lovedBy': lovedBy,
       'deletedBy': deletedBy,
+      'isStory': isStory,
+      'storyId': storyId,
     };
   }
 }

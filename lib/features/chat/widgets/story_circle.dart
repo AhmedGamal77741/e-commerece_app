@@ -86,9 +86,11 @@ Widget buildStoryCircle({
                   child: CircleAvatar(
                     radius: 33.r,
                     backgroundImage:
-                        currentUser.photoURL != null
-                            ? NetworkImage(currentUser.photoURL.toString())
-                            : null,
+                        isMe
+                            ? currentUser.photoURL != null
+                                ? NetworkImage(currentUser.photoURL.toString())
+                                : null
+                            : NetworkImage(group!.authorImage),
                     backgroundColor: Colors.black,
                   ),
                 ),

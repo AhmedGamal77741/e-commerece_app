@@ -261,6 +261,8 @@ class ChatService {
     required String content,
     String? imageUrl,
     String? replyToMessageId,
+    bool isStory = false,
+    String? storyId = '',
   }) async {
     final messageRef = _firestore.collection('messages').doc();
     final messageId = messageRef.id;
@@ -280,6 +282,8 @@ class ChatService {
       timestamp: DateTime.now(),
       readBy: [currentUserId],
       replyToMessageId: replyToMessageId,
+      isStory: isStory,
+      storyId: storyId,
     );
 
     // Send message
