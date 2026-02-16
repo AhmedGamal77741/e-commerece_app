@@ -1,5 +1,6 @@
 // services/chat_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/friends_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -263,6 +264,8 @@ class ChatService {
     String? replyToMessageId,
     bool isStory = false,
     String? storyId = '',
+    Map<String, dynamic>? postData,
+    Product? productData,
   }) async {
     final messageRef = _firestore.collection('messages').doc();
     final messageId = messageRef.id;
@@ -284,6 +287,8 @@ class ChatService {
       replyToMessageId: replyToMessageId,
       isStory: isStory,
       storyId: storyId,
+      postData: postData,
+      productData: productData,
     );
 
     // Send message

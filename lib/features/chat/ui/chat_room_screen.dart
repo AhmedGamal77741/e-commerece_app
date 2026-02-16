@@ -6,6 +6,9 @@ import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/models/story_model.dart';
 import 'package:ecommerece_app/features/chat/services/story_service.dart';
 import 'package:ecommerece_app/features/chat/ui/story_player_screen.dart';
+import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
+import 'package:ecommerece_app/features/home/comments.dart';
+import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -693,6 +696,55 @@ class MessageBubble extends StatelessWidget {
                                         style: TextStyle(color: Colors.black),
                                       ),
                                     ),
+                                  if (message.postData != null) ...[
+                                    ChatPostShareWidget(
+                                      imageUrl: message.postData!['imgUrl'],
+                                      authorName:
+                                          message.postData!['authorName'],
+                                      postTitle: message.postData!['text'],
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) => Comments(
+                                                  postId:
+                                                      message
+                                                          .postData!['postId'],
+                                                ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    SizedBox(height: 8),
+                                  ],
+                                  if (message.productData != null) ...[
+                                    ChatPostShareWidget(
+                                      imageUrl: message.productData!.imgUrl!,
+                                      authorName:
+                                          message.productData!.pricePoints[0]
+                                              .toString(),
+                                      postTitle:
+                                          message.productData!.productName,
+                                      onTap: () {
+                                        /*                                         Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) => ItemDetails(
+                                                  product: message.productData!,
+                                                  arrivalDay:
+                                                      message
+                                                          .productData!
+                                                          .arrivalDate!,
+                                                  isSub: true,
+                                                ),
+                                          ),
+                                        ); */
+                                      },
+                                    ),
+                                    SizedBox(height: 8),
+                                  ],
                                   if (message.imageUrl!.isNotEmpty) ...[
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
