@@ -14,12 +14,10 @@ class ChatService {
 
   String get currentUserId => _auth.currentUser?.uid ?? '';
 
-  // Create or get direct chat room (updated with friend check, support exception)
+  // Create or get direct chat room
   Future<String> createDirectChatRoom(String otherUserId, bool isBrand) async {
-    // Allow support chat for everyone
     const String supportUserId = 'JuxEfED9YSc2XyHRFgkPcNCFUSJ3';
     if (otherUserId != supportUserId) {
-      // Check if users are friends
       final areFriends = await _friendsService.areFriends(otherUserId);
       if (!areFriends && !isBrand) {
         throw Exception('You can only chat with friends');
@@ -33,7 +31,6 @@ class ChatService {
     final chatRoomDoc = await chatRoomRef.get();
 
     if (!chatRoomDoc.exists) {
-      // Get other user's data
       final otherUserDoc =
           await _firestore.collection('users').doc(otherUserId).get();
       if (!otherUserDoc.exists) {
@@ -53,7 +50,6 @@ class ChatService {
         unreadCount: {currentUserId: 0, otherUserId: 0},
       );
 
-      // Use batch for atomic writes
       final batch = _firestore.batch();
       batch.set(chatRoomRef, chatRoom.toMap());
       batch.update(_firestore.collection('users').doc(currentUserId), {
@@ -63,16 +59,9 @@ class ChatService {
         'chatRooms': FieldValue.arrayUnion([chatRoomId]),
       });
       await batch.commit();
-    } /*  else {
-      final data = chatRoomDoc.data();
-      if (data != null && !data.containsKey('lastMessageTime')) {
-        await chatRoomRef.update({
-          'lastMessageTime': DateTime.now().millisecondsSinceEpoch,
-        });
-      }
-    } */
+    }
 
-    return chatRoomId; // Non-nullable
+    return chatRoomId;
   }
 
   Future<List<String>> createDirectChatRoomWithSeller(
@@ -84,8 +73,8 @@ class ChatService {
     final chatRoomRef = _firestore.collection('chatRooms').doc(chatRoomId);
     final chatRoomDoc = await chatRoomRef.get();
     String otherUserName = "";
+
     if (!chatRoomDoc.exists) {
-      // Get other user's data
       final otherUserDoc =
           await _firestore
               .collection('deliveryManagers')
@@ -98,6 +87,7 @@ class ChatService {
       final otherUser = otherUserDoc.data()!;
       final now = DateTime.now();
       otherUserName = otherUser['name'];
+
       final chatRoom = ChatRoomModel(
         id: chatRoomId,
         name: otherUserName,
@@ -108,7 +98,6 @@ class ChatService {
         unreadCount: {currentUserId: 0, otherUserId: 0},
       );
 
-      // Use batch for atomic writes
       final batch = _firestore.batch();
       batch.set(chatRoomRef, chatRoom.toMap());
       batch.update(_firestore.collection('users').doc(currentUserId), {
@@ -121,16 +110,8 @@ class ChatService {
     } else {
       otherUserName = chatRoomDoc.data()!['name'];
     }
-    /* else {
-      final data = chatRoomDoc.data();
-      if (data != null && !data.containsKey('lastMessageTime')) {
-        await chatRoomRef.update({
-          'lastMessageTime': DateTime.now().millisecondsSinceEpoch,
-        });
-      }
-    } */
 
-    return [chatRoomId, otherUserName]; // Non-nullable
+    return [chatRoomId, otherUserName];
   }
 
   Future<String> createDirectChatRoomWithAdmin() async {
@@ -139,6 +120,7 @@ class ChatService {
 
     final chatRoomRef = _firestore.collection('chatRooms').doc(chatRoomId);
     final chatRoomDoc = await chatRoomRef.get();
+
     if (!chatRoomDoc.exists) {
       final now = DateTime.now();
       final chatRoom = ChatRoomModel(
@@ -151,7 +133,6 @@ class ChatService {
         unreadCount: {currentUserId: 0, "Admin": 0},
       );
 
-      // Use batch for atomic writes
       final batch = _firestore.batch();
       batch.set(chatRoomRef, chatRoom.toMap());
       batch.update(_firestore.collection('users').doc(currentUserId), {
@@ -162,16 +143,8 @@ class ChatService {
       });
       await batch.commit();
     }
-    /* else {
-      final data = chatRoomDoc.data();
-      if (data != null && !data.containsKey('lastMessageTime')) {
-        await chatRoomRef.update({
-          'lastMessageTime': DateTime.now().millisecondsSinceEpoch,
-        });
-      }
-    } */
 
-    return chatRoomId; // Non-nullable
+    return chatRoomId;
   }
 
   Future<bool> toggleLoveReaction({
@@ -188,12 +161,10 @@ class ChatService {
       final isLoved = message.lovedBy.contains(currentUserId);
 
       if (isLoved) {
-        // Remove love
         await messageRef.update({
           'lovedBy': FieldValue.arrayRemove([currentUserId]),
         });
       } else {
-        // Add love
         await messageRef.update({
           'lovedBy': FieldValue.arrayUnion([currentUserId]),
         });
@@ -206,13 +177,12 @@ class ChatService {
     }
   }
 
-  // Create group chat room (updated with friend check)
+  // Create group chat room
   Future<String?> createGroupChatRoom({
     required String name,
     required List<String> participantIds,
     String? groupImage,
   }) async {
-    // Check if all participants are friends
     for (String participantId in participantIds) {
       final areFriends = await _friendsService.areFriends(participantId);
       if (!areFriends) {
@@ -243,7 +213,6 @@ class ChatService {
 
     await chatRoomRef.set(chatRoom.toMap());
 
-    // Update all participants' chatRooms list
     for (String userId in participants) {
       await _updateUserChatRooms(userId, chatRoomId);
     }
@@ -256,7 +225,7 @@ class ChatService {
     return _friendsService.getFriendsStream();
   }
 
-  // Send message
+  // ─── Send message ─────────────────────────────────────────────────────────
   Future<void> sendMessage({
     required String chatRoomId,
     required String content,
@@ -291,14 +260,31 @@ class ChatService {
       productData: productData,
     );
 
-    // Send message
-    await messageRef.set(message.toMap());
+    // ✅ Save message to its subcollection too (for any future subcollection queries)
+    final subRef = _firestore
+        .collection('chatRooms')
+        .doc(chatRoomId)
+        .collection('messages')
+        .doc(messageId);
 
-    // Update chat room's last message
+    final batch = _firestore.batch();
+    batch.set(messageRef, message.toMap());
+    batch.set(subRef, message.toMap());
+    await batch.commit();
+
+    // ✅ Determine lastMessage display text
+    // If it's an image-only message, save '[사진]' so the group list shows photo icon
+    final String lastMessageText =
+        (content.isEmpty && imageUrl != null && imageUrl.isNotEmpty)
+            ? '[사진]'
+            : content;
+
+    // ✅ Update chat room's last message — now includes senderName
     await _firestore.collection('chatRooms').doc(chatRoomId).update({
-      'lastMessage': content,
+      'lastMessage': lastMessageText,
       'lastMessageTime': message.timestamp.millisecondsSinceEpoch,
       'lastMessageSenderId': currentUserId,
+      'lastMessageSenderName': user.name, // ✅ NEW — needed for group list
     });
 
     // Update unread count for other participants
@@ -320,7 +306,6 @@ class ChatService {
   }
 
   Future<void> resetDeletedBy(String chatRoomId) async {
-    // Use update to avoid overwriting the entire document
     await _firestore.collection('chatRooms').doc(chatRoomId).update({
       'deletedBy': [],
     });
@@ -329,13 +314,11 @@ class ChatService {
   Future<void> softDeleteChatForCurrentUser(String chatRoomId) async {
     final batch = _firestore.batch();
 
-    // 1. Update chat room's deletedBy
     final chatRoomRef = _firestore.collection('chatRooms').doc(chatRoomId);
     batch.update(chatRoomRef, {
       'deletedBy': FieldValue.arrayUnion([currentUserId]),
     });
 
-    // 2. Update all messages' deletedBy
     final messagesQuery =
         await _firestore
             .collection('messages')
@@ -373,7 +356,6 @@ class ChatService {
 
     await batch.commit();
 
-    // Reset unread count
     await _firestore.collection('chatRooms').doc(chatRoomId).update({
       'unreadCount.$currentUserId': 0,
     });

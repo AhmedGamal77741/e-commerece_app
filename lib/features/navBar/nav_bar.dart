@@ -4,6 +4,7 @@ import 'package:ecommerece_app/features/cart/cart.dart';
 import 'package:ecommerece_app/features/cart/sub_screens/add_address_screen.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/ui/chats_navbar.dart';
+import 'package:ecommerece_app/features/chat/ui/friends_screen.dart';
 import 'package:ecommerece_app/features/home/home_screen.dart';
 import 'package:ecommerece_app/features/mypage/ui/my_page_screen.dart';
 import 'package:ecommerece_app/features/review/ui/review_screen.dart';
@@ -43,7 +44,7 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
           tabController: homeTabController,
         ),
       ),
-      _buildMainWidget(() => ReviewScreen()),
+      _buildMainWidget(() => ChatsNavbar()),
       _buildMainWidget(() => LandingScreen()),
     ];
   }
@@ -127,20 +128,6 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
           curve: Curves.easeInOut,
         );
       }
-    } else if (index == 3) {
-      // Chat tab tapped
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('로그인 후 채팅을 이용할 수 있습니다')));
-        return;
-      }
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ChatsNavbar()),
-      );
-      return;
     } else if (index == 1) {
       // Shop tab tapped
       final user = FirebaseAuth.instance.currentUser;
