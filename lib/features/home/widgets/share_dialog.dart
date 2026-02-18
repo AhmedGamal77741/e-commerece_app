@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/services/share_service.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
@@ -11,6 +12,87 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
+
+Future<void> _captureProductAndOpenStory(
+  BuildContext context,
+  String sellerName,
+  String productImgUrl,
+  Map<String, dynamic> productData,
+) async {
+  try {
+    if (productImgUrl.isNotEmpty) {
+      await precacheImage(NetworkImage(productImgUrl), context);
+    }
+    final product = Product.fromMap(productData);
+    final Widget snapshotWidget = Material(
+      child: Container(
+        width: 300.w,
+        height: 600.h,
+        color: ColorsManager.primary,
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(height: 12.h),
+            if (product.imgUrl!.isNotEmpty)
+              Flexible(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16.r),
+                  child: Image(
+                    image: NetworkImage(product.imgUrl!),
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
+                ),
+              ),
+            SizedBox(height: 12.h),
+            Text(
+              product.productName,
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              '${product.pricePoints[0].price} 원',
+              style: TextStyle(fontSize: 16.sp, color: Colors.black87),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final controller = ScreenshotController();
+    final bytes = await controller.captureFromWidget(
+      snapshotWidget,
+      pixelRatio: MediaQuery.of(context).devicePixelRatio,
+    );
+
+    if (bytes == null || bytes.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이미지 생성 실패: 다시 시도하세요.')));
+      return;
+    }
+
+    if (context.mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => UploadStoryScreen(initialImage: bytes),
+        ),
+      );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('이미지 생성 실패: $e')));
+  }
+}
 
 Future<void> _capturePostFromCommentsAndOpen(
   BuildContext context,
@@ -56,14 +138,12 @@ Future<void> _capturePostFromCommentsAndOpen(
                   ),
                 ),
                 SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    displayName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.sp,
-                      color: Colors.black,
-                    ),
+                Text(
+                  displayName,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16.sp,
+                    color: Colors.black,
                   ),
                 ),
               ],
@@ -71,23 +151,28 @@ Future<void> _capturePostFromCommentsAndOpen(
             if ((postData['text'] ?? '').toString().isNotEmpty)
               Padding(
                 padding: EdgeInsets.only(top: 12.h),
-                child: Text(
-                  postData['text'] ?? '',
-                  style: TextStyle(
-                    color: const Color(0xFF343434),
-                    fontSize: 16.sp,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    postData['text'] ?? '',
+                    style: TextStyle(
+                      color: const Color(0xFF343434),
+                      fontSize: 16.sp,
+                    ),
                   ),
                 ),
               ),
             if ((postData['imgUrl'] ?? '').toString().isNotEmpty)
-              Padding(
-                padding: EdgeInsets.only(top: 10.h),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image(
-                    image: NetworkImage(postData['imgUrl']),
-                    fit: BoxFit.fitWidth,
-                    width: double.infinity,
+              Flexible(
+                child: Padding(
+                  padding: EdgeInsets.only(top: 10.h),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image(
+                      image: NetworkImage(postData['imgUrl']),
+                      fit: BoxFit.fitWidth,
+                      width: double.infinity,
+                    ),
                   ),
                 ),
               ),
@@ -109,17 +194,17 @@ Future<void> _capturePostFromCommentsAndOpen(
       return;
     }
 
-    final tempDir = await getTemporaryDirectory();
+    /*     final tempDir = await getTemporaryDirectory();
     final file =
         await File(
           '${tempDir.path}/post_story_${DateTime.now().millisecondsSinceEpoch}.png',
         ).create();
-    await file.writeAsBytes(bytes);
+    await file.writeAsBytes(bytes); */
 
     if (context.mounted) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => UploadStoryScreen(initialImage: file),
+          builder: (_) => UploadStoryScreen(initialImage: bytes),
         ),
       );
     }
@@ -214,6 +299,7 @@ Widget _buildFriendItem({
   required MyUser friend,
   required BuildContext context,
   required Map<String, dynamic> postData,
+  required String type,
 }) {
   return Container(
     margin: const EdgeInsets.only(bottom: 16),
@@ -225,11 +311,20 @@ Widget _buildFriendItem({
             friend.type != 'user',
           );
           if (chatRoomId != null) {
-            ChatService().sendMessage(
-              chatRoomId: chatRoomId,
-              content: postData['text'] ?? '',
-              postData: postData,
-            );
+            if (type == 'post') {
+              ChatService().sendMessage(
+                chatRoomId: chatRoomId,
+                content: postData['text'] ?? '',
+                postData: postData,
+              );
+            } else if (type == 'product') {
+              ChatService().sendMessage(
+                chatRoomId: chatRoomId,
+                content: '',
+                productData: Product.fromMap(postData),
+              );
+            }
+
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -293,16 +388,19 @@ Widget _buildFriendItem({
 
 void showShareDialog(
   BuildContext context,
-  String postUrl,
-  String postId,
-  String displayName,
-  String profileUrl,
-  Map<String, dynamic> postData,
+  String type,
+  String url,
+  String id,
+  String name,
+  String imgUrl,
+  Map<String, dynamic> mapData,
 ) {
   showDialog(
     context: context,
     builder: (context) {
-      postData.addEntries({'authorName': displayName}.entries);
+      if (type == 'post') {
+        mapData.addEntries({'authorName': name}.entries);
+      }
       String searchQuery = '';
       final TextEditingController searchController = TextEditingController();
       return StatefulBuilder(
@@ -344,13 +442,23 @@ void showShareDialog(
                           icon: Icons.add,
                           asset: 'assets/add_to_story.png',
                           label: '내 스토리에\n추가',
-                          onTap:
-                              () => _capturePostFromCommentsAndOpen(
+                          onTap: () {
+                            if (type == 'post') {
+                              _capturePostFromCommentsAndOpen(
                                 context,
-                                displayName,
-                                profileUrl,
-                                postData,
-                              ) /* _capturePostAndOpenStory(
+                                name,
+                                imgUrl,
+                                mapData,
+                              );
+                            } else if (type == 'product') {
+                              _captureProductAndOpenStory(
+                                context,
+                                name,
+                                imgUrl,
+                                mapData,
+                              );
+                            }
+                          } /* _capturePostAndOpenStory(
                                 context,
                                 screenshotController,
                               ) */ /* => _handleQuickShare(context) */,
@@ -359,10 +467,13 @@ void showShareDialog(
                         _buildSquareAction(
                           icon: Icons.link,
                           label: '링크 복사',
-                          onTap:
-                              () => ShareService.sharePost(
-                                postId,
-                              ) /* _copyToClipboard(postUrl) */,
+                          onTap: () {
+                            if (type == 'post') {
+                              ShareService.sharePost(id);
+                            } else if (type == 'product') {
+                              ShareService.shareProduct(id, name);
+                            }
+                          } /* _copyToClipboard(postUrl) */,
                         ),
                       ],
                     ),
@@ -419,7 +530,8 @@ void showShareDialog(
                             return _buildFriendItem(
                               friend: friends[index],
                               context: context,
-                              postData: postData,
+                              postData: mapData,
+                              type: type,
                             );
                           },
                         );

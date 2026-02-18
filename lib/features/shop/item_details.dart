@@ -10,6 +10,7 @@ import 'package:ecommerece_app/features/cart/services/cart_service.dart';
 import 'package:ecommerece_app/features/cart/services/favorites_service.dart';
 import 'package:ecommerece_app/features/chat/services/chat_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
+import 'package:ecommerece_app/features/home/widgets/share_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -578,10 +579,22 @@ class _ItemDetailsState extends State<ItemDetails> {
                           children: [
                             IconButton(
                               onPressed: () {
-                                ShareService.shareProduct(
+                                final url =
+                                    'https://app.pang2chocolate.com/product/${widget.product.product_id}';
+
+                                showShareDialog(
+                                  context,
+                                  'product',
+                                  url,
                                   widget.product.product_id,
                                   widget.product.productName,
+                                  widget.product.imgUrl.toString(),
+                                  widget.product.toMap(),
                                 );
+                                /*                                 ShareService.shareProduct(
+                                  widget.product.product_id,
+                                  widget.product.productName,
+                                ); */
                               },
                               icon: ImageIcon(
                                 const AssetImage('assets/grey_006m.png'),

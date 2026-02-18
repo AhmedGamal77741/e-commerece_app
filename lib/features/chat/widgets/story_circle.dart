@@ -27,11 +27,12 @@ Widget buildStoryCircle({
     );
 
     if (image != null && context.mounted) {
+      final tempImage = await image.readAsBytes();
+
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder:
-              (context) => UploadStoryScreen(initialImage: File(image.path)),
+          builder: (context) => UploadStoryScreen(initialImage: tempImage),
         ),
       );
     }
@@ -80,7 +81,7 @@ Widget buildStoryCircle({
                             fit: BoxFit.cover,
                           )
                           : null,
-                  color: isMe ? Colors.transparent : Colors.grey[300],
+                  color: Colors.transparent,
                 ),
                 child: Center(
                   child: CircleAvatar(

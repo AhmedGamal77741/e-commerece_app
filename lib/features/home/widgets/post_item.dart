@@ -393,6 +393,7 @@ class PostItem extends StatelessWidget {
                                           if (value == 'share') {
                                             showShareDialog(
                                               context,
+                                              'post',
                                               'https://app.pang2chocolate.com/comment?postId=$postId',
                                               postId,
                                               myuser.name,
@@ -845,6 +846,7 @@ class _OtherPostMenu extends StatelessWidget {
           case 'share':
             showShareDialog(
               context,
+              'post',
               'https://app.pang2chocolate.com/comment?postId=$postId',
               postId,
               displayName,
