@@ -109,7 +109,6 @@ class _BuyNowState extends State<BuyNow> {
     if (!_formKey.currentState!.validate()) return;
 
     // Save user values to cache before placing order
-    await _saveCachedUserValues();
 
     setState(() {
       isProcessing = true;
@@ -1031,7 +1030,9 @@ class _BuyNowState extends State<BuyNow> {
                                         selectedOption = value!;
                                       });
                                       // Also trigger parent rebuild:
-                                      setState(() {});
+                                      setState(() {
+                                        _saveCachedUserValues();
+                                      });
                                     },
                                   ),
                                   Text(
@@ -1055,7 +1056,9 @@ class _BuyNowState extends State<BuyNow> {
                                         selectedOption = value!;
                                       });
                                       // Also trigger parent rebuild:
-                                      setState(() {});
+                                      setState(() {
+                                        _saveCachedUserValues();
+                                      });
                                     },
                                   ),
                                   Text(

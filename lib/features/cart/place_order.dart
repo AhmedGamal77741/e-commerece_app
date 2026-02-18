@@ -281,13 +281,8 @@ class _PlaceOrderState extends State<PlaceOrder> {
 
   final formatCurrency = NumberFormat('#,###');
 
-  Future<void> _handlePlaceOrder(int totalPrice, String uid) async {
-    await refreshCartPrices(uid);
-
+  void _handlePlaceOrder(int totalPrice, String uid) {
     if (!_formKey.currentState!.validate()) return;
-
-    // Save all user values (contact, address, instructions) to cache before placing order
-    await _saveCachedUserValues();
 
     setState(() {
       isProcessing = true;
@@ -585,6 +580,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
   }
 
   Future<void> _init() async {
+    await refreshCartPrices(FirebaseAuth.instance.currentUser?.uid ?? '');
     await _fetchBankAccounts();
     await _fetchUserPaymentInfo();
     await _loadCachedUserValues();
@@ -1132,7 +1128,9 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                             selectedOption = value!;
                                           });
                                           // Also trigger parent rebuild:
-                                          setState(() {});
+                                          setState(() {
+                                            _saveCachedUserValues();
+                                          });
                                         },
                                       ),
                                       Text(
@@ -1156,7 +1154,9 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                             selectedOption = value!;
                                           });
                                           // Also trigger parent rebuild:
-                                          setState(() {});
+                                          setState(() {
+                                            _saveCachedUserValues();
+                                          });
                                         },
                                       ),
                                       Text(
