@@ -1,4 +1,5 @@
 // screens/friends_screen.dart
+import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:ecommerece_app/features/chat/services/chat_service.dart';
@@ -33,6 +34,7 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   MyUser? _currentUser;
   bool _isLoadingUser = true;
+  Map<String, String> _latestAliases = {};
 
   // ── Expansion state ──────────────────────────────────────────────────────
   bool _favoritesExpanded = true;
@@ -45,6 +47,8 @@ class _FriendsScreenState extends State<FriendsScreen>
   bool get _isSearchActive => _effectiveQuery.isNotEmpty;
 
   // ─── Favorites order stream ───────────────────────────────────────────────
+  // Reads the same `favoritesOrder` field that edit_screen writes on drag,
+  // so the two screens always stay in sync.
   Stream<Map<String, int>> _getFavoritesOrderStream() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return Stream.value({});
@@ -54,28 +58,55 @@ class _FriendsScreenState extends State<FriendsScreen>
         .snapshots()
         .map((snap) {
           if (!snap.exists) return <String, int>{};
-          final data = snap.data();
-          final raw = data?['favoritesOrder'];
+          final raw = snap.data()?['favoritesOrder'];
           if (raw == null) return <String, int>{};
           return Map<String, int>.from(raw as Map);
         });
   }
 
-  // ─── FIX 1: Added missing _getFollowingIdsStream() ───────────────────────
+  // ─── Hidden user IDs stream ───────────────────────────────────────────────
+  Stream<Set<String>> _getHiddenIdsStream() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return Stream.value({});
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('hiddenFriends')
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.id).toSet());
+  }
+
+  // ─── Alias map stream ─────────────────────────────────────────────────────
+  Stream<Map<String, String>> _getAliasesStream() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return Stream.value({});
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('aliases')
+        .snapshots()
+        .map((snap) {
+          final map = <String, String>{};
+          for (final doc in snap.docs) {
+            final alias = doc.data()['alias'] as String?;
+            if (alias != null && alias.isNotEmpty) {
+              map[doc.id] = alias;
+            }
+          }
+          return map;
+        });
+  }
+
+  // ─── Following IDs stream ─────────────────────────────────────────────────
   Stream<Set<String>> _getFollowingIdsStream() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return Stream.value({});
     return FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
+        .collection('following')
         .snapshots()
-        .map((snap) {
-          if (!snap.exists) return <String>{};
-          final data = snap.data();
-          final raw = data?['following'];
-          if (raw == null) return <String>{};
-          return Set<String>.from(raw as List);
-        });
+        .map((snap) => snap.docs.map((d) => d.id).toSet());
   }
 
   void toggleEditMode() {
@@ -260,7 +291,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                             phoneNumber: _currentUser!.phoneNumber,
                           );
                           try {
-                            await _userRepo.updateUser(updatedUser, "");
+                            await _userRepo.updateUser(updatedUser, '');
                             if (mounted)
                               setState(() => _currentUser = updatedUser);
                           } catch (e) {
@@ -289,6 +320,487 @@ class _FriendsScreenState extends State<FriendsScreen>
             ),
           ),
     );
+  }
+
+  // ─── Change Name / Alias dialog ───────────────────────────────────────────
+
+  void _showChangeNameDialog(MyUser friend, String? currentAlias) {
+    final aliasController = TextEditingController(text: currentAlias ?? '');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    showDialog(
+      context: context,
+      builder:
+          (dialogContext) => Dialog(
+            backgroundColor: Colors.white,
+            insetPadding: EdgeInsets.symmetric(
+              horizontal: 24.w,
+              vertical: 80.h,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(28.w, 32.h, 28.w, 24.h),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Text(
+                      '이름 변경',
+                      style: TextStyle(
+                        fontSize: 26.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 6.h),
+                  Center(
+                    child: Text(
+                      '나에게만 보이는 별명을 설정합니다',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 28.h),
+                  Text(
+                    '별명',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: Colors.grey[500],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 6.h),
+                  TextField(
+                    controller: aliasController,
+                    maxLength: 30,
+                    autofocus: true,
+                    style: TextStyle(fontSize: 16.sp, color: Colors.black),
+                    decoration: InputDecoration(
+                      hintText: friend.name,
+                      hintStyle: TextStyle(
+                        color: Colors.grey[300],
+                        fontSize: 16.sp,
+                      ),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Colors.grey[300]!,
+                          width: 1.2,
+                        ),
+                      ),
+                      focusedBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black, width: 1.5),
+                      ),
+                      counterStyle: TextStyle(
+                        fontSize: 11.sp,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                  ),
+                  if (currentAlias != null && currentAlias.isNotEmpty) ...[
+                    SizedBox(height: 14.h),
+                    GestureDetector(
+                      onTap: () async {
+                        Navigator.pop(dialogContext);
+                        if (uid == null) return;
+                        try {
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(uid)
+                              .collection('aliases')
+                              .doc(friend.userId)
+                              .delete();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '${friend.name}님의 이름을 원래대로 되돌렸습니다',
+                                ),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text('오류: $e')));
+                          }
+                        }
+                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.refresh_rounded,
+                            size: 13.sp,
+                            color: Colors.grey[400],
+                          ),
+                          SizedBox(width: 4.w),
+                          Text(
+                            '원래 이름으로 되돌리기  (${friend.name})',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: Colors.grey[400],
+                              decoration: TextDecoration.underline,
+                              decorationColor: Colors.grey[300],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  SizedBox(height: 28.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.grey[300]!),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24.r),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 13.h),
+                          ),
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: Text(
+                            '취소',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24.r),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 13.h),
+                          ),
+                          onPressed: () async {
+                            final newAlias = aliasController.text.trim();
+                            Navigator.pop(dialogContext);
+                            if (uid == null) return;
+                            try {
+                              if (newAlias.isEmpty) {
+                                await FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(uid)
+                                    .collection('aliases')
+                                    .doc(friend.userId)
+                                    .delete();
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '${friend.name}님의 이름을 원래대로 되돌렸습니다',
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                await FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(uid)
+                                    .collection('aliases')
+                                    .doc(friend.userId)
+                                    .set({'alias': newAlias});
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '${friend.name}님의 이름을 "$newAlias"(으)로 변경했습니다',
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('오류: $e')),
+                                );
+                              }
+                            }
+                          },
+                          child: Text(
+                            '변경',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  // ─── Hide friend ──────────────────────────────────────────────────────────
+
+  Future<void> _hideFriend(MyUser friend) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('hiddenFriends')
+          .doc(friend.userId)
+          .set({'hiddenAt': FieldValue.serverTimestamp()});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${friend.name}님을 숨겼습니다'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('오류: $e')));
+      }
+    }
+  }
+
+  // ─── Delete friend ────────────────────────────────────────────────────────
+
+  Future<void> _deleteFriend(MyUser friend) async {
+    final displayName =
+        (await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser?.uid)
+                    .collection('aliases')
+                    .doc(friend.userId)
+                    .get())
+                .data()?['alias']
+            as String? ??
+        friend.name;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (ctx) => Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(24.w, 28.h, 24.w, 20.h),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '친구 삭제',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  Text(
+                    '$displayName님을 친구 목록에서 삭제하시겠습니까?\n대화 내용도 함께 삭제됩니다.',
+                    style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 24.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.grey[300]!),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24.r),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12.h),
+                          ),
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: Text(
+                            '취소',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14.sp,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red[600],
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24.r),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12.h),
+                          ),
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: Text(
+                            '삭제',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+
+    if (confirm != true) return;
+    try {
+      final currentUid = FirebaseAuth.instance.currentUser!.uid;
+      await _friendsService.removeFriend(friend.userId);
+      final chatRoomId = ([currentUid, friend.userId]..sort()).join('_');
+      await _chatService.softDeleteChatForCurrentUser(chatRoomId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$displayName님을 친구 목록에서 삭제했습니다'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('삭제 실패: $e')));
+      }
+    }
+  }
+
+  // ─── Block friend ─────────────────────────────────────────────────────────
+
+  Future<void> _blockFriend(MyUser friend) async {
+    final displayName = friend.name;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (ctx) => Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(24.w, 28.h, 24.w, 20.h),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '차단',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  Text(
+                    '$displayName님을 차단하시겠습니까?\n차단하면 서로 메시지를 보낼 수 없습니다.',
+                    style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 24.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.grey[300]!),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24.r),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12.h),
+                          ),
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: Text(
+                            '취소',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14.sp,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24.r),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12.h),
+                          ),
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: Text(
+                            '차단',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+
+    if (confirm != true) return;
+    try {
+      await _friendsService.blockFriend(friend.name);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$displayName님을 차단했습니다'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('차단 실패: $e')));
+      }
+    }
   }
 
   // ─── Add friend dialog ────────────────────────────────────────────────────
@@ -472,7 +984,6 @@ class _FriendsScreenState extends State<FriendsScreen>
                                                 children: [
                                                   CircleAvatar(
                                                     radius: 22.r,
-                                                    // FIX 3: Guard empty URL
                                                     backgroundImage:
                                                         user.url.isNotEmpty
                                                             ? NetworkImage(
@@ -589,7 +1100,9 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   // ─── Create group dialog ──────────────────────────────────────────────────
 
-  Future<void> _showCreateGroupDialog() async {
+  Future<void> _showCreateGroupDialog({
+    required Map<String, String> aliases,
+  }) async {
     final nameController = TextEditingController();
     final searchCtrl = TextEditingController();
     List<String> selectedUserIds = [];
@@ -605,13 +1118,13 @@ class _FriendsScreenState extends State<FriendsScreen>
               final filteredFriends =
                   groupSearch.isEmpty
                       ? friends
-                      : friends
-                          .where(
-                            (u) => u.name.toLowerCase().contains(
-                              groupSearch.toLowerCase(),
-                            ),
-                          )
-                          .toList();
+                      : friends.where((u) {
+                        final q = groupSearch.toLowerCase();
+                        final alias = aliases[u.userId]?.toLowerCase() ?? '';
+                        return u.name.toLowerCase().contains(q) ||
+                            alias.contains(q);
+                      }).toList();
+
               final selectedFriends =
                   friends
                       .where((u) => selectedUserIds.contains(u.userId))
@@ -647,6 +1160,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            // ── Group image picker ──
                             GestureDetector(
                               onTap: () async {
                                 groupImagePath =
@@ -671,6 +1185,8 @@ class _FriendsScreenState extends State<FriendsScreen>
                               ),
                             ),
                             SizedBox(height: 10.h),
+
+                            // ── Group name field ──
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: 40.w),
                               child: TextField(
@@ -699,9 +1215,11 @@ class _FriendsScreenState extends State<FriendsScreen>
                               ),
                             ),
                             SizedBox(height: 16.h),
+
+                            // ── Selected friends horizontal chips ──
                             if (selectedFriends.isNotEmpty) ...[
                               SizedBox(
-                                height: 72.h,
+                                height: 90.h,
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
                                   physics: const ClampingScrollPhysics(),
@@ -711,77 +1229,100 @@ class _FriendsScreenState extends State<FriendsScreen>
                                   itemCount: selectedFriends.length,
                                   itemBuilder: (context, idx) {
                                     final user = selectedFriends[idx];
+                                    final displayName =
+                                        aliases[user.userId] ?? user.name;
+                                    final hasAlias =
+                                        aliases.containsKey(user.userId) &&
+                                        aliases[user.userId]!.isNotEmpty;
+
                                     return Padding(
                                       padding: EdgeInsets.only(right: 12.w),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Stack(
-                                            clipBehavior: Clip.none,
-                                            children: [
-                                              CircleAvatar(
-                                                radius: 22.r,
-                                                // FIX 3: Guard empty URL
-                                                backgroundImage:
-                                                    user.url.isNotEmpty
-                                                        ? NetworkImage(user.url)
-                                                        : null,
-                                                backgroundColor:
-                                                    Colors.grey[200],
-                                                child:
-                                                    user.url.isEmpty
-                                                        ? Text(
-                                                          user.name.isNotEmpty
-                                                              ? user.name[0]
-                                                              : '?',
-                                                          style: TextStyle(
-                                                            fontSize: 14.sp,
-                                                            color: Colors.black,
-                                                          ),
-                                                        )
-                                                        : null,
-                                              ),
-                                              Positioned(
-                                                top: -4,
-                                                right: -4,
-                                                child: GestureDetector(
-                                                  onTap:
-                                                      () => setDialogState(
-                                                        () => selectedUserIds
-                                                            .remove(
-                                                              user.userId,
+                                      child: SizedBox(
+                                        width: 54.w,
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Stack(
+                                              clipBehavior: Clip.none,
+                                              children: [
+                                                CircleAvatar(
+                                                  radius: 22.r,
+                                                  backgroundImage:
+                                                      user.url.isNotEmpty
+                                                          ? NetworkImage(
+                                                            user.url,
+                                                          )
+                                                          : null,
+                                                  backgroundColor:
+                                                      Colors.grey[200],
+                                                  child:
+                                                      user.url.isEmpty
+                                                          ? Text(
+                                                            user.name.isNotEmpty
+                                                                ? user.name[0]
+                                                                : '?',
+                                                            style: TextStyle(
+                                                              fontSize: 14.sp,
+                                                              color:
+                                                                  Colors.black,
                                                             ),
-                                                      ),
-                                                  child: Container(
-                                                    width: 16.w,
-                                                    height: 16.w,
-                                                    decoration:
-                                                        const BoxDecoration(
-                                                          color: Colors.black,
-                                                          shape:
-                                                              BoxShape.circle,
+                                                          )
+                                                          : null,
+                                                ),
+                                                Positioned(
+                                                  top: -4,
+                                                  right: -4,
+                                                  child: GestureDetector(
+                                                    onTap:
+                                                        () => setDialogState(
+                                                          () => selectedUserIds
+                                                              .remove(
+                                                                user.userId,
+                                                              ),
                                                         ),
-                                                    child: Icon(
-                                                      Icons.close,
-                                                      size: 10.sp,
-                                                      color: Colors.white,
+                                                    child: Container(
+                                                      width: 16.w,
+                                                      height: 16.w,
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                            color: Colors.black,
+                                                            shape:
+                                                                BoxShape.circle,
+                                                          ),
+                                                      child: Icon(
+                                                        Icons.close,
+                                                        size: 10.sp,
+                                                        color: Colors.white,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 4.h),
-                                          Text(
-                                            user.name,
-                                            style: TextStyle(
-                                              fontSize: 10.sp,
-                                              color: Colors.black,
+                                              ],
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
+                                            SizedBox(height: 4.h),
+                                            Text(
+                                              displayName,
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                fontSize: 10.sp,
+                                                color: Colors.black,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            if (hasAlias)
+                                              Text(
+                                                user.name,
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontSize: 9.sp,
+                                                  color: Colors.grey[400],
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                          ],
+                                        ),
                                       ),
                                     );
                                   },
@@ -789,6 +1330,8 @@ class _FriendsScreenState extends State<FriendsScreen>
                               ),
                               SizedBox(height: 8.h),
                             ],
+
+                            // ── Search field ──
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16.w),
                               child: Container(
@@ -805,6 +1348,11 @@ class _FriendsScreenState extends State<FriendsScreen>
                                   ),
                                   decoration: InputDecoration(
                                     border: InputBorder.none,
+                                    hintText: '이름 또는 별명으로 검색',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 13.sp,
+                                    ),
                                     contentPadding: EdgeInsets.symmetric(
                                       horizontal: 12.w,
                                       vertical: 10.h,
@@ -824,12 +1372,13 @@ class _FriendsScreenState extends State<FriendsScreen>
                               ),
                             ),
                             SizedBox(height: 12.h),
+
                             Padding(
                               padding: EdgeInsets.only(left: 16.w, bottom: 6.h),
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  '즐겨찾기',
+                                  '친구',
                                   style: TextStyle(
                                     fontSize: 12.sp,
                                     color: Colors.grey,
@@ -838,12 +1387,16 @@ class _FriendsScreenState extends State<FriendsScreen>
                                 ),
                               ),
                             ),
+
+                            // ── Friends list ──
                             if (filteredFriends.isEmpty)
                               Padding(
                                 padding: EdgeInsets.symmetric(vertical: 24.h),
                                 child: Center(
                                   child: Text(
-                                    '친구가 없습니다',
+                                    groupSearch.isNotEmpty
+                                        ? '검색 결과가 없습니다'
+                                        : '친구가 없습니다',
                                     style: TextStyle(
                                       fontSize: 13.sp,
                                       color: Colors.grey,
@@ -857,6 +1410,12 @@ class _FriendsScreenState extends State<FriendsScreen>
                                     filteredFriends.map((user) {
                                       final isSelected = selectedUserIds
                                           .contains(user.userId);
+                                      final displayName =
+                                          aliases[user.userId] ?? user.name;
+                                      final hasAlias =
+                                          aliases.containsKey(user.userId) &&
+                                          aliases[user.userId]!.isNotEmpty;
+
                                       return InkWell(
                                         onTap:
                                             () => setDialogState(() {
@@ -890,7 +1449,6 @@ class _FriendsScreenState extends State<FriendsScreen>
                                                 ),
                                                 child: CircleAvatar(
                                                   radius: 22.r,
-                                                  // FIX 3: Guard empty URL
                                                   backgroundImage:
                                                       user.url.isNotEmpty
                                                           ? NetworkImage(
@@ -916,13 +1474,34 @@ class _FriendsScreenState extends State<FriendsScreen>
                                               ),
                                               SizedBox(width: 12.w),
                                               Expanded(
-                                                child: Text(
-                                                  user.name,
-                                                  style: TextStyle(
-                                                    fontSize: 15.sp,
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.w400,
-                                                  ),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    groupSearch.isNotEmpty
+                                                        ? _buildHighlightedName(
+                                                          displayName,
+                                                          groupSearch,
+                                                        )
+                                                        : Text(
+                                                          displayName,
+                                                          style: TextStyle(
+                                                            fontSize: 15.sp,
+                                                            color: Colors.black,
+                                                            fontWeight:
+                                                                FontWeight.w400,
+                                                          ),
+                                                        ),
+                                                    if (hasAlias)
+                                                      Text(
+                                                        user.name,
+                                                        style: TextStyle(
+                                                          fontSize: 11.sp,
+                                                          color:
+                                                              Colors.grey[400],
+                                                        ),
+                                                      ),
+                                                  ],
                                                 ),
                                               ),
                                               AnimatedContainer(
@@ -965,6 +1544,8 @@ class _FriendsScreenState extends State<FriendsScreen>
                         ),
                       ),
                     ),
+
+                    // ── Bottom buttons ──
                     Container(
                       decoration: BoxDecoration(
                         border: Border(
@@ -991,7 +1572,10 @@ class _FriendsScreenState extends State<FriendsScreen>
                           SizedBox(width: 8.w),
                           TextButton(
                             style: TextButton.styleFrom(
-                              backgroundColor: Colors.black,
+                              backgroundColor:
+                                  selectedUserIds.isEmpty
+                                      ? Colors.grey[300]
+                                      : Colors.black,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                               ),
@@ -1000,18 +1584,24 @@ class _FriendsScreenState extends State<FriendsScreen>
                                 vertical: 10.h,
                               ),
                             ),
-                            onPressed: () async {
-                              Navigator.pop(ctx);
-                              await _chatService.createGroupChatRoom(
-                                name: nameController.text,
-                                participantIds: selectedUserIds,
-                                groupImage: groupImagePath,
-                              );
-                            },
+                            onPressed:
+                                selectedUserIds.isEmpty
+                                    ? null
+                                    : () async {
+                                      Navigator.pop(ctx);
+                                      await _chatService.createGroupChatRoom(
+                                        name: nameController.text,
+                                        participantIds: selectedUserIds,
+                                        groupImage: groupImagePath,
+                                      );
+                                    },
                             child: Text(
                               '생성',
                               style: TextStyle(
-                                color: Colors.white,
+                                color:
+                                    selectedUserIds.isEmpty
+                                        ? Colors.grey[500]
+                                        : Colors.white,
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1050,7 +1640,6 @@ class _FriendsScreenState extends State<FriendsScreen>
               children: [
                 CircleAvatar(
                   radius: 28.r,
-                  // FIX 3: Guard empty URL
                   backgroundImage:
                       _currentUser!.url.isNotEmpty
                           ? NetworkImage(_currentUser!.url)
@@ -1102,7 +1691,7 @@ class _FriendsScreenState extends State<FriendsScreen>
               child: _buildActionButton(
                 icon: Icons.chat_bubble_outline,
                 label: '채팅방 만들기',
-                onTap: _showCreateGroupDialog,
+                onTap: () => _showCreateGroupDialog(aliases: _latestAliases),
               ),
             ),
             SizedBox(width: 10.w),
@@ -1192,10 +1781,17 @@ class _FriendsScreenState extends State<FriendsScreen>
     List<MyUser> allFriends,
     List<MyUser> allBrands,
     List<String> favoriteIds,
+    Map<String, String> aliases,
   ) {
     final query = _effectiveQuery.toLowerCase();
     final matchingFriends =
-        allFriends.where((u) => u.name.toLowerCase().contains(query)).toList();
+        allFriends
+            .where(
+              (u) =>
+                  u.name.toLowerCase().contains(query) ||
+                  (aliases[u.userId]?.toLowerCase().contains(query) ?? false),
+            )
+            .toList();
     final matchingBrands =
         allBrands.where((u) => u.name.toLowerCase().contains(query)).toList();
 
@@ -1233,7 +1829,11 @@ class _FriendsScreenState extends State<FriendsScreen>
             ),
           ),
           ...matchingFriends.map(
-            (f) => _buildFriendItem(friend: f, favoriteIds: favoriteIds),
+            (f) => _buildFriendItem(
+              friend: f,
+              favoriteIds: favoriteIds,
+              aliases: aliases,
+            ),
           ),
         ],
         if (matchingBrands.isNotEmpty) ...[
@@ -1253,6 +1853,7 @@ class _FriendsScreenState extends State<FriendsScreen>
               friend: b,
               isBrand: true,
               favoriteIds: favoriteIds,
+              aliases: aliases,
             ),
           ),
         ],
@@ -1265,239 +1866,304 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   @override
   Widget build(BuildContext context) {
-    // FIX 2: Corrected StreamBuilder nesting and bracket structure
     return SafeArea(
       top: false,
-      child: StreamBuilder<List<String>>(
-        // Stream 1: favorite IDs
-        stream: _favoritesService.getFavoriteIdsStream(),
-        builder: (context, favSnapshot) {
-          final favoriteIds = favSnapshot.data ?? [];
+      child: StreamBuilder<Map<String, int>>(
+        // Stream 0: favorites order — synced from edit screen drag-and-drop
+        stream: _getFavoritesOrderStream(),
+        builder: (context, orderSnapshot) {
+          final favoritesOrder = orderSnapshot.data ?? {};
 
-          return StreamBuilder<Map<String, int>>(
-            // Stream 2: favorites order map
-            stream: _getFavoritesOrderStream(),
-            builder: (context, orderSnapshot) {
-              final orderMap = orderSnapshot.data ?? {};
+          return StreamBuilder<List<String>>(
+            // Stream 1: favorite IDs
+            stream: _favoritesService.getFavoriteIdsStream(),
+            builder: (context, favSnapshot) {
+              final favoriteIds = favSnapshot.data ?? [];
 
               return StreamBuilder<Set<String>>(
-                // Stream 3: following IDs
+                // Stream 2: following IDs
                 stream: _getFollowingIdsStream(),
                 builder: (context, followingSnapshot) {
                   final followingIds = followingSnapshot.data ?? {};
 
-                  return StreamBuilder<List<MyUser>>(
-                    // Stream 4: friends list
-                    stream: _friendsService.getFriendsStream(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData || _isSyncing) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
+                  return StreamBuilder<Set<String>>(
+                    // Stream 3: hidden IDs
+                    stream: _getHiddenIdsStream(),
+                    builder: (context, hiddenSnapshot) {
+                      final hiddenIds = hiddenSnapshot.data ?? {};
 
-                      final allUsers = snapshot.data ?? [];
-                      final allFriends =
-                          allUsers.where((u) => u.type == 'user').toList();
+                      return StreamBuilder<Map<String, String>>(
+                        // Stream 4: aliases map
+                        stream: _getAliasesStream(),
+                        builder: (context, aliasSnapshot) {
+                          final aliases = aliasSnapshot.data ?? {};
+                          _latestAliases = aliases;
 
-                      // Favorites: friends that are starred, sorted by order
-                      final favorites =
-                          allFriends
-                              .where((u) => favoriteIds.contains(u.userId))
-                              .toList();
-                      favorites.sort((a, b) {
-                        final aOrder = orderMap[a.userId] ?? 999999;
-                        final bOrder = orderMap[b.userId] ?? 999999;
-                        return aOrder.compareTo(bOrder);
-                      });
+                          return StreamBuilder<List<MyUser>>(
+                            // Stream 5: friends list
+                            stream: _friendsService.getFriendsStream(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData || _isSyncing) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
 
-                      // Subscribed: friends that the current user follows
-                      final subscribed =
-                          allFriends
-                              .where((u) => followingIds.contains(u.userId))
-                              .toList();
+                              final allUsers = snapshot.data ?? [];
+                              final allFriends =
+                                  allUsers
+                                      .where(
+                                        (u) =>
+                                            u.type == 'user' &&
+                                            !hiddenIds.contains(u.userId),
+                                      )
+                                      .toList();
 
-                      // Friends: all friends
-                      final friends = allFriends;
+                              // ── Favorites: sorted by drag-and-drop order ──
+                              // Uses the same `favoritesOrder` map that
+                              // edit_screen writes on every drag, so both
+                              // screens always reflect the same order.
+                              final favorites =
+                                  allFriends
+                                      .where(
+                                        (u) => favoriteIds.contains(u.userId),
+                                      )
+                                      .toList()
+                                    ..sort((a, b) {
+                                      final aO =
+                                          favoritesOrder[a.userId] ?? 999999;
+                                      final bO =
+                                          favoritesOrder[b.userId] ?? 999999;
+                                      return aO.compareTo(bO);
+                                    });
 
-                      return StreamBuilder(
-                        // Stream 5: brands
-                        stream: _friendsService.getBrandsStream(),
-                        builder: (context, brandSnapshot) {
-                          final brands =
-                              (brandSnapshot.data ?? []) as List<MyUser>;
+                              final subscribed =
+                                  allFriends
+                                      .where(
+                                        (u) => followingIds.contains(u.userId),
+                                      )
+                                      .toList();
 
-                          if (_isSearchActive) {
-                            return _buildSearchResults(
-                              allFriends,
-                              brands,
-                              favoriteIds,
-                            );
-                          }
+                              final friends = allFriends;
 
-                          return ListView(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            children: [
-                              _buildCurrentUserCard(),
+                              return StreamBuilder(
+                                // Stream 6: brands
+                                stream: _friendsService.getBrandsStream(),
+                                builder: (context, brandSnapshot) {
+                                  final allBrands =
+                                      (brandSnapshot.data ?? [])
+                                          as List<MyUser>;
+                                  final brands =
+                                      allBrands
+                                          .where(
+                                            (b) =>
+                                                !hiddenIds.contains(b.userId),
+                                          )
+                                          .toList();
 
-                              // ── 즐겨찾기 ──────────────────────────────
-                              _buildSectionHeader(
-                                label: '즐겨찾기',
-                                count: favorites.length,
-                                expanded: _favoritesExpanded,
-                                onTap:
-                                    () => setState(
-                                      () =>
-                                          _favoritesExpanded =
-                                              !_favoritesExpanded,
+                                  if (_isSearchActive) {
+                                    return _buildSearchResults(
+                                      allFriends,
+                                      brands,
+                                      favoriteIds,
+                                      aliases,
+                                    );
+                                  }
+
+                                  return ListView(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
                                     ),
-                              ),
-                              AnimatedCrossFade(
-                                duration: const Duration(milliseconds: 200),
-                                crossFadeState:
-                                    _favoritesExpanded
-                                        ? CrossFadeState.showFirst
-                                        : CrossFadeState.showSecond,
-                                firstChild:
-                                    favorites.isEmpty
-                                        ? Padding(
-                                          padding: EdgeInsets.only(
-                                            bottom: 12.h,
-                                            left: 4.w,
-                                          ),
-                                          child: Text(
-                                            '즐겨찾기한 친구가 없습니다',
-                                            style: TextStyle(
-                                              fontSize: 12.sp,
-                                              color: Colors.grey[400],
+                                    children: [
+                                      _buildCurrentUserCard(),
+
+                                      // ── 즐겨찾기 ──────────────────────────
+                                      _buildSectionHeader(
+                                        label: '즐겨찾기',
+                                        count: favorites.length,
+                                        expanded: _favoritesExpanded,
+                                        onTap:
+                                            () => setState(
+                                              () =>
+                                                  _favoritesExpanded =
+                                                      !_favoritesExpanded,
                                             ),
-                                          ),
-                                        )
-                                        : Column(
+                                      ),
+                                      AnimatedCrossFade(
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
+                                        crossFadeState:
+                                            _favoritesExpanded
+                                                ? CrossFadeState.showFirst
+                                                : CrossFadeState.showSecond,
+                                        firstChild:
+                                            favorites.isEmpty
+                                                ? Padding(
+                                                  padding: EdgeInsets.only(
+                                                    bottom: 12.h,
+                                                    left: 4.w,
+                                                  ),
+                                                  child: Text(
+                                                    '즐겨찾기한 친구가 없습니다',
+                                                    style: TextStyle(
+                                                      fontSize: 12.sp,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                  ),
+                                                )
+                                                : Column(
+                                                  children:
+                                                      favorites
+                                                          .map(
+                                                            (
+                                                              f,
+                                                            ) => _buildFriendItem(
+                                                              friend: f,
+                                                              favoriteIds:
+                                                                  favoriteIds,
+                                                              aliases: aliases,
+                                                            ),
+                                                          )
+                                                          .toList(),
+                                                ),
+                                        secondChild: const SizedBox.shrink(),
+                                      ),
+
+                                      // ── 내가 구독한 친구 ──────────────────
+                                      _buildSectionHeader(
+                                        label: '내가 구독한 친구',
+                                        count: subscribed.length,
+                                        expanded: _subscribedExpanded,
+                                        onTap:
+                                            () => setState(
+                                              () =>
+                                                  _subscribedExpanded =
+                                                      !_subscribedExpanded,
+                                            ),
+                                      ),
+                                      AnimatedCrossFade(
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
+                                        crossFadeState:
+                                            _subscribedExpanded
+                                                ? CrossFadeState.showFirst
+                                                : CrossFadeState.showSecond,
+                                        firstChild:
+                                            subscribed.isEmpty
+                                                ? Padding(
+                                                  padding: EdgeInsets.only(
+                                                    bottom: 12.h,
+                                                    left: 4.w,
+                                                  ),
+                                                  child: Text(
+                                                    '구독한 친구가 없습니다',
+                                                    style: TextStyle(
+                                                      fontSize: 12.sp,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                  ),
+                                                )
+                                                : Column(
+                                                  children:
+                                                      subscribed
+                                                          .map(
+                                                            (
+                                                              f,
+                                                            ) => _buildFriendItem(
+                                                              friend: f,
+                                                              favoriteIds:
+                                                                  favoriteIds,
+                                                              aliases: aliases,
+                                                            ),
+                                                          )
+                                                          .toList(),
+                                                ),
+                                        secondChild: const SizedBox.shrink(),
+                                      ),
+
+                                      // ── 친구 ──────────────────────────────
+                                      _buildSectionHeader(
+                                        label: '친구',
+                                        count: friends.length,
+                                        expanded: _friendsExpanded,
+                                        onTap:
+                                            () => setState(
+                                              () =>
+                                                  _friendsExpanded =
+                                                      !_friendsExpanded,
+                                            ),
+                                      ),
+                                      AnimatedCrossFade(
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
+                                        crossFadeState:
+                                            _friendsExpanded
+                                                ? CrossFadeState.showFirst
+                                                : CrossFadeState.showSecond,
+                                        firstChild: Column(
                                           children:
-                                              favorites
+                                              friends
                                                   .map(
-                                                    (f) => _buildFriendItem(
-                                                      friend: f,
+                                                    (
+                                                      friend,
+                                                    ) => _buildFriendItem(
+                                                      friend: friend,
+                                                      showCheckbox: editMode,
                                                       favoriteIds: favoriteIds,
+                                                      aliases: aliases,
                                                     ),
                                                   )
                                                   .toList(),
                                         ),
-                                secondChild: const SizedBox.shrink(),
-                              ),
+                                        secondChild: const SizedBox.shrink(),
+                                      ),
 
-                              // ── 내가 구독한 친구 ───────────────────────
-                              _buildSectionHeader(
-                                label: '내가 구독한 친구',
-                                count: subscribed.length,
-                                expanded: _subscribedExpanded,
-                                onTap:
-                                    () => setState(
-                                      () =>
-                                          _subscribedExpanded =
-                                              !_subscribedExpanded,
-                                    ),
-                              ),
-                              AnimatedCrossFade(
-                                duration: const Duration(milliseconds: 200),
-                                crossFadeState:
-                                    _subscribedExpanded
-                                        ? CrossFadeState.showFirst
-                                        : CrossFadeState.showSecond,
-                                firstChild:
-                                    subscribed.isEmpty
-                                        ? Padding(
-                                          padding: EdgeInsets.only(
-                                            bottom: 12.h,
-                                            left: 4.w,
-                                          ),
-                                          child: Text(
-                                            '구독한 친구가 없습니다',
-                                            style: TextStyle(
-                                              fontSize: 12.sp,
-                                              color: Colors.grey[400],
+                                      // ── 브랜드 ────────────────────────────
+                                      _buildSectionHeader(
+                                        label: '브랜드',
+                                        count: brands.length,
+                                        expanded: _brandsExpanded,
+                                        onTap:
+                                            () => setState(
+                                              () =>
+                                                  _brandsExpanded =
+                                                      !_brandsExpanded,
                                             ),
-                                          ),
-                                        )
-                                        : Column(
+                                      ),
+                                      AnimatedCrossFade(
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
+                                        crossFadeState:
+                                            _brandsExpanded
+                                                ? CrossFadeState.showFirst
+                                                : CrossFadeState.showSecond,
+                                        firstChild: Column(
                                           children:
-                                              subscribed
+                                              brands
                                                   .map(
-                                                    (f) => _buildFriendItem(
-                                                      friend: f,
+                                                    (b) => _buildFriendItem(
+                                                      friend: b,
+                                                      isBrand: true,
+                                                      showCheckbox: editMode,
                                                       favoriteIds: favoriteIds,
+                                                      aliases: aliases,
                                                     ),
                                                   )
                                                   .toList(),
                                         ),
-                                secondChild: const SizedBox.shrink(),
-                              ),
+                                        secondChild: const SizedBox.shrink(),
+                                      ),
 
-                              // ── 친구 ──────────────────────────────────
-                              _buildSectionHeader(
-                                label: '친구',
-                                count: friends.length,
-                                expanded: _friendsExpanded,
-                                onTap:
-                                    () => setState(
-                                      () =>
-                                          _friendsExpanded = !_friendsExpanded,
-                                    ),
-                              ),
-                              AnimatedCrossFade(
-                                duration: const Duration(milliseconds: 200),
-                                crossFadeState:
-                                    _friendsExpanded
-                                        ? CrossFadeState.showFirst
-                                        : CrossFadeState.showSecond,
-                                firstChild: Column(
-                                  children:
-                                      friends
-                                          .map(
-                                            (friend) => _buildFriendItem(
-                                              friend: friend,
-                                              showCheckbox: editMode,
-                                              favoriteIds: favoriteIds,
-                                            ),
-                                          )
-                                          .toList(),
-                                ),
-                                secondChild: const SizedBox.shrink(),
-                              ),
-
-                              // ── 브랜드 ────────────────────────────────
-                              _buildSectionHeader(
-                                label: '브랜드',
-                                count: brands.length,
-                                expanded: _brandsExpanded,
-                                onTap:
-                                    () => setState(
-                                      () => _brandsExpanded = !_brandsExpanded,
-                                    ),
-                              ),
-                              AnimatedCrossFade(
-                                duration: const Duration(milliseconds: 200),
-                                crossFadeState:
-                                    _brandsExpanded
-                                        ? CrossFadeState.showFirst
-                                        : CrossFadeState.showSecond,
-                                firstChild: Column(
-                                  children:
-                                      brands
-                                          .map(
-                                            (b) => _buildFriendItem(
-                                              friend: b,
-                                              isBrand: true,
-                                              showCheckbox: editMode,
-                                              favoriteIds: favoriteIds,
-                                            ),
-                                          )
-                                          .toList(),
-                                ),
-                                secondChild: const SizedBox.shrink(),
-                              ),
-
-                              SizedBox(height: 40.h),
-                            ],
+                                      SizedBox(height: 40.h),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
                           );
                         },
                       );
@@ -1517,11 +2183,16 @@ class _FriendsScreenState extends State<FriendsScreen>
   Widget _buildFriendItem({
     required MyUser friend,
     required List<String> favoriteIds,
+    required Map<String, String> aliases,
     bool showCheckbox = false,
     bool isBrand = false,
   }) {
     final GlobalKey itemKey = GlobalKey();
     final bool isFav = favoriteIds.contains(friend.userId);
+    final String displayName = aliases[friend.userId] ?? friend.name;
+    final bool hasAlias =
+        aliases.containsKey(friend.userId) &&
+        aliases[friend.userId]!.isNotEmpty;
 
     void showFriendMenu() {
       if (isBrand) return;
@@ -1530,7 +2201,7 @@ class _FriendsScreenState extends State<FriendsScreen>
       final Offset offset = box.localToGlobal(Offset.zero);
       final screenWidth = MediaQuery.of(context).size.width;
       const double popupWidth = 220;
-      const double popupHeight = 360;
+      const double popupHeight = 380;
 
       double left = offset.dx + 55;
       double top = offset.dy - 60;
@@ -1581,13 +2252,23 @@ class _FriendsScreenState extends State<FriendsScreen>
                         children: [
                           SizedBox(height: 20.h),
                           Text(
-                            friend.name,
+                            displayName,
                             style: TextStyle(
                               fontSize: 22.sp,
                               fontWeight: FontWeight.w800,
                               color: Colors.black,
                             ),
                           ),
+                          if (hasAlias) ...[
+                            SizedBox(height: 2.h),
+                            Text(
+                              friend.name,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: Colors.grey[400],
+                              ),
+                            ),
+                          ],
                           SizedBox(height: 4.h),
                           Divider(
                             color: Colors.grey[200],
@@ -1608,7 +2289,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        '${friend.name}님을 즐겨찾기에서 제거했습니다',
+                                        '$displayName님을 즐겨찾기에서 제거했습니다',
                                       ),
                                       duration: const Duration(seconds: 2),
                                     ),
@@ -1622,7 +2303,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        '${friend.name}님을 즐겨찾기에 추가했습니다',
+                                        '$displayName님을 즐겨찾기에 추가했습니다',
                                       ),
                                       duration: const Duration(seconds: 2),
                                     ),
@@ -1633,19 +2314,36 @@ class _FriendsScreenState extends State<FriendsScreen>
                           ),
                           _buildMenuOption(
                             label: '이름 변경',
-                            onTap: () => Navigator.pop(context),
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showChangeNameDialog(
+                                friend,
+                                aliases[friend.userId],
+                              );
+                            },
                           ),
                           _buildMenuOption(
                             label: '숨김',
-                            onTap: () => Navigator.pop(context),
+                            onTap: () {
+                              Navigator.pop(context);
+                              _hideFriend(friend);
+                            },
                           ),
                           _buildMenuOption(
                             label: '삭제',
-                            onTap: () => Navigator.pop(context),
+                            labelColor: Colors.red[600],
+                            onTap: () {
+                              Navigator.pop(context);
+                              _deleteFriend(friend);
+                            },
                           ),
                           _buildMenuOption(
                             label: '차단',
-                            onTap: () => Navigator.pop(context),
+                            labelColor: Colors.red[800],
+                            onTap: () {
+                              Navigator.pop(context);
+                              _blockFriend(friend);
+                            },
                             isLast: true,
                           ),
                           SizedBox(height: 12.h),
@@ -1676,7 +2374,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                   builder:
                       (context) => ChatScreen(
                         chatRoomId: chatRoomId,
-                        chatRoomName: friend.name,
+                        chatRoomName: displayName,
                       ),
                 ),
               );
@@ -1693,16 +2391,9 @@ class _FriendsScreenState extends State<FriendsScreen>
             Stack(
               clipBehavior: Clip.none,
               children: [
-                // FIX 3: Guard empty URL in friend list items
                 CircleAvatar(
                   radius: 25,
-                  backgroundImage:
-                      friend.url.isNotEmpty ? NetworkImage(friend.url) : null,
-                  backgroundColor: Colors.grey[200],
-                  child:
-                      friend.url.isEmpty
-                          ? const Icon(Icons.person, color: Colors.grey)
-                          : null,
+                  backgroundImage: NetworkImage(friend.url),
                 ),
                 if (isFav)
                   Positioned(
@@ -1730,14 +2421,28 @@ class _FriendsScreenState extends State<FriendsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _isSearchActive
-                      ? _buildHighlightedName(friend.name, _effectiveQuery)
-                      : Text(
-                        friend.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                        ),
+                      ? _buildHighlightedName(displayName, _effectiveQuery)
+                      : Row(
+                        children: [
+                          Text(
+                            displayName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
+                            ),
+                          ),
+                          if (hasAlias) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              '(${friend.name})',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[400],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                   if (friend.bio != null && friend.bio!.isNotEmpty) ...[
                     const SizedBox(height: 2),

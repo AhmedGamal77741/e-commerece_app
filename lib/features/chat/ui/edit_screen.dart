@@ -41,7 +41,7 @@ class _EditScreenState extends State<EditScreen> {
     super.dispose();
   }
 
-  // ── Pills — same colours as chats_navbar ──────────────────────────────────
+  // ── Pills ─────────────────────────────────────────────────────────────────
   Widget _buildPill(int index) {
     final bool isSelected = _selectedTab == index;
     return GestureDetector(
@@ -83,7 +83,6 @@ class _EditScreenState extends State<EditScreen> {
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
               child: Row(
                 children: [
-                  // Back arrow
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Padding(
@@ -95,7 +94,6 @@ class _EditScreenState extends State<EditScreen> {
                       ),
                     ),
                   ),
-                  // Scrollable pills
                   Expanded(
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -113,7 +111,7 @@ class _EditScreenState extends State<EditScreen> {
               ),
             ),
 
-            // ── Always-visible search bar (original design) ──────────────────
+            // ── Search bar ───────────────────────────────────────────────────
             Container(
               color: ColorsManager.primary,
               padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 10.h),
@@ -170,7 +168,7 @@ class _EditScreenState extends State<EditScreen> {
             // ── Divider ──────────────────────────────────────────────────────
             Container(color: Colors.grey[300], height: 1),
 
-            // ── Tab content — primary bg ──────────────────────────────────────
+            // ── Tab content ──────────────────────────────────────────────────
             Expanded(
               child: ColoredBox(
                 color: ColorsManager.primary,
@@ -192,7 +190,7 @@ class _EditScreenState extends State<EditScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TAB 0 — 연락처 edit
+// TAB 0 — 연락처 edit  (with alias support)
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _ContactsEditTab extends StatefulWidget {
@@ -213,6 +211,26 @@ class _ContactsEditTabState extends State<_ContactsEditTab> {
 
   Stream<List<String>> get _favoriteIdsStream =>
       _favoritesService.getFavoriteIdsStream();
+
+  /// userId → alias string (only entries where alias is non-empty)
+  Stream<Map<String, String>> get _aliasesStream {
+    if (uid.isEmpty) return Stream.value({});
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('aliases')
+        .snapshots()
+        .map((snap) {
+          final map = <String, String>{};
+          for (final doc in snap.docs) {
+            final alias = doc.data()['alias'] as String?;
+            if (alias != null && alias.isNotEmpty) {
+              map[doc.id] = alias;
+            }
+          }
+          return map;
+        });
+  }
 
   Stream<Set<String>> get _hiddenIdsStream {
     if (uid.isEmpty) return Stream.value({});
@@ -241,8 +259,7 @@ class _ContactsEditTabState extends State<_ContactsEditTab> {
         .snapshots()
         .map((snap) {
           if (!snap.exists) return <String, int>{};
-          final data = snap.data();
-          final raw = data?['favoritesOrder'];
+          final raw = snap.data()?['favoritesOrder'];
           if (raw == null) return <String, int>{};
           return Map<String, int>.from(raw as Map);
         });
@@ -307,7 +324,18 @@ class _ContactsEditTabState extends State<_ContactsEditTab> {
     );
   }
 
-  Widget _friendRow({required MyUser user, required Widget trailing}) {
+  /// A standard friend row that respects aliases.
+  /// [aliases] is optional — pass it for friends; omit for blocked users
+  /// who are no longer in the friends list.
+  Widget _friendRow({
+    required MyUser user,
+    required Widget trailing,
+    Map<String, String> aliases = const {},
+  }) {
+    final displayName = aliases[user.userId] ?? user.name;
+    final hasAlias =
+        aliases.containsKey(user.userId) && aliases[user.userId]!.isNotEmpty;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: Row(
@@ -324,13 +352,23 @@ class _ContactsEditTabState extends State<_ContactsEditTab> {
           ),
           SizedBox(width: 12.w),
           Expanded(
-            child: Text(
-              user.name,
-              style: TextStyle(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w400,
-                color: Colors.black,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  displayName,
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.black,
+                  ),
+                ),
+                if (hasAlias)
+                  Text(
+                    user.name,
+                    style: TextStyle(fontSize: 11.sp, color: Colors.grey[400]),
+                  ),
+              ],
             ),
           ),
           trailing,
@@ -360,209 +398,261 @@ class _ContactsEditTabState extends State<_ContactsEditTab> {
   Widget build(BuildContext context) {
     final q = widget.query;
 
-    return StreamBuilder<List<String>>(
-      stream: _favoriteIdsStream,
-      builder: (ctx, favSnap) {
-        final favIds = favSnap.data ?? [];
-        return StreamBuilder<Map<String, int>>(
-          stream: _favoriteOrderStream,
-          builder: (ctx, orderSnap) {
-            final orderMap = orderSnap.data ?? {};
-            return StreamBuilder<Set<String>>(
-              stream: _hiddenIdsStream,
-              builder: (ctx, hiddenSnap) {
-                final hiddenIds = hiddenSnap.data ?? {};
-                return StreamBuilder<List<String>>(
-                  stream: _blockedIdsStream,
-                  builder: (ctx, blockedSnap) {
-                    final blockedIds = blockedSnap.data ?? [];
-                    return StreamBuilder<List<MyUser>>(
-                      stream: _friendsService.getFriendsStream(),
-                      builder: (ctx, friendsSnap) {
-                        if (!friendsSnap.hasData) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
+    // Outermost stream: aliases (used for display + search)
+    return StreamBuilder<Map<String, String>>(
+      stream: _aliasesStream,
+      builder: (ctx, aliasSnap) {
+        final aliases = aliasSnap.data ?? {};
 
-                        final allFriends =
-                            friendsSnap.data!
-                                .where((u) => u.type == 'user')
-                                .toList();
+        return StreamBuilder<List<String>>(
+          stream: _favoriteIdsStream,
+          builder: (ctx, favSnap) {
+            final favIds = favSnap.data ?? [];
 
-                        final filtered =
-                            q.isEmpty
-                                ? allFriends
-                                : allFriends
+            return StreamBuilder<Map<String, int>>(
+              stream: _favoriteOrderStream,
+              builder: (ctx, orderSnap) {
+                final orderMap = orderSnap.data ?? {};
+
+                return StreamBuilder<Set<String>>(
+                  stream: _hiddenIdsStream,
+                  builder: (ctx, hiddenSnap) {
+                    final hiddenIds = hiddenSnap.data ?? {};
+
+                    return StreamBuilder<List<String>>(
+                      stream: _blockedIdsStream,
+                      builder: (ctx, blockedSnap) {
+                        final blockedIds = blockedSnap.data ?? [];
+
+                        return StreamBuilder<List<MyUser>>(
+                          stream: _friendsService.getFriendsStream(),
+                          builder: (ctx, friendsSnap) {
+                            if (!friendsSnap.hasData) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+
+                            final allFriends =
+                                friendsSnap.data!
+                                    .where((u) => u.type == 'user')
+                                    .toList();
+
+                            // Search matches real name OR alias
+                            final filtered =
+                                q.isEmpty
+                                    ? allFriends
+                                    : allFriends.where((u) {
+                                      final alias =
+                                          aliases[u.userId]?.toLowerCase() ??
+                                          '';
+                                      return u.name.toLowerCase().contains(q) ||
+                                          alias.contains(q);
+                                    }).toList();
+
+                            final favorites =
+                                filtered
                                     .where(
-                                      (u) => u.name.toLowerCase().contains(q),
+                                      (u) =>
+                                          favIds.contains(u.userId) &&
+                                          !hiddenIds.contains(u.userId),
+                                    )
+                                    .toList()
+                                  ..sort((a, b) {
+                                    final aO = orderMap[a.userId] ?? 999999;
+                                    final bO = orderMap[b.userId] ?? 999999;
+                                    return aO.compareTo(bO);
+                                  });
+
+                            final friends =
+                                filtered
+                                    .where(
+                                      (u) =>
+                                          !favIds.contains(u.userId) &&
+                                          !hiddenIds.contains(u.userId),
                                     )
                                     .toList();
 
-                        final favorites =
-                            filtered
-                                .where(
-                                  (u) =>
-                                      favIds.contains(u.userId) &&
-                                      !hiddenIds.contains(u.userId),
-                                )
-                                .toList()
-                              ..sort((a, b) {
-                                final aO = orderMap[a.userId] ?? 999999;
-                                final bO = orderMap[b.userId] ?? 999999;
-                                return aO.compareTo(bO);
-                              });
+                            final hiddenUsers =
+                                filtered
+                                    .where((u) => hiddenIds.contains(u.userId))
+                                    .toList();
 
-                        final friends =
-                            filtered
-                                .where(
-                                  (u) =>
-                                      !favIds.contains(u.userId) &&
-                                      !hiddenIds.contains(u.userId),
-                                )
-                                .toList();
+                            return FutureBuilder<List<MyUser>>(
+                              future: _fetchBlockedUsers(blockedIds),
+                              builder: (ctx, blockedUsersSnap) {
+                                final blockedUsers =
+                                    blockedUsersSnap.data ?? [];
 
-                        final hiddenUsers =
-                            filtered
-                                .where((u) => hiddenIds.contains(u.userId))
-                                .toList();
+                                return ListView(
+                                  children: [
+                                    // ── 즐겨찾기 (REORDERABLE) ──────────────
+                                    if (favorites.isNotEmpty) ...[
+                                      _sectionHeader('즐겨찾기'),
+                                      ReorderableListView.builder(
+                                        shrinkWrap: true,
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        buildDefaultDragHandles: false,
+                                        itemCount: favorites.length,
+                                        proxyDecorator:
+                                            (child, index, animation) =>
+                                                Material(
+                                                  color: ColorsManager.primary,
+                                                  child: child,
+                                                ),
+                                        onReorder: (oldIdx, newIdx) {
+                                          final reordered = List<MyUser>.from(
+                                            favorites,
+                                          );
+                                          if (newIdx > oldIdx) newIdx--;
+                                          final item = reordered.removeAt(
+                                            oldIdx,
+                                          );
+                                          reordered.insert(newIdx, item);
+                                          _reorderFavorites(reordered);
+                                        },
+                                        itemBuilder: (ctx, index) {
+                                          final u = favorites[index];
+                                          final displayName =
+                                              aliases[u.userId] ?? u.name;
+                                          final hasAlias =
+                                              aliases.containsKey(u.userId) &&
+                                              aliases[u.userId]!.isNotEmpty;
 
-                        return FutureBuilder<List<MyUser>>(
-                          future: _fetchBlockedUsers(blockedIds),
-                          builder: (ctx, blockedUsersSnap) {
-                            final blockedUsers = blockedUsersSnap.data ?? [];
-
-                            return ListView(
-                              children: [
-                                // ── 즐겨찾기 (REORDERABLE) ────────────────
-                                if (favorites.isNotEmpty) ...[
-                                  _sectionHeader('즐겨찾기'),
-                                  ReorderableListView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    buildDefaultDragHandles: false,
-                                    itemCount: favorites.length,
-                                    proxyDecorator:
-                                        (child, index, animation) => Material(
-                                          color: ColorsManager.primary,
-                                          child: child,
-                                        ),
-                                    onReorder: (oldIdx, newIdx) {
-                                      final reordered = List<MyUser>.from(
-                                        favorites,
-                                      );
-                                      if (newIdx > oldIdx) newIdx--;
-                                      final item = reordered.removeAt(oldIdx);
-                                      reordered.insert(newIdx, item);
-                                      _reorderFavorites(reordered);
-                                    },
-                                    itemBuilder: (ctx, index) {
-                                      final u = favorites[index];
-                                      return Container(
-                                        key: ValueKey(u.userId),
-                                        color: ColorsManager.primary,
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 16.w,
-                                            vertical: 8.h,
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              CircleAvatar(
-                                                radius: 22.r,
-                                                backgroundImage:
-                                                    u.url.isNotEmpty
-                                                        ? NetworkImage(u.url)
-                                                        : null,
-                                                backgroundColor:
-                                                    Colors.grey[200],
-                                                child:
-                                                    u.url.isEmpty
-                                                        ? Icon(
-                                                          Icons.person,
-                                                          size: 20.sp,
-                                                          color: Colors.grey,
-                                                        )
-                                                        : null,
+                                          return Container(
+                                            key: ValueKey(u.userId),
+                                            color: ColorsManager.primary,
+                                            child: Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 16.w,
+                                                vertical: 8.h,
                                               ),
-                                              SizedBox(width: 12.w),
-                                              Expanded(
-                                                child: Text(
-                                                  u.name,
-                                                  style: TextStyle(
-                                                    fontSize: 15.sp,
-                                                    fontWeight: FontWeight.w400,
-                                                    color: Colors.black,
+                                              child: Row(
+                                                children: [
+                                                  CircleAvatar(
+                                                    radius: 22.r,
+                                                    backgroundImage:
+                                                        u.url.isNotEmpty
+                                                            ? NetworkImage(
+                                                              u.url,
+                                                            )
+                                                            : null,
+                                                    backgroundColor:
+                                                        Colors.grey[200],
+                                                    child:
+                                                        u.url.isEmpty
+                                                            ? Icon(
+                                                              Icons.person,
+                                                              size: 20.sp,
+                                                              color:
+                                                                  Colors.grey,
+                                                            )
+                                                            : null,
                                                   ),
-                                                ),
+                                                  SizedBox(width: 12.w),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          displayName,
+                                                          style: TextStyle(
+                                                            fontSize: 15.sp,
+                                                            fontWeight:
+                                                                FontWeight.w400,
+                                                            color: Colors.black,
+                                                          ),
+                                                        ),
+                                                        if (hasAlias)
+                                                          Text(
+                                                            u.name,
+                                                            style: TextStyle(
+                                                              fontSize: 11.sp,
+                                                              color:
+                                                                  Colors
+                                                                      .grey[400],
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  _pillButton(
+                                                    '해제',
+                                                    () => _removeFavorite(
+                                                      u.userId,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 8.w),
+                                                  ReorderableDragStartListener(
+                                                    index: index,
+                                                    child: Icon(
+                                                      Icons.drag_handle,
+                                                      color: Colors.grey[400],
+                                                      size: 20.sp,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              _pillButton(
-                                                '해제',
-                                                () => _removeFavorite(u.userId),
-                                              ),
-                                              SizedBox(width: 8.w),
-                                              ReorderableDragStartListener(
-                                                index: index,
-                                                child: Icon(
-                                                  Icons.drag_handle,
-                                                  color: Colors.grey[400],
-                                                  size: 20.sp,
-                                                ),
-                                              ),
-                                            ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+
+                                    // ── 친구 ───────────────────────────────
+                                    if (friends.isNotEmpty) ...[
+                                      _sectionHeader('친구'),
+                                      ...friends.map(
+                                        (u) => _friendRow(
+                                          user: u,
+                                          aliases: aliases,
+                                          trailing: _pillButton(
+                                            '숨김',
+                                            () => _hide(u),
                                           ),
                                         ),
-                                      );
-                                    },
-                                  ),
-                                ],
-
-                                // ── 친구 ───────────────────────────────────
-                                if (friends.isNotEmpty) ...[
-                                  _sectionHeader('친구'),
-                                  ...friends.map(
-                                    (u) => _friendRow(
-                                      user: u,
-                                      trailing: _pillButton(
-                                        '숨김',
-                                        () => _hide(u),
                                       ),
-                                    ),
-                                  ),
-                                ],
+                                    ],
 
-                                // ── 숨긴 친구 ───────────────────────────────
-                                if (hiddenUsers.isNotEmpty) ...[
-                                  _sectionHeader('숨긴 친구'),
-                                  ...hiddenUsers.map(
-                                    (u) => _friendRow(
-                                      user: u,
-                                      trailing: _pillButton(
-                                        '해제',
-                                        () => _unhide(u.userId),
+                                    // ── 숨긴 친구 ───────────────────────────
+                                    if (hiddenUsers.isNotEmpty) ...[
+                                      _sectionHeader('숨긴 친구'),
+                                      ...hiddenUsers.map(
+                                        (u) => _friendRow(
+                                          user: u,
+                                          aliases: aliases,
+                                          trailing: _pillButton(
+                                            '해제',
+                                            () => _unhide(u.userId),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ],
+                                    ],
 
-                                // ── 차단된 친구 ─────────────────────────────
-                                if (blockedUsers.isNotEmpty) ...[
-                                  _sectionHeader('차단된 친구'),
-                                  ...blockedUsers.map(
-                                    (u) => _friendRow(
-                                      user: u,
-                                      trailing: _pillButton(
-                                        '해제',
-                                        () => _unblock(u.userId),
-                                        color: Colors.red[400],
+                                    // ── 차단된 친구 ─────────────────────────
+                                    // Blocked users are shown with real names
+                                    // (no alias — they may no longer be friends)
+                                    if (blockedUsers.isNotEmpty) ...[
+                                      _sectionHeader('차단된 친구'),
+                                      ...blockedUsers.map(
+                                        (u) => _friendRow(
+                                          user: u,
+                                          trailing: _pillButton(
+                                            '해제',
+                                            () => _unblock(u.userId),
+                                            color: Colors.red[400],
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ],
+                                    ],
 
-                                SizedBox(height: 40.h),
-                              ],
+                                    SizedBox(height: 40.h),
+                                  ],
+                                );
+                              },
                             );
                           },
                         );
@@ -598,8 +688,7 @@ class _ContactsEditTabState extends State<_ContactsEditTab> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TAB 1 — 1:1채팅 edit
-// Search filters list; selection persists across searches.
+// TAB 1 — 1:1채팅 edit  (with alias support)
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _DirectChatsEditTab extends StatefulWidget {
@@ -612,10 +701,40 @@ class _DirectChatsEditTab extends StatefulWidget {
 
 class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
   final ChatService _chatService = ChatService();
+
   String get uid => FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  /// Live alias map — kept up to date via a Firestore listener
+  Map<String, String> _aliases = {};
 
   // Selection persists regardless of search query
   final Set<String> _selected = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeAliases();
+  }
+
+  // Listen to aliases subcollection so the list updates in real time
+  // without needing a full rebuild chain.
+  void _subscribeAliases() {
+    if (uid.isEmpty) return;
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('aliases')
+        .snapshots()
+        .listen((snap) {
+          if (!mounted) return;
+          final map = <String, String>{};
+          for (final doc in snap.docs) {
+            final alias = doc.data()['alias'] as String?;
+            if (alias != null && alias.isNotEmpty) map[doc.id] = alias;
+          }
+          setState(() => _aliases = map);
+        });
+  }
 
   Future<MyUser?> _getOtherUser(ChatRoomModel chat) async {
     final otherId = chat.participants.firstWhere(
@@ -737,7 +856,6 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              // All eligible direct chats
               final allChats =
                   snapshot.data!
                       .where(
@@ -753,9 +871,6 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
                       )
                       .toList();
 
-              // We need to filter by name, but name comes from a FutureBuilder.
-              // Strategy: show all chats, each row handles its own visibility
-              // via a query-aware builder so selection always persists.
               if (allChats.isEmpty) {
                 return Center(
                   child: Text(
@@ -774,12 +889,26 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
                   return FutureBuilder<MyUser?>(
                     future: _getOtherUser(chat),
                     builder: (ctx, userSnap) {
-                      final name = userSnap.data?.name ?? chat.name ?? '알 수 없음';
+                      // Resolve the other participant's ID for alias lookup
+                      final otherId = chat.participants.firstWhere(
+                        (id) => id != uid,
+                        orElse: () => '',
+                      );
+
+                      final realName =
+                          userSnap.data?.name ?? chat.name ?? '알 수 없음';
                       final avatarUrl = userSnap.data?.url ?? '';
 
-                      // Filter: hide rows that don't match search
+                      // Use alias if one exists for this participant
+                      final displayName = _aliases[otherId] ?? realName;
+                      final hasAlias =
+                          _aliases.containsKey(otherId) &&
+                          _aliases[otherId]!.isNotEmpty;
+
+                      // Search: match alias OR real name OR last message
                       if (q.isNotEmpty &&
-                          !name.toLowerCase().contains(q) &&
+                          !displayName.toLowerCase().contains(q) &&
+                          !realName.toLowerCase().contains(q) &&
                           !(chat.lastMessage ?? '').toLowerCase().contains(q)) {
                         return const SizedBox.shrink();
                       }
@@ -799,6 +928,7 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
                           ),
                           child: Row(
                             children: [
+                              // ── Select circle ──
                               AnimatedContainer(
                                 duration: const Duration(milliseconds: 150),
                                 width: 22.w,
@@ -827,6 +957,8 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
                                         : null,
                               ),
                               SizedBox(width: 12.w),
+
+                              // ── Avatar ──
                               CircleAvatar(
                                 radius: 22.r,
                                 backgroundImage:
@@ -844,19 +976,43 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
                                         : null,
                               ),
                               SizedBox(width: 12.w),
+
+                              // ── Name (alias + real name subtitle) ──
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      name,
+                                      displayName,
                                       style: TextStyle(
                                         fontSize: 15.sp,
                                         fontWeight: FontWeight.w500,
                                         color: Colors.black,
                                       ),
                                     ),
-                                    if (chat.lastMessage?.isNotEmpty == true)
+                                    // Show real name as grey subtitle when alias is active
+                                    if (hasAlias)
+                                      Text(
+                                        realName,
+                                        style: TextStyle(
+                                          fontSize: 11.sp,
+                                          color: Colors.grey[400],
+                                        ),
+                                      )
+                                    else if (chat.lastMessage?.isNotEmpty ==
+                                        true)
+                                      Text(
+                                        chat.lastMessage!,
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          color: Colors.grey[500],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    // Show last message below real-name subtitle
+                                    if (hasAlias &&
+                                        chat.lastMessage?.isNotEmpty == true)
                                       Text(
                                         chat.lastMessage!,
                                         style: TextStyle(
@@ -869,6 +1025,7 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
                                   ],
                                 ),
                               ),
+
                               // ── Unread dot ──
                               if ((chat.unreadCount[uid] ?? 0) > 0)
                                 Container(
@@ -902,8 +1059,7 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TAB 2 — 그룹채팅 edit
-// Search filters list; selection persists across searches.
+// TAB 2 — 그룹채팅 edit  (unchanged — group chats have no aliases)
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _GroupChatsEditTab extends StatefulWidget {
@@ -918,7 +1074,6 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
   final ChatService _chatService = ChatService();
   String get uid => FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  // Selection persists regardless of search query
   final Set<String> _selected = {};
 
   Stream<Map<String, int>> get _groupOrderStream {
@@ -929,8 +1084,7 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
         .snapshots()
         .map((snap) {
           if (!snap.exists) return <String, int>{};
-          final data = snap.data();
-          final raw = data?['groupChatsOrder'];
+          final raw = snap.data()?['groupChatsOrder'];
           if (raw == null) return <String, int>{};
           return Map<String, int>.from(raw as Map);
         });
@@ -1046,15 +1200,12 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
                   final allGroups =
                       snapshot.data!.where((c) => c.type == 'group').toList();
 
-                  // Sort by saved order
                   allGroups.sort((a, b) {
                     final aO = orderMap[a.id] ?? 999999;
                     final bO = orderMap[b.id] ?? 999999;
                     return aO.compareTo(bO);
                   });
 
-                  // Apply search filter for display, but keep full list for
-                  // reordering so indices stay correct
                   final visibleGroups =
                       q.isEmpty
                           ? allGroups
@@ -1080,9 +1231,6 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
                     );
                   }
 
-                  // When searching, disable reorder drag (indices would be
-                  // wrong against full list). Only allow reorder when not
-                  // searching.
                   final bool canReorder = q.isEmpty;
 
                   return ReorderableListView.builder(
@@ -1104,7 +1252,7 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
                               reordered.insert(newIdx, item);
                               _reorderGroups(reordered);
                             }
-                            : (_, __) {}, // no-op while searching
+                            : (_, __) {},
                     itemBuilder: (ctx, i) {
                       final chat = visibleGroups[i];
                       final isSelected = _selected.contains(chat.id);
@@ -1127,7 +1275,6 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
                             ),
                             child: Row(
                               children: [
-                                // ── Select circle ──
                                 AnimatedContainer(
                                   duration: const Duration(milliseconds: 150),
                                   width: 22.w,
@@ -1156,7 +1303,6 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
                                           : null,
                                 ),
                                 SizedBox(width: 12.w),
-                                // ── Avatar ──
                                 CircleAvatar(
                                   radius: 22.r,
                                   backgroundImage:
@@ -1176,7 +1322,6 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
                                           : null,
                                 ),
                                 SizedBox(width: 12.w),
-                                // ── Name + last msg ──
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -1203,7 +1348,6 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
                                     ],
                                   ),
                                 ),
-                                // ── Drag handle (hidden while searching) ──
                                 if (canReorder)
                                   ReorderableDragStartListener(
                                     index: i,
