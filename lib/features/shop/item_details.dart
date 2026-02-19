@@ -4,7 +4,7 @@ import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
+// import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:ecommerece_app/features/cart/services/cart_service.dart';
 import 'package:ecommerece_app/features/cart/services/favorites_service.dart';
 import 'package:ecommerece_app/features/chat/services/chat_service.dart'; // NEW UI

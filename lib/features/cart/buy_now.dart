@@ -593,6 +593,7 @@ class _BuyNowState extends State<BuyNow> {
       if (pendingDocs.isNotEmpty) {
         await pendingDocs.first.reference.delete();
       }
+
       if (mounted) {
         setState(() {
           isProcessing = false;
