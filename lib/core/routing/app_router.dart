@@ -3,6 +3,8 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/cart/order_complete.dart';
 import 'package:ecommerece_app/features/cart/place_order.dart';
 import 'package:ecommerece_app/features/cart/buy_now.dart';
+import 'package:ecommerece_app/features/cart/registered_screen.dart';
+
 import 'package:ecommerece_app/features/home/add_post.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/notifications.dart';
@@ -18,8 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_comments.dart';
-
-// Chat screen import (needed for chat route)
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 
 class AppRouter {
@@ -56,33 +56,55 @@ class AppRouter {
           );
         },
       ),
+
+      // ── Card registered deep link landing ─────────────────────────────────
+      // Reached when OS intercepts app.pang2chocolate.com/card-registered
+      // after Payple card registration callback redirects here.
+      // Top-level route (not nested under navBar) so it works from cold start.
+      GoRoute(
+        name: 'cardRegisteredScreen',
+        path: Routes.cardRegisteredScreen, // '/card-registered'
+        builder: (context, state) {
+          final success = state.uri.queryParameters['success'] ?? 'false';
+          final userId = state.uri.queryParameters['userId'] ?? '';
+          final paymentId = state.uri.queryParameters['paymentId'] ?? '';
+          final message = state.uri.queryParameters['message'] ?? '';
+          return CardRegisteredScreen(
+            success: success == 'true',
+            userId: userId,
+            paymentId: paymentId,
+            message: message,
+          );
+        },
+      ),
+
       GoRoute(
         name: Routes.navBar,
-        path: Routes.navBar, // '/'
+        path: Routes.navBar,
         builder: (context, state) => const NavBar(),
         routes: [
           GoRoute(
             name: Routes.reviewScreen,
-            path: Routes.reviewScreen, // '/review'
+            path: Routes.reviewScreen,
             builder: (context, state) => const ReviewScreen(),
           ),
           GoRoute(
             name: Routes.notificationsScreen,
-            path: Routes.notificationsScreen, // '/notifications'
+            path: Routes.notificationsScreen,
             builder: (context, state) => const Notifications(),
           ),
           GoRoute(
             name: Routes.alertsScreen,
-            path: Routes.alertsScreen, // '/notifications'
+            path: Routes.alertsScreen,
             builder: (context, state) => const Alerts(),
           ),
           GoRoute(
             name: Routes.addPostScreen,
-            path: '${Routes.addPostScreen}', // '/add-post'
+            path: Routes.addPostScreen,
             builder: (context, state) => const AddPost(),
           ),
           GoRoute(
-            name: Routes.landingScreen, // name added
+            name: Routes.landingScreen,
             path: Routes.landingScreen,
             builder: (context, state) => const LandingScreen(),
           ),
@@ -103,14 +125,12 @@ class AppRouter {
           ),
           GoRoute(
             name: Routes.commentsScreen,
-            path: '/${Routes.commentsScreen}', // '/comment'
+            path: '/${Routes.commentsScreen}',
             builder: (context, state) {
               final postId = state.uri.queryParameters['postId'] ?? '';
               return Comments(postId: postId);
             },
           ),
-
-          // --- NEW: Chat route ---
           GoRoute(
             name: Routes.chatScreen,
             path: '/chat/:id',
@@ -126,8 +146,6 @@ class AppRouter {
               return ChatScreen(chatRoomId: id, chatRoomName: name);
             },
           ),
-
-          // --- END chat route ---
           GoRoute(
             name: Routes.cancelSubscription,
             path: Routes.cancelSubscription,
@@ -142,10 +160,9 @@ class AppRouter {
             name: Routes.buyNowScreen,
             path: Routes.buyNowScreen,
             builder: (context, state) {
-              // Expect a paymentId query parameter created by the client
               final paymentId = state.uri.queryParameters['paymentId'];
               if (paymentId == null || paymentId.isEmpty) {
-                return Scaffold(
+                return const Scaffold(
                   body: Center(child: Text('잘못된 접근입니다. (Missing paymentId)')),
                 );
               }
@@ -154,6 +171,7 @@ class AppRouter {
           ),
         ],
       ),
+
       GoRoute(
         name: 'productDetails',
         path: '/product/:productId',
@@ -177,12 +195,11 @@ class AppRouter {
                 );
               }
               final productMap = snapshot.data!.data() as Map<String, dynamic>;
-              // You may need to adjust this to match your Product model constructor
               final product = Product.fromMap(productMap);
               return ItemDetails(
                 product: product,
                 arrivalDay: productMap['arrivalDay'] ?? '',
-                isSub: false, // Or derive from productMap if needed
+                isSub: false,
               );
             },
           );

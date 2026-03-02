@@ -6,10 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ecommerece_app/core/routing/app_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/e_commerce_app.dart';
 import 'package:ecommerece_app/firebase_options.dart';
-// import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-
 import 'package:firebase_core/firebase_core.dart';
 
 late AppLinks _appLinks;
@@ -17,21 +16,17 @@ late GoRouter _router;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  //setUrlStrategy(PathUrlStrategy());
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug, // Use PlayIntegrity for production
-    appleProvider:
-        AppleProvider.debug, // Use DeviceCheck/AppAttest for production
+    androidProvider: AndroidProvider.debug,
+    appleProvider: AppleProvider.debug,
   );
+
   _appLinks = AppLinks();
   _router = AppRouter.router;
 
-  // Handle deep links from cold start
   _handleInitialDeepLink();
-
-  // Handle deep links while app is running
   _handleDeepLinks();
 
   runApp(
@@ -72,7 +67,7 @@ void _handleDeepLinks() {
 void _routeDeepLink(Uri uri) {
   debugPrint('Routing deep link: ${uri.path} | Query: ${uri.queryParameters}');
 
-  // Handle product routes: /product/:productId
+  // ── Product routes: /product/:productId ───────────────────────────────────
   if (uri.path.startsWith('/product/')) {
     final productId = uri.pathSegments.length > 1 ? uri.pathSegments[1] : '';
     if (productId.isNotEmpty) {
@@ -85,7 +80,7 @@ void _routeDeepLink(Uri uri) {
     }
   }
 
-  // Handle comment routes: /comment or /guest_comment
+  // ── Comment routes: /comment or /guest_comment ────────────────────────────
   if (uri.path == '/comment' || uri.path == '/guest_comment') {
     final postId = uri.queryParameters['postId'] ?? '';
     if (postId.isNotEmpty) {
@@ -96,6 +91,32 @@ void _routeDeepLink(Uri uri) {
       );
       return;
     }
+  }
+
+  // ── Card registered: /card-registered ────────────────────────────────────
+  // Fired when handleCardRegCallback redirects to
+  // app.pang2chocolate.com/card-registered?success=...&userId=...&paymentId=...
+  // OS intercepts the URL and brings the Flutter app to foreground,
+  // then this handler pushes CardRegisteredScreen which shows the result.
+  if (uri.path == Routes.cardRegisteredScreen) {
+    final success = uri.queryParameters['success'] ?? 'false';
+    final userId = uri.queryParameters['userId'] ?? '';
+    final paymentId = uri.queryParameters['paymentId'] ?? '';
+    final message = uri.queryParameters['message'] ?? '';
+    debugPrint(
+      'Card registered deep link → success=$success '
+      'userId=$userId paymentId=$paymentId',
+    );
+    _router.pushNamed(
+      'cardRegisteredScreen',
+      queryParameters: {
+        'success': success,
+        'userId': userId,
+        'paymentId': paymentId,
+        'message': message,
+      },
+    );
+    return;
   }
 
   debugPrint('No matching route found for: ${uri.path}');

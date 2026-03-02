@@ -17,6 +17,10 @@ class Routes {
   static const String deleteAccount = '/delete-account';
   static const String buyNowScreen = '/buy-now';
   static const String alertsScreen = '/alerts';
-  // Chat route constant (use AppRouter.router.push('/chat/$id') or pushNamed with this name)
   static const String chatScreen = 'chatScreen';
+
+  // ── Card registration deep link landing ───────────────────────────────────
+  // Matches app.pang2chocolate.com/card-registered?success=...&userId=...&paymentId=...
+  // Handled by _routeDeepLink in main.dart and by CardRegisteredScreen widget.
+  static const String cardRegisteredScreen = '/card-registered';
 }
