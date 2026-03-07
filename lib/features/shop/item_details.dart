@@ -386,6 +386,20 @@ class _ItemDetailsState extends State<ItemDetails> {
                               ),
                             ),
                           ),
+                        Positioned(
+                          top: 5,
+                          left: 5,
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_back),
+                            onPressed: () {
+                              if (GoRouter.of(context).canPop()) {
+                                GoRouter.of(context).pop();
+                              } else {
+                                GoRouter.of(context).goNamed(Routes.navBar);
+                              }
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   ),
