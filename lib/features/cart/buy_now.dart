@@ -18,10 +18,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BuyNow extends StatefulWidget {
-  // paymentId is pre-created by the server before navigation
   final String? paymentId;
-
-  // Optional display hints — real values come from pending_buynow
   final String? productName;
   final String? productImgUrl;
 
@@ -72,9 +69,9 @@ class _BuyNowState extends State<BuyNow> {
   // ── Receipt option ────────────────────────────────────────────────────────
   int selectedOption = 1;
 
-  // ── Card accounts ─────────────────────────────────────────────────────────
-  List<Map<String, dynamic>> cardAccounts = [];
-  int selectedCardIndex = -1;
+  // ── Bank accounts ─────────────────────────────────────────────────────────
+  List<Map<String, dynamic>> bankAccounts = [];
+  int selectedBankIndex = -1;
 
   // ── pending_buynow data ───────────────────────────────────────────────────
   Map<String, dynamic>? pendingBuynowData;
@@ -85,9 +82,9 @@ class _BuyNowState extends State<BuyNow> {
   bool isProcessing = false;
   String? currentPaymentId;
 
-  // ── Card registration tracking ────────────────────────────────────────────
-  StreamSubscription<QuerySnapshot>? _cardRegSub;
-  String? _cardRegPaymentId;
+  // ── Bank registration tracking ────────────────────────────────────────────
+  StreamSubscription<QuerySnapshot>? _bankRegSub;
+  String? _bankRegPaymentId;
 
   final formatCurrency = NumberFormat('#,###');
 
@@ -103,7 +100,7 @@ class _BuyNowState extends State<BuyNow> {
 
   @override
   void dispose() {
-    _cardRegSub?.cancel();
+    _bankRegSub?.cancel();
     invoiceeCorpNumController.dispose();
     invoiceeCorpNameController.dispose();
     invoiceeCEONameController.dispose();
@@ -115,7 +112,7 @@ class _BuyNowState extends State<BuyNow> {
   }
 
   Future<void> _init() async {
-    await _fetchCardAccounts();
+    await _fetchBankAccounts();
     await _loadCachedUserValues();
     await _loadPendingBuynowData();
     await _ensureCachedAddressAndInstructions();
@@ -125,25 +122,25 @@ class _BuyNowState extends State<BuyNow> {
   // DATA FETCHING
   // ───────────────────────────────────────────────────────────────────────────
 
-  Future<void> _fetchCardAccounts() async {
+  Future<void> _fetchBankAccounts() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
     final userDoc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
     final data = userDoc.data();
-    if (data != null && data['cardAccounts'] != null) {
-      final accounts = List<Map<String, dynamic>>.from(data['cardAccounts']);
+    if (data != null && data['bankAccounts'] != null) {
+      final accounts = List<Map<String, dynamic>>.from(data['bankAccounts']);
       if (mounted) {
         setState(() {
-          cardAccounts = accounts;
-          selectedCardIndex = accounts.isNotEmpty ? 0 : -1;
+          bankAccounts = accounts;
+          selectedBankIndex = accounts.isNotEmpty ? 0 : -1;
         });
       }
     } else {
       if (mounted) {
         setState(() {
-          cardAccounts = [];
-          selectedCardIndex = -1;
+          bankAccounts = [];
+          selectedBankIndex = -1;
         });
       }
     }
@@ -195,8 +192,6 @@ class _BuyNowState extends State<BuyNow> {
     });
   }
 
-  /// Ensures usercached_values has address & delivery instructions
-  /// so chargeCardBillingKey has a reliable fallback.
   Future<void> _ensureCachedAddressAndInstructions() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -270,7 +265,7 @@ class _BuyNowState extends State<BuyNow> {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // PATCH pending_buynow (fire-and-forget)
+  // PATCH pending_buynow
   // ───────────────────────────────────────────────────────────────────────────
 
   void _patchPendingBuynow(Map<String, dynamic> fields) {
@@ -394,19 +389,15 @@ class _BuyNowState extends State<BuyNow> {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // CARD REGISTRATION FLOW
-  //
-  // Same pattern as PlaceOrder._launchCardRegistration.
-  // Uses a fresh regPaymentId (separate from widget.paymentId which is the
-  // actual order paymentId) so registration and payment are never confused.
+  // BANK REGISTRATION FLOW
   // ───────────────────────────────────────────────────────────────────────────
 
-  void _launchCardRegistration(String uid) {
+  void _launchBankRegistration(String uid) {
     final regPaymentId = FirebaseFirestore.instance.collection('_tmp').doc().id;
-    _cardRegPaymentId = regPaymentId;
+    _bankRegPaymentId = regPaymentId;
 
-    _cardRegSub?.cancel();
-    _cardRegSub = FirebaseFirestore.instance
+    _bankRegSub?.cancel();
+    _bankRegSub = FirebaseFirestore.instance
         .collection('pending_orders')
         .where('userId', isEqualTo: uid)
         .where('paymentId', isEqualTo: regPaymentId)
@@ -416,24 +407,24 @@ class _BuyNowState extends State<BuyNow> {
           final status = snap.docs.first['status'] as String?;
 
           if (status == 'registered') {
-            _cardRegSub?.cancel();
-            _cardRegSub = null;
-            await _fetchCardAccounts();
+            _bankRegSub?.cancel();
+            _bankRegSub = null;
+            await _fetchBankAccounts();
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('카드가 등록되었습니다 ✓'),
+                  content: Text('계좌가 등록되었습니다 ✓'),
                   backgroundColor: Colors.green,
                 ),
               );
             }
           } else if (status == 'failed') {
-            _cardRegSub?.cancel();
-            _cardRegSub = null;
+            _bankRegSub?.cancel();
+            _bankRegSub = null;
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('카드 등록에 실패했습니다. 다시 시도해 주세요.'),
+                  content: Text('계좌 등록에 실패했습니다. 다시 시도해 주세요.'),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -443,7 +434,7 @@ class _BuyNowState extends State<BuyNow> {
 
     launchUrl(
       Uri.parse(
-        'https://pay.pang2chocolate.com/card-register.html'
+        'https://pay.pang2chocolate.com/bank-register.html'
         '?userId=${Uri.encodeComponent(uid)}'
         '&paymentId=${Uri.encodeComponent(regPaymentId)}'
         '&phoneNo=${Uri.encodeComponent(phoneController.text.trim())}'
@@ -454,10 +445,7 @@ class _BuyNowState extends State<BuyNow> {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // ORDER PLACEMENT — calls chargeCardBillingKey CF directly
-  //
-  // Passes dm (deliveryManagerId) from pending_buynow so the CF knows
-  // this is a BuyNow order and loads from pending_buynow instead of cart.
+  // ORDER PLACEMENT — calls chargeBankBillingKey CF directly
   // ───────────────────────────────────────────────────────────────────────────
 
   Future<void> _handlePlaceOrder(String uid) async {
@@ -472,16 +460,16 @@ class _BuyNowState extends State<BuyNow> {
     }
     if (!_validateReceiptTypeFields()) return;
 
-    if (cardAccounts.isEmpty || selectedCardIndex < 0) {
-      _showCardAccountBottomSheet(uid);
+    if (bankAccounts.isEmpty || selectedBankIndex < 0) {
+      _showBankAccountBottomSheet(uid);
       return;
     }
 
-    final payerId = cardAccounts[selectedCardIndex]['payerId'] as String? ?? '';
+    final payerId = bankAccounts[selectedBankIndex]['payerId'] as String? ?? '';
     if (payerId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('카드 정보가 올바르지 않습니다. 카드를 다시 등록해주세요.'),
+          content: Text('계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -501,12 +489,11 @@ class _BuyNowState extends State<BuyNow> {
 
     final dm = pendingBuynowData?['deliveryManagerId']?.toString() ?? '';
 
-    // Show non-dismissible loading modal
     _showLoadingModal();
 
     try {
       final response = await http.post(
-        Uri.parse('https://pay.pang2chocolate.com/api/charge-card'),
+        Uri.parse('https://pay.pang2chocolate.com/api/charge-bank'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'userId': uid,
@@ -520,7 +507,7 @@ class _BuyNowState extends State<BuyNow> {
       final result = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // close modal
+        Navigator.of(context, rootNavigator: true).pop();
       }
 
       if (result['success'] == true) {
@@ -593,10 +580,10 @@ class _BuyNowState extends State<BuyNow> {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // CARD ACCOUNT BOTTOM SHEET
+  // BANK ACCOUNT BOTTOM SHEET
   // ───────────────────────────────────────────────────────────────────────────
 
-  void _showCardAccountBottomSheet(String uid) {
+  void _showBankAccountBottomSheet(String uid) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -610,7 +597,7 @@ class _BuyNowState extends State<BuyNow> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '카드 선택',
+                    '계좌 선택',
                     style: TextStyle(
                       fontSize: 18.sp,
                       fontWeight: FontWeight.bold,
@@ -618,34 +605,34 @@ class _BuyNowState extends State<BuyNow> {
                     ),
                   ),
                   verticalSpace(16),
-                  if (cardAccounts.isEmpty)
+                  if (bankAccounts.isEmpty)
                     const Text(
-                      '등록된 카드가 없습니다.',
+                      '등록된 계좌가 없습니다.',
                       style: TextStyle(color: Colors.black),
                     ),
-                  ...cardAccounts.asMap().entries.map((entry) {
+                  ...bankAccounts.asMap().entries.map((entry) {
                     final idx = entry.key;
-                    final card = entry.value;
+                    final bank = entry.value;
                     return Column(
                       children: [
                         ListTile(
                           leading: const Icon(
-                            Icons.credit_card,
+                            Icons.account_balance,
                             color: Colors.black,
                           ),
                           title: Text(
-                            '${card['cardName']} (${card['cardNum']})',
+                            '${bank['bankName']} (${bank['bankNum']})',
                             style: const TextStyle(color: Colors.black),
                           ),
                           tileColor:
-                              idx == selectedCardIndex
+                              idx == selectedBankIndex
                                   ? Colors.black12
                                   : Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           onTap: () {
-                            setState(() => selectedCardIndex = idx);
+                            setState(() => selectedBankIndex = idx);
                             setStateDialog(() {});
                             Navigator.of(context).pop();
                           },
@@ -656,10 +643,10 @@ class _BuyNowState extends State<BuyNow> {
                   }),
                   verticalSpace(8),
                   WideTextButton(
-                    txt: '새 카드 등록하기',
+                    txt: '새 계좌 등록하기',
                     func: () {
                       Navigator.of(context).pop();
-                      _launchCardRegistration(uid);
+                      _launchBankRegistration(uid);
                     },
                     color: Colors.black,
                     txtColor: Colors.white,
@@ -709,7 +696,7 @@ class _BuyNowState extends State<BuyNow> {
           padding: EdgeInsets.only(left: 15.w, top: 10.h, right: 15.w),
           child: ListView(
             children: [
-              // ── Product summary ─────────────────────────────────────────
+              // ── Product summary ───────────────────────────────────────
               _buildSectionCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -776,7 +763,7 @@ class _BuyNowState extends State<BuyNow> {
               ),
               verticalSpace(10),
 
-              // ── Address ─────────────────────────────────────────────────
+              // ── Address ───────────────────────────────────────────────
               _buildSectionCard(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -863,7 +850,7 @@ class _BuyNowState extends State<BuyNow> {
               ),
               verticalSpace(10),
 
-              // ── Delivery request ─────────────────────────────────────────
+              // ── Delivery request ──────────────────────────────────────
               _buildSectionCard(
                 child: StatefulBuilder(
                   builder: (context, setStateDropdown) {
@@ -931,7 +918,7 @@ class _BuyNowState extends State<BuyNow> {
               ),
               verticalSpace(10),
 
-              // ── Card account ─────────────────────────────────────────────
+              // ── Bank account ──────────────────────────────────────────
               _buildSectionCard(
                 child: Row(
                   children: [
@@ -940,7 +927,7 @@ class _BuyNowState extends State<BuyNow> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '결제 카드',
+                            '결제 계좌',
                             style: TextStyle(
                               color: Colors.black,
                               fontSize: 16.sp,
@@ -951,17 +938,17 @@ class _BuyNowState extends State<BuyNow> {
                           ),
                           verticalSpace(5),
                           Text(
-                            cardAccounts.isEmpty
-                                ? '등록된 카드가 없습니다'
-                                : (selectedCardIndex >= 0 &&
-                                    selectedCardIndex < cardAccounts.length)
-                                ? '${cardAccounts[selectedCardIndex]['cardName']} '
-                                    '(${cardAccounts[selectedCardIndex]['cardNum']})'
-                                : '카드를 선택해주세요',
+                            bankAccounts.isEmpty
+                                ? '등록된 계좌가 없습니다'
+                                : (selectedBankIndex >= 0 &&
+                                    selectedBankIndex < bankAccounts.length)
+                                ? '${bankAccounts[selectedBankIndex]['bankName']} '
+                                    '(${bankAccounts[selectedBankIndex]['bankNum']})'
+                                : '계좌를 선택해주세요',
                             style: TextStyle(
                               fontSize: 15.sp,
                               color:
-                                  cardAccounts.isEmpty
+                                  bankAccounts.isEmpty
                                       ? Colors.red[300]
                                       : Colors.grey[800],
                             ),
@@ -970,7 +957,7 @@ class _BuyNowState extends State<BuyNow> {
                       ),
                     ),
                     IconButton(
-                      onPressed: () => _showCardAccountBottomSheet(uid),
+                      onPressed: () => _showBankAccountBottomSheet(uid),
                       icon: Icon(
                         Icons.arrow_forward_ios,
                         size: 30.r,
@@ -982,7 +969,7 @@ class _BuyNowState extends State<BuyNow> {
               ),
               verticalSpace(10),
 
-              // ── Receipt / invoice ────────────────────────────────────────
+              // ── Receipt / invoice ─────────────────────────────────────
               _buildSectionCard(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -1032,7 +1019,7 @@ class _BuyNowState extends State<BuyNow> {
           ),
         ),
 
-        // ── Bottom bar ───────────────────────────────────────────────────────
+        // ── Bottom bar ────────────────────────────────────────────────────
         bottomNavigationBar: Container(
           padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 28.h),
           decoration: const BoxDecoration(color: Colors.white),
@@ -1072,10 +1059,10 @@ class _BuyNowState extends State<BuyNow> {
                 color: Colors.black,
                 txtColor: Colors.white,
               ),
-              if (cardAccounts.isEmpty) ...[
+              if (bankAccounts.isEmpty) ...[
                 verticalSpace(8),
                 Text(
-                  '* 카드 등록 후 결제가 진행됩니다',
+                  '* 계좌 등록 후 결제가 진행됩니다',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.black,

@@ -3,26 +3,24 @@ import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CardRegisteredScreen
+// BankRegisteredScreen
 //
-// Shown when the OS intercepts app.pang2chocolate.com/card-registered after
-// Payple card registration. Reads success/failure from query params and:
-//   • success=true  → shows snackbar "카드가 등록되었습니다 ✓"
-//                   → navigates back to place-order or buy-now
-//   • success=false → shows snackbar with error message
-//                   → navigates back to place-order or buy-now
+// Shown when the OS intercepts app.pang2chocolate.com/bank-registered after
+// Payple bank account registration. Reads success/failure from query params:
+//   • success=true  → snackbar "계좌가 등록되었습니다 ✓" → back to place-order
+//   • success=false → snackbar with error message → back to place-order
 //
-// This screen is intentionally minimal — it exists only to catch the deep
-// link, show feedback, and get the user back to checkout immediately.
+// Intentionally minimal — exists only to catch the deep link, show feedback,
+// and get the user back to checkout immediately.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class CardRegisteredScreen extends StatefulWidget {
+class BankRegisteredScreen extends StatefulWidget {
   final bool success;
   final String userId;
   final String paymentId;
   final String message;
 
-  const CardRegisteredScreen({
+  const BankRegisteredScreen({
     super.key,
     required this.success,
     required this.userId,
@@ -31,14 +29,13 @@ class CardRegisteredScreen extends StatefulWidget {
   });
 
   @override
-  State<CardRegisteredScreen> createState() => _CardRegisteredScreenState();
+  State<BankRegisteredScreen> createState() => _BankRegisteredScreenState();
 }
 
-class _CardRegisteredScreenState extends State<CardRegisteredScreen> {
+class _BankRegisteredScreenState extends State<BankRegisteredScreen> {
   @override
   void initState() {
     super.initState();
-    // Show snackbar + navigate after first frame renders
     WidgetsBinding.instance.addPostFrameCallback((_) => _handleResult());
   }
 
@@ -46,20 +43,18 @@ class _CardRegisteredScreenState extends State<CardRegisteredScreen> {
     if (!mounted) return;
 
     if (widget.success) {
-      // Card registered successfully — show snackbar then go back to checkout
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('카드가 등록되었습니다 ✓'),
+          content: Text('계좌가 등록되었습니다 ✓'),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 3),
         ),
       );
     } else {
-      // Registration failed — show error then go back to checkout
       final errorMsg =
           widget.message.isNotEmpty
               ? widget.message
-              : '카드 등록에 실패했습니다. 다시 시도해 주세요.';
+              : '계좌 등록에 실패했습니다. 다시 시도해 주세요.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMsg),
@@ -69,8 +64,7 @@ class _CardRegisteredScreenState extends State<CardRegisteredScreen> {
       );
     }
 
-    // Navigate back to place-order so user can now pay with the new card.
-    // Using go() replaces the stack so user can't back-navigate to this screen.
+    // go() replaces stack so user can't back-navigate to this screen
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) context.go(Routes.placeOrderScreen);
     });
@@ -78,7 +72,7 @@ class _CardRegisteredScreenState extends State<CardRegisteredScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Minimal loading screen — user sees this only for ~300ms before redirect
+    // Visible for ~300ms before redirect
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
@@ -86,11 +80,15 @@ class _CardRegisteredScreenState extends State<CardRegisteredScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             widget.success
-                ? const Icon(Icons.credit_card, size: 56, color: Colors.black)
+                ? const Icon(
+                  Icons.account_balance,
+                  size: 56,
+                  color: Colors.black,
+                )
                 : const Icon(Icons.error_outline, size: 56, color: Colors.red),
             const SizedBox(height: 16),
             Text(
-              widget.success ? '카드 등록 완료' : '카드 등록 실패',
+              widget.success ? '계좌 등록 완료' : '계좌 등록 실패',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,

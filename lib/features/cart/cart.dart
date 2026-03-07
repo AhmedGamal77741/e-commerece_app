@@ -21,7 +21,10 @@ class _CartState extends State<Cart> {
           firstTab: '장바구니',
           secondTab: '즐겨찾기',
         ),
-        body: TabBarView(children: [ShoppingCart(), FavoritesScreen()]),
+        body: SafeArea(
+          bottom: true,
+          child: TabBarView(children: [ShoppingCart(), FavoritesScreen()]),
+        ),
       ),
     );
   }

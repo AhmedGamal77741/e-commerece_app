@@ -93,22 +93,21 @@ void _routeDeepLink(Uri uri) {
     }
   }
 
-  // ── Card registered: /card-registered ────────────────────────────────────
-  // Fired when handleCardRegCallback redirects to
-  // app.pang2chocolate.com/card-registered?success=...&userId=...&paymentId=...
-  // OS intercepts the URL and brings the Flutter app to foreground,
-  // then this handler pushes CardRegisteredScreen which shows the result.
-  if (uri.path == Routes.cardRegisteredScreen) {
+  // ── Bank registered: /bank-registered ─────────────────────────────────────
+  // Fired when handleBankRegCallback HTML page navigates to
+  // app.pang2chocolate.com/bank-registered?success=...&userId=...&paymentId=...
+  // OS intercepts → brings Flutter app to foreground → this handler runs.
+  if (uri.path == Routes.bankRegisteredScreen) {
     final success = uri.queryParameters['success'] ?? 'false';
     final userId = uri.queryParameters['userId'] ?? '';
     final paymentId = uri.queryParameters['paymentId'] ?? '';
     final message = uri.queryParameters['message'] ?? '';
     debugPrint(
-      'Card registered deep link → success=$success '
+      'Bank registered deep link → success=$success '
       'userId=$userId paymentId=$paymentId',
     );
     _router.pushNamed(
-      'cardRegisteredScreen',
+      'bankRegisteredScreen',
       queryParameters: {
         'success': success,
         'userId': userId,

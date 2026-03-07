@@ -66,20 +66,17 @@ class _PlaceOrderState extends State<PlaceOrder> {
   // ── Receipt option ────────────────────────────────────────────────────────
   int selectedOption = 1;
 
-  // ── Card accounts ─────────────────────────────────────────────────────────
-  List<Map<String, dynamic>> cardAccounts = [];
-  int selectedCardIndex = -1;
+  // ── Bank accounts ─────────────────────────────────────────────────────────
+  List<Map<String, dynamic>> bankAccounts = [];
+  int selectedBankIndex = -1;
 
   // ── Payment state ─────────────────────────────────────────────────────────
   bool isProcessing = false;
   String? currentPaymentId;
 
-  // ── Card registration tracking ────────────────────────────────────────────
-  // Tracks a pending_orders doc created during card-register.html flow so we
-  // can detect when handleCardRegCallback marks it "registered" or "failed".
-  StreamSubscription<QuerySnapshot>? _cardRegSub;
-  String?
-  _cardRegPaymentId; // paymentId used for registration (not for payment)
+  // ── Bank registration tracking ────────────────────────────────────────────
+  StreamSubscription<QuerySnapshot>? _bankRegSub;
+  String? _bankRegPaymentId;
 
   final formatCurrency = NumberFormat('#,###');
 
@@ -95,7 +92,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
 
   @override
   void dispose() {
-    _cardRegSub?.cancel();
+    _bankRegSub?.cancel();
     invoiceeCorpNumController.dispose();
     invoiceeCorpNameController.dispose();
     invoiceeCEONameController.dispose();
@@ -109,7 +106,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
   Future<void> _init() async {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     if (uid.isNotEmpty) await refreshCartPrices(uid);
-    await _fetchCardAccounts();
+    await _fetchBankAccounts();
     await _loadCachedUserValues();
   }
 
@@ -117,25 +114,25 @@ class _PlaceOrderState extends State<PlaceOrder> {
   // DATA FETCHING
   // ───────────────────────────────────────────────────────────────────────────
 
-  Future<void> _fetchCardAccounts() async {
+  Future<void> _fetchBankAccounts() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
     final userDoc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
     final data = userDoc.data();
-    if (data != null && data['cardAccounts'] != null) {
-      final accounts = List<Map<String, dynamic>>.from(data['cardAccounts']);
+    if (data != null && data['bankAccounts'] != null) {
+      final accounts = List<Map<String, dynamic>>.from(data['bankAccounts']);
       if (mounted) {
         setState(() {
-          cardAccounts = accounts;
-          selectedCardIndex = accounts.isNotEmpty ? 0 : -1;
+          bankAccounts = accounts;
+          selectedBankIndex = accounts.isNotEmpty ? 0 : -1;
         });
       }
     } else {
       if (mounted) {
         setState(() {
-          cardAccounts = [];
-          selectedCardIndex = -1;
+          bankAccounts = [];
+          selectedBankIndex = -1;
         });
       }
     }
@@ -284,21 +281,15 @@ class _PlaceOrderState extends State<PlaceOrder> {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // CARD REGISTRATION FLOW
-  //
-  // Launches card-register.html in external browser.
-  // A stream subscription on pending_orders watches for the callback result
-  // ("registered" or "failed") set by handleCardRegCallback.
+  // BANK REGISTRATION FLOW
   // ───────────────────────────────────────────────────────────────────────────
 
-  void _launchCardRegistration(String uid) {
-    // Create a fresh paymentId just for the registration step
+  void _launchBankRegistration(String uid) {
     final regPaymentId = FirebaseFirestore.instance.collection('_tmp').doc().id;
-    _cardRegPaymentId = regPaymentId;
+    _bankRegPaymentId = regPaymentId;
 
-    // Watch for the callback result
-    _cardRegSub?.cancel();
-    _cardRegSub = FirebaseFirestore.instance
+    _bankRegSub?.cancel();
+    _bankRegSub = FirebaseFirestore.instance
         .collection('pending_orders')
         .where('userId', isEqualTo: uid)
         .where('paymentId', isEqualTo: regPaymentId)
@@ -308,25 +299,24 @@ class _PlaceOrderState extends State<PlaceOrder> {
           final status = snap.docs.first['status'] as String?;
 
           if (status == 'registered') {
-            _cardRegSub?.cancel();
-            _cardRegSub = null;
-            // Refresh card list so new card appears immediately
-            await _fetchCardAccounts();
+            _bankRegSub?.cancel();
+            _bankRegSub = null;
+            await _fetchBankAccounts();
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('카드가 등록되었습니다 ✓'),
+                  content: Text('계좌가 등록되었습니다 ✓'),
                   backgroundColor: Colors.green,
                 ),
               );
             }
           } else if (status == 'failed') {
-            _cardRegSub?.cancel();
-            _cardRegSub = null;
+            _bankRegSub?.cancel();
+            _bankRegSub = null;
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('카드 등록에 실패했습니다. 다시 시도해 주세요.'),
+                  content: Text('계좌 등록에 실패했습니다. 다시 시도해 주세요.'),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -334,10 +324,9 @@ class _PlaceOrderState extends State<PlaceOrder> {
           }
         });
 
-    // Launch registration page
     launchUrl(
       Uri.parse(
-        'https://pay.pang2chocolate.com/card-register.html'
+        'https://pay.pang2chocolate.com/bank-register.html'
         '?userId=${Uri.encodeComponent(uid)}'
         '&paymentId=${Uri.encodeComponent(regPaymentId)}'
         '&phoneNo=${Uri.encodeComponent(phoneController.text.trim())}'
@@ -348,9 +337,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // ORDER PLACEMENT — calls chargeCardBillingKey CF directly
-  //
-  // Shows a non-dismissible modal barrier while the HTTP call is in flight.
+  // ORDER PLACEMENT — calls chargeBankBillingKey CF directly
   // ───────────────────────────────────────────────────────────────────────────
 
   Future<void> _handlePlaceOrder(int totalPrice, String uid) async {
@@ -365,17 +352,16 @@ class _PlaceOrderState extends State<PlaceOrder> {
     }
     if (!_validateReceiptTypeFields()) return;
 
-    // Must have a card selected
-    if (cardAccounts.isEmpty || selectedCardIndex < 0) {
-      _showCardAccountBottomSheet(uid);
+    if (bankAccounts.isEmpty || selectedBankIndex < 0) {
+      _showBankAccountBottomSheet(uid);
       return;
     }
 
-    final payerId = cardAccounts[selectedCardIndex]['payerId'] as String? ?? '';
+    final payerId = bankAccounts[selectedBankIndex]['payerId'] as String? ?? '';
     if (payerId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('카드 정보가 올바르지 않습니다. 카드를 다시 등록해주세요.'),
+          content: Text('계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -386,12 +372,11 @@ class _PlaceOrderState extends State<PlaceOrder> {
     final paymentId = docRef.id;
     currentPaymentId = paymentId;
 
-    // Show non-dismissible loading modal
     _showLoadingModal();
 
     try {
       final response = await http.post(
-        Uri.parse('https://pay.pang2chocolate.com/api/charge-card'),
+        Uri.parse('https://pay.pang2chocolate.com/api/charge-bank'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'userId': uid,
@@ -403,8 +388,9 @@ class _PlaceOrderState extends State<PlaceOrder> {
 
       final result = jsonDecode(response.body) as Map<String, dynamic>;
 
-      if (mounted)
-        Navigator.of(context, rootNavigator: true).pop(); // close modal
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
 
       if (result['success'] == true) {
         if (mounted) context.go(Routes.orderCompleteScreen);
@@ -476,10 +462,10 @@ class _PlaceOrderState extends State<PlaceOrder> {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // CARD ACCOUNT BOTTOM SHEET
+  // BANK ACCOUNT BOTTOM SHEET
   // ───────────────────────────────────────────────────────────────────────────
 
-  void _showCardAccountBottomSheet(String uid) {
+  void _showBankAccountBottomSheet(String uid) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -493,7 +479,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '카드 선택',
+                    '계좌 선택',
                     style: TextStyle(
                       fontSize: 18.sp,
                       fontWeight: FontWeight.bold,
@@ -501,34 +487,34 @@ class _PlaceOrderState extends State<PlaceOrder> {
                     ),
                   ),
                   verticalSpace(16),
-                  if (cardAccounts.isEmpty)
+                  if (bankAccounts.isEmpty)
                     const Text(
-                      '등록된 카드가 없습니다.',
+                      '등록된 계좌가 없습니다.',
                       style: TextStyle(color: Colors.black),
                     ),
-                  ...cardAccounts.asMap().entries.map((entry) {
+                  ...bankAccounts.asMap().entries.map((entry) {
                     final idx = entry.key;
-                    final card = entry.value;
+                    final bank = entry.value;
                     return Column(
                       children: [
                         ListTile(
                           leading: const Icon(
-                            Icons.credit_card,
+                            Icons.account_balance,
                             color: Colors.black,
                           ),
                           title: Text(
-                            '${card['cardName']} (${card['cardNum']})',
+                            '${bank['bankName']} (${bank['bankNum']})',
                             style: const TextStyle(color: Colors.black),
                           ),
                           tileColor:
-                              idx == selectedCardIndex
+                              idx == selectedBankIndex
                                   ? Colors.black12
                                   : Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           onTap: () {
-                            setState(() => selectedCardIndex = idx);
+                            setState(() => selectedBankIndex = idx);
                             setStateDialog(() {});
                             Navigator.of(context).pop();
                           },
@@ -539,10 +525,10 @@ class _PlaceOrderState extends State<PlaceOrder> {
                   }),
                   verticalSpace(8),
                   WideTextButton(
-                    txt: '새 카드 등록하기',
+                    txt: '새 계좌 등록하기',
                     func: () {
                       Navigator.of(context).pop();
-                      _launchCardRegistration(uid);
+                      _launchBankRegistration(uid);
                     },
                     color: Colors.black,
                     txtColor: Colors.white,
@@ -591,7 +577,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
               padding: EdgeInsets.only(left: 15.w, top: 10.h, right: 15.w),
               child: ListView(
                 children: [
-                  // ── Cart items ──────────────────────────────────────────
+                  // ── Cart items ────────────────────────────────────────
                   _buildSectionCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -741,7 +727,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                   ),
                   verticalSpace(10),
 
-                  // ── Address ─────────────────────────────────────────────
+                  // ── Address ───────────────────────────────────────────
                   _buildSectionCard(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -831,7 +817,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                   ),
                   verticalSpace(10),
 
-                  // ── Delivery request ─────────────────────────────────────
+                  // ── Delivery request ──────────────────────────────────
                   _buildSectionCard(
                     child: StatefulBuilder(
                       builder: (context, setStateLocal) {
@@ -897,7 +883,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                   ),
                   verticalSpace(10),
 
-                  // ── Card account ─────────────────────────────────────────
+                  // ── Bank account ──────────────────────────────────────
                   _buildSectionCard(
                     child: Row(
                       children: [
@@ -906,7 +892,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '결제 카드',
+                                '결제 계좌',
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontSize: 16.sp,
@@ -917,17 +903,17 @@ class _PlaceOrderState extends State<PlaceOrder> {
                               ),
                               verticalSpace(5),
                               Text(
-                                cardAccounts.isEmpty
-                                    ? '등록된 카드가 없습니다'
-                                    : (selectedCardIndex >= 0 &&
-                                        selectedCardIndex < cardAccounts.length)
-                                    ? '${cardAccounts[selectedCardIndex]['cardName']} '
-                                        '(${cardAccounts[selectedCardIndex]['cardNum']})'
-                                    : '카드를 선택해주세요',
+                                bankAccounts.isEmpty
+                                    ? '등록된 계좌가 없습니다'
+                                    : (selectedBankIndex >= 0 &&
+                                        selectedBankIndex < bankAccounts.length)
+                                    ? '${bankAccounts[selectedBankIndex]['bankName']} '
+                                        '(${bankAccounts[selectedBankIndex]['bankNum']})'
+                                    : '계좌를 선택해주세요',
                                 style: TextStyle(
                                   fontSize: 15.sp,
                                   color:
-                                      cardAccounts.isEmpty
+                                      bankAccounts.isEmpty
                                           ? Colors.red[300]
                                           : Colors.grey[800],
                                 ),
@@ -936,7 +922,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                           ),
                         ),
                         IconButton(
-                          onPressed: () => _showCardAccountBottomSheet(uid),
+                          onPressed: () => _showBankAccountBottomSheet(uid),
                           icon: Icon(
                             Icons.arrow_forward_ios,
                             size: 30.r,
@@ -948,7 +934,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                   ),
                   verticalSpace(10),
 
-                  // ── Receipt / invoice ────────────────────────────────────
+                  // ── Receipt / invoice ─────────────────────────────────
                   _buildSectionCard(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -983,7 +969,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
                           ),
                         ),
                         IconButton(
-                          onPressed: () => _showReceiptBottomSheet(),
+                          onPressed: _showReceiptBottomSheet,
                           icon: Icon(
                             Icons.arrow_forward_ios,
                             size: 30.r,
@@ -998,7 +984,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
               ),
             ),
 
-            // ── Bottom bar ─────────────────────────────────────────────────
+            // ── Bottom bar ──────────────────────────────────────────────
             bottomNavigationBar: StreamBuilder<QuerySnapshot>(
               stream:
                   FirebaseFirestore.instance
@@ -1058,10 +1044,10 @@ class _PlaceOrderState extends State<PlaceOrder> {
                             color: Colors.black,
                             txtColor: Colors.white,
                           ),
-                          if (cardAccounts.isEmpty) ...[
+                          if (bankAccounts.isEmpty) ...[
                             verticalSpace(8),
                             Text(
-                              '* 카드 등록 후 결제가 진행됩니다',
+                              '* 계좌 등록 후 결제가 진행됩니다',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.black,

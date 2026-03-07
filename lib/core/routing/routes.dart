@@ -19,8 +19,7 @@ class Routes {
   static const String alertsScreen = '/alerts';
   static const String chatScreen = 'chatScreen';
 
-  // ── Card registration deep link landing ───────────────────────────────────
-  // Matches app.pang2chocolate.com/card-registered?success=...&userId=...&paymentId=...
-  // Handled by _routeDeepLink in main.dart and by CardRegisteredScreen widget.
-  static const String cardRegisteredScreen = '/card-registered';
+  // ── Bank account registration deep link landing ───────────────────────────
+  // Matches app.pang2chocolate.com/bank-registered?success=...&userId=...&paymentId=...
+  static const String bankRegisteredScreen = '/bank-registered';
 }

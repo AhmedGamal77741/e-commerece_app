@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -74,14 +75,23 @@ class _MyPageScreenState extends State<MyPageScreen> {
                               /* setState(() => imgUrl = newUrl); */
                             },
                             child: ClipOval(
-                              child: Image.network(
-                                (imgUrl.isEmpty ? userData['url'] : imgUrl) ??
+                              child: SafeNetworkImage(
+                                url:
+                                    (imgUrl.isEmpty
+                                        ? (userData['url'] as String?)
+                                        : imgUrl) ??
                                     '',
-                                height: 64.h,
                                 width: 64.w,
-                                fit:
-                                    BoxFit
-                                        .cover, // or BoxFit.contain to avoid cropping
+                                height: 64.h,
+                                fit: BoxFit.cover,
+                                errorWidget: Icon(Icons.person, size: 64.h),
+                                placeholder: SizedBox(
+                                  width: 64.w,
+                                  height: 64.h,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
                               ),
                             ),
                           ),

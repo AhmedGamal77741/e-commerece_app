@@ -57,19 +57,19 @@ class AppRouter {
         },
       ),
 
-      // ── Card registered deep link landing ─────────────────────────────────
-      // Reached when OS intercepts app.pang2chocolate.com/card-registered
-      // after Payple card registration callback redirects here.
+      // ── Bank registered deep link landing ─────────────────────────────────
+      // Reached when OS intercepts app.pang2chocolate.com/bank-registered
+      // after Payple bank account registration callback redirects here.
       // Top-level route (not nested under navBar) so it works from cold start.
       GoRoute(
-        name: 'cardRegisteredScreen',
-        path: Routes.cardRegisteredScreen, // '/card-registered'
+        name: 'bankRegisteredScreen',
+        path: Routes.bankRegisteredScreen, // '/bank-registered'
         builder: (context, state) {
           final success = state.uri.queryParameters['success'] ?? 'false';
           final userId = state.uri.queryParameters['userId'] ?? '';
           final paymentId = state.uri.queryParameters['paymentId'] ?? '';
           final message = state.uri.queryParameters['message'] ?? '';
-          return CardRegisteredScreen(
+          return BankRegisteredScreen(
             success: success == 'true',
             userId: userId,
             paymentId: paymentId,

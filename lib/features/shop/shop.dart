@@ -22,15 +22,14 @@ class Shop extends StatefulWidget {
 }
 
 class ShopState extends State<Shop> with TickerProviderStateMixin {
-  List<Map<String, dynamic>> _categories = [];
-  bool _isLoading = true;
   TabController? _tabController;
   final ScrollController categoryProductsScreenScrollController =
       ScrollController();
+
   @override
   void initState() {
     super.initState();
-    _loadCategories();
+    // no manual loading, categories are obtained via stream in build
   }
 
   void resetToFirstCategory() {
@@ -46,83 +45,89 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _loadCategories() async {
-    try {
-      final QuerySnapshot snapshot =
-          await FirebaseFirestore.instance.collection('categories').get();
-
-      List<Map<String, dynamic>> categories =
-          snapshot.docs.map((doc) {
-            return {
-              'id': doc.id,
-              'name': (doc.data() as Map<String, dynamic>)['name'] ?? 'Unknown',
-            };
-          }).toList();
-
-      if (mounted) {
-        setState(() {
-          _categories = categories;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error loading categories: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    // If no categories, show a message
-    if (_categories.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: Text('Shop')),
-        body: Center(child: Text('No categories available')),
-      );
-    }
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, authSnapshot) {
-        if (authSnapshot.connectionState == ConnectionState.waiting) {
+    // listen for realtime category changes (with order field)
+    return StreamBuilder<QuerySnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('categories')
+              .orderBy('order')
+              .snapshots(),
+      builder: (context, catSnapshot) {
+        if (catSnapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        final firebaseUser = authSnapshot.data;
-        if (firebaseUser == null) {
-          // Not logged in, just show the shop as before (or you can restrict access)
-          return _buildShopTabController(null);
+        if (catSnapshot.hasError) {
+          return Scaffold(
+            body: Center(child: Text('Error loading categories')),
+          );
         }
-        return StreamBuilder<DocumentSnapshot>(
-          stream:
-              FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(firebaseUser.uid)
-                  .snapshots(),
-          builder: (context, userSnapshot) {
-            if (userSnapshot.connectionState == ConnectionState.waiting) {
+
+        // convert docs to simple map list
+        final categories =
+            catSnapshot.data?.docs
+                .map(
+                  (doc) => {
+                    'id': doc.id,
+                    'name':
+                        (doc.data() as Map<String, dynamic>)['name'] ??
+                        'Unknown',
+                  },
+                )
+                .toList() ??
+            [];
+
+        if (categories.isEmpty) {
+          return Scaffold(
+            appBar: AppBar(title: Text('Shop')),
+            body: Center(child: Text('No categories available')),
+          );
+        }
+
+        // now continue with auth/user stream as before
+        return StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, authSnapshot) {
+            if (authSnapshot.connectionState == ConnectionState.waiting) {
               return Scaffold(body: Center(child: CircularProgressIndicator()));
             }
-            if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-              return Scaffold(
-                body: Center(child: Text('User profile not found')),
-              );
+            final firebaseUser = authSnapshot.data;
+            if (firebaseUser == null) {
+              return _buildShopTabController(null, categories);
             }
-            final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
-            return _buildShopTabController(userData);
+            return StreamBuilder<DocumentSnapshot>(
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(firebaseUser.uid)
+                      .snapshots(),
+              builder: (context, userSnapshot) {
+                if (userSnapshot.connectionState == ConnectionState.waiting) {
+                  return Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+                  return Scaffold(
+                    body: Center(child: Text('User profile not found')),
+                  );
+                }
+                final userData =
+                    userSnapshot.data!.data() as Map<String, dynamic>?;
+                return _buildShopTabController(userData, categories);
+              },
+            );
           },
         );
       },
     );
   }
 
-  Widget _buildShopTabController(Map<String, dynamic>? userData) {
+  Widget _buildShopTabController(
+    Map<String, dynamic>? userData,
+    List<Map<String, dynamic>> categories,
+  ) {
     int initialIndex = 0;
     final bool isSub = userData != null && (userData['isSub'] ?? false);
 
@@ -145,7 +150,8 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
       });
     }
     return DefaultTabController(
-      length: _categories.length,
+      key: ValueKey(categories.map((c) => c['id']).join(',')),
+      length: categories.length,
       initialIndex: initialIndex,
       child: Builder(
         builder: (context) {
@@ -260,7 +266,13 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
                       ],
                     ),
                     TabBar(
-                      tabAlignment: TabAlignment.start,
+                      // TabAlignment.start is valid only for scrollable bars; when
+                      // there are few categories the tabs are fixed and center-aligned
+                      // by default, so adjust accordingly.
+                      tabAlignment:
+                          categories.length > 4
+                              ? TabAlignment.start
+                              : TabAlignment.center,
                       padding: EdgeInsets.zero,
                       labelStyle: TextStyle(
                         fontSize: 16.sp,
@@ -274,9 +286,9 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
                       unselectedLabelColor: ColorsManager.primary600,
                       indicatorSize: TabBarIndicatorSize.tab,
                       indicatorColor: ColorsManager.primaryblack,
-                      isScrollable: _categories.length > 4,
+                      isScrollable: categories.length > 4,
                       tabs:
-                          _categories
+                          categories
                               .map((category) => Tab(text: category['name']))
                               .toList(),
                     ),
@@ -288,7 +300,7 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
               padding: EdgeInsets.only(right: 8.w, top: 15.h, bottom: 4.h),
               child: TabBarView(
                 children:
-                    _categories
+                    categories
                         .map(
                           (category) => CategoryProductsScreen(
                             categoryId: category['id'],
