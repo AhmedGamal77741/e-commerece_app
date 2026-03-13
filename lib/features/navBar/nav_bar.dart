@@ -36,8 +36,6 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
     super.initState();
     homeTabController = TabController(length: 2, vsync: this);
     widgetOptions = [
-      _buildMainWidget(() => Center(child: Text('home'))),
-      _buildMainWidget(() => Shop(key: shopKey)),
       _buildMainWidget(
         () => HomeScreen(
           scrollController: homeScrollController,
@@ -45,6 +43,8 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
         ),
       ),
       _buildMainWidget(() => ChatsNavbar()),
+      _buildMainWidget(() => Center(child: Text('home'))),
+      _buildMainWidget(() => Shop(key: shopKey)),
       _buildMainWidget(() => LandingScreen()),
     ];
   }
@@ -197,30 +197,6 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
             label: '상점',
           ),
           BottomNavigationBarItem(
-            icon: ImageIcon(
-              AssetImage(
-                _selectedIndex == 1
-                    ? 'assets/002m.png'
-                    : 'assets/grey_002m.png',
-              ),
-              size: 30.r,
-            ),
-            label: '장바구니',
-          ),
-          BottomNavigationBarItem(
-            icon: CircleAvatar(
-              radius: 30.r,
-              backgroundColor: Colors.transparent,
-              backgroundImage: AssetImage('assets/mypage_avatar_grey.png'),
-            ),
-            activeIcon: CircleAvatar(
-              radius: 30.r,
-              backgroundColor: Colors.transparent,
-              backgroundImage: AssetImage('assets/mypage_avatar.png'),
-            ),
-            label: '홈',
-          ),
-          BottomNavigationBarItem(
             icon: StreamBuilder<User?>(
               stream: FirebaseAuth.instance.authStateChanges(),
               builder: (context, authSnapshot) {
@@ -341,6 +317,31 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
             ),
             label: '채팅',
           ),
+          BottomNavigationBarItem(
+            icon: CircleAvatar(
+              radius: 30.r,
+              backgroundColor: Colors.transparent,
+              backgroundImage: AssetImage('assets/mypage_avatar_grey.png'),
+            ),
+            activeIcon: CircleAvatar(
+              radius: 30.r,
+              backgroundColor: Colors.transparent,
+              backgroundImage: AssetImage('assets/mypage_avatar.png'),
+            ),
+            label: '홈',
+          ),
+          BottomNavigationBarItem(
+            icon: ImageIcon(
+              AssetImage(
+                _selectedIndex == 1
+                    ? 'assets/002m.png'
+                    : 'assets/grey_002m.png',
+              ),
+              size: 30.r,
+            ),
+            label: '장바구니',
+          ),
+
           BottomNavigationBarItem(
             icon: ImageIcon(
               AssetImage(
