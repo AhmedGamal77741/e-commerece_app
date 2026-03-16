@@ -1028,14 +1028,10 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
 
                               // ── Unread dot ──
                               if ((chat.unreadCount[uid] ?? 0) > 0)
-                                Container(
-                                  width: 8.w,
-                                  height: 8.w,
-                                  margin: EdgeInsets.only(right: 4.w),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.grey,
-                                    shape: BoxShape.circle,
-                                  ),
+                                Image.asset(
+                                  'assets/notification_dot.png',
+                                  width: 25.w,
+                                  height: 25.h,
                                 ),
                             ],
                           ),

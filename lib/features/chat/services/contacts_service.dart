@@ -1,10 +1,13 @@
 // services/contact_service.dart
+import 'dart:convert';
+
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:flutter_contacts/contact.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ContactService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -117,6 +120,51 @@ class ContactService {
     return allUsers;
   }
 
+  Future<Map<String, String>> buildContactNameMap(
+    List<Contact> contacts,
+    List<MyUser> matchingUsers,
+    List<String> allPhoneNumbers,
+  ) async {
+    final map = <String, String>{};
+
+    final phoneToName = <String, String>{};
+    for (final contact in contacts) {
+      for (final phone in contact.phones) {
+        for (final normalized in expandEgKrNumber(phone.number)) {
+          phoneToName[normalized] = contact.displayName;
+        }
+      }
+    }
+    for (final user in matchingUsers) {
+      final normalized = expandEgKrNumber(user.phoneNumber.toString());
+      for (final number in normalized) {
+        if (phoneToName.containsKey(number)) {
+          map[user.userId] = phoneToName[number]!; // ← userId as key
+          break;
+        }
+      }
+    }
+
+    return map;
+  }
+
+  Future<void> saveContactNameMap(Map<String, String> map) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('contact_name_map', jsonEncode(map));
+  }
+
+  Future<Map<String, String>> loadContactNameMap() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('contact_name_map');
+    if (raw == null) return {};
+    return Map<String, String>.from(jsonDecode(raw));
+  }
+
+  Future<String?> getContactNickname(String userId) async {
+    final map = await loadContactNameMap();
+    return map[userId]; // null if not in contacts
+  }
+
   // Auto-add friends from contacts
   Future<int> syncAndAddFriendsFromContacts() async {
     try {
@@ -128,7 +176,12 @@ class ContactService {
       final contactPhoneNumbers = extractPhoneNumbers(contacts);
 
       final matchingUsers = await findUsersByPhoneNumbers(contactPhoneNumbers);
-
+      final nameMap = await buildContactNameMap(
+        contacts,
+        matchingUsers,
+        contactPhoneNumbers,
+      );
+      await saveContactNameMap(nameMap);
       final newFriends =
           matchingUsers
               .where((user) => !currentUser.friends.contains(user.userId))

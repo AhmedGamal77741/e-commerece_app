@@ -1,15 +1,12 @@
 // features/chat/ui/chats_navbar.dart
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/chat/models/story_model.dart';
 import 'package:ecommerece_app/features/chat/services/friends_service.dart';
-import 'package:ecommerece_app/features/chat/services/story_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/direct_chats_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/edit_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/friends_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/group_chats_screen.dart';
-import 'package:ecommerece_app/features/chat/widgets/story_bar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -30,7 +27,6 @@ class _ChatsNavbarState extends State<ChatsNavbar> {
 
   final String supportUserId = 'JuxEfED9YSc2XyHRFgkPcNCFUSJ3';
   final FriendsService _friendsService = FriendsService();
-  final StoryService _storyService = StoryService();
   final ChatService _chatService = ChatService();
 
   final List<Map<String, dynamic>> _tabs = [
@@ -166,27 +162,6 @@ class _ChatsNavbarState extends State<ChatsNavbar> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildStoriesHeader() {
-    final String myUid = FirebaseAuth.instance.currentUser!.uid;
-    return StreamBuilder<List<MyUser>>(
-      stream: _friendsService.getFriendsStream(),
-      builder: (context, friendsSnapshot) {
-        final allUsers = friendsSnapshot.data ?? [];
-        final queryIds = [...allUsers.map((u) => u.userId).toList(), myUid];
-        return StreamBuilder<List<StoryModel>>(
-          stream: _storyService.getFriendsStories(queryIds),
-          builder: (context, storySnapshot) {
-            final groups = _storyService.groupStories(storySnapshot.data ?? []);
-            final myGroupIndex = groups.indexWhere((g) => g.authorId == myUid);
-            UserStoryGroup? myGroup;
-            if (myGroupIndex != -1) myGroup = groups.removeAt(myGroupIndex);
-            return buildStoryBar(myGroup, groups);
-          },
-        );
-      },
     );
   }
 
@@ -342,8 +317,6 @@ class _ChatsNavbarState extends State<ChatsNavbar> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStoriesHeader(),
-            Container(color: Colors.grey[300], height: 1),
             Container(
               color: ColorsManager.primary,
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),

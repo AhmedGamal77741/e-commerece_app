@@ -60,7 +60,9 @@ class FirebaseUserRepo {
   final FirebaseAuth _firebaseAuth;
 
   final usersCollection = FirebaseFirestore.instance.collection('users');
-    final sellersCollection = FirebaseFirestore.instance.collection('deliveryManagers');
+  final sellersCollection = FirebaseFirestore.instance.collection(
+    'deliveryManagers',
+  );
   static const String signUpSuccess = "회원가입이 완료되었습니다";
   static const String errorEmailAlreadyInUse = "이미 사용 중인 이메일입니다";
   static const String errorUsernameTaken = "userId가 이미 사용 중입니다.";
@@ -207,17 +209,14 @@ class FirebaseUserRepo {
 
   Future signIn(String email, String password) async {
     try {
-                  final sellerCheck =
+      final sellerCheck =
           await sellersCollection
-              .where(
-                'email',
-                isEqualTo: email,
-              ) 
+              .where('email', isEqualTo: email)
               .limit(1)
               .get();
-              if(sellerCheck.docs.isNotEmpty){
-                return "판매자 계정으로는 로그인할 수 없습니다.";
-              }
+      if (sellerCheck.docs.isNotEmpty) {
+        return "판매자 계정으로는 로그인할 수 없습니다.";
+      }
       var result = await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -225,11 +224,10 @@ class FirebaseUserRepo {
       var user = result.user;
       print(user);
       return user;
-    }on FirebaseAuthException catch (e) {
-  final friendlyMessage = getFriendlyAuthError(e.code);
-  return friendlyMessage;
-    }
-     catch (e) {
+    } on FirebaseAuthException catch (e) {
+      final friendlyMessage = getFriendlyAuthError(e.code);
+      return friendlyMessage;
+    } catch (e) {
       return e.toString();
     }
   }
