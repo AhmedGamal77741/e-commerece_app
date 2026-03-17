@@ -19,7 +19,7 @@ class ChatsNavbar extends StatefulWidget {
 }
 
 class _ChatsNavbarState extends State<ChatsNavbar> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 1;
   bool _searchMode = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();

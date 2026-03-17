@@ -6,7 +6,6 @@ import 'package:ecommerece_app/features/chat/services/chat_service.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/chat/services/friends_service.dart';
-import 'package:ecommerece_app/features/chat/services/favorites_service.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,7 +25,6 @@ class _FriendsScreenState extends State<FriendsScreen>
   final ContactService _contactService = ContactService();
   final ChatService _chatService = ChatService();
   final FirebaseUserRepo _userRepo = FirebaseUserRepo();
-  final FavoritesService _favoritesService = FavoritesService();
 
   bool _isSyncing = false;
   bool editMode = false;
@@ -37,32 +35,13 @@ class _FriendsScreenState extends State<FriendsScreen>
   Map<String, String> _latestAliases = {};
 
   // ── Expansion state ──────────────────────────────────────────────────────
-  bool _favoritesExpanded = true;
   bool _subscribedExpanded = true;
   bool _friendsExpanded = true;
-  bool _brandsExpanded = true;
-
+  /*   bool _brandsExpanded = true;
+ */
   // ── Computed search query ────────────────────────────────────────────────
   String get _effectiveQuery => widget.searchQuery;
   bool get _isSearchActive => _effectiveQuery.isNotEmpty;
-
-  // ─── Favorites order stream ───────────────────────────────────────────────
-  // Reads the same `favoritesOrder` field that edit_screen writes on drag,
-  // so the two screens always stay in sync.
-  Stream<Map<String, int>> _getFavoritesOrderStream() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return Stream.value({});
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .map((snap) {
-          if (!snap.exists) return <String, int>{};
-          final raw = snap.data()?['favoritesOrder'];
-          if (raw == null) return <String, int>{};
-          return Map<String, int>.from(raw as Map);
-        });
-  }
 
   // ─── Hidden user IDs stream ───────────────────────────────────────────────
   Stream<Set<String>> _getHiddenIdsStream() {
@@ -1779,8 +1758,8 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   Widget _buildSearchResults(
     List<MyUser> allFriends,
-    List<MyUser> allBrands,
-    List<String> favoriteIds,
+    /*     List<MyUser> allBrands,
+    List<String> favoriteIds, */
     Map<String, String> aliases,
   ) {
     final query = _effectiveQuery.toLowerCase();
@@ -1792,10 +1771,10 @@ class _FriendsScreenState extends State<FriendsScreen>
                   (aliases[u.userId]?.toLowerCase().contains(query) ?? false),
             )
             .toList();
-    final matchingBrands =
-        allBrands.where((u) => u.name.toLowerCase().contains(query)).toList();
+    /*     final matchingBrands =
+        allBrands.where((u) => u.name.toLowerCase().contains(query)).toList(); */
 
-    if (matchingFriends.isEmpty && matchingBrands.isEmpty) {
+    if (matchingFriends.isEmpty) {
       return Center(
         child: Padding(
           padding: EdgeInsets.only(top: 60.h),
@@ -1829,14 +1808,10 @@ class _FriendsScreenState extends State<FriendsScreen>
             ),
           ),
           ...matchingFriends.map(
-            (f) => _buildFriendItem(
-              friend: f,
-              favoriteIds: favoriteIds,
-              aliases: aliases,
-            ),
+            (f) => _buildFriendItem(friend: f, aliases: aliases),
           ),
         ],
-        if (matchingBrands.isNotEmpty) ...[
+        /*         if (matchingBrands.isNotEmpty) ...[
           Padding(
             padding: EdgeInsets.only(top: 16.h, bottom: 8.h),
             child: Text(
@@ -1856,7 +1831,7 @@ class _FriendsScreenState extends State<FriendsScreen>
               aliases: aliases,
             ),
           ),
-        ],
+        ], */
         SizedBox(height: 40.h),
       ],
     );
@@ -1868,304 +1843,140 @@ class _FriendsScreenState extends State<FriendsScreen>
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: StreamBuilder<Map<String, int>>(
-        // Stream 0: favorites order — synced from edit screen drag-and-drop
-        stream: _getFavoritesOrderStream(),
-        builder: (context, orderSnapshot) {
-          final favoritesOrder = orderSnapshot.data ?? {};
+      child: StreamBuilder<Set<String>>(
+        // Stream 2: following IDs
+        stream: _getFollowingIdsStream(),
+        builder: (context, followingSnapshot) {
+          final followingIds = followingSnapshot.data ?? {};
 
-          return StreamBuilder<List<String>>(
-            // Stream 1: favorite IDs
-            stream: _favoritesService.getFavoriteIdsStream(),
-            builder: (context, favSnapshot) {
-              final favoriteIds = favSnapshot.data ?? [];
+          return StreamBuilder<Set<String>>(
+            // Stream 3: hidden IDs
+            stream: _getHiddenIdsStream(),
+            builder: (context, hiddenSnapshot) {
+              final hiddenIds = hiddenSnapshot.data ?? {};
 
-              return StreamBuilder<Set<String>>(
-                // Stream 2: following IDs
-                stream: _getFollowingIdsStream(),
-                builder: (context, followingSnapshot) {
-                  final followingIds = followingSnapshot.data ?? {};
+              return StreamBuilder<Map<String, String>>(
+                // Stream 4: aliases map
+                stream: _getAliasesStream(),
+                builder: (context, aliasSnapshot) {
+                  final aliases = aliasSnapshot.data ?? {};
+                  _latestAliases = aliases;
 
-                  return StreamBuilder<Set<String>>(
-                    // Stream 3: hidden IDs
-                    stream: _getHiddenIdsStream(),
-                    builder: (context, hiddenSnapshot) {
-                      final hiddenIds = hiddenSnapshot.data ?? {};
+                  return StreamBuilder<List<MyUser>>(
+                    // Stream 5: friends list
+                    stream: _friendsService.getFriendsStream(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData || _isSyncing) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                      return StreamBuilder<Map<String, String>>(
-                        // Stream 4: aliases map
-                        stream: _getAliasesStream(),
-                        builder: (context, aliasSnapshot) {
-                          final aliases = aliasSnapshot.data ?? {};
-                          _latestAliases = aliases;
+                      final allUsers = snapshot.data ?? [];
+                      final allFriends =
+                          allUsers
+                              .where(
+                                (u) =>
+                                    u.type == 'user' &&
+                                    !hiddenIds.contains(u.userId),
+                              )
+                              .toList();
 
-                          return StreamBuilder<List<MyUser>>(
-                            // Stream 5: friends list
-                            stream: _friendsService.getFriendsStream(),
-                            builder: (context, snapshot) {
-                              if (!snapshot.hasData || _isSyncing) {
-                                return const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              }
+                      final subscribed =
+                          allFriends
+                              .where((u) => followingIds.contains(u.userId))
+                              .toList();
 
-                              final allUsers = snapshot.data ?? [];
-                              final allFriends =
-                                  allUsers
-                                      .where(
-                                        (u) =>
-                                            u.type == 'user' &&
-                                            !hiddenIds.contains(u.userId),
-                                      )
-                                      .toList();
+                      final friends = allFriends;
 
-                              // ── Favorites: sorted by drag-and-drop order ──
-                              // Uses the same `favoritesOrder` map that
-                              // edit_screen writes on every drag, so both
-                              // screens always reflect the same order.
-                              final favorites =
-                                  allFriends
-                                      .where(
-                                        (u) => favoriteIds.contains(u.userId),
-                                      )
-                                      .toList()
-                                    ..sort((a, b) {
-                                      final aO =
-                                          favoritesOrder[a.userId] ?? 999999;
-                                      final bO =
-                                          favoritesOrder[b.userId] ?? 999999;
-                                      return aO.compareTo(bO);
-                                    });
+                      if (_isSearchActive) {
+                        return _buildSearchResults(allFriends, aliases);
+                      }
 
-                              final subscribed =
-                                  allFriends
-                                      .where(
-                                        (u) => followingIds.contains(u.userId),
-                                      )
-                                      .toList();
+                      return ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [
+                          _buildCurrentUserCard(),
 
-                              final friends = allFriends;
+                          // ── 내가 구독한 친구 ──────────────────
+                          _buildSectionHeader(
+                            label: '서로 구독 친구',
+                            count: subscribed.length,
+                            expanded: _subscribedExpanded,
+                            onTap:
+                                () => setState(
+                                  () =>
+                                      _subscribedExpanded =
+                                          !_subscribedExpanded,
+                                ),
+                          ),
+                          AnimatedCrossFade(
+                            duration: const Duration(milliseconds: 200),
+                            crossFadeState:
+                                _subscribedExpanded
+                                    ? CrossFadeState.showFirst
+                                    : CrossFadeState.showSecond,
+                            firstChild:
+                                subscribed.isEmpty
+                                    ? Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: 12.h,
+                                        left: 4.w,
+                                      ),
+                                      child: Text(
+                                        '구독한 친구가 없습니다',
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          color: Colors.grey[400],
+                                        ),
+                                      ),
+                                    )
+                                    : Column(
+                                      children:
+                                          subscribed
+                                              .map(
+                                                (f) => _buildFriendItem(
+                                                  friend: f,
 
-                              return StreamBuilder(
-                                // Stream 6: brands
-                                stream: _friendsService.getBrandsStream(),
-                                builder: (context, brandSnapshot) {
-                                  final allBrands =
-                                      (brandSnapshot.data ?? [])
-                                          as List<MyUser>;
-                                  final brands =
-                                      allBrands
-                                          .where(
-                                            (b) =>
-                                                !hiddenIds.contains(b.userId),
-                                          )
-                                          .toList();
-
-                                  if (_isSearchActive) {
-                                    return _buildSearchResults(
-                                      allFriends,
-                                      brands,
-                                      favoriteIds,
-                                      aliases,
-                                    );
-                                  }
-
-                                  return ListView(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
+                                                  aliases: aliases,
+                                                ),
+                                              )
+                                              .toList(),
                                     ),
-                                    children: [
-                                      _buildCurrentUserCard(),
+                            secondChild: const SizedBox.shrink(),
+                          ),
 
-                                      // ── 즐겨찾기 ──────────────────────────
-                                      _buildSectionHeader(
-                                        label: '즐겨찾기',
-                                        count: favorites.length,
-                                        expanded: _favoritesExpanded,
-                                        onTap:
-                                            () => setState(
-                                              () =>
-                                                  _favoritesExpanded =
-                                                      !_favoritesExpanded,
-                                            ),
-                                      ),
-                                      AnimatedCrossFade(
-                                        duration: const Duration(
-                                          milliseconds: 200,
+                          // ── 친구 ──────────────────────────────
+                          _buildSectionHeader(
+                            label: '친구',
+                            count: friends.length,
+                            expanded: _friendsExpanded,
+                            onTap:
+                                () => setState(
+                                  () => _friendsExpanded = !_friendsExpanded,
+                                ),
+                          ),
+                          AnimatedCrossFade(
+                            duration: const Duration(milliseconds: 200),
+                            crossFadeState:
+                                _friendsExpanded
+                                    ? CrossFadeState.showFirst
+                                    : CrossFadeState.showSecond,
+                            firstChild: Column(
+                              children:
+                                  friends
+                                      .map(
+                                        (friend) => _buildFriendItem(
+                                          friend: friend,
+                                          showCheckbox: editMode,
+                                          aliases: aliases,
                                         ),
-                                        crossFadeState:
-                                            _favoritesExpanded
-                                                ? CrossFadeState.showFirst
-                                                : CrossFadeState.showSecond,
-                                        firstChild:
-                                            favorites.isEmpty
-                                                ? Padding(
-                                                  padding: EdgeInsets.only(
-                                                    bottom: 12.h,
-                                                    left: 4.w,
-                                                  ),
-                                                  child: Text(
-                                                    '즐겨찾기한 친구가 없습니다',
-                                                    style: TextStyle(
-                                                      fontSize: 12.sp,
-                                                      color: Colors.grey[400],
-                                                    ),
-                                                  ),
-                                                )
-                                                : Column(
-                                                  children:
-                                                      favorites
-                                                          .map(
-                                                            (
-                                                              f,
-                                                            ) => _buildFriendItem(
-                                                              friend: f,
-                                                              favoriteIds:
-                                                                  favoriteIds,
-                                                              aliases: aliases,
-                                                            ),
-                                                          )
-                                                          .toList(),
-                                                ),
-                                        secondChild: const SizedBox.shrink(),
-                                      ),
+                                      )
+                                      .toList(),
+                            ),
+                            secondChild: const SizedBox.shrink(),
+                          ),
 
-                                      // ── 내가 구독한 친구 ──────────────────
-                                      _buildSectionHeader(
-                                        label: '내가 구독한 친구',
-                                        count: subscribed.length,
-                                        expanded: _subscribedExpanded,
-                                        onTap:
-                                            () => setState(
-                                              () =>
-                                                  _subscribedExpanded =
-                                                      !_subscribedExpanded,
-                                            ),
-                                      ),
-                                      AnimatedCrossFade(
-                                        duration: const Duration(
-                                          milliseconds: 200,
-                                        ),
-                                        crossFadeState:
-                                            _subscribedExpanded
-                                                ? CrossFadeState.showFirst
-                                                : CrossFadeState.showSecond,
-                                        firstChild:
-                                            subscribed.isEmpty
-                                                ? Padding(
-                                                  padding: EdgeInsets.only(
-                                                    bottom: 12.h,
-                                                    left: 4.w,
-                                                  ),
-                                                  child: Text(
-                                                    '구독한 친구가 없습니다',
-                                                    style: TextStyle(
-                                                      fontSize: 12.sp,
-                                                      color: Colors.grey[400],
-                                                    ),
-                                                  ),
-                                                )
-                                                : Column(
-                                                  children:
-                                                      subscribed
-                                                          .map(
-                                                            (
-                                                              f,
-                                                            ) => _buildFriendItem(
-                                                              friend: f,
-                                                              favoriteIds:
-                                                                  favoriteIds,
-                                                              aliases: aliases,
-                                                            ),
-                                                          )
-                                                          .toList(),
-                                                ),
-                                        secondChild: const SizedBox.shrink(),
-                                      ),
-
-                                      // ── 친구 ──────────────────────────────
-                                      _buildSectionHeader(
-                                        label: '친구',
-                                        count: friends.length,
-                                        expanded: _friendsExpanded,
-                                        onTap:
-                                            () => setState(
-                                              () =>
-                                                  _friendsExpanded =
-                                                      !_friendsExpanded,
-                                            ),
-                                      ),
-                                      AnimatedCrossFade(
-                                        duration: const Duration(
-                                          milliseconds: 200,
-                                        ),
-                                        crossFadeState:
-                                            _friendsExpanded
-                                                ? CrossFadeState.showFirst
-                                                : CrossFadeState.showSecond,
-                                        firstChild: Column(
-                                          children:
-                                              friends
-                                                  .map(
-                                                    (
-                                                      friend,
-                                                    ) => _buildFriendItem(
-                                                      friend: friend,
-                                                      showCheckbox: editMode,
-                                                      favoriteIds: favoriteIds,
-                                                      aliases: aliases,
-                                                    ),
-                                                  )
-                                                  .toList(),
-                                        ),
-                                        secondChild: const SizedBox.shrink(),
-                                      ),
-
-                                      // ── 브랜드 ────────────────────────────
-                                      _buildSectionHeader(
-                                        label: '브랜드',
-                                        count: brands.length,
-                                        expanded: _brandsExpanded,
-                                        onTap:
-                                            () => setState(
-                                              () =>
-                                                  _brandsExpanded =
-                                                      !_brandsExpanded,
-                                            ),
-                                      ),
-                                      AnimatedCrossFade(
-                                        duration: const Duration(
-                                          milliseconds: 200,
-                                        ),
-                                        crossFadeState:
-                                            _brandsExpanded
-                                                ? CrossFadeState.showFirst
-                                                : CrossFadeState.showSecond,
-                                        firstChild: Column(
-                                          children:
-                                              brands
-                                                  .map(
-                                                    (b) => _buildFriendItem(
-                                                      friend: b,
-                                                      isBrand: true,
-                                                      showCheckbox: editMode,
-                                                      favoriteIds: favoriteIds,
-                                                      aliases: aliases,
-                                                    ),
-                                                  )
-                                                  .toList(),
-                                        ),
-                                        secondChild: const SizedBox.shrink(),
-                                      ),
-
-                                      SizedBox(height: 40.h),
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        },
+                          SizedBox(height: 40.h),
+                        ],
                       );
                     },
                   );
@@ -2182,13 +1993,11 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   Widget _buildFriendItem({
     required MyUser friend,
-    required List<String> favoriteIds,
     required Map<String, String> aliases,
     bool showCheckbox = false,
     bool isBrand = false,
   }) {
     final GlobalKey itemKey = GlobalKey();
-    final bool isFav = favoriteIds.contains(friend.userId);
     final String displayName = aliases[friend.userId] ?? friend.name;
     final bool hasAlias =
         aliases.containsKey(friend.userId) &&
@@ -2275,43 +2084,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                             thickness: 1,
                             height: 1,
                           ),
-                          _buildMenuOption(
-                            label: isFav ? '즐겨찾기 해제' : '즐겨찾기 추가',
-                            labelColor:
-                                isFav ? Colors.amber[800] : Colors.black,
-                            onTap: () async {
-                              Navigator.pop(context);
-                              if (isFav) {
-                                await _favoritesService.removeFavorite(
-                                  friend.userId,
-                                );
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        '$displayName님을 즐겨찾기에서 제거했습니다',
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              } else {
-                                await _favoritesService.addFavorite(
-                                  friend.userId,
-                                );
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        '$displayName님을 즐겨찾기에 추가했습니다',
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                          ),
+
                           _buildMenuOption(
                             label: '이름 변경',
                             onTap: () {
@@ -2395,7 +2168,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                   radius: 25,
                   backgroundImage: NetworkImage(friend.url),
                 ),
-                if (isFav)
+                /*                 if (isFav)
                   Positioned(
                     bottom: -2,
                     right: -2,
@@ -2412,7 +2185,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                         color: Colors.amber,
                       ),
                     ),
-                  ),
+                  ), */
               ],
             ),
             const SizedBox(width: 12),
