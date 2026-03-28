@@ -102,6 +102,7 @@ void _routeDeepLink(Uri uri) {
     final userId = uri.queryParameters['userId'] ?? '';
     final paymentId = uri.queryParameters['paymentId'] ?? '';
     final message = uri.queryParameters['message'] ?? '';
+    final source = uri.queryParameters['source'] ?? 'shop';
     debugPrint(
       'Bank registered deep link → success=$success '
       'userId=$userId paymentId=$paymentId',
@@ -113,6 +114,7 @@ void _routeDeepLink(Uri uri) {
         'userId': userId,
         'paymentId': paymentId,
         'message': message,
+        'source': source,
       },
     );
     return;
