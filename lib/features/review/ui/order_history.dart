@@ -343,6 +343,7 @@ Future<void> deleteOrder(
     navigator.pop(); // Remove loading
 
     final data = result.data;
+    print(data);
     if (data != null &&
         (data['status'] == 'refunded' || data['status'] == 'canceled')) {
       scaffoldMessenger.showSnackBar(
