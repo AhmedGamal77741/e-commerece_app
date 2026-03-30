@@ -162,7 +162,7 @@ class ContactService {
 
   Future<String?> getContactNickname(String userId) async {
     final map = await loadContactNameMap();
-    return map[userId]; // null if not in contacts
+    return map[userId];
   }
 
   // Auto-add friends from contacts

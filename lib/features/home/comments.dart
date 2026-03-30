@@ -1,17 +1,24 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
+import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
+import 'package:ecommerece_app/features/chat/widgets/chat_input_bar.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/models/comment_model.dart';
 import 'package:ecommerece_app/features/home/widgets/comment_item.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class Comments extends StatefulWidget {
@@ -29,6 +36,9 @@ class _CommentsState extends State<Comments> {
   final currentUser = FirebaseAuth.instance.currentUser;
   bool _isLoading = true;
   String? postAuthorId;
+  XFile? _pickedImage;
+  final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
   @override
   void dispose() {
     _commentController.dispose();
@@ -40,6 +50,11 @@ class _CommentsState extends State<Comments> {
     Provider.of<PostsProvider>(context, listen: false).startListening();
     _loadData();
     _getPostAuthorId();
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked != null) setState(() => _pickedImage = picked);
   }
 
   Future<void> _getPostAuthorId() async {
@@ -69,6 +84,30 @@ class _CommentsState extends State<Comments> {
       print(e);
       throw e;
     }
+  }
+
+  Future<void> _submitImageComment() async {
+    if (_pickedImage == null) return;
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}_$currentUserId.jpg';
+    final ref = FirebaseStorage.instance.ref().child('chat_images/$fileName');
+    UploadTask task;
+    if (kIsWeb) {
+      final bytes = await _pickedImage!.readAsBytes();
+      task = ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+    } else {
+      task = ref.putFile(File(_pickedImage!.path));
+    }
+    final url = await (await task).ref.getDownloadURL();
+    final text = _commentController.text.trim();
+    await Provider.of<PostsProvider>(
+      context,
+      listen: false,
+    ).addComment(widget.postId, text, imageUrl: url);
+    _commentController.clear();
+    setState(() {
+      _pickedImage = null;
+    });
   }
 
   Future<void> _submitComment() async {
@@ -143,12 +182,7 @@ class _CommentsState extends State<Comments> {
                     builder: (context, comments, child) {
                       if (postsProvider.isLoadingComments(widget.postId) &&
                           comments.isEmpty) {
-                        return Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16.h),
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
+                        return SizedBox.shrink();
                       }
 
                       if (comments.isEmpty) {
@@ -166,7 +200,40 @@ class _CommentsState extends State<Comments> {
                           ),
                         );
                       }
-
+                      if (_pickedImage != null) {
+                        return Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child:
+                                    kIsWeb
+                                        ? Image.network(
+                                          _pickedImage!.path,
+                                          fit: BoxFit.cover,
+                                        )
+                                        : Image.file(
+                                          File(_pickedImage!.path),
+                                          fit: BoxFit.cover,
+                                        ),
+                              ),
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.black,
+                                  ),
+                                  onPressed:
+                                      () => setState(() => _pickedImage = null),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
                       return ListView.builder(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),
@@ -190,61 +257,75 @@ class _CommentsState extends State<Comments> {
               ),
             ),
             if (widget.canInteract)
-              Container(
-                height: 60.h,
-                padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 15.w),
-                child: Row(
-                  children: [
-                    // Comment icon
-                    Container(
-                      width: 30.w,
-                      height: 30.h,
-                      decoration: ShapeDecoration(
-                        image: DecorationImage(
-                          image: NetworkImage(currentUser!.photoURL.toString()),
-                          fit: BoxFit.cover,
+              InputBar(
+                controller: _commentController,
+                pickedImage: _pickedImage,
+                onPickImage: _pickImage,
+                onSend: () async {
+                  if (_pickedImage != null) {
+                    showLoadingDialog(context);
+                    await _submitImageComment();
+                    if (mounted) Navigator.pop(context);
+                  } else {
+                    await _submitComment();
+                  }
+                },
+              ) /* 
+            Container(
+              height: 60.h,
+              padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 15.w),
+              child: Row(
+                children: [
+                  // Comment icon
+                  Container(
+                    width: 30.w,
+                    height: 30.h,
+                    decoration: ShapeDecoration(
+                      image: DecorationImage(
+                        image: NetworkImage(currentUser!.photoURL.toString()),
+                        fit: BoxFit.cover,
+                      ),
+                      shape: OvalBorder(),
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  // Comment input field
+                  Expanded(
+                    flex: 4,
+                    child: TextFormField(
+                      controller: _commentController,
+                      decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 10.h,
                         ),
-                        shape: OvalBorder(),
+                        labelText: "댓글 추가",
+                        labelStyle: TextStyles.abeezee16px400wP600,
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: ColorsManager.primary600,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: ColorsManager.primary600,
+                          ),
+                        ),
                       ),
                     ),
-                    SizedBox(width: 10.w),
-                    // Comment input field
-                    Expanded(
-                      flex: 4,
-                      child: TextFormField(
-                        controller: _commentController,
-                        decoration: InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12.w,
-                            vertical: 10.h,
-                          ),
-                          labelText: "댓글 추가",
-                          labelStyle: TextStyles.abeezee16px400wP600,
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: ColorsManager.primary600,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: ColorsManager.primary600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 10.w),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(),
-                      icon: Icon(Icons.send),
-                      color: ColorsManager.primary600,
-                      iconSize: 25.sp,
-                      onPressed: _isSubmitting ? null : _submitComment,
-                    ),
-                  ],
-                ),
+                  ),
+                  SizedBox(width: 10.w),
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints(),
+                    icon: Icon(Icons.send),
+                    color: ColorsManager.primary600,
+                    iconSize: 25.sp,
+                    onPressed: _isSubmitting ? null : _submitComment,
+                  ),
+                ],
               ),
+            ), */,
           ],
         ),
       ),

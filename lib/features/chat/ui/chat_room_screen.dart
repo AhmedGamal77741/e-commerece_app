@@ -7,12 +7,12 @@ import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/models/story_model.dart';
 import 'package:ecommerece_app/features/chat/services/story_service.dart';
 import 'package:ecommerece_app/features/chat/ui/story_player_screen.dart';
+import 'package:ecommerece_app/features/chat/widgets/chat_input_bar.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -728,7 +728,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           onUnblock: _unblockUser,
                           onCheckState: _checkBlockState,
                         )
-                        : _InputBar(
+                        : InputBar(
                           controller: _messageController,
                           pickedImage: _pickedImage,
                           onPickImage: _pickImage,
@@ -741,7 +741,6 @@ class _ChatScreenState extends State<ChatScreen> {
                               await _sendMessage();
                             }
                           },
-                          onChanged: () => setState(() {}),
                         ),
                 ],
               ),
@@ -786,117 +785,6 @@ class _DateSeparator extends StatelessWidget {
 }
 
 // ─── Input bar ────────────────────────────────────────────────────────────────
-
-class _InputBar extends StatelessWidget {
-  final TextEditingController controller;
-  final XFile? pickedImage;
-  final VoidCallback onPickImage;
-  final VoidCallback onSend;
-  final VoidCallback onChanged;
-
-  const _InputBar({
-    required this.controller,
-    required this.pickedImage,
-    required this.onPickImage,
-    required this.onSend,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bool hasContent = controller.text.isNotEmpty || pickedImage != null;
-
-    return SafeArea(
-      top: false,
-      child: Container(
-        color: _kBgColor,
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Container(
-                constraints: BoxConstraints(minHeight: 40.h),
-                decoration: BoxDecoration(
-                  color: _kInputBg,
-                  borderRadius: BorderRadius.circular(24.r),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    GestureDetector(
-                      onTap: onPickImage,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10.w,
-                          vertical: 10.h,
-                        ),
-                        child: Icon(
-                          Icons.add,
-                          size: 20.sp,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: controller,
-                        onChanged: (_) => onChanged(),
-                        maxLines: 4,
-                        minLines: 1,
-                        style: TextStyle(fontSize: 14.sp, color: Colors.black),
-                        decoration: InputDecoration(
-                          hintText: '메시지 입력',
-                          hintStyle: TextStyle(
-                            fontSize: 14.sp,
-                            color: Colors.grey[400],
-                          ),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.only(
-                            right: 12.w,
-                            top: 10.h,
-                            bottom: 10.h,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeInOut,
-              child:
-                  hasContent
-                      ? Padding(
-                        padding: EdgeInsets.only(left: 8.w),
-                        child: GestureDetector(
-                          onTap: onSend,
-                          child: Container(
-                            width: 40.w,
-                            height: 40.w,
-                            decoration: const BoxDecoration(
-                              color: _kSendActive,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.arrow_upward_rounded,
-                              size: 20.sp,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      )
-                      : const SizedBox.shrink(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ─── Blocked bar ──────────────────────────────────────────────────────────────
 
@@ -1186,6 +1074,7 @@ class _BubbleContent extends StatelessWidget {
           if (message.postData != null) ...[
             if (message.content.isNotEmpty) SizedBox(height: 6.h),
             ChatPostShareWidget(
+              type: 'post',
               imageUrl: message.postData!['imgUrl'],
               authorName: message.postData!['authorName'],
               postTitle: message.postData!['text'],
@@ -1202,6 +1091,7 @@ class _BubbleContent extends StatelessWidget {
           if (message.productData != null) ...[
             if (message.content.isNotEmpty) SizedBox(height: 6.h),
             ChatPostShareWidget(
+              type: 'product',
               imageUrl: message.productData!.imgUrl!,
               postTitle:
                   '${message.productData!.pricePoints[0].price.toString()} 원',

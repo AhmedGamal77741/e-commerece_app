@@ -15,7 +15,7 @@ class AddPost extends StatefulWidget {
 }
 
 class _AddPostState extends State<AddPost> {
-  String imgUrl = "";
+  List<String> imgUrls = [];
   final currentUser = FirebaseAuth.instance.currentUser;
   TextEditingController _textController = TextEditingController();
   String? selectedCategoryId;
@@ -281,7 +281,7 @@ class _AddPostState extends State<AddPost> {
               ElevatedButton(
                 onPressed: () async {
                   showLoadingDialog(context);
-                  imgUrl = await uploadImageToFirebaseStorageHome();
+                  imgUrls = await uploadMultipleImagesToFirebaseHome();
                   Navigator.pop(context);
                   setState(() {});
                 },
@@ -297,13 +297,13 @@ class _AddPostState extends State<AddPost> {
               ),
               ElevatedButton(
                 onPressed: () async {
-                  if (_textController.text.isEmpty && imgUrl.isEmpty) return;
+                  if (_textController.text.isEmpty && imgUrls.isEmpty) return;
 
                   showLoadingDialog(context);
                   try {
                     await uploadPost(
                       text: _textController.text,
-                      imgUrl: imgUrl,
+                      imgUrls: imgUrls,
                       categoryId: selectedCategoryId,
                     );
                     Navigator.pop(context);
@@ -324,7 +324,7 @@ class _AddPostState extends State<AddPost> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
-                      _textController.text.isEmpty && imgUrl.isEmpty
+                      _textController.text.isEmpty && imgUrls.isEmpty
                           ? ColorsManager.primary200
                           : Colors.black,
                   shape: RoundedRectangleBorder(
@@ -626,11 +626,78 @@ class _AddPostState extends State<AddPost> {
                 SizedBox(height: 12.h),
 
                 // Image preview
-                if (imgUrl.isNotEmpty)
+                // Place this inside your build method where you want the preview to appear
+                StatefulBuilder(
+                  builder: (BuildContext context, StateSetter setInnerState) {
+                    if (imgUrls.isEmpty) return const SizedBox.shrink();
+
+                    return Container(
+                      height: 150.h,
+                      margin: EdgeInsets.only(top: 8.h),
+                      child: ReorderableListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: imgUrls.length,
+                        onReorder: (oldIndex, newIndex) {
+                          // Use setInnerState instead of the global setState
+                          setInnerState(() {
+                            if (newIndex > oldIndex) newIndex -= 1;
+                            final String item = imgUrls.removeAt(oldIndex);
+                            imgUrls.insert(newIndex, item);
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          return Container(
+                            key: ValueKey(imgUrls[index]),
+                            margin: EdgeInsets.only(right: 8.w),
+                            width: 120.w,
+                            child: Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    imgUrls[index],
+                                    height: 150.h,
+                                    width: 120.w,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 4.h,
+                                  right: 4.w,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      // Only this block rebuilds
+                                      setInnerState(() {
+                                        imgUrls.removeAt(index);
+                                      });
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.6),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      padding: EdgeInsets.all(4),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+                /* if (imgUrls.isNotEmpty)
                   GestureDetector(
                     onTap: () async {
                       showLoadingDialog(context);
-                      imgUrl = await uploadImageToFirebaseStorageHome();
+                      imgUrls = await uploadMultipleImagesToFirebaseHome();
                       Navigator.pop(context);
                       setState(() {});
                     },
@@ -643,7 +710,7 @@ class _AddPostState extends State<AddPost> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
-                              imgUrl,
+                              imgUrls.isNotEmpty ? imgUrls[0] : "",
                               fit: BoxFit.cover,
                               loadingBuilder: (context, child, progress) {
                                 if (progress == null) return child;
@@ -680,7 +747,7 @@ class _AddPostState extends State<AddPost> {
                             child: GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  imgUrl = "";
+                                  imgUrls = [];
                                 });
                               },
                               child: Container(
@@ -700,7 +767,7 @@ class _AddPostState extends State<AddPost> {
                         ],
                       ),
                     ),
-                  ),
+                  ), */
 
                 // Add extra bottom spacing so content isn't hidden by bottom bar
                 SizedBox(height: 120.h),

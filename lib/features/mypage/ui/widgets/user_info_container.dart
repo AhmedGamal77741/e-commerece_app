@@ -21,7 +21,9 @@ class UserInfoContainer extends StatefulWidget {
 class _UserInfoContainerState extends State<UserInfoContainer> {
   final passwordController = TextEditingController();
   final nameController = TextEditingController();
-  final bioController = TextEditingController();
+  /*   final bioController = TextEditingController();
+ */
+  final emailController = TextEditingController();
   final phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   String imgUrl = "";
@@ -46,8 +48,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
         setState(() {
           currentUser = user;
           nameController.text = user.name.isNotEmpty ? user.name : '';
-          bioController.text =
-              (user.bio != null && user.bio!.isNotEmpty) ? user.bio! : '';
+          emailController.text = user.email;
           phoneController.text =
               (user.phoneNumber != null && user.phoneNumber!.isNotEmpty)
                   ? user.phoneNumber!
@@ -189,7 +190,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
   void dispose() {
     passwordController.dispose();
     nameController.dispose();
-    bioController.dispose();
+    emailController.dispose();
     phoneController.dispose();
     super.dispose();
   }
@@ -277,19 +278,14 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                 ),
               ),
               SizedBox(height: 5.h),
-              UnderlineTextField(
-                controller: bioController,
-                hintText:
-                    (currentUser?.bio != null && currentUser!.bio!.isNotEmpty)
-                        ? currentUser!.bio!
-                        : '지정되지 않음',
-                obscureText: false,
-                keyboardType: TextInputType.name,
-                validator: (val) {
-                  if (val!.isEmpty) return null;
-                  if (val.length > 30) return '이름이 너무 깁니다';
-                  return null;
-                },
+              IgnorePointer(
+                ignoring: true,
+                child: UnderlineTextField(
+                  controller: emailController,
+                  hintText: currentUser!.email,
+                  obscureText: false,
+                  keyboardType: TextInputType.emailAddress,
+                ),
               ),
               SizedBox(height: 20.h),
 
@@ -360,14 +356,10 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                           phoneController.text.isNotEmpty &&
                           phoneController.text !=
                               (currentUser!.phoneNumber ?? '');
-                      final isUpdatingBio =
-                          bioController.text.isNotEmpty &&
-                          bioController.text != (currentUser!.bio ?? '');
 
                       if (!isUpdatingName &&
                           !isUpdatingPassword &&
-                          !isUpdatingPhone &&
-                          !isUpdatingBio) {
+                          !isUpdatingPhone) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -419,10 +411,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                         friendRequestsSent: currentUser!.friendRequestsSent,
                         friendRequestsReceived:
                             currentUser!.friendRequestsReceived,
-                        bio:
-                            isUpdatingBio
-                                ? bioController.text
-                                : currentUser!.bio,
+
                         phoneNumber:
                             isUpdatingPhone
                                 ? phoneController.text
@@ -445,14 +434,12 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                         if (isUpdatingName) nameController.clear();
                         if (isUpdatingPassword) passwordController.clear();
                         if (isUpdatingPhone) phoneController.clear();
-                        if (isUpdatingBio) bioController.clear();
 
                         String successMessage = "";
                         List<String> updated = [];
                         if (isUpdatingName) updated.add("닉네임");
                         if (isUpdatingPassword) updated.add("비밀번호");
                         if (isUpdatingPhone) updated.add("전화번호");
-                        if (isUpdatingBio) updated.add("소개");
                         if (updated.isNotEmpty) {
                           successMessage =
                               updated.join(", ") + "가 성공적으로 업데이트되었습니다";
