@@ -7,10 +7,12 @@ import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_actions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class GuestPostItem extends StatelessWidget {
   final Map<String, dynamic> post;
-  const GuestPostItem({Key? key, required this.post}) : super(key: key);
+  GuestPostItem({Key? key, required this.post}) : super(key: key);
+  final PageController _pageController = PageController();
 
   @override
   Widget build(BuildContext context) {
@@ -138,15 +140,58 @@ class GuestPostItem extends StatelessWidget {
                         ),
                       ),
                     verticalSpace(5),
-                    if (post['imgUrl'].isNotEmpty)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(30),
-                        child: Image.network(
-                          post['imgUrl'],
-                          fit: BoxFit.fitWidth,
-                          width: double.infinity,
+                    if (post['imgUrls'] != null && post['imgUrls'].isNotEmpty)
+                      SizedBox(
+                        height: 428.h,
+                        child: Stack(
+                          children: [
+                            PageView.builder(
+                              controller: _pageController,
+                              itemCount: (post['imgUrls'] as List).length,
+                              physics: const BouncingScrollPhysics(),
+                              itemBuilder:
+                                  (context, index) => Image.network(
+                                    (post['imgUrls'] as List)[index],
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (_, __, ___) => const Placeholder(),
+                                  ),
+                            ),
+                            if (post['imgUrls'].length > 1)
+                              Positioned.fill(
+                                bottom: 0,
+                                child: Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: SizedBox(
+                                    height: 60,
+                                    child: Center(
+                                      child: SmoothPageIndicator(
+                                        controller: _pageController,
+                                        count: (post['imgUrls'] as List).length,
+                                        effect: const ScrollingDotsEffect(
+                                          activeDotColor: Colors.black,
+                                          dotColor: Colors.grey,
+                                          dotHeight: 10,
+                                          dotWidth: 10,
+                                        ),
+                                        onDotClicked: (index) {
+                                          _pageController.animateToPage(
+                                            index,
+                                            duration: const Duration(
+                                              milliseconds: 400,
+                                            ),
+                                            curve: Curves.easeInOut,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
+
                     verticalSpace(30),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -232,13 +277,62 @@ class GuestPostItem extends StatelessWidget {
                                 ),
                               ),
                             verticalSpace(5),
-                            if (post['imgUrl'].isNotEmpty)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(20.r),
-                                child: Image.network(
-                                  post['imgUrl'],
-                                  fit: BoxFit.fitWidth,
-                                  width: double.infinity,
+                            if (post['imgUrls'] != null &&
+                                post['imgUrls'].isNotEmpty)
+                              SizedBox(
+                                height: 428.h,
+                                child: Stack(
+                                  children: [
+                                    PageView.builder(
+                                      controller: _pageController,
+                                      itemCount:
+                                          (post['imgUrls'] as List).length,
+                                      physics: const BouncingScrollPhysics(),
+                                      itemBuilder:
+                                          (context, index) => Image.network(
+                                            (post['imgUrls'] as List)[index],
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (_, __, ___) =>
+                                                    const Placeholder(),
+                                          ),
+                                    ),
+                                    if (post['imgUrls'].length > 1)
+                                      Positioned.fill(
+                                        bottom: 0,
+                                        child: Align(
+                                          alignment: Alignment.bottomCenter,
+                                          child: SizedBox(
+                                            height: 60,
+                                            child: Center(
+                                              child: SmoothPageIndicator(
+                                                controller: _pageController,
+                                                count:
+                                                    (post['imgUrls'] as List)
+                                                        .length,
+                                                effect:
+                                                    const ScrollingDotsEffect(
+                                                      activeDotColor:
+                                                          Colors.black,
+                                                      dotColor: Colors.grey,
+                                                      dotHeight: 10,
+                                                      dotWidth: 10,
+                                                    ),
+                                                onDotClicked: (index) {
+                                                  _pageController.animateToPage(
+                                                    index,
+                                                    duration: const Duration(
+                                                      milliseconds: 400,
+                                                    ),
+                                                    curve: Curves.easeInOut,
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             verticalSpace(5),
