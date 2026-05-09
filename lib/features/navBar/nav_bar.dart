@@ -44,7 +44,7 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
         ),
       ),
       _buildMainWidget(() => ChatsNavbar()),
-      _buildMainWidget(() => Center(child: Text('home'))),
+      _buildMainWidget(() => const Center(child: Text('home'))),
       _buildMainWidget(() => Shop(key: shopKey)),
       _buildMainWidget(() => LandingScreen()),
     ];
@@ -82,7 +82,6 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    // ── Gate 1: bank account ────────────────────────────────────────────
     final userDoc =
         await FirebaseFirestore.instance
             .collection('users')
@@ -137,7 +136,6 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
       if (result != true) return;
     }
 
-    // ── All gates passed → go to subscription screen ─────────────────────
     if (context.mounted) {
       context.push(Routes.subscriptionScreen);
     }
@@ -159,13 +157,13 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
                   .snapshots(),
           builder: (context, userSnapshot) {
             if (!userSnapshot.hasData) {
-              return Center(
+              return const Center(
                 child: CircularProgressIndicator(color: Colors.black),
               );
             }
             final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
             if (userData == null) {
-              return Center(child: Text('User profile not found'));
+              return const Center(child: Text('User profile not found'));
             }
             if (userData['deleted'] == true) {
               return DeletedAccount(
@@ -177,9 +175,9 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
                         .collection('users')
                         .doc(uid)
                         .update({'deleted': false, 'deletedAt': null});
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('계정이 복구되었습니다.')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('계정이 복구되었습니다.')),
+                    );
                   }
                 },
                 onSignOut: () async {
@@ -206,7 +204,7 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
       if (homeScrollController.hasClients) {
         homeScrollController.animateTo(
           0,
-          duration: Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
       }
@@ -227,26 +225,34 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
         }
 
         // ── Gate 1: bank account ────────────────────────────────────────
+        // User can skip this gate — NoBankAccountScreen pops true on skip
         final accounts = data?['bankAccounts'];
         final hasBankAccount =
             accounts != null && accounts is List && accounts.isNotEmpty;
+
         if (!hasBankAccount) {
-          await Navigator.of(context).push(
+          final result = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
               builder: (_) => const NoBankAccountScreen(source: 'shop'),
             ),
           );
-          final refreshed =
-              await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(user.uid)
-                  .get();
-          final refreshedAccounts = refreshed.data()?['bankAccounts'];
-          final nowHasAccount =
-              refreshedAccounts != null &&
-              refreshedAccounts is List &&
-              refreshedAccounts.isNotEmpty;
-          if (!nowHasAccount) return;
+          // result == true  → user skipped (allow through)
+          // result == null  → user pressed back arrow (block)
+          // result == false → same as back arrow (block)
+          if (result != true) {
+            // Check again — user may have registered inside the screen
+            final refreshed =
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .get();
+            final refreshedAccounts = refreshed.data()?['bankAccounts'];
+            final nowHasAccount =
+                refreshedAccounts != null &&
+                refreshedAccounts is List &&
+                refreshedAccounts.isNotEmpty;
+            if (!nowHasAccount) return; // truly blocked, no account & no skip
+          }
         }
 
         // ── Gate 2: receipt / invoice data ──────────────────────────────
@@ -265,15 +271,20 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
             (cacheData['phone'] as String? ?? '').isNotEmpty;
 
         if (!hasReceiptData) {
-          final result = await Navigator.of(context).push<bool>(
+          final result = await Navigator.of(context).push<dynamic>(
             MaterialPageRoute(
               builder: (_) => const ReceiptSetupScreen(source: 'shop'),
             ),
           );
-          if (result != true) return;
+          // result == true  → saved successfully, continue
+          // result == 'skip'→ user skipped, allow through
+          // result == false/null → back arrow, block
+          if (result != true && result != 'skip') return;
         }
 
         // ── Gate 3: default address ─────────────────────────────────────
+        // Skippable — user can browse shop without an address.
+        // Address is enforced at payment time in PlaceOrder / BuyNow.
         final freshDoc =
             await FirebaseFirestore.instance
                 .collection('users')
@@ -283,13 +294,14 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
         if (freshData == null ||
             (freshData['defaultAddressId'] == null ||
                 freshData['defaultAddressId'] == '')) {
-          final result = await Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => AddAddressScreen()));
-          if (result == true) {
-            setState(() => _selectedIndex = index);
-          }
-          return;
+          final result = await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const AddAddressScreen(showSkip: true),
+            ),
+          );
+          // result == true  → address added, proceed
+          // result == null / false → skipped, still let user into shop
+          // (payment will re-enforce this requirement)
         }
       }
       setState(() => _selectedIndex = index);
@@ -332,7 +344,7 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
                   return CircleAvatar(
                     radius: 20.r,
                     backgroundColor: Colors.transparent,
-                    backgroundImage: AssetImage(
+                    backgroundImage: const AssetImage(
                       'assets/chat_with_seller_grey.png',
                     ),
                   );
@@ -364,7 +376,7 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
                         CircleAvatar(
                           radius: 20.r,
                           backgroundColor: Colors.transparent,
-                          backgroundImage: AssetImage(
+                          backgroundImage: const AssetImage(
                             'assets/chat_with_seller_grey.png',
                           ),
                         ),
@@ -392,7 +404,9 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
                   return CircleAvatar(
                     radius: 20.r,
                     backgroundColor: Colors.transparent,
-                    backgroundImage: AssetImage('assets/chat_with_seller.png'),
+                    backgroundImage: const AssetImage(
+                      'assets/chat_with_seller.png',
+                    ),
                   );
                 }
                 return StreamBuilder(
@@ -422,7 +436,7 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
                         CircleAvatar(
                           radius: 20.r,
                           backgroundColor: Colors.transparent,
-                          backgroundImage: AssetImage(
+                          backgroundImage: const AssetImage(
                             'assets/chat_with_seller.png',
                           ),
                         ),
@@ -448,12 +462,14 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
             icon: CircleAvatar(
               radius: 30.r,
               backgroundColor: Colors.transparent,
-              backgroundImage: AssetImage('assets/mypage_avatar_grey.png'),
+              backgroundImage: const AssetImage(
+                'assets/mypage_avatar_grey.png',
+              ),
             ),
             activeIcon: CircleAvatar(
               radius: 30.r,
               backgroundColor: Colors.transparent,
-              backgroundImage: AssetImage('assets/mypage_avatar.png'),
+              backgroundImage: const AssetImage('assets/mypage_avatar.png'),
             ),
             label: '홈',
           ),
@@ -481,7 +497,7 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
           ),
         ],
         currentIndex: _selectedIndex,
-        onTap: (_onItemTapped),
+        onTap: _onItemTapped,
       ),
     );
   }

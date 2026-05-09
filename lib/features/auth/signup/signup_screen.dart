@@ -12,6 +12,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -43,7 +44,6 @@ class _SignupScreenState extends State<SignupScreen> {
       final XFile? image = await ImagePicker().pickImage(
         source: ImageSource.gallery,
       );
-
       if (image != null) {
         setState(() {
           selectedImage = image;
@@ -59,6 +59,7 @@ class _SignupScreenState extends State<SignupScreen> {
     passwordController.dispose();
     emailController.dispose();
     nameController.dispose();
+    phoneController.dispose();
     super.dispose();
   }
 
@@ -98,10 +99,10 @@ class _SignupScreenState extends State<SignupScreen> {
                                 '닉네임',
                                 style: TextStyles.abeezee16px400wPblack,
                               ),
-                              Spacer(),
+                              const Spacer(),
                               InkWell(
                                 onTap: () async {
-                                  await pickImage(); // Just pick, don't upload
+                                  await pickImage();
                                 },
                                 child:
                                     selectedImage != null
@@ -148,7 +149,6 @@ class _SignupScreenState extends State<SignupScreen> {
                               if (val == null || val.isEmpty) {
                                 return '전화번호를 입력하세요';
                               }
-                              // Korean phone number: 010-xxxx-xxxx or 010xxxxxxxx
                               final koreanReg = RegExp(
                                 r'^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$',
                               );
@@ -225,7 +225,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   ),
                                 ],
                               ),
-                              Spacer(),
+                              const Spacer(),
                               Padding(
                                 padding: EdgeInsets.only(right: 15.w),
                                 child: Transform.scale(
@@ -250,7 +250,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                 ),
                 verticalSpace(10),
-                // Terms and Privacy checkboxes
+
+                // ── Terms and Privacy checkboxes ──────────────────────────
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -284,7 +285,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               await launchUrl(url);
                             }
                           },
-                          child: Text(
+                          child: const Text(
                             '이용약관 동의',
                             style: TextStyle(
                               color: Colors.black,
@@ -315,7 +316,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           }),
                           side: BorderSide(color: Colors.black, width: 2.w),
                         ),
-                        Text(
+                        const Text(
                           '개인정보 수집 및 이용 동의',
                           style: TextStyle(color: Colors.black),
                         ),
@@ -326,40 +327,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 verticalSpace(20),
                 Text(error, style: TextStyles.abeezee16px400wPred),
 
-                // Container(
-                //   decoration: ShapeDecoration(
-                //     color: ColorsManager.white,
-                //     shape: RoundedRectangleBorder(
-                //       side: BorderSide(width: 1, color: ColorsManager.primary100),
-                //       borderRadius: BorderRadius.circular(25),
-                //     ),
-                //   ),
-                //   child: Padding(
-                //     padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
-                //     child: Column(
-                //       crossAxisAlignment: CrossAxisAlignment.start,
-                //       children: [
-                //         Text('월 회비', style: TextStyles.abeezee16px400wPblack),
-                //         Text('3,000원', style: TextStyles.abeezee14px400wP600),
-                //         Divider(color: ColorsManager.primary100),
-                //         Text('혜택', style: TextStyles.abeezee16px400wPblack),
-                //         Text(
-                //           '전제품 무료배송, 무료반품 , 멤버십 커뮤니티 이용, 최저가 \n 상품 구매 ',
-                //           style: TextStyles.abeezee14px400wP600,
-                //         ),
-                //         Divider(color: ColorsManager.primary100),
-                //         Text('결제', style: TextStyles.abeezee16px400wPblack),
-                //         UnderlineTextField(
-                //           controller: paymentInfoController,
-                //           hintText: '결제수단 등록',
-                //           obscureText: false,
-                //           keyboardType: TextInputType.name,
-                //         ),
-                //         /* Text('결제 정보를 입력하세요', style: TextStyles.abeezee14px400wP600), */
-                //       ],
-                //     ),
-                //   ),
-                // ),
                 WideTextButton(
                   txt: '가입하기',
                   func: () async {
@@ -391,6 +358,12 @@ class _SignupScreenState extends State<SignupScreen> {
                           ? myUser.url = "https://i.ibb.co/mrVrHy7z/avatar.png"
                           : myUser.url = imgUrl;
                       myUser.phoneNumber = phoneController.text;
+
+                      // ── Set flag BEFORE signUp so it's ready when
+                      // the auth stream fires and MyPageScreen mounts.
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('show_bank_prompt_after_login', true);
+
                       var result = await fireBaseRepo.signUp(
                         myUser,
                         passwordController.text,
@@ -399,10 +372,15 @@ class _SignupScreenState extends State<SignupScreen> {
                       LoadingService().hideLoading();
 
                       if (result != '회원가입이 완료되었습니다') {
+                        // Signup failed — clear the flag we just set
+                        await prefs.remove('show_bank_prompt_after_login');
                         setState(() {
                           error = result;
                         });
                       }
+                      // On success: no action needed — LandingScreen's
+                      // StreamBuilder reacts to auth state and renders
+                      // MyPageScreen, which reads the flag in initState.
                     }
                   },
                   color: ColorsManager.primaryblack,
@@ -418,11 +396,11 @@ class _SignupScreenState extends State<SignupScreen> {
             return isLoading
                 ? Container(
                   color: Colors.black54,
-                  child: Center(
+                  child: const Center(
                     child: CircularProgressIndicator(color: Colors.black),
                   ),
                 )
-                : SizedBox.shrink();
+                : const SizedBox.shrink();
           },
         ),
       ],

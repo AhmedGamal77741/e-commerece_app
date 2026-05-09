@@ -183,38 +183,69 @@ class _ReceiptSetupScreenState extends State<ReceiptSetupScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
-          child: SizedBox(
-            width: double.infinity,
-            height: 56.h,
-            child: TextButton(
-              onPressed: _isSaving ? null : _save,
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.black,
-                disabledBackgroundColor: Colors.grey[400],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Save button ───────────────────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                height: 56.h,
+                child: TextButton(
+                  onPressed: _isSaving ? null : _save,
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    disabledBackgroundColor: Colors.grey[400],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
+                  child:
+                      _isSaving
+                          ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                          : Text(
+                            '저장하고 계속하기',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18.sp,
+                              fontFamily: 'NotoSans',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                 ),
               ),
-              child:
-                  _isSaving
-                      ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                      : Text(
-                        '저장하고 계속하기',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18.sp,
-                          fontFamily: 'NotoSans',
-                          fontWeight: FontWeight.w600,
-                        ),
+
+              // ── Skip button — only for 'shop' source ─────────────────
+              if (widget.source == 'shop') ...[
+                SizedBox(height: 10.h),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48.h,
+                  child: TextButton(
+                    // Pops 'skip' → NavBar lets user into shop without saving
+                    onPressed: () => Navigator.of(context).pop('skip'),
+                    style: TextButton.styleFrom(foregroundColor: Colors.black),
+                    child: Text(
+                      '나중에 등록하기',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 15.sp,
+                        fontFamily: 'NotoSans',
+                        fontWeight: FontWeight.w400,
+                        decoration: TextDecoration.underline,
+                        decorationColor: Colors.black54,
                       ),
-            ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),

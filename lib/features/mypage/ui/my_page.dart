@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/mypage/data/firebas_funcs.dart';
 import 'package:ecommerece_app/features/mypage/ui/widgets/profile_type.dart';
@@ -12,8 +13,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class MyPage extends StatelessWidget {
+class MyPage extends StatefulWidget {
   const MyPage({super.key});
+
+  @override
+  State<MyPage> createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> {
+  final GlobalKey _userInfoKey = GlobalKey();
+  final GlobalKey _profileTypeKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -58,11 +67,29 @@ class MyPage extends StatelessWidget {
                   verticalSpace(20),
                   UserOptionsContainer(isSub: isSub),
                   verticalSpace(20),
-                  ProfileType(isPrivate: myuser.isPrivate, userId: userId),
+                  ProfileType(
+                    key: _profileTypeKey,
+                    isPrivate: myuser.isPrivate,
+                    userId: userId,
+                    currentUser: myuser,
+                  ),
                   verticalSpace(20),
                   Text('개인정보', style: TextStyles.abeezee17px800wPblack),
                   verticalSpace(20),
-                  UserInfoContainer(),
+                  UserInfoContainer(key: _userInfoKey),
+                  verticalSpace(20),
+                  WideTextButton(
+                    txt: '저장',
+                    func: () async {
+                      final profileState =
+                          _profileTypeKey.currentState as dynamic;
+                      final newNickname = profileState?.getNickname() ?? '';
+                      final userState = _userInfoKey.currentState as dynamic;
+                      await userState?.performUpdate(newNickname: newNickname);
+                    },
+                    color: Colors.black,
+                    txtColor: Colors.white,
+                  ),
                   verticalSpace(20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

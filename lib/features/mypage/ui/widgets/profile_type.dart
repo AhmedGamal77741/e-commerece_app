@@ -1,6 +1,7 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,8 +10,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ProfileType extends StatefulWidget {
   final bool isPrivate;
   final String userId;
+  final MyUser? currentUser;
 
-  const ProfileType({super.key, required this.isPrivate, required this.userId});
+  const ProfileType({
+    super.key,
+    required this.isPrivate,
+    required this.userId,
+    this.currentUser,
+  });
 
   @override
   State<ProfileType> createState() => _ProfileTypeState();
@@ -18,11 +25,25 @@ class ProfileType extends StatefulWidget {
 
 class _ProfileTypeState extends State<ProfileType> {
   late bool isPrivate;
+  late TextEditingController _nicknameController;
 
   @override
   void initState() {
     super.initState();
     isPrivate = widget.isPrivate;
+    _nicknameController = TextEditingController(
+      text: widget.currentUser?.name ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nicknameController.dispose();
+    super.dispose();
+  }
+
+  String getNickname() {
+    return _nicknameController.text;
   }
 
   Future<void> _updatePrivacy(bool value) async {
@@ -121,12 +142,28 @@ class _ProfileTypeState extends State<ProfileType> {
             ),
           ),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(15.w, 20.h, 25.w, 20.h),
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('이름', style: TextStyles.abeezee17px800wPblack),
-                verticalSpace(30),
+                Text(
+                  '닉네임',
+                  style: TextStyles.abeezee16px400wPblack.copyWith(
+                    fontSize: 16.sp,
+                  ),
+                ),
+                verticalSpace(5),
+                TextField(
+                  controller: _nicknameController,
+                  keyboardType: TextInputType.name,
+                  decoration: InputDecoration(
+                    hintText: '닉네임 입력',
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                ),
+                verticalSpace(20),
                 Divider(color: ColorsManager.primary100),
                 verticalSpace(10),
                 Row(
