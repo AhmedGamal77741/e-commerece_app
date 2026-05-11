@@ -11,6 +11,7 @@ import 'package:ecommerece_app/features/home/data/follow_service.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
+import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/home/widgets/post_actions.dart';
 import 'package:ecommerece_app/features/home/widgets/share_dialog.dart';
 import 'package:ecommerece_app/features/home/widgets/show_post_options.dart';
@@ -511,23 +512,19 @@ class _PostItemState extends State<PostItem> {
                           children: [
                             InkWell(
                               onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => SafeArea(
-                                          child: Scaffold(
-                                            body: FollowingTab(
-                                              firebaseUser:
-                                                  FirebaseAuth
-                                                      .instance
-                                                      .currentUser,
-                                              preselectedUser: myuser?.userId,
+                                if (myuser != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) => Scaffold(
+                                            body: ProfileTab(
+                                              userId: myuser.userId,
                                             ),
                                           ),
-                                        ),
-                                  ),
-                                );
+                                    ),
+                                  );
+                                }
                               },
                               child: Container(
                                 width: 56.w,
@@ -886,19 +883,19 @@ class _PostItemState extends State<PostItem> {
                         children: [
                           InkWell(
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => Scaffold(
-                                        body: FollowingTab(
-                                          firebaseUser:
-                                              FirebaseAuth.instance.currentUser,
-                                          preselectedUser: myuser?.userId,
+                              if (myuser != null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => Scaffold(
+                                          body: ProfileTab(
+                                            userId: myuser.userId,
+                                          ),
                                         ),
-                                      ),
-                                ),
-                              );
+                                  ),
+                                );
+                              }
                             },
                             child: Container(
                               width: 65.w,

@@ -4,6 +4,7 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
+import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_actions.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart'; // imports NaturalAspectPageView
 import 'package:flutter/material.dart';
@@ -56,19 +57,36 @@ class GuestPostItem extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 56.w,
-                            height: 56.h,
-                            decoration: ShapeDecoration(
-                              image: DecorationImage(
-                                image:
-                                    profileUrl.isNotEmpty
-                                        ? NetworkImage(profileUrl)
-                                        : AssetImage('assets/avatar.png')
-                                            as ImageProvider,
-                                fit: BoxFit.cover,
+                          InkWell(
+                            onTap: () {
+                              if (myuser != null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => Scaffold(
+                                          body: ProfileTab(
+                                            userId: myuser.userId,
+                                          ),
+                                        ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Container(
+                              width: 56.w,
+                              height: 56.h,
+                              decoration: ShapeDecoration(
+                                image: DecorationImage(
+                                  image:
+                                      profileUrl.isNotEmpty
+                                          ? NetworkImage(profileUrl)
+                                          : AssetImage('assets/avatar.png')
+                                              as ImageProvider,
+                                  fit: BoxFit.cover,
+                                ),
+                                shape: OvalBorder(),
                               ),
-                              shape: OvalBorder(),
                             ),
                           ),
                           horizontalSpace(5),
@@ -195,19 +213,34 @@ class GuestPostItem extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       // Avatar
-                      Container(
-                        width: 65.w,
-                        height: 65.h,
-                        decoration: ShapeDecoration(
-                          image: DecorationImage(
-                            image:
-                                profileUrl.isNotEmpty
-                                    ? NetworkImage(profileUrl)
-                                    : AssetImage('assets/avatar.png')
-                                        as ImageProvider,
-                            fit: BoxFit.cover,
+                      InkWell(
+                        onTap: () {
+                          if (myuser != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => Scaffold(
+                                      body: ProfileTab(userId: myuser.userId),
+                                    ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          width: 65.w,
+                          height: 65.h,
+                          decoration: ShapeDecoration(
+                            image: DecorationImage(
+                              image:
+                                  profileUrl.isNotEmpty
+                                      ? NetworkImage(profileUrl)
+                                      : AssetImage('assets/avatar.png')
+                                          as ImageProvider,
+                              fit: BoxFit.cover,
+                            ),
+                            shape: OvalBorder(),
                           ),
-                          shape: OvalBorder(),
                         ),
                       ),
                       horizontalSpace(8),
