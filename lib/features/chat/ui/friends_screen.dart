@@ -9,6 +9,7 @@ import 'package:ecommerece_app/features/chat/services/friends_service.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
+import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -2144,14 +2145,8 @@ class _FriendsScreenState extends State<FriendsScreen>
                     context,
                     MaterialPageRoute(
                       builder:
-                          (context) => SafeArea(
-                            child: Scaffold(
-                              body: FollowingTab(
-                                firebaseUser: FirebaseAuth.instance.currentUser,
-                                preselectedUser: friend.userId,
-                              ),
-                            ),
-                          ),
+                          (context) =>
+                              Scaffold(body: ProfileTab(userId: friend.userId)),
                     ),
                   );
                 },
