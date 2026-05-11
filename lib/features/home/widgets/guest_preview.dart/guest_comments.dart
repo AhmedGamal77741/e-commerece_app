@@ -15,80 +15,90 @@ class GuestComments extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            // Post preview styled like Comments screen
-            Padding(
-              padding: EdgeInsets.only(right: 10.w),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [Expanded(child: GuestPostItem(post: post))],
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── FIX: use MediaQuery width instead of relying on
+              // LayoutBuilder inside a Column/SingleChildScrollView
+              // (which gives unbounded maxWidth).
+              // Subtracts all horizontal padding that wraps the image:
+              //   • outer right: 10.w  (Padding below)
+              //   • GuestPostItem internal left: 10.w + right: 10.w
+              Builder(
+                builder: (context) {
+                  final double imageWidth =
+                      MediaQuery.of(context).size.width - 10.w - 10.w - 10.w;
+                  return Padding(
+                    padding: EdgeInsets.only(right: 10.w),
+                    child: GuestPostItem(post: post, imageWidth: imageWidth),
+                  );
+                },
               ),
-            ),
 
-            verticalSpace(30),
-            // Comments list
-            Expanded(
-              child: SingleChildScrollView(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream:
-                      FirebaseFirestore.instance
-                          .collection('posts')
-                          .doc(post['postId'])
-                          .collection('comments')
-                          .orderBy('createdAt', descending: false)
-                          .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16.h),
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
-                    if (snapshot.hasError) {
-                      return Center(child: Text('댓글을 불러올 수 없습니다'));
-                    }
-                    final comments = snapshot.data?.docs ?? [];
-                    if (comments.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16.h),
-                          child: Text(
-                            '아직 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 14.sp,
-                              fontFamily: 'NotoSans',
-                            ),
+              verticalSpace(30),
+
+              // Comments list
+              StreamBuilder<QuerySnapshot>(
+                stream:
+                    FirebaseFirestore.instance
+                        .collection('posts')
+                        .doc(post['postId'])
+                        .collection('comments')
+                        .orderBy('createdAt', descending: false)
+                        .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.h),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('댓글을 불러올 수 없습니다'));
+                  }
+
+                  final comments = snapshot.data?.docs ?? [];
+
+                  if (comments.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.h),
+                        child: Text(
+                          '아직 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14.sp,
+                            fontFamily: 'NotoSans',
                           ),
                         ),
-                      );
-                    }
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      itemCount: comments.length,
-                      itemBuilder: (context, index) {
-                        final comment =
-                            comments[index].data() as Map<String, dynamic>;
-                        return Column(
-                          children: [
-                            GuestCommentItem(comment: comment),
-                            SizedBox(
-                              height: 16.h,
-                            ), // Add spacing between comments
-                          ],
-                        );
-                      },
+                      ),
                     );
-                  },
-                ),
+                  }
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: comments.length,
+                    itemBuilder: (context, index) {
+                      final comment =
+                          comments[index].data() as Map<String, dynamic>;
+                      return Column(
+                        children: [
+                          GuestCommentItem(comment: comment),
+                          SizedBox(height: 16.h),
+                        ],
+                      );
+                    },
+                  );
+                },
               ),
-            ),
-            // No input field for guests
-          ],
+
+              SizedBox(height: 24.h),
+            ],
+          ),
         ),
       ),
     );

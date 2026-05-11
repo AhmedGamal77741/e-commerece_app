@@ -191,12 +191,12 @@ class _AddPostState extends State<AddPost> {
       } else if (value == 'arrange') {
         setState(() {
           isArrangeMode = !isArrangeMode;
-          if (isArrangeMode) isDeleteMode = false; // Turn off delete mode
+          if (isArrangeMode) isDeleteMode = false;
         });
       } else if (value == 'delete') {
         setState(() {
           isDeleteMode = !isDeleteMode;
-          if (isDeleteMode) isArrangeMode = false; // Turn off arrange mode
+          if (isDeleteMode) isArrangeMode = false;
         });
       }
     });
@@ -252,9 +252,7 @@ class _AddPostState extends State<AddPost> {
             if (isInDeleteMode) ...[
               SizedBox(width: 6.w),
               GestureDetector(
-                onTap: () {
-                  _deleteCategory(categoryId);
-                },
+                onTap: () => _deleteCategory(categoryId),
                 child: Icon(Icons.close, size: 14, color: Colors.red),
               ),
             ],
@@ -310,7 +308,6 @@ class _AddPostState extends State<AddPost> {
                     ScaffoldMessenger.of(
                       context,
                     ).showSnackBar(SnackBar(content: Text('성공')));
-
                     Navigator.pop(context);
                   } catch (e) {
                     print(e.toString());
@@ -340,7 +337,7 @@ class _AddPostState extends State<AddPost> {
         ),
         appBar: AppBar(
           titleSpacing: 0,
-          automaticallyImplyLeading: false, // Don't show the leading button
+          automaticallyImplyLeading: false,
           title: Row(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -462,108 +459,105 @@ class _AddPostState extends State<AddPost> {
                   ),
 
                 // Categories section
-                if (categories.isNotEmpty || true)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 35.h,
-                          child:
-                              categories.isEmpty
-                                  ? Center(
-                                    child: Text(
-                                      '카테고리를 추가해주세요',
-                                      style: TextStyle(
-                                        fontSize: 12.sp,
-                                        color: Colors.grey,
-                                      ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 35.h,
+                        child:
+                            categories.isEmpty
+                                ? Center(
+                                  child: Text(
+                                    '카테고리를 추가해주세요',
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: Colors.grey,
                                     ),
-                                  )
-                                  : ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: categories.length,
-                                    itemBuilder: (context, index) {
-                                      final category = categories[index];
-                                      final isSelected =
-                                          selectedCategoryId == category['id'];
-                                      return Padding(
-                                        padding: EdgeInsets.only(right: 8.w),
-                                        child:
-                                            isArrangeMode
-                                                ? Draggable<int>(
-                                                  data: index,
-                                                  feedback: Material(
-                                                    child: _buildCategoryPill(
-                                                      category['name'],
-                                                      isSelected,
-                                                      isDeleteMode,
-                                                      category['id'],
-                                                    ),
-                                                  ),
-                                                  childWhenDragging: Opacity(
-                                                    opacity: 0.5,
-                                                    child: _buildCategoryPill(
-                                                      category['name'],
-                                                      isSelected,
-                                                      isDeleteMode,
-                                                      category['id'],
-                                                    ),
-                                                  ),
-                                                  child: DragTarget<int>(
-                                                    onAccept: (draggedIndex) {
-                                                      final newCategories =
-                                                          List<
-                                                            Map<String, dynamic>
-                                                          >.from(categories);
-                                                      final draggedCategory =
-                                                          newCategories
-                                                              .removeAt(
-                                                                draggedIndex,
-                                                              );
-                                                      newCategories.insert(
-                                                        index,
-                                                        draggedCategory,
-                                                      );
-                                                      _updateCategoryOrder(
-                                                        newCategories,
-                                                      );
-                                                    },
-                                                    builder: (
-                                                      context,
-                                                      candidateData,
-                                                      rejectedData,
-                                                    ) {
-                                                      return _buildCategoryPill(
-                                                        category['name'],
-                                                        isSelected,
-                                                        isDeleteMode,
-                                                        category['id'],
-                                                      );
-                                                    },
-                                                  ),
-                                                )
-                                                : _buildCategoryPill(
-                                                  category['name'],
-                                                  isSelected,
-                                                  isDeleteMode,
-                                                  category['id'],
-                                                ),
-                                      );
-                                    },
                                   ),
-                        ),
+                                )
+                                : ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: categories.length,
+                                  itemBuilder: (context, index) {
+                                    final category = categories[index];
+                                    final isSelected =
+                                        selectedCategoryId == category['id'];
+                                    return Padding(
+                                      padding: EdgeInsets.only(right: 8.w),
+                                      child:
+                                          isArrangeMode
+                                              ? Draggable<int>(
+                                                data: index,
+                                                feedback: Material(
+                                                  child: _buildCategoryPill(
+                                                    category['name'],
+                                                    isSelected,
+                                                    isDeleteMode,
+                                                    category['id'],
+                                                  ),
+                                                ),
+                                                childWhenDragging: Opacity(
+                                                  opacity: 0.5,
+                                                  child: _buildCategoryPill(
+                                                    category['name'],
+                                                    isSelected,
+                                                    isDeleteMode,
+                                                    category['id'],
+                                                  ),
+                                                ),
+                                                child: DragTarget<int>(
+                                                  onAccept: (draggedIndex) {
+                                                    final newCategories = List<
+                                                      Map<String, dynamic>
+                                                    >.from(categories);
+                                                    final draggedCategory =
+                                                        newCategories.removeAt(
+                                                          draggedIndex,
+                                                        );
+                                                    newCategories.insert(
+                                                      index,
+                                                      draggedCategory,
+                                                    );
+                                                    _updateCategoryOrder(
+                                                      newCategories,
+                                                    );
+                                                  },
+                                                  builder: (
+                                                    context,
+                                                    candidateData,
+                                                    rejectedData,
+                                                  ) {
+                                                    return _buildCategoryPill(
+                                                      category['name'],
+                                                      isSelected,
+                                                      isDeleteMode,
+                                                      category['id'],
+                                                    );
+                                                  },
+                                                ),
+                                              )
+                                              : _buildCategoryPill(
+                                                category['name'],
+                                                isSelected,
+                                                isDeleteMode,
+                                                category['id'],
+                                              ),
+                                    );
+                                  },
+                                ),
                       ),
-                      IconButton(
-                        icon: CircleAvatar(
-                          radius: 15.r,
-                          backgroundColor: Colors.transparent,
-                          backgroundImage: AssetImage('assets/settings.png'),
-                        ),
-                        onPressed: _showCategoryMenu,
+                    ),
+                    IconButton(
+                      icon: CircleAvatar(
+                        radius: 15.r,
+                        backgroundColor: Colors.transparent,
+                        backgroundImage: AssetImage('assets/settings.png'),
                       ),
-                    ],
-                  ),
+                      onPressed: _showCategoryMenu,
+                    ),
+                  ],
+                ),
 
                 SizedBox(height: 12.h),
 
@@ -588,7 +582,6 @@ class _AddPostState extends State<AddPost> {
                           if (snapshot.hasError) {
                             return const Center(child: Text('Error'));
                           }
-
                           return Text(
                             snapshot.data!.data()!['innerPlaceholderText'],
                             style: TextStyle(
@@ -625,20 +618,18 @@ class _AddPostState extends State<AddPost> {
 
                 SizedBox(height: 12.h),
 
-                // Image preview
-                // Place this inside your build method where you want the preview to appear
+                // ── UPDATED: Image preview with rounded corners ───────────
                 StatefulBuilder(
                   builder: (BuildContext context, StateSetter setInnerState) {
                     if (imgUrls.isEmpty) return const SizedBox.shrink();
 
                     return Container(
-                      height: 150.h,
+                      height: 160.h,
                       margin: EdgeInsets.only(top: 8.h),
                       child: ReorderableListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: imgUrls.length,
                         onReorder: (oldIndex, newIndex) {
-                          // Use setInnerState instead of the global setState
                           setInnerState(() {
                             if (newIndex > oldIndex) newIndex -= 1;
                             final String item = imgUrls.removeAt(oldIndex);
@@ -652,11 +643,12 @@ class _AddPostState extends State<AddPost> {
                             width: 120.w,
                             child: Stack(
                               children: [
+                                // ── UPDATED: ClipRRect on the image itself ──
                                 ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(25),
                                   child: Image.network(
                                     imgUrls[index],
-                                    height: 150.h,
+                                    height: 160.h,
                                     width: 120.w,
                                     fit: BoxFit.cover,
                                   ),
@@ -666,7 +658,6 @@ class _AddPostState extends State<AddPost> {
                                   right: 4.w,
                                   child: GestureDetector(
                                     onTap: () {
-                                      // Only this block rebuilds
                                       setInnerState(() {
                                         imgUrls.removeAt(index);
                                       });
@@ -693,83 +684,7 @@ class _AddPostState extends State<AddPost> {
                     );
                   },
                 ),
-                /* if (imgUrls.isNotEmpty)
-                  GestureDetector(
-                    onTap: () async {
-                      showLoadingDialog(context);
-                      imgUrls = await uploadMultipleImagesToFirebaseHome();
-                      Navigator.pop(context);
-                      setState(() {});
-                    },
-                    child: Container(
-                      margin: EdgeInsets.only(top: 8.h),
-                      width: double.infinity,
-                      height: 200.h,
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              imgUrls.isNotEmpty ? imgUrls[0] : "",
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, progress) {
-                                if (progress == null) return child;
-                                return Center(
-                                  child: SizedBox(
-                                    width: 24.w,
-                                    height: 24.w,
-                                    child: CircularProgressIndicator(
-                                      value:
-                                          progress.expectedTotalBytes != null
-                                              ? progress.cumulativeBytesLoaded /
-                                                  progress.expectedTotalBytes!
-                                              : null,
-                                    ),
-                                  ),
-                                );
-                              },
-                              errorBuilder:
-                                  (context, error, stackTrace) => Container(
-                                    color: Colors.grey[200],
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.broken_image,
-                                        size: 40,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 8.h,
-                            left: 8.w,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  imgUrls = [];
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.6),
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: EdgeInsets.all(6),
-                                child: Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ), */
 
-                // Add extra bottom spacing so content isn't hidden by bottom bar
                 SizedBox(height: 120.h),
               ],
             ),

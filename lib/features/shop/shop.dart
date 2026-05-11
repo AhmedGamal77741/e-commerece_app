@@ -7,6 +7,7 @@ import 'package:ecommerece_app/features/cart/cart.dart';
 import 'package:ecommerece_app/features/cart/sub_screens/address_list_screen.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -132,7 +133,6 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
     final bool isSub = userData != null && (userData['isSub'] ?? false);
 
     // Get default address name
-    String addressName = '배송지 선택';
     if (userData != null &&
         userData['defaultAddressId'] != null &&
         userData['defaultAddressId'] != '') {
@@ -142,10 +142,7 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
           .doc(addressId);
       addressSnapshot.get().then((addressDoc) {
         if (addressDoc.exists) {
-          final addressData = addressDoc.data() as Map<String, dynamic>;
-          setState(() {
-            addressName = addressData['address'] ?? 'Unknown';
-          });
+          setState(() {});
         }
       });
     }
@@ -266,14 +263,11 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
                       ],
                     ),
                     TabBar(
-                      // TabAlignment.start is valid only for scrollable bars; when
-                      // there are few categories the tabs are fixed and center-aligned
-                      // by default, so adjust accordingly.
-                      tabAlignment:
-                          categories.length > 4
-                              ? TabAlignment.start
-                              : TabAlignment.center,
+                      tabAlignment: TabAlignment.start,
+
+                      dragStartBehavior: DragStartBehavior.start,
                       padding: EdgeInsets.zero,
+                      labelPadding: EdgeInsets.symmetric(horizontal: 16.w),
                       labelStyle: TextStyle(
                         fontSize: 16.sp,
                         decoration: TextDecoration.none,
@@ -284,9 +278,10 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
                         color: ColorsManager.primaryblack,
                       ),
                       unselectedLabelColor: ColorsManager.primary600,
-                      indicatorSize: TabBarIndicatorSize.tab,
+                      indicatorSize: TabBarIndicatorSize.label,
                       indicatorColor: ColorsManager.primaryblack,
-                      isScrollable: categories.length > 4,
+                      isScrollable: true,
+
                       tabs:
                           categories
                               .map((category) => Tab(text: category['name']))
@@ -376,33 +371,9 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
     }
   }
 
-  bool _isSameRegion(
-    Map<String, dynamic>? userAddress,
-    Map<String, dynamic>? productAddress,
-  ) {
-    if (userAddress == null || productAddress == null) return false;
-    final userRegion1 =
-        userAddress['road_address']?['region_1depth_name'] ??
-        userAddress['address']?['region_1depth_name'];
-    final userRegion2 =
-        userAddress['road_address']?['region_2depth_name'] ??
-        userAddress['address']?['region_2depth_name'];
-    final productRegion1 =
-        productAddress['road_address']?['region_1depth_name'] ??
-        productAddress['address']?['region_1depth_name'];
-    final productRegion2 =
-        productAddress['road_address']?['region_2depth_name'] ??
-        productAddress['address']?['region_2depth_name'];
-    return (userRegion1 != null &&
-            productRegion1 != null &&
-            userRegion1 == productRegion1) ||
-        (userRegion2 != null &&
-            productRegion2 != null &&
-            userRegion2 == productRegion2);
-  }
-
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // Display products in a grid
     return Scaffold(
       body: Padding(

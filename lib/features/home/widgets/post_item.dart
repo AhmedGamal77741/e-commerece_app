@@ -21,23 +21,247 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-class PostItem extends StatelessWidget {
+// =============================================================================
+// NaturalAspectPageView
+// =============================================================================
+class NaturalAspectPageView extends StatefulWidget {
+  final List imgUrls;
+  final PageController pageController;
+  final double? explicitWidth;
+
+  const NaturalAspectPageView({
+    required this.imgUrls,
+    required this.pageController,
+    this.explicitWidth,
+  });
+
+  @override
+  State<NaturalAspectPageView> createState() => NaturalAspectPageViewState();
+}
+
+class NaturalAspectPageViewState extends State<NaturalAspectPageView> {
+  List<double?> _ratios = [];
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _ratios = List<double?>.filled(widget.imgUrls.length, null);
+    for (int i = 0; i < widget.imgUrls.length; i++) {
+      _resolveRatio(i);
+    }
+    widget.pageController.addListener(_onPageChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.pageController.removeListener(_onPageChanged);
+    super.dispose();
+  }
+
+  void _onPageChanged() {
+    final page = widget.pageController.page?.round() ?? 0;
+    if (page != _currentPage && mounted) {
+      setState(() => _currentPage = page);
+    }
+  }
+
+  void _resolveRatio(int index) {
+    final image = NetworkImage(widget.imgUrls[index] as String);
+    final stream = image.resolve(ImageConfiguration.empty);
+    late ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (info, _) {
+        stream.removeListener(listener);
+        if (mounted) {
+          setState(() {
+            _ratios[index] =
+                info.image.width.toDouble() / info.image.height.toDouble();
+          });
+        }
+      },
+      onError: (_, __) {
+        stream.removeListener(listener);
+        if (mounted) setState(() => _ratios[index] = 1.0);
+      },
+    );
+    stream.addListener(listener);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // If explicitWidth is provided, bypass LayoutBuilder completely.
+    if (widget.explicitWidth != null) {
+      debugPrint(
+        '✅ NaturalAspectPageView using explicitWidth=${widget.explicitWidth}',
+      );
+      return _buildWithWidth(widget.explicitWidth!);
+    }
+
+    debugPrint('⚠️ NaturalAspectPageView falling back to LayoutBuilder');
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double availableWidth =
+            constraints.hasBoundedWidth
+                ? constraints.maxWidth
+                : MediaQuery.of(context).size.width - 20.w;
+        return _buildWithWidth(availableWidth);
+      },
+    );
+  }
+
+  Widget _buildWithWidth(double availableWidth) {
+    debugPrint(
+      '🟢 _buildWithWidth availableWidth=$availableWidth  ratio=${_ratios.isNotEmpty ? _ratios[0] : "empty"}',
+    );
+
+    final int safePage =
+        (_ratios.isNotEmpty && _currentPage < _ratios.length)
+            ? _currentPage
+            : 0;
+
+    final double? currentRatio = _ratios.isNotEmpty ? _ratios[safePage] : null;
+
+    if (currentRatio == null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(25),
+        child: Container(
+          width: availableWidth,
+          height: availableWidth * 0.75,
+          color: Colors.grey[200],
+        ),
+      );
+    }
+
+    final double currentHeight = availableWidth / currentRatio;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          width: availableWidth,
+          height: currentHeight,
+          child: PageView.builder(
+            controller: widget.pageController,
+            itemCount: widget.imgUrls.length,
+            physics: const BouncingScrollPhysics(),
+            itemBuilder: (context, index) {
+              final double? ratio =
+                  index < _ratios.length ? _ratios[index] : null;
+
+              if (ratio == null) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(25),
+                  child: Container(
+                    width: availableWidth,
+                    height: currentHeight,
+                    color: Colors.grey[200],
+                  ),
+                );
+              }
+
+              final double itemHeight = availableWidth / ratio;
+
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(25),
+                child: SizedBox(
+                  width: availableWidth,
+                  height: itemHeight,
+                  child: CachedNetworkImage(
+                    imageUrl: widget.imgUrls[index] as String,
+                    width: availableWidth,
+                    height: itemHeight,
+                    fit: BoxFit.cover,
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
+                    placeholder:
+                        (context, url) => Container(
+                          width: availableWidth,
+                          height: itemHeight,
+                          color: Colors.grey[200],
+                        ),
+                    errorWidget:
+                        (context, url, error) => Container(
+                          width: availableWidth,
+                          height: itemHeight,
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: Icon(
+                              Icons.broken_image,
+                              color: Colors.grey,
+                              size: 48,
+                            ),
+                          ),
+                        ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        if (widget.imgUrls.length > 1)
+          Padding(
+            padding: EdgeInsets.only(top: 8.h),
+            child: SmoothPageIndicator(
+              controller: widget.pageController,
+              count: widget.imgUrls.length,
+              effect: const ScrollingDotsEffect(
+                activeDotColor: Colors.black,
+                dotColor: Colors.grey,
+                dotHeight: 8,
+                dotWidth: 8,
+              ),
+              onDotClicked: (index) {
+                widget.pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeInOut,
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// =============================================================================
+// PostItem — converted to StatefulWidget so PageController is stable
+// =============================================================================
+class PostItem extends StatefulWidget {
   final String postId;
   final bool fromComments;
   final bool showMoreButton;
-  PostItem({
+  final double? imageWidth;
+
+  const PostItem({
     Key? key,
     required this.postId,
     required this.fromComments,
     this.showMoreButton = true,
+    this.imageWidth,
   }) : super(key: key);
-  PageController _pageController = PageController();
-  // ── helpers ────────────────────────────────────────────────────────────────
 
-  /// Shows the edit dialog for the current user's post.
+  @override
+  State<PostItem> createState() => _PostItemState();
+}
+
+class _PostItemState extends State<PostItem> {
+  // Stable PageController that survives rebuilds
+  final PageController _pageController = PageController();
+  final ScreenshotController _screenshotController = ScreenshotController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   Future<void> _showEditDialog(BuildContext context, String currentText) async {
     final controller = TextEditingController(text: currentText);
     await showDialog(
@@ -101,7 +325,7 @@ class PostItem extends StatelessWidget {
                         onPressed: () async {
                           await FirebaseFirestore.instance
                               .collection('posts')
-                              .doc(postId)
+                              .doc(widget.postId)
                               .update({'text': controller.text});
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -119,7 +343,6 @@ class PostItem extends StatelessWidget {
     );
   }
 
-  /// Shows the delete confirmation dialog for the current user's post.
   Future<void> _showDeleteDialog(BuildContext context) async {
     await showDialog(
       context: context,
@@ -174,12 +397,9 @@ class PostItem extends StatelessWidget {
                         onPressed: () async {
                           await FirebaseFirestore.instance
                               .collection('posts')
-                              .doc(postId)
+                              .doc(widget.postId)
                               .delete();
                           Navigator.pop(ctx);
-                          /*                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('게시물이 삭제되었습니다.')),
-                          ); */
                         },
                         child: Text('삭제'),
                       ),
@@ -198,11 +418,8 @@ class PostItem extends StatelessWidget {
     String successMsg,
     String errorPrefix,
   ) async {
-    // Capture navigator/messenger BEFORE any async gap
     final nav = Navigator.of(context, rootNavigator: true);
     final messenger = ScaffoldMessenger.of(context);
-
-    // Show loading
     nav.push(
       PageRouteBuilder(
         opaque: false,
@@ -220,13 +437,12 @@ class PostItem extends StatelessWidget {
             ),
       ),
     );
-
     try {
       await action();
-      nav.pop(); // dismiss loading
+      nav.pop();
       messenger.showSnackBar(SnackBar(content: Text(successMsg)));
     } catch (e) {
-      nav.pop(); // dismiss loading even on error
+      nav.pop();
       messenger.showSnackBar(
         SnackBar(
           content: Text('$errorPrefix: $e'),
@@ -236,22 +452,27 @@ class PostItem extends StatelessWidget {
     }
   }
 
-  // ── build ──────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
-    final ScreenshotController _fromCommentsScreenshotController =
-        ScreenshotController();
-    final ScreenshotController _notFromCommentsScreenshotController =
-        ScreenshotController();
     final postsProvider = Provider.of<PostsProvider>(context, listen: false);
-    if (postsProvider.getComments(postId).isEmpty &&
-        !postsProvider.isLoadingComments(postId)) {
-      postsProvider.listenToComments(postId);
+    if (postsProvider.getComments(widget.postId).isEmpty &&
+        !postsProvider.isLoadingComments(widget.postId)) {
+      postsProvider.listenToComments(widget.postId);
     }
 
+    // Compute image width for fromComments here, in this widget's context.
+    // PostItem padding in fromComments: left:10.w + right:10.w
+    final double fromCommentsImageWidth =
+        MediaQuery.of(context).size.width - 10.w - 10.w;
+
+    debugPrint(
+      '📐 PostItem.build fromComments=${widget.fromComments} '
+      'widget.imageWidth=${widget.imageWidth} '
+      'fromCommentsImageWidth=$fromCommentsImageWidth',
+    );
+
     return Selector<PostsProvider, Map<String, dynamic>?>(
-      selector: (_, provider) => provider.getPost(postId),
+      selector: (_, provider) => provider.getPost(widget.postId),
       builder: (context, postData, child) {
         if (postData == null) return SizedBox.shrink();
 
@@ -270,241 +491,263 @@ class PostItem extends StatelessWidget {
                 !userMissing &&
                 myuser!.userId == FirebaseAuth.instance.currentUser?.uid;
 
+            final List imgUrls =
+                (postData['imgUrls'] != null &&
+                        (postData['imgUrls'] as List).isNotEmpty)
+                    ? postData['imgUrls'] as List
+                    : [];
+
             return Column(
               children: [
-                // ── fromComments branch (unchanged) ───────────────────────
-                if (fromComments)
-                  Screenshot(
-                    controller: _fromCommentsScreenshotController,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        top: 5.h,
-                        left: 10.w,
-                        right: 10.w,
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => SafeArea(
-                                            child: Scaffold(
-                                              body: FollowingTab(
-                                                firebaseUser:
-                                                    FirebaseAuth
-                                                        .instance
-                                                        .currentUser,
-                                                preselectedUser: myuser?.userId,
-                                              ),
+                // ── fromComments branch ───────────────────────────────────
+                if (widget.fromComments)
+                  Padding(
+                    padding: EdgeInsets.only(top: 5.h, left: 10.w, right: 10.w),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => SafeArea(
+                                          child: Scaffold(
+                                            body: FollowingTab(
+                                              firebaseUser:
+                                                  FirebaseAuth
+                                                      .instance
+                                                      .currentUser,
+                                              preselectedUser: myuser?.userId,
                                             ),
                                           ),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  width: 56.w,
-                                  height: 56.h,
-                                  decoration: ShapeDecoration(
-                                    image: DecorationImage(
-                                      image:
-                                          profileUrl.isNotEmpty
-                                              ? NetworkImage(profileUrl)
-                                              : AssetImage('assets/avatar.png')
-                                                  as ImageProvider,
-                                      fit: BoxFit.cover,
-                                    ),
-                                    shape: OvalBorder(),
+                                        ),
                                   ),
+                                );
+                              },
+                              child: Container(
+                                width: 56.w,
+                                height: 56.h,
+                                decoration: ShapeDecoration(
+                                  image: DecorationImage(
+                                    image:
+                                        profileUrl.isNotEmpty
+                                            ? NetworkImage(profileUrl)
+                                            : AssetImage('assets/avatar.png')
+                                                as ImageProvider,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  shape: OvalBorder(),
                                 ),
                               ),
-                              horizontalSpace(5),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    verticalSpace(5),
-                                    Text(
-                                      displayName,
-                                      style: TextStyles.abeezee16px400wPblack
-                                          .copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                            ),
+                            horizontalSpace(5),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  verticalSpace(5),
+                                  Text(
+                                    displayName,
+                                    style: TextStyles.abeezee16px400wPblack
+                                        .copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  FutureBuilder<String?>(
+                                    future: ContactService().getContactNickname(
+                                      myuser == null ? "" : myuser.userId,
                                     ),
-                                    FutureBuilder<String?>(
-                                      future: ContactService()
-                                          .getContactNickname(
-                                            myuser == null ? "" : myuser.userId,
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      if (snapshot.hasError ||
+                                          !snapshot.hasData ||
+                                          snapshot.data == null) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final nickname = snapshot.data!;
+                                      return Padding(
+                                        padding: EdgeInsets.only(top: 2.h),
+                                        child: Text(
+                                          '@$nickname',
+                                          style: TextStyle(
+                                            fontSize: 11.sp,
+                                            color: Colors.grey[600],
+                                            fontWeight: FontWeight.w400,
                                           ),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.connectionState ==
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  if (!userMissing && myuser!.userId.isNotEmpty)
+                                    StreamBuilder<QuerySnapshot>(
+                                      stream:
+                                          FirebaseFirestore.instance
+                                              .collection('users')
+                                              .doc(myuser.userId)
+                                              .collection('followers')
+                                              .snapshots(),
+                                      builder: (context, subSnap) {
+                                        if (subSnap.connectionState ==
                                             ConnectionState.waiting) {
-                                          return const SizedBox.shrink(); // Or a small CircularProgressIndicator
+                                          return SizedBox(height: 16.sp);
                                         }
-
-                                        if (snapshot.hasError ||
-                                            !snapshot.hasData ||
-                                            snapshot.data == null) {
-                                          return const SizedBox.shrink();
+                                        if (subSnap.hasError) {
+                                          return Text(
+                                            '구독자 오류',
+                                            style: TextStyle(
+                                              color: Colors.red,
+                                              fontSize: 16.sp,
+                                            ),
+                                          );
                                         }
-
-                                        final nickname = snapshot.data!;
+                                        final count =
+                                            subSnap.data?.docs.length ?? 0;
+                                        final formatted = count
+                                            .toString()
+                                            .replaceAllMapped(
+                                              RegExp(r'\B(?=(\d{3})+(?!\d))'),
+                                              (match) => ',',
+                                            );
                                         return Padding(
                                           padding: EdgeInsets.only(top: 2.h),
                                           child: Text(
-                                            '@$nickname',
+                                            '구독자 $formatted명',
                                             style: TextStyle(
-                                              fontSize: 11.sp,
-                                              color: Colors.grey[600],
+                                              color: const Color(0xFF787878),
+                                              fontSize: 16.sp,
+                                              fontFamily: 'NotoSans',
                                               fontWeight: FontWeight.w400,
+                                              height: 1.40.h,
+                                              letterSpacing: -0.09.w,
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         );
                                       },
                                     ),
-                                    if (!userMissing &&
-                                        myuser!.userId.isNotEmpty)
-                                      StreamBuilder<QuerySnapshot>(
-                                        stream:
-                                            FirebaseFirestore.instance
-                                                .collection('users')
-                                                .doc(myuser.userId)
-                                                .collection('followers')
-                                                .snapshots(),
-                                        builder: (context, subSnap) {
-                                          if (subSnap.connectionState ==
-                                              ConnectionState.waiting) {
-                                            return SizedBox(height: 16.sp);
-                                          }
-                                          if (subSnap.hasError) {
-                                            return Text(
-                                              '구독자 오류',
-                                              style: TextStyle(
-                                                color: Colors.red,
-                                                fontSize: 16.sp,
-                                              ),
-                                            );
-                                          }
-                                          final count =
-                                              subSnap.data?.docs.length ?? 0;
-                                          final formatted = count
-                                              .toString()
-                                              .replaceAllMapped(
-                                                RegExp(r'\B(?=(\d{3})+(?!\d))'),
-                                                (match) => ',',
-                                              );
-                                          return Padding(
-                                            padding: EdgeInsets.only(top: 2.h),
-                                            child: Text(
-                                              '구독자 $formatted명',
-                                              style: TextStyle(
-                                                color: const Color(0xFF787878),
-                                                fontSize: 16.sp,
-                                                fontFamily: 'NotoSans',
-                                                fontWeight: FontWeight.w400,
-                                                height: 1.40.h,
-                                                letterSpacing: -0.09.w,
+                                ],
+                              ),
+                            ),
+                            Spacer(),
+                            if (!userMissing &&
+                                myuser!.userId !=
+                                    FirebaseAuth.instance.currentUser?.uid)
+                              StreamBuilder<DocumentSnapshot>(
+                                stream:
+                                    FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(
+                                          FirebaseAuth
+                                              .instance
+                                              .currentUser
+                                              ?.uid,
+                                        )
+                                        .collection('following')
+                                        .doc(myuser.userId)
+                                        .snapshots(),
+                                builder: (context, snapshot) {
+                                  final isFollowing =
+                                      snapshot.hasData && snapshot.data!.exists;
+                                  final isPrivate = myuser?.isPrivate ?? false;
+
+                                  if (isFollowing) {
+                                    return PopupMenuButton<String>(
+                                      onSelected: (value) async {
+                                        if (value == 'share') {
+                                          showShareDialog(
+                                            context,
+                                            'post',
+                                            'https://app.pang2chocolate.com/comment?postId=${widget.postId}',
+                                            widget.postId,
+                                            myuser.name,
+                                            myuser.url,
+                                            postData,
+                                          );
+                                        } else if (value == 'unfollow') {
+                                          FollowService().toggleFollow(
+                                            myuser.userId,
+                                          );
+                                        }
+                                      },
+                                      color: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      itemBuilder:
+                                          (BuildContext context) => [
+                                            PopupMenuItem<String>(
+                                              value: 'share',
+                                              child: Text(
+                                                '공유',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 13.sp,
+                                                ),
                                               ),
                                             ),
-                                          );
-                                        },
+                                            PopupMenuItem<String>(
+                                              value: 'unfollow',
+                                              child: Text(
+                                                '구독 취소',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 13.sp,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                      child: Icon(
+                                        Icons.more_horiz,
+                                        color: Colors.black,
+                                        size: 22.sp,
                                       ),
-                                  ],
-                                ),
-                              ),
-                              Spacer(),
-                              if (!userMissing &&
-                                  myuser!.userId !=
-                                      FirebaseAuth.instance.currentUser?.uid)
-                                StreamBuilder<DocumentSnapshot>(
-                                  stream:
-                                      FirebaseFirestore.instance
-                                          .collection('users')
-                                          .doc(
-                                            FirebaseAuth
-                                                .instance
-                                                .currentUser
-                                                ?.uid,
-                                          )
-                                          .collection('following')
-                                          .doc(myuser.userId)
-                                          .snapshots(),
-                                  builder: (context, snapshot) {
-                                    final isFollowing =
-                                        snapshot.hasData &&
-                                        snapshot.data!.exists;
-                                    final isPrivate =
-                                        myuser?.isPrivate ?? false;
+                                    );
+                                  }
 
-                                    if (isFollowing) {
-                                      return PopupMenuButton<String>(
-                                        onSelected: (value) async {
-                                          if (value == 'share') {
-                                            showShareDialog(
-                                              context,
-                                              'post',
-                                              'https://app.pang2chocolate.com/comment?postId=$postId',
-                                              postId,
-                                              myuser.name,
-                                              myuser.url,
-                                              postData,
-                                            );
-                                            /*                                           ShareService.sharePost(postId);
-                     */
-                                          } else if (value == 'unfollow') {
-                                            FollowService().toggleFollow(
-                                              myuser.userId,
-                                            );
-                                          }
-                                        },
-                                        color: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
+                                  if (isPrivate) {
+                                    return StreamBuilder<DocumentSnapshot>(
+                                      stream:
+                                          FirebaseFirestore.instance
+                                              .collection('users')
+                                              .doc(myuser.userId)
+                                              .collection('followRequests')
+                                              .doc(
+                                                FirebaseAuth
+                                                    .instance
+                                                    .currentUser
+                                                    ?.uid,
+                                              )
+                                              .snapshots(),
+                                      builder: (context, requestSnapshot) {
+                                        final hasRequest =
+                                            requestSnapshot.hasData &&
+                                            requestSnapshot.data!.exists;
+                                        return ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                hasRequest
+                                                    ? Colors.grey[300]
+                                                    : Colors.black,
+                                            foregroundColor:
+                                                hasRequest
+                                                    ? Colors.black
+                                                    : Colors.white,
+                                            minimumSize: Size(35.w, 33.h),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
                                           ),
-                                        ),
-                                        itemBuilder:
-                                            (BuildContext context) => [
-                                              PopupMenuItem<String>(
-                                                value: 'share',
-                                                child: Text(
-                                                  '공유',
-                                                  style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontSize: 13.sp,
-                                                  ),
-                                                ),
-                                              ),
-                                              PopupMenuItem<String>(
-                                                value: 'unfollow',
-                                                child: Text(
-                                                  '구독 취소',
-                                                  style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontSize: 13.sp,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                        child: Icon(
-                                          Icons.more_horiz,
-                                          color: Colors.black,
-                                          size: 22.sp,
-                                        ),
-                                      );
-                                    }
-
-                                    if (isPrivate) {
-                                      return StreamBuilder<DocumentSnapshot>(
-                                        stream:
-                                            FirebaseFirestore.instance
+                                          onPressed: () async {
+                                            final ref = FirebaseFirestore
+                                                .instance
                                                 .collection('users')
                                                 .doc(myuser.userId)
                                                 .collection('followRequests')
@@ -513,236 +756,126 @@ class PostItem extends StatelessWidget {
                                                       .instance
                                                       .currentUser
                                                       ?.uid,
-                                                )
-                                                .snapshots(),
-                                        builder: (context, requestSnapshot) {
-                                          final hasRequest =
-                                              requestSnapshot.hasData &&
-                                              requestSnapshot.data!.exists;
-                                          return ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  hasRequest
-                                                      ? Colors.grey[300]
-                                                      : Colors.black,
-                                              foregroundColor:
-                                                  hasRequest
-                                                      ? Colors.black
-                                                      : Colors.white,
-                                              minimumSize: Size(35.w, 33.h),
-                                              textStyle: TextStyle(
-                                                fontSize: 12.sp,
-                                                fontFamily: 'NotoSans',
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
+                                                );
+                                            hasRequest
+                                                ? await ref.delete()
+                                                : await ref.set({
+                                                  'timestamp':
+                                                      FieldValue.serverTimestamp(),
+                                                });
+                                          },
+                                          child: Text(
+                                            hasRequest ? '요청 취소' : '구독 신청',
+                                            style: TextStyle(
+                                              fontSize: 12.sp,
+                                              fontFamily: 'NotoSans',
+                                              fontWeight: FontWeight.w500,
                                             ),
-                                            onPressed: () async {
-                                              if (hasRequest) {
-                                                await FirebaseFirestore.instance
-                                                    .collection('users')
-                                                    .doc(myuser.userId)
-                                                    .collection(
-                                                      'followRequests',
-                                                    )
-                                                    .doc(
-                                                      FirebaseAuth
-                                                          .instance
-                                                          .currentUser
-                                                          ?.uid,
-                                                    )
-                                                    .delete();
-                                              } else {
-                                                await FirebaseFirestore.instance
-                                                    .collection('users')
-                                                    .doc(myuser.userId)
-                                                    .collection(
-                                                      'followRequests',
-                                                    )
-                                                    .doc(
-                                                      FirebaseAuth
-                                                          .instance
-                                                          .currentUser
-                                                          ?.uid,
-                                                    )
-                                                    .set({
-                                                      'timestamp':
-                                                          FieldValue.serverTimestamp(),
-                                                    });
-                                              }
-                                            },
-                                            child: Text(
-                                              hasRequest ? '요청 취소' : '구독 신청',
-                                              style: TextStyle(
-                                                fontSize: 12.sp,
-                                                fontFamily: 'NotoSans',
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    }
-
-                                    return ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.black,
-                                        foregroundColor: Colors.white,
-                                        minimumSize: Size(40.w, 28.h),
-                                        textStyle: TextStyle(
-                                          fontSize: 12.sp,
-                                          fontFamily: 'NotoSans',
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            20,
                                           ),
-                                        ),
-                                      ),
-                                      onPressed: () async {
-                                        FollowService().toggleFollow(
-                                          myuser.userId,
                                         );
                                       },
-                                      child: Text(
-                                        '구독',
-                                        style: TextStyle(
-                                          fontSize: 12.sp,
-                                          fontFamily: 'NotoSans',
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
                                     );
-                                  },
-                                ),
-                            ],
-                          ),
-                          if (postData['text'].toString().isNotEmpty)
-                            Padding(
-                              padding: EdgeInsets.only(top: 15.h),
-                              child: Row(
-                                children: [
-                                  Expanded(
+                                  }
+
+                                  return ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.black,
+                                      foregroundColor: Colors.white,
+                                      minimumSize: Size(40.w, 28.h),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                    ),
+                                    onPressed: () async {
+                                      FollowService().toggleFollow(
+                                        myuser.userId,
+                                      );
+                                    },
                                     child: Text(
-                                      postData['text'],
+                                      '구독',
                                       style: TextStyle(
-                                        color: const Color(0xFF343434),
-                                        fontSize: 18.sp,
+                                        fontSize: 12.sp,
                                         fontFamily: 'NotoSans',
                                         fontWeight: FontWeight.w500,
-                                        height: 1.40.h,
-                                        letterSpacing: -0.09.w,
                                       ),
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
+                        if (postData['text'].toString().isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(top: 15.h),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    postData['text'],
+                                    style: TextStyle(
+                                      color: const Color(0xFF343434),
+                                      fontSize: 18.sp,
+                                      fontFamily: 'NotoSans',
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.40.h,
+                                      letterSpacing: -0.09.w,
                                     ),
                                   ),
-                                  if (showMoreButton) ...[
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.more_vert,
-                                        color: Colors.black,
-                                        size: 22.sp,
-                                      ),
-                                      onPressed: () {
-                                        showPostMenu(
-                                          context,
-                                          postId,
-                                          myuser?.userId ?? '',
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          verticalSpace(5),
-                          if (postData['imgUrls'] != null &&
-                              postData['imgUrls'].isNotEmpty)
-                            SizedBox(
-                              height: 428.h,
-                              child: Stack(
-                                children: [
-                                  PageView.builder(
-                                    controller: _pageController,
-                                    itemCount:
-                                        (postData['imgUrls'] as List).length,
-                                    physics: const BouncingScrollPhysics(),
-                                    itemBuilder:
-                                        (context, index) => Image.network(
-                                          (postData['imgUrls'] as List)[index],
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (_, __, ___) =>
-                                                  const Placeholder(),
-                                        ),
-                                  ),
-                                  if (postData['imgUrls'].length > 1)
-                                    Positioned.fill(
-                                      bottom: 0,
-                                      child: Align(
-                                        alignment: Alignment.bottomCenter,
-                                        child: SizedBox(
-                                          height: 60,
-                                          child: Center(
-                                            child: SmoothPageIndicator(
-                                              controller: _pageController,
-                                              count:
-                                                  (postData['imgUrls'] as List)
-                                                      .length,
-                                              effect: const ScrollingDotsEffect(
-                                                activeDotColor: Colors.black,
-                                                dotColor: Colors.grey,
-                                                dotHeight: 10,
-                                                dotWidth: 10,
-                                              ),
-                                              onDotClicked: (index) {
-                                                _pageController.animateToPage(
-                                                  index,
-                                                  duration: const Duration(
-                                                    milliseconds: 400,
-                                                  ),
-                                                  curve: Curves.easeInOut,
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-
-                          verticalSpace(30),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              PostActions(postId: postId, postData: postData),
-                              horizontalSpace(4),
-                              Expanded(
-                                child: Container(
-                                  height: 1.h,
-                                  color: Colors.grey[600],
                                 ),
-                              ),
-                              InkWell(
-                                onTap: () => context.pop(),
-                                child: Icon(Icons.close),
-                              ),
-                            ],
+                                if (widget.showMoreButton)
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.more_vert,
+                                      color: Colors.black,
+                                      size: 22.sp,
+                                    ),
+                                    onPressed:
+                                        () => showPostMenu(
+                                          context,
+                                          widget.postId,
+                                          myuser?.userId ?? '',
+                                        ),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
+                        verticalSpace(5),
+                        if (imgUrls.isNotEmpty)
+                          NaturalAspectPageView(
+                            imgUrls: imgUrls,
+                            pageController: _pageController,
+                            // Use locally computed width — most reliable
+                            explicitWidth: fromCommentsImageWidth,
+                          ),
+                        verticalSpace(30),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            PostActions(
+                              postId: widget.postId,
+                              postData: postData,
+                            ),
+                            horizontalSpace(4),
+                            Expanded(
+                              child: Container(
+                                height: 1.h,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () => context.pop(),
+                              child: Icon(Icons.close),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
 
                 // ── !fromComments branch ──────────────────────────────────
-                if (!fromComments)
+                if (!widget.fromComments)
                   Screenshot(
-                    controller: _notFromCommentsScreenshotController,
+                    controller: _screenshotController,
                     child: Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: 12.w,
@@ -751,7 +884,6 @@ class PostItem extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Avatar
                           InkWell(
                             onTap: () {
                               Navigator.push(
@@ -786,14 +918,13 @@ class PostItem extends StatelessWidget {
                             ),
                           ),
                           horizontalSpace(8),
-
-                          // Body
                           Expanded(
                             child: InkWell(
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) => Comments(postId: postId),
+                                    builder:
+                                        (_) => Comments(postId: widget.postId),
                                   ),
                                 );
                               },
@@ -813,20 +944,17 @@ class PostItem extends StatelessWidget {
                                     builder: (context, snapshot) {
                                       if (snapshot.connectionState ==
                                           ConnectionState.waiting) {
-                                        return const SizedBox.shrink(); // Or a small CircularProgressIndicator
+                                        return const SizedBox.shrink();
                                       }
-
                                       if (snapshot.hasError ||
                                           !snapshot.hasData ||
                                           snapshot.data == null) {
                                         return const SizedBox.shrink();
                                       }
-
-                                      final nickname = snapshot.data!;
                                       return Padding(
                                         padding: EdgeInsets.only(top: 2.h),
                                         child: Text(
-                                          '@$nickname',
+                                          '@${snapshot.data!}',
                                           style: TextStyle(
                                             fontSize: 11.sp,
                                             color: Colors.grey[600],
@@ -854,106 +982,21 @@ class PostItem extends StatelessWidget {
                                       ),
                                     ),
                                   verticalSpace(5),
-                                  if (postData['imgUrls'] != null &&
-                                      postData['imgUrls'].isNotEmpty)
-                                    SizedBox(
-                                      height: 428.h,
-                                      child: Stack(
-                                        children: [
-                                          PageView.builder(
-                                            controller: _pageController,
-                                            itemCount:
-                                                (postData['imgUrls'] as List)
-                                                    .length,
-                                            physics:
-                                                const BouncingScrollPhysics(),
-                                            itemBuilder:
-                                                (
-                                                  context,
-                                                  index,
-                                                ) => Image.network(
-                                                  (postData['imgUrls']
-                                                      as List)[index],
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder:
-                                                      (_, __, ___) =>
-                                                          const Placeholder(),
-                                                ),
-                                          ),
-                                          if (postData['imgUrls'].length > 1)
-                                            Positioned.fill(
-                                              bottom: 0,
-                                              child: Align(
-                                                alignment:
-                                                    Alignment.bottomCenter,
-                                                child: SizedBox(
-                                                  height: 60,
-                                                  child: Center(
-                                                    child: SmoothPageIndicator(
-                                                      controller:
-                                                          _pageController,
-                                                      count:
-                                                          (postData['imgUrls']
-                                                                  as List)
-                                                              .length,
-                                                      effect:
-                                                          const ScrollingDotsEffect(
-                                                            activeDotColor:
-                                                                Colors.black,
-                                                            dotColor:
-                                                                Colors.grey,
-                                                            dotHeight: 10,
-                                                            dotWidth: 10,
-                                                          ),
-                                                      onDotClicked: (index) {
-                                                        _pageController
-                                                            .animateToPage(
-                                                              index,
-                                                              duration:
-                                                                  const Duration(
-                                                                    milliseconds:
-                                                                        400,
-                                                                  ),
-                                                              curve:
-                                                                  Curves
-                                                                      .easeInOut,
-                                                            );
-                                                      },
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
+                                  if (imgUrls.isNotEmpty)
+                                    NaturalAspectPageView(
+                                      imgUrls: imgUrls,
+                                      pageController: _pageController,
+                                      // No explicitWidth — Expanded provides
+                                      // bounded width to LayoutBuilder.
                                     ),
-                                  /*                                     ClipRRect(
-                                      borderRadius: BorderRadius.circular(20),
-                                      child: Image.network(
-                                        postData['imgUrl'],
-                                        fit: BoxFit.fitWidth,
-                                        width: double.infinity,
-                                      ),
-                                    ), */
-                                  /* verticalSpace(5),
-                                  Row(
-                                    children: [
-                                      PostActions(
-                                        postId: postId,
-                                        postData: postData,
-                                      ),
-                                    ],
-                                  ), */
                                 ],
                               ),
                             ),
                           ),
-
-                          // ── More button (popup menu) ──────────────────
-                          if (showMoreButton)
+                          if (widget.showMoreButton)
                             isMyPost
                                 ? _OwnPostMenu(
-                                  postId: postId,
+                                  postId: widget.postId,
                                   currentText: postData['text'] ?? '',
                                   onEdit:
                                       () => _showEditDialog(
@@ -963,7 +1006,7 @@ class PostItem extends StatelessWidget {
                                   onDelete: () => _showDeleteDialog(context),
                                 )
                                 : _OtherPostMenu(
-                                  postId: postId,
+                                  postId: widget.postId,
                                   userId: myuser?.userId ?? '',
                                   onRunWithLoading: _runWithLoading,
                                   displayName: displayName,
@@ -983,7 +1026,7 @@ class PostItem extends StatelessWidget {
   }
 }
 
-// ── Own-post popup menu (edit / delete) ──────────────────────────────────────
+// ── Own-post popup menu ───────────────────────────────────────────────────────
 
 class _OwnPostMenu extends StatelessWidget {
   final String postId;
@@ -1037,7 +1080,7 @@ class _OwnPostMenu extends StatelessWidget {
   }
 }
 
-// ── Other user's post popup menu (구독 / 차단 / 신고 및 차단) ──────────────────────
+// ── Other user's post popup menu ──────────────────────────────────────────────
 
 class _OtherPostMenu extends StatelessWidget {
   final String postId;
@@ -1049,10 +1092,10 @@ class _OtherPostMenu extends StatelessWidget {
     String,
   )
   onRunWithLoading;
-
   final String displayName;
   final String profileUrl;
   final Map<String, dynamic> postData;
+
   const _OtherPostMenu({
     required this.postId,
     required this.userId,
@@ -1090,7 +1133,6 @@ class _OtherPostMenu extends StatelessWidget {
                   profileUrl,
                   postData,
                 );
-                /*             ShareService.sharePost(postId); */
                 break;
               case 'follow_unfollow':
                 await FollowService().toggleFollow(userId);
@@ -1103,15 +1145,11 @@ class _OtherPostMenu extends StatelessWidget {
                   '오류 발생',
                 );
                 break;
-
               case 'report':
                 await onRunWithLoading(
                   context,
-                  () async {
-                    await reportUser(reportedUserId: userId, postId: postId);
-                    /*                     await blockUser(userIdToBlock: userId);
- */
-                  },
+                  () async =>
+                      await reportUser(reportedUserId: userId, postId: postId),
                   '신고가 접수되었습니다.',
                   '신고 처리 중 오류가 발생했습니다',
                 );
@@ -1124,7 +1162,6 @@ class _OtherPostMenu extends StatelessWidget {
           ),
           itemBuilder:
               (_) => [
-                // Share
                 PopupMenuItem<String>(
                   value: 'share',
                   child: Text(
@@ -1147,7 +1184,6 @@ class _OtherPostMenu extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Block only
                 PopupMenuItem<String>(
                   value: 'block',
                   child: Text(
@@ -1159,7 +1195,6 @@ class _OtherPostMenu extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Report + Block combined
                 PopupMenuItem<String>(
                   value: 'report',
                   child: Text(

@@ -1,9 +1,8 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:ecommerece_app/features/auth/signup/data/models/user_entity.dart';
+import 'dart:typed_data';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -220,26 +219,44 @@ Future<String> uploadImageToFirebaseStorageHome() async {
 Future<List<String>> uploadMultipleImagesToFirebaseHome() async {
   try {
     final List<XFile> images = await ImagePicker().pickMultiImage();
-
     if (images.isEmpty) return [];
 
     List<String> downloadUrls = await Future.wait(
       images.map((image) async {
-        final String uid = FirebaseAuth.instance.currentUser!.uid;
-        final String timestamp =
-            DateTime.now().millisecondsSinceEpoch.toString();
+        DateTime.now().millisecondsSinceEpoch.toString();
         final String fileName =
-            '${timestamp}_${images.indexOf(image)}_$uid.jpg';
+            '\${timestamp}_\${images.indexOf(image)}_\$uid.jpg';
+
+        final Uint8List rawBytes = await image.readAsBytes();
+
+        // flutter_image_compress uses native code — not supported on web.
+        // On mobile (Android/iOS) we compress; on web we upload raw bytes.
+        Uint8List uploadBytes;
+        if (kIsWeb) {
+          // Web: no compression available, upload as-is
+          uploadBytes = rawBytes;
+        } else {
+          // Mobile: compress to max 1080px on longest side, quality 82
+          // Visually lossless but typically 60-80% smaller file size
+          final Uint8List compressed =
+              await FlutterImageCompress.compressWithList(
+                rawBytes,
+                minWidth: 1080,
+                minHeight: 1080,
+                quality: 82,
+                format: CompressFormat.jpeg,
+              );
+          // Fall back to raw bytes if compression somehow returns null
+          uploadBytes = compressed;
+        }
 
         final Reference storageRef = FirebaseStorage.instance
             .ref()
             .child('uploads')
             .child(fileName);
 
-        final bytes = await image.readAsBytes();
-
         final UploadTask uploadTask = storageRef.putData(
-          bytes,
+          uploadBytes,
           SettableMetadata(contentType: 'image/jpeg'),
         );
 
@@ -250,7 +267,7 @@ Future<List<String>> uploadMultipleImagesToFirebaseHome() async {
 
     return downloadUrls;
   } catch (e) {
-    print('Error uploading multiple images: $e');
-    throw Exception('Failed to upload images: $e');
+    print('Error uploading multiple images: \$e');
+    throw Exception('Failed to upload images: \$e');
   }
 }
