@@ -171,7 +171,8 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
               ),
             ),
             appBar: AppBar(
-              toolbarHeight: 40.h,
+              toolbarHeight: 0,
+              elevation: 0,
               title: Text(''),
               centerTitle: false,
               bottom: PreferredSize(
@@ -182,11 +183,7 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
                     Row(
                       children: [
                         Padding(
-                          padding: EdgeInsets.only(
-                            left: 8.w,
-                            bottom: 4.h,
-                            top: 4.h,
-                          ),
+                          padding: EdgeInsets.only(left: 8.w),
                           child: FutureBuilder<DocumentSnapshot<Object?>>(
                             future:
                                 (userData != null &&
@@ -214,7 +211,8 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
                                     horizontal: 2.w,
                                     vertical: 0,
                                   ),
-                                  minimumSize: Size(0, 32.h),
+                                  minimumSize: Size(0, 0),
+                                  maximumSize: Size(200.w, 80.h),
                                   tapTargetSize:
                                       MaterialTapTargetSize.shrinkWrap,
                                 ),
@@ -250,21 +248,34 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
                           ),
                         ),
                         Spacer(),
-                        IconButton(
+                        InkWell(
+                          onTap: () {
+                            context.go(Routes.shopSearchScreen);
+                          },
+                          child: Image.asset(
+                            'assets/010no_cropped.png',
+                            color: Colors.grey,
+                            width: 22.w,
+                            height: 28.h,
+                          ),
+                        ),
+                        SizedBox(width: 12.w),
+                        /*                         IconButton(
                           onPressed: () {
                             context.go(Routes.shopSearchScreen);
                           },
+
                           icon: ImageIcon(
                             color: Colors.grey,
-                            AssetImage('assets/010no.png'),
-                            size: 40.r,
+                            AssetImage('assets/010no_cropped.png'),
+                            size: 22.r,
                           ),
-                        ),
+                        ), */
                       ],
                     ),
+
                     TabBar(
                       tabAlignment: TabAlignment.start,
-
                       dragStartBehavior: DragStartBehavior.start,
                       padding: EdgeInsets.zero,
                       labelPadding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -284,7 +295,10 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
 
                       tabs:
                           categories
-                              .map((category) => Tab(text: category['name']))
+                              .map(
+                                (category) =>
+                                    Tab(text: category['name'], height: 45.h),
+                              )
                               .toList(),
                     ),
                   ],

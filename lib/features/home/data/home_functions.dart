@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -177,6 +178,93 @@ Future<void> uploadPost({
   } catch (e) {
     print('Error uploading post: $e');
     throw e; // Re-throw to handle in UI
+  }
+}
+
+/// Upload new images to Firebase Storage
+Future<List<String>> _uploadNewImages(List<File> files) async {
+  if (files.isEmpty) return [];
+
+  final List<String> uploadedUrls = [];
+
+  for (final file in files) {
+    try {
+      final String fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${FirebaseAuth.instance.currentUser!.uid}.jpg';
+      final Reference storageRef = FirebaseStorage.instance
+          .ref()
+          .child('posts')
+          .child(fileName);
+
+      final Uint8List rawBytes = await file.readAsBytes();
+
+      // Compress on mobile, upload raw on web
+      Uint8List uploadBytes;
+      if (kIsWeb) {
+        uploadBytes = rawBytes;
+      } else {
+        final Uint8List compressed =
+            await FlutterImageCompress.compressWithList(
+              rawBytes,
+              minWidth: 1080,
+              minHeight: 1080,
+              quality: 82,
+              format: CompressFormat.jpeg,
+            );
+        uploadBytes = compressed;
+      }
+
+      final UploadTask uploadTask = storageRef.putData(
+        uploadBytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+
+      final TaskSnapshot snapshot = await uploadTask;
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      uploadedUrls.add(downloadUrl);
+    } catch (e) {
+      print('Error uploading image: $e');
+      rethrow;
+    }
+  }
+
+  return uploadedUrls;
+}
+
+/// Update a post with new text and images
+Future<void> updatePost({
+  required String postId,
+  required String text,
+  required List<String> networkImgUrls, // Existing URLs to keep
+  required List<File> newImages, // New images to upload
+}) async {
+  try {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) throw Exception("User not logged in");
+
+    // Upload new images first
+    final List<String> uploadedUrls = await _uploadNewImages(newImages);
+
+    // Combine network URLs with newly uploaded URLs
+    final List<String> allImgUrls = [
+      ...networkImgUrls,
+      ...uploadedUrls,
+    ];
+
+    // Update the post in Firestore
+    await FirebaseFirestore.instance
+        .collection('posts')
+        .doc(postId)
+        .update({
+      'text': text,
+      'imgUrls': allImgUrls,
+      'imgUrl': allImgUrls.isNotEmpty ? allImgUrls[0] : null, // Keep for backward compatibility
+    });
+
+    print('Post updated successfully!');
+  } catch (e) {
+    print('Error updating post: $e');
+    throw e;
   }
 }
 

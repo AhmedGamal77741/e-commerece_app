@@ -12,6 +12,7 @@ import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
+import 'package:ecommerece_app/features/home/widgets/edit_post_dialog.dart';
 import 'package:ecommerece_app/features/home/widgets/post_actions.dart';
 import 'package:ecommerece_app/features/home/widgets/share_dialog.dart';
 import 'package:ecommerece_app/features/home/widgets/show_post_options.dart';
@@ -263,85 +264,57 @@ class _PostItemState extends State<PostItem> {
     super.dispose();
   }
 
-  Future<void> _showEditDialog(BuildContext context, String currentText) async {
-    final controller = TextEditingController(text: currentText);
-    await showDialog(
+  Future<void> _showEditDialog(
+    BuildContext context,
+    String currentText,
+    List<String> currentImgUrls,
+  ) async {
+    final result = await showDialog<EditPostDialogResult>(
       context: context,
       builder:
-          (ctx) => Dialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '게시글 수정',
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  TextField(
-                    controller: controller,
-                    maxLines: 12,
-                    style: TextStyle(color: Colors.black, fontSize: 16.sp),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: Text(
-                          '취소',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 16.sp,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: () async {
-                          await FirebaseFirestore.instance
-                              .collection('posts')
-                              .doc(widget.postId)
-                              .update({'text': controller.text});
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('게시글이 수정되었습니다.')),
-                          );
-                        },
-                        child: Text('수정'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          (ctx) => EditPostDialog(
+            currentText: currentText,
+            currentImgUrls: currentImgUrls,
           ),
     );
+
+    if (result != null) {
+      try {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (ctx) => AlertDialog(
+                content: Row(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(width: 16.w),
+                    Text('게시글 수정 중...'),
+                  ],
+                ),
+              ),
+        );
+
+        await updatePost(
+          postId: widget.postId,
+          text: result.text,
+          networkImgUrls: result.imgUrls,
+          newImages: result.newImages,
+        );
+
+        Navigator.pop(context); // Close loading dialog
+        /* Navigator.pop(context); // Close this screen if needed */
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('게시글이 수정되었습니다.')));
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('수정 실패: $e'), backgroundColor: Colors.red),
+        );
+        /*         Navigator.pop(context); // Close loading dialog
+ */
+      }
+    }
   }
 
   Future<void> _showDeleteDialog(BuildContext context) async {
@@ -999,6 +972,7 @@ class _PostItemState extends State<PostItem> {
                                       () => _showEditDialog(
                                         context,
                                         postData['text'] ?? '',
+                                        imgUrls.cast<String>(),
                                       ),
                                   onDelete: () => _showDeleteDialog(context),
                                 )

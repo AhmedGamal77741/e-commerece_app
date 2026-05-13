@@ -1614,7 +1614,7 @@ class _FriendsScreenState extends State<FriendsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GestureDetector(
+        /*         GestureDetector(
           onTap: _showBioEditDialog,
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 16.h),
@@ -1666,7 +1666,7 @@ class _FriendsScreenState extends State<FriendsScreen>
               ],
             ),
           ),
-        ),
+        ), */
         Row(
           children: [
             Expanded(
@@ -1897,6 +1897,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                       return ListView(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         children: [
+                          _buildCurrentUserCard(),
                           // ── 내가 구독한 친구 ──────────────────
                           _buildSectionHeader(
                             label: '서로 구독 친구',

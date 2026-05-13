@@ -23,6 +23,8 @@ class _FollowingTabState extends State<FollowingTab>
   final ValueNotifier<String?> _selectedCategoryId = ValueNotifier(null);
   late final Stream<User?> _authStream;
   late final Stream<DocumentSnapshot>? _userStream;
+  late PageController _categoryPageController;
+  List<String?> _categoryPages = [null]; // null represents "All" category
   bool get wantKeepAlive => true;
 
   final Map<String, GlobalKey> _userKeys = {};
@@ -47,6 +49,7 @@ class _FollowingTabState extends State<FollowingTab>
   @override
   void initState() {
     super.initState();
+    _categoryPageController = PageController();
     _authStream = FirebaseAuth.instance.authStateChanges();
     _selectedUserId.value = widget.preselectedUser;
     if (widget.preselectedUser != null) {
@@ -74,6 +77,7 @@ class _FollowingTabState extends State<FollowingTab>
   @override
   void dispose() {
     _scrollController.dispose();
+    _categoryPageController.dispose();
     _selectedUserId.dispose();
     _selectedCategoryId.dispose();
     super.dispose();
@@ -82,15 +86,30 @@ class _FollowingTabState extends State<FollowingTab>
   void _handleUserSelection(String userId) {
     _selectedUserId.value = (_selectedUserId.value == userId) ? null : userId;
     _selectedCategoryId.value = null;
+    _categoryPages = [null]; // Reset category pages
+
+    // Only jump if controller has clients (PageView is attached)
+    if (_categoryPageController.hasClients) {
+      _categoryPageController.jumpToPage(0);
+    }
   }
 
   void _handleCategorySelection(String categoryId) {
-    if (categoryId.isEmpty) {
-      _selectedCategoryId.value = null;
-    } else {
-      _selectedCategoryId.value =
-          (_selectedCategoryId.value == categoryId) ? null : categoryId;
+    final index = _categoryPages.indexOf(
+      categoryId.isEmpty ? null : categoryId,
+    );
+    if (index != -1 && _categoryPageController.hasClients) {
+      _categoryPageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
+  }
+
+  void _onCategoryPageChanged(int index) {
+    final categoryId = _categoryPages[index];
+    _selectedCategoryId.value = categoryId;
   }
 
   @override
@@ -105,7 +124,7 @@ class _FollowingTabState extends State<FollowingTab>
 
           // Loading auth state
           if (authSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(/* child: CircularProgressIndicator() */);
           }
 
           // User not authenticated
@@ -152,7 +171,7 @@ class _FollowingTabState extends State<FollowingTab>
             builder: (context, snapshot) {
               // Loading user data
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(/* child: CircularProgressIndicator() */);
               }
 
               // Error loading user data
@@ -227,7 +246,7 @@ class _FollowingTabState extends State<FollowingTab>
                             child: SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              /* child: CircularProgressIndicator(strokeWidth: 2), */
                             ),
                           );
                         }
@@ -278,37 +297,67 @@ class _FollowingTabState extends State<FollowingTab>
                     ),
                   ),
 
-                  // Categories row (only shown when a user is selected)
+                  // Categories row and PageView (only shown when a user is selected)
                   ValueListenableBuilder<String?>(
                     valueListenable: _selectedUserId,
                     builder: (context, selectedUserId, _) {
-                      if (selectedUserId == null)
+                      if (selectedUserId == null) {
                         return const SizedBox.shrink();
-                      return ValueListenableBuilder<String?>(
-                        valueListenable: _selectedCategoryId,
-                        builder: (context, selectedCategoryId, _) {
-                          return UserCategoriesBar(
-                            userId: selectedUserId,
-                            selectedCategoryId: selectedCategoryId,
-                            onCategorySelected: _handleCategorySelection,
-                          );
-                        },
-                      );
-                    },
-                  ),
-                  // Posts from following users
-                  ValueListenableBuilder<String?>(
-                    valueListenable: _selectedUserId,
-                    builder: (context, selectedUserId, _) {
-                      return ValueListenableBuilder<String?>(
-                        valueListenable: _selectedCategoryId,
-                        builder: (context, selectedCategoryId, _) {
-                          return FollowingPostsList(
-                            currentUserId: currentUserId,
-                            scrollController: _scrollController,
-                            selectedUserId: selectedUserId,
-                            selectedCategoryId: selectedCategoryId,
-                            useGuestPostItem: !isSub,
+                      }
+
+                      // Fetch categories and build the pages list
+                      return StreamBuilder<QuerySnapshot>(
+                        stream:
+                            FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(selectedUserId)
+                                .collection('categories')
+                                .orderBy('order', descending: false)
+                                .snapshots(),
+                        builder: (context, categoriesSnapshot) {
+                          if (categoriesSnapshot.hasData) {
+                            _categoryPages = [
+                              null,
+                              ...categoriesSnapshot.data!.docs.map(
+                                (doc) => doc.id,
+                              ),
+                            ];
+                          }
+
+                          return Column(
+                            children: [
+                              // Categories bar
+                              ValueListenableBuilder<String?>(
+                                valueListenable: _selectedCategoryId,
+                                builder: (context, selectedCategoryId, _) {
+                                  return UserCategoriesBar(
+                                    userId: selectedUserId,
+                                    selectedCategoryId: selectedCategoryId,
+                                    onCategorySelected:
+                                        _handleCategorySelection,
+                                  );
+                                },
+                              ),
+                              // Posts PageView
+                              SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.65,
+                                child: PageView.builder(
+                                  controller: _categoryPageController,
+                                  onPageChanged: _onCategoryPageChanged,
+                                  itemCount: _categoryPages.length,
+                                  itemBuilder: (context, index) {
+                                    return FollowingPostsList(
+                                      currentUserId: currentUserId,
+                                      scrollController: _scrollController,
+                                      selectedUserId: selectedUserId,
+                                      selectedCategoryId: _categoryPages[index],
+                                      useGuestPostItem: !isSub,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
                           );
                         },
                       );
@@ -379,7 +428,7 @@ class _UserCategoriesBarState extends State<UserCategoriesBar> {
               child: SizedBox(
                 width: 20.w,
                 height: 20.h,
-                child: const CircularProgressIndicator(strokeWidth: 2),
+                /* child: const CircularProgressIndicator(strokeWidth: 2), */
               ),
             ),
           );
@@ -546,7 +595,7 @@ class FollowingPostsList extends StatelessWidget {
 
         // Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(/* child: CircularProgressIndicator() */);
         }
 
         // No data state
@@ -575,7 +624,7 @@ class FollowingPostsList extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.feed_outlined, size: 64, color: Colors.grey[300]),
-                SizedBox(height: 16.h),
+                /* SizedBox(height: 16.h),
                 Text(
                   _getEmptyStateMessage(),
                   textAlign: TextAlign.center,
@@ -590,7 +639,7 @@ class FollowingPostsList extends StatelessWidget {
                   _getEmptyStateSubMessage(),
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13.sp, color: Colors.grey[400]),
-                ),
+                ), */
               ],
             ),
           );
