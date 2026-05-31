@@ -19,11 +19,12 @@ class HomeScreen extends StatefulWidget {
   final ScrollController? scrollController;
   final TabController? tabController;
   const HomeScreen({super.key, this.scrollController, this.tabController});
+
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
+class HomeScreenState extends State<HomeScreen>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -33,6 +34,26 @@ class _HomeScreenState extends State<HomeScreen>
   int _selectedIndex = 0;
   bool isSub = false;
   late final _authSubscription;
+
+  /// Called by NavBar when the home icon is tapped while already on home.
+  void resetToTop() {
+    // Pop any navigator sub-pages back to root
+    if (mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+    // Reset inner tab to 추천
+    setState(() => _selectedIndex = 0);
+    // Scroll to top
+    if (widget.scrollController != null &&
+        widget.scrollController!.hasClients) {
+      widget.scrollController!.animateTo(
+        0,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -163,8 +184,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 notifSnapshot.hasData &&
                                 notifSnapshot.data!.docs.isNotEmpty;
                             return Stack(
-                              clipBehavior: Clip.none, // Allow overflow
-
+                              clipBehavior: Clip.none,
                               children: [
                                 Image.asset(
                                   'assets/notification_bell_transparent.png',
@@ -216,7 +236,6 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-
     return _buildScaffold(_firebaseUser, widget.tabController, _selectedIndex);
   }
 
@@ -265,6 +284,7 @@ class _HomeScreenState extends State<HomeScreen>
                 : null,
 
         body: ListView(
+          controller: widget.scrollController,
           children: [
             _buildNormalPillRow(firebaseUser),
             IndexedStack(
@@ -277,13 +297,6 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
-        /* TabBarView(
-          controller: tabController,
-          children: [
-            _HomeFeedTab(scrollController: widget.scrollController),
-            FollowingTab(),
-          ],
-        ), */
       ),
     );
   }
@@ -303,11 +316,9 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
 
   @override
   void dispose() {
-    // Only dispose if we created the controller
     super.dispose();
   }
 
-  // Helper: Stream author data in real-time with efficient multi-document listening
   Stream<Map<String, Map<String, dynamic>>> _streamAuthorDataRealtime(
     List<String> authorIds,
   ) {
@@ -315,7 +326,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
       return Stream.value({});
     }
 
-    // Chunk authorIds into groups of 10 (Firestore whereIn limit)
     final chunks = <List<String>>[];
     for (var i = 0; i < authorIds.length; i += 10) {
       chunks.add(
@@ -326,7 +336,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
       );
     }
 
-    // Create streams for each chunk
     final streams =
         chunks.map((chunk) {
           return FirebaseFirestore.instance
@@ -342,12 +351,10 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
               });
         }).toList();
 
-    // If only one chunk, return directly
     if (streams.length == 1) {
       return streams[0];
     }
 
-    // For multiple chunks, merge them using StreamController
     return Stream.multi((controller) async {
       final dataMaps = List<Map<String, Map<String, dynamic>>>.filled(
         streams.length,
@@ -363,12 +370,10 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
             streams[i].listen(
               (data) {
                 dataMaps[i] = data;
-                // Combine all maps from all chunks
                 final combined = <String, Map<String, dynamic>>{};
                 for (var map in dataMaps) {
                   combined.addAll(map);
                 }
-                // Add the combined map to controller
                 controller.add(combined);
               },
               onError: (e) => controller.addError(e),
@@ -383,42 +388,34 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
     });
   }
 
-  // Helper: Check if post should be visible based on privacy rules
   bool _shouldShowPost({
     required String postAuthorId,
     required String currentUserId,
     required Map<String, dynamic> authorData,
     required Set<String> followingSet,
   }) {
-    // Always show user's own posts
     if (postAuthorId == currentUserId) {
       return false;
     }
 
-    // Get author's privacy setting (default to false if not set)
     final bool isPrivate = authorData['isPrivate'] ?? false;
 
-    // Show public posts to everyone
     if (!isPrivate) {
       return true;
     }
 
-    // Show private posts only if user follows them
     return followingSet.contains(postAuthorId);
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final ScrollController? controller = widget.scrollController;
 
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, authSnapshot) {
         if (authSnapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            /* child: CircularProgressIndicator(color: Colors.black) */
-          );
+          return Center();
         }
 
         final firebaseUser = authSnapshot.data;
@@ -435,9 +432,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
           }
         });
 
-        // If no user, show the guest version of the UI
         if (firebaseUser == null) {
-          // Guest user: show only public profile posts
           return StreamBuilder<QuerySnapshot>(
             stream:
                 FirebaseFirestore.instance
@@ -446,9 +441,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                     .snapshots(),
             builder: (context, postsSnapshot) {
               if (postsSnapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  /* child: CircularProgressIndicator(color: Colors.black), */
-                );
+                return Center();
               }
               if (postsSnapshot.hasError) {
                 return Center(child: Text('Error: ${postsSnapshot.error}'));
@@ -456,40 +449,32 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
 
               final posts = postsSnapshot.data?.docs ?? [];
 
-              // Extract author IDs for batch fetch
               final authorIds = <String>{};
               for (var post in posts) {
                 final data = post.data() as Map<String, dynamic>;
                 authorIds.add(data['userId'] as String);
               }
 
-              // Stream author data in real-time for privacy checking
               return StreamBuilder<Map<String, Map<String, dynamic>>>(
                 stream: _streamAuthorDataRealtime(authorIds.toList()),
                 builder: (context, authorsSnapshot) {
                   if (!authorsSnapshot.hasData) {
-                    return Center(
-                      /* child: CircularProgressIndicator(color: Colors.black), */
-                    );
+                    return Center();
                   }
 
                   final authorsMap = authorsSnapshot.data ?? {};
 
-                  // Filter to show only public posts
                   final filteredPosts =
                       posts.where((doc) {
                         final data = doc.data() as Map<String, dynamic>;
                         final authorData =
                             authorsMap[data['userId'] as String] ?? {};
-                        // Only show if author's profile is public
                         return (authorData['isPrivate'] ?? false) == false;
                       }).toList();
 
                   return ListView.builder(
                     shrinkWrap: true,
                     physics: NeverScrollableScrollPhysics(),
-
-                    controller: controller,
                     itemCount: filteredPosts.length,
                     itemBuilder: (context, index) {
                       final post =
@@ -505,14 +490,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                         ],
                       );
                     },
-                    /*                     separatorBuilder: (BuildContext context, int index) {
-                      if (index < posts.length - 1 && index > 0) {
-                        return Divider();
-                      } else {
-                        // For the very last item, return an empty widget
-                        return SizedBox.shrink(); // A zero-sized box
-                      }
-                    }, */
                   );
                 },
               );
@@ -520,7 +497,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
           );
         }
 
-        // User is logged in, listen to user doc in real time
         return StreamBuilder<DocumentSnapshot>(
           stream:
               FirebaseFirestore.instance
@@ -529,9 +505,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                   .snapshots(),
           builder: (context, userSnapshot) {
             if (!userSnapshot.hasData) {
-              return Center(
-                /* child: CircularProgressIndicator(color: Colors.black) */
-              );
+              return Center();
             }
             final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
             if (userData == null) {
@@ -539,9 +513,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
             }
             final currentUser = MyUser.fromDocument(userData);
 
-            // --- Non-premium user: can only view posts from public profiles ---
             if (!currentUser.isSub) {
-              // Non-premium user: show only public profile posts
               return StreamBuilder<QuerySnapshot>(
                 stream:
                     FirebaseFirestore.instance
@@ -551,9 +523,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                 builder: (context, postsSnapshot) {
                   if (postsSnapshot.connectionState ==
                       ConnectionState.waiting) {
-                    return Center(
-                      /* child: CircularProgressIndicator(color: Colors.black) */
-                    );
+                    return Center();
                   }
                   if (postsSnapshot.hasError) {
                     return Center(child: Text('Error: ${postsSnapshot.error}'));
@@ -561,7 +531,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
 
                   final posts = postsSnapshot.data?.docs ?? [];
 
-                  // Extract author IDs for batch fetch
                   final authorIds = <String>{};
                   for (var post in posts) {
                     final data = post.data() as Map<String, dynamic>;
@@ -571,25 +540,20 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                     authorIds.add(data['userId'] as String);
                   }
 
-                  // Stream author data in real-time for privacy checking
                   return StreamBuilder<Map<String, Map<String, dynamic>>>(
                     stream: _streamAuthorDataRealtime(authorIds.toList()),
                     builder: (context, authorsSnapshot) {
                       if (!authorsSnapshot.hasData) {
-                        return Center(
-                          /* child: CircularProgressIndicator(color: Colors.black) */
-                        );
+                        return Center();
                       }
 
                       final authorsMap = authorsSnapshot.data ?? {};
 
-                      // Filter to show only public posts
                       final filteredPosts =
                           posts.where((doc) {
                             final data = doc.data() as Map<String, dynamic>;
                             final authorData =
                                 authorsMap[data['userId'] as String] ?? {};
-                            // Only show if author's profile is public
                             return (authorData['isPrivate'] ?? false) ==
                                     false ||
                                 data['userId'] != currentUser.userId;
@@ -598,10 +562,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                       return ListView.builder(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),
-
-                        controller: controller,
                         itemCount: filteredPosts.length,
-
                         itemBuilder: (context, index) {
                           final post =
                               filteredPosts[index].data()
@@ -617,14 +578,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                             ],
                           );
                         },
-                        /*                         separatorBuilder: (BuildContext context, int index) {
-                          if (index < posts.length - 1 && index > 0) {
-                            return Divider();
-                          } else {
-                            // For the very last item, return an empty widget
-                            return SizedBox.shrink(); // A zero-sized box
-                          }
-                        }, */
                       );
                     },
                   );
@@ -632,13 +585,10 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
               );
             }
 
-            // --- Premium user: full interaction ---
-            // Premium user: user info row and posts scroll together in a single ListView
             List<String> blockedUsers = List<String>.from(
               userSnapshot.data!.get('blocked') ?? [],
             );
 
-            // Stream the following list for privacy filtering
             return StreamBuilder<QuerySnapshot>(
               stream:
                   FirebaseFirestore.instance
@@ -647,7 +597,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                       .collection('following')
                       .snapshots(),
               builder: (context, followingSnapshot) {
-                // Build the following set
                 final followingSet = <String>{};
                 if (followingSnapshot.hasData) {
                   for (var doc in followingSnapshot.data!.docs) {
@@ -658,7 +607,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                   }
                 }
 
-                // Now stream posts
                 return StreamBuilder<QuerySnapshot>(
                   stream:
                       FirebaseFirestore.instance
@@ -668,9 +616,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                   builder: (context, postsSnapshot) {
                     if (postsSnapshot.connectionState ==
                         ConnectionState.waiting) {
-                      return Center(
-                        /* child: CircularProgressIndicator(color: Colors.black) */
-                      );
+                      return Center();
                     }
                     if (postsSnapshot.hasError) {
                       return Center(
@@ -680,7 +626,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
 
                     final posts = postsSnapshot.data?.docs ?? [];
 
-                    // Extract author IDs for batch fetch
                     final authorIds = <String>{};
                     for (var post in posts) {
                       final data = post.data() as Map<String, dynamic>;
@@ -690,33 +635,25 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                       authorIds.add(data['userId'] as String);
                     }
 
-                    // Stream author data in real-time for privacy and follower checking
                     return StreamBuilder<Map<String, Map<String, dynamic>>>(
                       stream: _streamAuthorDataRealtime(authorIds.toList()),
                       builder: (context, authorsSnapshot) {
                         if (!authorsSnapshot.hasData) {
-                          return Center(
-                            /*                             child: CircularProgressIndicator(
-                              color: Colors.black,
-                            ), */
-                          );
+                          return Center();
                         }
 
                         final authorsMap = authorsSnapshot.data ?? {};
 
-                        // Filter posts with privacy rules
                         final List<DocumentSnapshot> filteredPosts =
                             posts.where((doc) {
                               final data = doc.data() as Map<String, dynamic>;
                               final postAuthorId = data['userId'] as String;
                               final authorData = authorsMap[postAuthorId] ?? {};
 
-                              // Check if post is from a blocked user
                               if (blockedUsers.contains(postAuthorId)) {
                                 return false;
                               }
 
-                              // Check if user marked post as not interested
                               final notInterestedBy = List<dynamic>.from(
                                 data['notInterestedBy'] ?? [],
                               );
@@ -726,7 +663,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                 return false;
                               }
 
-                              // Check privacy rules
                               return _shouldShowPost(
                                 postAuthorId: postAuthorId,
                                 currentUserId: currentUser.userId,
@@ -734,167 +670,16 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                 followingSet: followingSet,
                               );
                             }).toList();
+
                         return ListView.builder(
                           shrinkWrap: true,
                           physics: NeverScrollableScrollPhysics(),
-
-                          controller: controller,
-                          itemCount:
-                              filteredPosts.length + 1, // +1 for user info row
+                          itemCount: filteredPosts.length + 1,
                           itemBuilder: (context, index) {
                             if (index == 0) {
-                              // User info row
                               return Column(
                                 mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  /* Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
-                                    children: [
-                                      horizontalSpace(3),
-
-                                      Flexible(
-                                        child: InkWell(
-                                          onTap: () {
-                                            context.pushNamed(
-                                              Routes.alertsScreen,
-                                            );
-                                          },
-                                          child: StreamBuilder<QuerySnapshot>(
-                                            stream:
-                                                FirebaseFirestore.instance
-                                                    .collection('users')
-                                                    .doc(currentUser.userId)
-                                                    .collection('notifications')
-                                                    .where(
-                                                      'isRead',
-                                                      isEqualTo: false,
-                                                    )
-                                                    .limit(1)
-                                                    .snapshots(),
-                                            builder: (context, notifSnapshot) {
-                                              final hasUnread =
-                                                  notifSnapshot.hasData &&
-                                                  notifSnapshot
-                                                      .data!
-                                                      .docs
-                                                      .isNotEmpty;
-                                              return Stack(
-                                                clipBehavior:
-                                                    Clip.none, // Allow overflow
-
-                                                children: [
-                                                  Container(
-                                                    width: 65.w,
-                                                    height: 65.h,
-                                                    decoration: ShapeDecoration(
-                                                      image: DecorationImage(
-                                                        image: NetworkImage(
-                                                          currentUser.url
-                                                              .toString(),
-                                                        ),
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                                      shape: OvalBorder(),
-                                                    ),
-                                                  ),
-                                                  if (hasUnread)
-                                                    Positioned(
-                                                      left: 0.w,
-                                                      top: 0.h,
-                                                      child: Image.asset(
-                                                        'assets/notification.png',
-                                                        width: 18.w,
-                                                        height: 18.h,
-                                                      ),
-                                                    ),
-                                                ],
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 4,
-                                        child: InkWell(
-                                          onTap: () {
-                                            context.go(Routes.addPostScreen);
-                                          },
-                                          child: Padding(
-                                            padding: EdgeInsets.only(
-                                              right: 10.w,
-                                            ),
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.start,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                verticalSpace(8),
-                                                Text(
-                                                  currentUser.name.toString(),
-                                                  style: TextStyles
-                                                      .abeezee16px400wPblack
-                                                      .copyWith(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                ),
-
-                                                verticalSpace(8),
-
-                                                FutureBuilder(
-                                                  future:
-                                                      FirebaseFirestore.instance
-                                                          .collection('widgets')
-                                                          .doc('placeholders')
-                                                          .get(),
-                                                  builder: (context, snapshot) {
-                                                    if (snapshot
-                                                            .connectionState ==
-                                                        ConnectionState
-                                                            .waiting) {
-                                                      return const Center(
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                      );
-                                                    }
-                                                    if (snapshot.hasError) {
-                                                      return const Center(
-                                                        child: Text('Error'),
-                                                      );
-                                                    }
-                                                    return Text(
-                                                      snapshot.data!
-                                                          .data()!['outerPlaceholderText'],
-                                                      style: TextStyle(
-                                                        color: const Color(
-                                                          0xFF5F5F5F,
-                                                        ),
-                                                        fontSize: 13.sp,
-                                                        fontFamily: 'NotoSans',
-                                                        fontWeight:
-                                                            FontWeight.w400,
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  verticalSpace(5),
-                                  Divider(), */
-                                ],
+                                children: [],
                               );
                             } else {
                               final post =
@@ -911,14 +696,6 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                               );
                             }
                           },
-                          /*                           separatorBuilder: (BuildContext context, int index) {
-                            if (index < posts.length - 1 && index > 0) {
-                              return Divider();
-                            } else {
-                              // For the very last item, return an empty widget
-                              return SizedBox.shrink(); // A zero-sized box
-                            }
-                          }, */
                         );
                       },
                     );

@@ -26,6 +26,7 @@ class NavBar extends StatefulWidget {
 
 class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
   final shopKey = GlobalKey<ShopState>();
+  final homeKey = GlobalKey<HomeScreenState>();
   int _selectedIndex = 0;
 
   final ScrollController homeScrollController = ScrollController();
@@ -39,6 +40,7 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
     widgetOptions = [
       _buildMainWidget(
         () => HomeScreen(
+          key: homeKey,
           scrollController: homeScrollController,
           tabController: homeTabController,
         ),
@@ -199,15 +201,13 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
       });
       return;
     }
-    if (_selectedIndex == index && index == 0) {
-      homeTabController.animateTo(0);
-      if (homeScrollController.hasClients) {
-        homeScrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
+    if (index == 0) {
+      if (_selectedIndex == 0) {
+        // Already on home — reset inner tab and scroll to top
+        homeKey.currentState?.resetToTop();
       }
+      setState(() => _selectedIndex = 0);
+      return;
     } else if (index == 3) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -225,7 +225,6 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
         }
 
         // ── Gate 1: bank account ────────────────────────────────────────
-        // User can skip this gate — NoBankAccountScreen pops true on skip
         final accounts = data?['bankAccounts'];
         final hasBankAccount =
             accounts != null && accounts is List && accounts.isNotEmpty;
@@ -236,11 +235,7 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
               builder: (_) => const NoBankAccountScreen(source: 'shop'),
             ),
           );
-          // result == true  → user skipped (allow through)
-          // result == null  → user pressed back arrow (block)
-          // result == false → same as back arrow (block)
           if (result != true) {
-            // Check again — user may have registered inside the screen
             final refreshed =
                 await FirebaseFirestore.instance
                     .collection('users')
@@ -251,7 +246,7 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
                 refreshedAccounts != null &&
                 refreshedAccounts is List &&
                 refreshedAccounts.isNotEmpty;
-            if (!nowHasAccount) return; // truly blocked, no account & no skip
+            if (!nowHasAccount) return;
           }
         }
 
@@ -276,15 +271,10 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
               builder: (_) => const ReceiptSetupScreen(source: 'shop'),
             ),
           );
-          // result == true  → saved successfully, continue
-          // result == 'skip'→ user skipped, allow through
-          // result == false/null → back arrow, block
           if (result != true && result != 'skip') return;
         }
 
         // ── Gate 3: default address ─────────────────────────────────────
-        // Skippable — user can browse shop without an address.
-        // Address is enforced at payment time in PlaceOrder / BuyNow.
         final freshDoc =
             await FirebaseFirestore.instance
                 .collection('users')
@@ -299,9 +289,6 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
               builder: (_) => const AddAddressScreen(showSkip: true),
             ),
           );
-          // result == true  → address added, proceed
-          // result == null / false → skipped, still let user into shop
-          // (payment will re-enforce this requirement)
         }
       }
       setState(() => _selectedIndex = index);
@@ -341,12 +328,10 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
               builder: (context, authSnapshot) {
                 final user = authSnapshot.data;
                 if (user == null) {
-                  return CircleAvatar(
-                    radius: 20.r,
-                    backgroundColor: Colors.transparent,
-                    backgroundImage: const AssetImage(
-                      'assets/chat_with_seller_grey.png',
-                    ),
+                  return Image.asset(
+                    'assets/chat_with_seller_grey.png',
+                    width: 30.r,
+                    height: 30.r,
                   );
                 }
                 return StreamBuilder(
@@ -373,12 +358,10 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
                     return Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        CircleAvatar(
-                          radius: 20.r,
-                          backgroundColor: Colors.transparent,
-                          backgroundImage: const AssetImage(
-                            'assets/chat_with_seller_grey.png',
-                          ),
+                        Image.asset(
+                          'assets/chat_with_seller_grey.png',
+                          width: 30.r,
+                          height: 30.r,
                         ),
                         if (hasUnread)
                           Positioned(
@@ -401,12 +384,10 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
               builder: (context, authSnapshot) {
                 final user = authSnapshot.data;
                 if (user == null) {
-                  return CircleAvatar(
-                    radius: 20.r,
-                    backgroundColor: Colors.transparent,
-                    backgroundImage: const AssetImage(
-                      'assets/chat_with_seller.png',
-                    ),
+                  return Image.asset(
+                    'assets/chat_with_seller.png',
+                    width: 30.r,
+                    height: 30.r,
                   );
                 }
                 return StreamBuilder(
@@ -433,12 +414,10 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
                     return Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        CircleAvatar(
-                          radius: 20.r,
-                          backgroundColor: Colors.transparent,
-                          backgroundImage: const AssetImage(
-                            'assets/chat_with_seller.png',
-                          ),
+                        Image.asset(
+                          'assets/chat_with_seller.png',
+                          width: 30.r,
+                          height: 30.r,
                         ),
                         if (hasUnread)
                           Positioned(
