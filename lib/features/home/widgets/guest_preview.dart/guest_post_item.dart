@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_comments.dart';
 import 'package:ecommerece_app/features/home/widgets/share_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
@@ -254,8 +255,27 @@ class GuestPostItem extends StatelessWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () {
-                    final postId = post['postId'];
-                    GoRouter.of(context).push('/guest_comment?postId=$postId');
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder:
+                          (context) => Container(
+                            height: MediaQuery.of(context).size.height * 0.95,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF2F2F2),
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(20),
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(20),
+                              ),
+                              child: GuestComments(post: post),
+                            ),
+                          ),
+                    );
                   },
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
