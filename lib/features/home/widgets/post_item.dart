@@ -240,6 +240,7 @@ class PostItem extends StatefulWidget {
   final bool fromComments;
   final bool showMoreButton;
   final double? imageWidth;
+  final String? currentProfileUserId;
 
   const PostItem({
     Key? key,
@@ -247,6 +248,7 @@ class PostItem extends StatefulWidget {
     required this.fromComments,
     this.showMoreButton = true,
     this.imageWidth,
+    this.currentProfileUserId,
   }) : super(key: key);
 
   @override
@@ -485,7 +487,9 @@ class _PostItemState extends State<PostItem> {
                           children: [
                             InkWell(
                               onTap: () {
-                                if (myuser != null) {
+                                if (myuser != null &&
+                                    widget.currentProfileUserId !=
+                                        myuser.userId) {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -856,7 +860,9 @@ class _PostItemState extends State<PostItem> {
                         children: [
                           InkWell(
                             onTap: () {
-                              if (myuser != null) {
+                              if (myuser != null &&
+                                  widget.currentProfileUserId !=
+                                      myuser.userId) {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
