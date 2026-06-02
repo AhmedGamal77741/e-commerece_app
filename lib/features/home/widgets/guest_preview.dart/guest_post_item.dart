@@ -177,24 +177,24 @@ class GuestPostItem extends StatelessWidget {
                             ),
                             itemBuilder:
                                 (_) => [
-                                  const PopupMenuItem<String>(
+                                  PopupMenuItem<String>(
                                     value: 'share',
                                     child: Text(
                                       '공유하기',
                                       style: TextStyle(
                                         color: Colors.black,
-                                        fontSize: 14,
+                                        fontSize: 14.sp,
                                         fontFamily: 'NotoSans',
                                       ),
                                     ),
                                   ),
                                 ],
-                            child: const Padding(
-                              padding: EdgeInsets.all(8.0),
+                            child: Padding(
+                              padding: EdgeInsets.all(8.w),
                               child: Icon(
                                 Icons.more_horiz,
                                 color: Colors.black,
-                                size: 22,
+                                size: 22.sp,
                               ),
                             ),
                           ),
