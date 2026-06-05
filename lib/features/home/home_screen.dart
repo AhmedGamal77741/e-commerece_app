@@ -30,7 +30,7 @@ class HomeScreenState extends State<HomeScreen>
   bool get wantKeepAlive => true;
 
   User? _firebaseUser;
-  late Stream<DocumentSnapshot>? _userStream;
+  Stream<DocumentSnapshot>? _userStream;
   int _selectedIndex = 0;
   bool isSub = false;
   late final _authSubscription;
@@ -68,14 +68,16 @@ class HomeScreenState extends State<HomeScreen>
     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
       if (mounted) {
         setState(() {
-          if (_firebaseUser != null) {
+          _firebaseUser = user;
+          if (user != null) {
             _userStream =
                 FirebaseFirestore.instance
                     .collection('users')
-                    .doc(_firebaseUser!.uid)
+                    .doc(user.uid)
                     .snapshots();
+          } else {
+            _userStream = null;
           }
-          _firebaseUser = user;
         });
       }
     });

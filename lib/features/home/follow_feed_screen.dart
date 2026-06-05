@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/home/widgets/following_users_list.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
@@ -9,8 +11,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class FollowingTab extends StatefulWidget {
   final User? firebaseUser;
   final String? preselectedUser;
-  const FollowingTab({Key? key, this.firebaseUser, this.preselectedUser})
-    : super(key: key);
+  const FollowingTab({super.key, this.firebaseUser, this.preselectedUser});
 
   @override
   State<FollowingTab> createState() => _FollowingTabState();
@@ -21,8 +22,9 @@ class _FollowingTabState extends State<FollowingTab>
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<String?> _selectedUserId = ValueNotifier(null);
   final ValueNotifier<String?> _selectedCategoryId = ValueNotifier(null);
-  late final Stream<User?> _authStream;
-  late final Stream<DocumentSnapshot>? _userStream;
+  late StreamSubscription<User?> _authSubscription;
+  User? _currentUser;
+  Stream<DocumentSnapshot>? _userStream;
   late PageController _categoryPageController;
   List<String?> _categoryPages = [null]; // null represents "All" category
   bool get wantKeepAlive => true;
@@ -50,18 +52,36 @@ class _FollowingTabState extends State<FollowingTab>
   void initState() {
     super.initState();
     _categoryPageController = PageController();
-    _authStream = FirebaseAuth.instance.authStateChanges();
     _selectedUserId.value = widget.preselectedUser;
     if (widget.preselectedUser != null) {
       _scrollToSelectedUser();
     }
-    if (widget.firebaseUser != null) {
+
+    _currentUser = FirebaseAuth.instance.currentUser;
+    if (_currentUser != null) {
       _userStream =
           FirebaseFirestore.instance
               .collection('users')
-              .doc(widget.firebaseUser!.uid)
+              .doc(_currentUser!.uid)
               .snapshots();
     }
+
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+          if (user != null) {
+            _userStream =
+                FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .snapshots();
+          } else {
+            _userStream = null;
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -76,6 +96,7 @@ class _FollowingTabState extends State<FollowingTab>
 
   @override
   void dispose() {
+    _authSubscription.cancel();
     _scrollController.dispose();
     _categoryPageController.dispose();
     _selectedUserId.dispose();
@@ -117,15 +138,9 @@ class _FollowingTabState extends State<FollowingTab>
     super.build(context);
     return Padding(
       padding: EdgeInsets.only(top: 10.h),
-      child: StreamBuilder<User?>(
-        stream: _authStream,
-        builder: (context, authSnapshot) {
-          final user = authSnapshot.data;
-
-          // Loading auth state
-          if (authSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(/* child: CircularProgressIndicator() */);
-          }
+      child: Builder(
+        builder: (context) {
+          final user = _currentUser;
 
           // User not authenticated
           if (user == null) {
@@ -351,14 +366,14 @@ class _FollowingTabState extends State<FollowingTab>
                                   onPageChanged: _onCategoryPageChanged,
                                   itemCount: _categoryPages.length,
                                   itemBuilder: (context, index) {
-                                      return FollowingPostsList(
-                                        currentUserId: currentUserId,
-                                        scrollController: _scrollController,
-                                        selectedUserId: selectedUserId,
-                                        selectedCategoryId: _categoryPages[index],
-                                        useGuestPostItem: !isSub,
-                                        blockedUsers: blockedUsers,
-                                      );
+                                    return FollowingPostsList(
+                                      currentUserId: currentUserId,
+                                      scrollController: _scrollController,
+                                      selectedUserId: selectedUserId,
+                                      selectedCategoryId: _categoryPages[index],
+                                      useGuestPostItem: !isSub,
+                                      blockedUsers: blockedUsers,
+                                    );
                                   },
                                 ),
                               ),
@@ -597,12 +612,22 @@ class FollowingPostsList extends StatelessWidget {
               onPressed: () async {
                 final messenger = ScaffoldMessenger.of(context);
                 try {
-                  await FirebaseFirestore.instance.collection('users').doc(currentUserId).update({
-                    'blocked': FieldValue.arrayRemove([selectedUserId]),
-                  });
-                  messenger.showSnackBar(const SnackBar(content: Text('차단이 해제되었습니다.')));
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(currentUserId)
+                      .update({
+                        'blocked': FieldValue.arrayRemove([selectedUserId]),
+                      });
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('차단이 해제되었습니다.')),
+                  );
                 } catch (e) {
-                  messenger.showSnackBar(SnackBar(content: Text('오류 발생: $e'), backgroundColor: Colors.red));
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('오류 발생: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               },
               child: Text('차단 해제', style: TextStyle(color: Colors.white)),
@@ -664,15 +689,16 @@ class FollowingPostsList extends StatelessWidget {
         }
 
         final rawPosts = snapshot.data!.docs;
-        final posts = rawPosts.where((doc) {
-          final postData = doc.data() as Map<String, dynamic>?;
-          if (postData == null) return false;
-          final authorId = postData['userId'] as String?;
-          if (authorId != null && blockedUsers.contains(authorId)) {
-            return false;
-          }
-          return true;
-        }).toList();
+        final posts =
+            rawPosts.where((doc) {
+              final postData = doc.data() as Map<String, dynamic>?;
+              if (postData == null) return false;
+              final authorId = postData['userId'] as String?;
+              if (authorId != null && blockedUsers.contains(authorId)) {
+                return false;
+              }
+              return true;
+            }).toList();
 
         // Empty posts state - different messages based on context
         if (posts.isEmpty) {
