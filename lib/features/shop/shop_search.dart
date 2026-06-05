@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ShopSearch extends StatefulWidget {
   const ShopSearch({super.key});
@@ -140,11 +141,30 @@ class _ShopSearchState extends State<ShopSearch> {
                             : Text(
                               '${formatCurrency.format(product.price / 0.8)} 원',
                             ),
-                    leading: Image.network(
-                      product.imgUrl!,
+                    leading: CachedNetworkImage(
+                      imageUrl: product.imgUrl!,
                       width: 50.w,
                       height: 50.h,
                       fit: BoxFit.cover,
+                      fadeInDuration: Duration.zero,
+                      fadeOutDuration: Duration.zero,
+                      placeholder: (context, url) => Container(
+                        width: 50.w,
+                        height: 50.h,
+                        color: Colors.grey[200],
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        width: 50.w,
+                        height: 50.h,
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.grey,
+                            size: 24,
+                          ),
+                        ),
+                      ),
                     ),
                     onTap: () async {
                       bool isSub = await isUserSubscribed();

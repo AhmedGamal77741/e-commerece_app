@@ -24,6 +24,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 // =============================================================================
@@ -452,19 +453,23 @@ class _PostItemState extends State<PostItem> {
       builder: (context, postData, child) {
         if (postData == null) return SizedBox.shrink();
 
+        final cachedUser = postsProvider.getUser(postData['userId']);
         return FutureBuilder<MyUser>(
-          future: getUser(postData['userId']),
+          future: cachedUser != null ? Future.value(cachedUser) : postsProvider.loadUser(postData['userId']),
+          initialData: cachedUser,
           builder: (context, snapshot) {
+            final isWaiting = snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData;
             final bool userMissing =
-                snapshot.hasError ||
+                !isWaiting && (snapshot.hasError ||
                 !snapshot.hasData ||
-                (snapshot.data?.userId ?? '').isEmpty;
+                (snapshot.data?.userId ?? '').isEmpty);
             final myuser = snapshot.data;
-            final displayName =
-                myuser?.name.isNotEmpty == true ? myuser!.name : '삭제된 사용자';
-            final String profileUrl = !userMissing ? (myuser?.url ?? '') : '';
+            final displayName = isWaiting 
+                ? '로딩 중...' 
+                : (myuser?.name.isNotEmpty == true ? myuser!.name : '삭제된 사용자');
+            final String profileUrl = !userMissing && !isWaiting ? (myuser?.url ?? '') : '';
             final bool isMyPost =
-                !userMissing &&
+                !userMissing && !isWaiting &&
                 myuser!.userId == FirebaseAuth.instance.currentUser?.uid;
 
             final List imgUrls =
@@ -473,8 +478,10 @@ class _PostItemState extends State<PostItem> {
                     ? postData['imgUrls'] as List
                     : [];
 
-            return Column(
-              children: [
+            Widget content = IgnorePointer(
+              ignoring: isWaiting,
+              child: Column(
+                children: [
                 // ── fromComments branch ───────────────────────────────────
                 if (widget.fromComments)
                   Padding(
@@ -525,11 +532,17 @@ class _PostItemState extends State<PostItem> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   verticalSpace(5),
-                                  Text(
-                                    displayName,
-                                    style: TextStyles.abeezee16px400wPblack
-                                        .copyWith(fontWeight: FontWeight.bold),
-                                  ),
+                                  isWaiting
+                                      ? Shimmer.fromColors(
+                                          baseColor: Colors.grey[300]!,
+                                          highlightColor: Colors.grey[100]!,
+                                          child: Container(width: 80.w, height: 16.h, color: Colors.white, margin: EdgeInsets.only(bottom: 2.h)),
+                                        )
+                                      : Text(
+                                          displayName,
+                                          style: TextStyles.abeezee16px400wPblack
+                                              .copyWith(fontWeight: FontWeight.bold),
+                                        ),
                                   FutureBuilder<String?>(
                                     future: ContactService().getContactNickname(
                                       myuser == null ? "" : myuser.userId,
@@ -928,11 +941,17 @@ class _PostItemState extends State<PostItem> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   verticalSpace(10),
-                                  Text(
-                                    displayName,
-                                    style: TextStyles.abeezee16px400wPblack
-                                        .copyWith(fontWeight: FontWeight.bold),
-                                  ),
+                                  isWaiting
+                                      ? Shimmer.fromColors(
+                                          baseColor: Colors.grey[300]!,
+                                          highlightColor: Colors.grey[100]!,
+                                          child: Container(width: 80.w, height: 16.h, color: Colors.white, margin: EdgeInsets.only(bottom: 2.h)),
+                                        )
+                                      : Text(
+                                          displayName,
+                                          style: TextStyles.abeezee16px400wPblack
+                                              .copyWith(fontWeight: FontWeight.bold),
+                                        ),
                                   FutureBuilder<String?>(
                                     future: ContactService().getContactNickname(
                                       myuser == null ? "" : myuser.userId,
@@ -1002,7 +1021,7 @@ class _PostItemState extends State<PostItem> {
                                       ),
                                   onDelete: () => _showDeleteDialog(context),
                                 )
-                                : _OtherPostMenu(
+                                : OtherPostMenu(
                                   postId: widget.postId,
                                   userId: myuser?.userId ?? '',
                                   onRunWithLoading: _runWithLoading,
@@ -1015,7 +1034,16 @@ class _PostItemState extends State<PostItem> {
                     ),
                   ),
               ],
-            );
+            ),
+          );
+            
+            return isWaiting
+                ? Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: content,
+                  )
+                : content;
           },
         );
       },
@@ -1079,7 +1107,7 @@ class _OwnPostMenu extends StatelessWidget {
 
 // ── Other user's post popup menu ──────────────────────────────────────────────
 
-class _OtherPostMenu extends StatelessWidget {
+class OtherPostMenu extends StatelessWidget {
   final String postId;
   final String userId;
   final Future<void> Function(
@@ -1093,7 +1121,7 @@ class _OtherPostMenu extends StatelessWidget {
   final String profileUrl;
   final Map<String, dynamic> postData;
 
-  const _OtherPostMenu({
+  const OtherPostMenu({
     required this.postId,
     required this.userId,
     required this.onRunWithLoading,

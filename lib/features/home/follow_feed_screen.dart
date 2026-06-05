@@ -214,6 +214,9 @@ class _FollowingTabState extends State<FollowingTab>
               final data = snapshot.data!.data() as Map<String, dynamic>?;
               final isSub = data?['isSub'] == true;
               final currentUserId = user.uid;
+              final blockedUsers = List<String>.from(
+                (data?['blocked'] as List<dynamic>?) ?? [],
+              );
 
               return Column(
                 children: [
@@ -327,17 +330,18 @@ class _FollowingTabState extends State<FollowingTab>
                           return Column(
                             children: [
                               // Categories bar
-                              ValueListenableBuilder<String?>(
-                                valueListenable: _selectedCategoryId,
-                                builder: (context, selectedCategoryId, _) {
-                                  return UserCategoriesBar(
-                                    userId: selectedUserId,
-                                    selectedCategoryId: selectedCategoryId,
-                                    onCategorySelected:
-                                        _handleCategorySelection,
-                                  );
-                                },
-                              ),
+                              if (!blockedUsers.contains(selectedUserId))
+                                ValueListenableBuilder<String?>(
+                                  valueListenable: _selectedCategoryId,
+                                  builder: (context, selectedCategoryId, _) {
+                                    return UserCategoriesBar(
+                                      userId: selectedUserId,
+                                      selectedCategoryId: selectedCategoryId,
+                                      onCategorySelected:
+                                          _handleCategorySelection,
+                                    );
+                                  },
+                                ),
                               // Posts PageView
                               SizedBox(
                                 height:
@@ -347,13 +351,14 @@ class _FollowingTabState extends State<FollowingTab>
                                   onPageChanged: _onCategoryPageChanged,
                                   itemCount: _categoryPages.length,
                                   itemBuilder: (context, index) {
-                                    return FollowingPostsList(
-                                      currentUserId: currentUserId,
-                                      scrollController: _scrollController,
-                                      selectedUserId: selectedUserId,
-                                      selectedCategoryId: _categoryPages[index],
-                                      useGuestPostItem: !isSub,
-                                    );
+                                      return FollowingPostsList(
+                                        currentUserId: currentUserId,
+                                        scrollController: _scrollController,
+                                        selectedUserId: selectedUserId,
+                                        selectedCategoryId: _categoryPages[index],
+                                        useGuestPostItem: !isSub,
+                                        blockedUsers: blockedUsers,
+                                      );
                                   },
                                 ),
                               ),
@@ -552,6 +557,7 @@ class FollowingPostsList extends StatelessWidget {
   final String? selectedUserId;
   final String? selectedCategoryId;
   final bool useGuestPostItem;
+  final List<String> blockedUsers;
 
   const FollowingPostsList({
     Key? key,
@@ -560,10 +566,52 @@ class FollowingPostsList extends StatelessWidget {
     this.selectedUserId,
     this.selectedCategoryId,
     this.useGuestPostItem = false,
+    this.blockedUsers = const [],
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    if (selectedUserId != null && blockedUsers.contains(selectedUserId)) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.block, size: 64, color: Colors.grey[300]),
+            SizedBox(height: 16.h),
+            Text(
+              '차단된 사용자입니다',
+              style: TextStyle(
+                fontSize: 16.sp,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await FirebaseFirestore.instance.collection('users').doc(currentUserId).update({
+                    'blocked': FieldValue.arrayRemove([selectedUserId]),
+                  });
+                  messenger.showSnackBar(const SnackBar(content: Text('차단이 해제되었습니다.')));
+                } catch (e) {
+                  messenger.showSnackBar(SnackBar(content: Text('오류 발생: $e'), backgroundColor: Colors.red));
+                }
+              },
+              child: Text('차단 해제', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    }
+
     return StreamBuilder<QuerySnapshot>(
       stream: _getFollowingPostsStream(selectedUserId, selectedCategoryId),
       builder: (context, snapshot) {
@@ -615,7 +663,16 @@ class FollowingPostsList extends StatelessWidget {
           );
         }
 
-        final posts = snapshot.data!.docs;
+        final rawPosts = snapshot.data!.docs;
+        final posts = rawPosts.where((doc) {
+          final postData = doc.data() as Map<String, dynamic>?;
+          if (postData == null) return false;
+          final authorId = postData['userId'] as String?;
+          if (authorId != null && blockedUsers.contains(authorId)) {
+            return false;
+          }
+          return true;
+        }).toList();
 
         // Empty posts state - different messages based on context
         if (posts.isEmpty) {

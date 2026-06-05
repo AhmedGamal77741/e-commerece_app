@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -123,11 +124,29 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 children: [
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(10),
-                                    child: Image.network(
-                                      p.imgUrl ?? '',
+                                    child: CachedNetworkImage(
+                                      imageUrl: p.imgUrl ?? '',
                                       width: 106.w,
                                       height: 110.h,
                                       fit: BoxFit.cover,
+                                      fadeInDuration: Duration.zero,
+                                      fadeOutDuration: Duration.zero,
+                                      placeholder: (context, url) => Container(
+                                        width: 106.w,
+                                        height: 110.h,
+                                        color: Colors.grey[200],
+                                      ),
+                                      errorWidget: (context, url, error) => Container(
+                                        width: 106.w,
+                                        height: 110.h,
+                                        color: Colors.grey[200],
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   SizedBox(width: 10.w),

@@ -1,7 +1,5 @@
 // features/chat/ui/chats_navbar.dart
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/chat/services/friends_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/direct_chats_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/edit_screen.dart';
@@ -29,7 +27,6 @@ class _ChatsNavbarState extends State<ChatsNavbar>
   final PageController _pageController = PageController(initialPage: 1);
 
   final String supportUserId = 'JuxEfED9YSc2XyHRFgkPcNCFUSJ3';
-  final FriendsService _friendsService = FriendsService();
   final ChatService _chatService = ChatService();
 
   final List<Map<String, dynamic>> _tabs = [
@@ -204,7 +201,6 @@ class _ChatsNavbarState extends State<ChatsNavbar>
           child:
               onFriendsTab
                   ? IconButton(
-                    key: const ValueKey('search'),
                     onPressed: _enterSearchMode,
                     icon: CircleAvatar(
                       radius: 15.r,
@@ -219,14 +215,13 @@ class _ChatsNavbarState extends State<ChatsNavbar>
                       minHeight: 28.h,
                     ),
                   )
-                  : SizedBox(width: 0, key: const ValueKey('no-search')),
+                  : const SizedBox(width: 0),
         ),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child:
               onDirectChatsTab
                   ? IconButton(
-                    key: const ValueKey('contact-admin'),
                     onPressed: _contactAdmin,
                     icon: Icon(
                       Icons.contact_support_outlined,
@@ -239,7 +234,7 @@ class _ChatsNavbarState extends State<ChatsNavbar>
                       minHeight: 28.h,
                     ),
                   )
-                  : SizedBox(width: 0, key: const ValueKey('no-admin')),
+                  : const SizedBox(width: 0),
         ),
         IconButton(
           onPressed: _onSettingsTapped,
@@ -314,6 +309,7 @@ class _ChatsNavbarState extends State<ChatsNavbar>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final user = FirebaseAuth.instance.currentUser;
 
     // ✅ No user signed in — show Korean sign-in prompt

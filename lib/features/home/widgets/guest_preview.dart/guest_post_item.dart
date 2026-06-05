@@ -11,6 +11,10 @@ import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_po
 import 'package:ecommerece_app/features/home/widgets/post_item.dart'; // imports NaturalAspectPageView
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:ecommerece_app/features/home/data/post_provider.dart';
 
 class GuestPostItem extends StatelessWidget {
   final Map<String, dynamic> post;
@@ -33,25 +37,74 @@ class GuestPostItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isGuest = FirebaseAuth.instance.currentUser == null;
+    final postsProvider = Provider.of<PostsProvider>(context, listen: false);
+
+    Future<void> runWithLoading(
+      BuildContext context,
+      Future<void> Function() action,
+      String successMessage,
+      String errorMessage,
+    ) async {
+      final nav = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
+      nav.push(
+        PageRouteBuilder(
+          opaque: false,
+          barrierDismissible: false,
+          barrierColor: Colors.black26,
+          pageBuilder: (_, __, ___) => AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16.w),
+                Text('처리 중...'),
+              ],
+            ),
+          ),
+        ),
+      );
+      try {
+        await action();
+        nav.pop();
+        messenger.showSnackBar(SnackBar(content: Text(successMessage)));
+      } catch (e) {
+        nav.pop();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('$errorMessage: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    final cachedUser = postsProvider.getUser(post['userId']);
+
     return FutureBuilder<MyUser>(
-      future: getUser(post['userId']),
+      future: cachedUser != null ? Future.value(cachedUser) : postsProvider.loadUser(post['userId']),
+      initialData: cachedUser,
       builder: (context, snapshot) {
+        final isWaiting = snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData;
         final bool userMissing =
-            snapshot.hasError ||
+            !isWaiting && (snapshot.hasError ||
             !snapshot.hasData ||
-            (snapshot.data?.userId ?? '').isEmpty;
+            (snapshot.data?.userId ?? '').isEmpty);
         final myuser = snapshot.data;
-        final displayName =
-            myuser?.name.isNotEmpty == true ? myuser!.name : '삭제된 사용자';
-        final profileUrl = !userMissing ? (myuser?.url ?? '') : '';
+        final displayName = isWaiting
+            ? '로딩 중...'
+            : (myuser?.name.isNotEmpty == true ? myuser!.name : '삭제된 사용자');
+        final profileUrl = (!userMissing && !isWaiting) ? (myuser?.url ?? '') : '';
 
         final List imgUrls =
             (post['imgUrls'] != null && (post['imgUrls'] as List).isNotEmpty)
                 ? post['imgUrls'] as List
                 : [];
 
-        return Column(
-          children: [
+        Widget content = IgnorePointer(
+          ignoring: isWaiting,
+          child: Column(
+            children: [
             // ── fromComments branch ───────────────────────────────────────
             if (post['fromComments'] == true)
               SizedBox(
@@ -103,11 +156,17 @@ class GuestPostItem extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 verticalSpace(5),
-                                Text(
-                                  displayName,
-                                  style: TextStyles.abeezee16px400wPblack
-                                      .copyWith(fontWeight: FontWeight.bold),
-                                ),
+                                isWaiting
+                                    ? Shimmer.fromColors(
+                                        baseColor: Colors.grey[300]!,
+                                        highlightColor: Colors.grey[100]!,
+                                        child: Container(width: 80.w, height: 16.h, color: Colors.white, margin: EdgeInsets.only(bottom: 2.h)),
+                                      )
+                                    : Text(
+                                        displayName,
+                                        style: TextStyles.abeezee16px400wPblack
+                                            .copyWith(fontWeight: FontWeight.bold),
+                                      ),
                                 if (!userMissing && myuser!.userId.isNotEmpty)
                                   StreamBuilder<QuerySnapshot>(
                                     stream:
@@ -158,46 +217,13 @@ class GuestPostItem extends StatelessWidget {
                             ),
                           ),
                           const Spacer(),
-                          PopupMenuButton<String>(
-                            onSelected: (value) {
-                              if (value == 'share') {
-                                showShareDialog(
-                                  context,
-                                  'post',
-                                  'https://app.pang2chocolate.com/comment?postId=${post['postId']}',
-                                  post['postId'] ?? '',
-                                  displayName,
-                                  profileUrl,
-                                  post,
-                                );
-                              }
-                            },
-                            color: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            itemBuilder:
-                                (_) => [
-                                  PopupMenuItem<String>(
-                                    value: 'share',
-                                    child: Text(
-                                      '공유하기',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 14.sp,
-                                        fontFamily: 'NotoSans',
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                            child: Padding(
-                              padding: EdgeInsets.all(8.w),
-                              child: Icon(
-                                Icons.more_horiz,
-                                color: Colors.black,
-                                size: 22.sp,
-                              ),
-                            ),
+                          isGuest ? const SizedBox.shrink() : OtherPostMenu(
+                            postId: post['postId'] ?? '',
+                            userId: myuser?.userId ?? '',
+                            onRunWithLoading: runWithLoading,
+                            displayName: displayName,
+                            profileUrl: profileUrl,
+                            postData: post,
                           ),
                         ],
                       ),
@@ -323,12 +349,18 @@ class GuestPostItem extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
                             verticalSpace(10),
-                            Text(
-                              displayName,
-                              style: TextStyles.abeezee16px400wPblack.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            isWaiting
+                                ? Shimmer.fromColors(
+                                    baseColor: Colors.grey[300]!,
+                                    highlightColor: Colors.grey[100]!,
+                                    child: Container(width: 80.w, height: 16.h, color: Colors.white, margin: EdgeInsets.only(bottom: 2.h)),
+                                  )
+                                : Text(
+                                    displayName,
+                                    style: TextStyles.abeezee16px400wPblack.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                             if (post['text'].toString().isNotEmpty)
                               Padding(
                                 padding: EdgeInsets.only(top: 5.h),
@@ -357,12 +389,29 @@ class GuestPostItem extends StatelessWidget {
                           ],
                         ),
                       ),
+                      isGuest ? const SizedBox.shrink() : OtherPostMenu(
+                        postId: post['postId'] ?? '',
+                        userId: myuser?.userId ?? '',
+                        onRunWithLoading: runWithLoading,
+                        displayName: displayName,
+                        profileUrl: profileUrl,
+                        postData: post,
+                      ),
                     ],
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         );
+
+        return isWaiting
+            ? Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: content,
+              )
+            : content;
       },
     );
   }
