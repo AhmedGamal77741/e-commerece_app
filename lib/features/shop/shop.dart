@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
@@ -368,6 +369,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
   bool get wantKeepAlive => true;
 
   Map<String, dynamic>? userAddressMap;
+  final Map<String, double> _productRandomWeight = {};
 
   @override
   void didChangeDependencies() {
@@ -439,6 +441,19 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
                 otherRegion.add(product);
               }
             }
+
+            final random = Random();
+            otherRegion.sort((a, b) {
+              final weightA = _productRandomWeight.putIfAbsent(
+                a.product_id,
+                () => random.nextDouble(),
+              );
+              final weightB = _productRandomWeight.putIfAbsent(
+                b.product_id,
+                () => random.nextDouble(),
+              );
+              return weightA.compareTo(weightB);
+            });
 
             final sortedProducts = [
               /* ...sameRegion, */ ...otherRegion,
