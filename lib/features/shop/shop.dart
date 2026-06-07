@@ -106,9 +106,7 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
                       .snapshots(),
               builder: (context, userSnapshot) {
                 if (userSnapshot.connectionState == ConnectionState.waiting) {
-                  return Scaffold(
-                    body: const SizedBox.shrink(),
-                  );
+                  return Scaffold(body: const SizedBox.shrink());
                 }
                 if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
                   return Scaffold(
@@ -482,32 +480,55 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: CachedNetworkImage(
-                            imageUrl: p.imgUrl!,
-                            width: 106.w,
-                            height: 106.h,
-                            fit: BoxFit.cover,
-                            fadeInDuration: Duration.zero,
-                            fadeOutDuration: Duration.zero,
-                            placeholder: (context, url) => Container(
-                              width: 106.w,
-                              height: 106.h,
-                              color: Colors.grey[200],
-                            ),
-                            errorWidget: (context, url, error) => Container(
-                              width: 106.w,
-                              height: 106.h,
-                              color: Colors.grey[200],
-                              child: const Center(
-                                child: Icon(
-                                  Icons.broken_image,
-                                  color: Colors.grey,
-                                ),
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: CachedNetworkImage(
+                                imageUrl: p.imgUrl!,
+                                width: 106.w,
+                                height: 106.h,
+                                fit: BoxFit.cover,
+                                fadeInDuration: Duration.zero,
+                                fadeOutDuration: Duration.zero,
+                                placeholder:
+                                    (context, url) => Container(
+                                      width: 106.w,
+                                      height: 106.h,
+                                      color: Colors.grey[200],
+                                    ),
+                                errorWidget:
+                                    (context, url, error) => Container(
+                                      width: 106.w,
+                                      height: 106.h,
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ),
                               ),
                             ),
-                          ),
+                            if (p.stock == 0)
+                              Positioned.fill(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    width: 150.w,
+                                    height: 150.h,
+                                    color: Colors.transparent,
+                                    child: Center(
+                                      child: Image.asset(
+                                        'assets/sold_out.png',
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         SizedBox(width: 10.w),
                         Expanded(

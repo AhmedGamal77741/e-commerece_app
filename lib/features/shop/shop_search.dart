@@ -139,30 +139,50 @@ class _ShopSearchState extends State<ShopSearch> {
                             : Text(
                               '${formatCurrency.format(product.price / 0.8)} 원',
                             ),
-                    leading: CachedNetworkImage(
-                      imageUrl: product.imgUrl!,
-                      width: 50.w,
-                      height: 50.h,
-                      fit: BoxFit.cover,
-                      fadeInDuration: Duration.zero,
-                      fadeOutDuration: Duration.zero,
-                      placeholder: (context, url) => Container(
-                        width: 50.w,
-                        height: 50.h,
-                        color: Colors.grey[200],
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        width: 50.w,
-                        height: 50.h,
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: Icon(
-                            Icons.broken_image,
-                            color: Colors.grey,
-                            size: 24,
-                          ),
+                    leading: Stack(
+                      children: [
+                        CachedNetworkImage(
+                          imageUrl: product.imgUrl!,
+                          width: 50.w,
+                          height: 50.h,
+                          fit: BoxFit.cover,
+                          fadeInDuration: Duration.zero,
+                          fadeOutDuration: Duration.zero,
+                          placeholder:
+                              (context, url) => Container(
+                                width: 50.w,
+                                height: 50.h,
+                                color: Colors.grey[200],
+                              ),
+                          errorWidget:
+                              (context, url, error) => Container(
+                                width: 50.w,
+                                height: 50.h,
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: Colors.grey,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
                         ),
-                      ),
+                        if (product.stock == 0)
+                          Positioned.fill(
+                            child: Container(
+                              width: 100.w,
+                              height: 100.h,
+                              color: Colors.transparent,
+                              child: Center(
+                                child: Image.asset(
+                                  'assets/sold_out.png',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     onTap: () async {
                       bool isSub = await isUserSubscribed();

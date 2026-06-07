@@ -230,6 +230,21 @@ class _ItemDetailsState extends State<ItemDetails> {
                         ),
                       ),
                     ),
+                  if (widget.product.stock == 0)
+                    Positioned.fill(
+                      child: Container(
+                        width: 450.w,
+                        height: 450.h,
+                        color: Colors.transparent,
+                        child: Center(
+                          child: Image.asset(
+                            'assets/sold_out.png',
+                            color: Colors.black,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    ),
                   Positioned(
                     top: 5,
                     left: 5,
@@ -437,6 +452,21 @@ class _ItemDetailsState extends State<ItemDetails> {
                               ),
                             ),
                           ),
+                        if (widget.product.stock == 0)
+                          Positioned.fill(
+                            child: Container(
+                              width: 450.w,
+                              height: 450.h,
+                              color: Colors.transparent,
+                              child: Center(
+                                child: Image.asset(
+                                  'assets/sold_out.png',
+                                  color: Colors.black,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
                         Positioned(
                           top: 5,
                           left: 5,
@@ -535,21 +565,38 @@ class _ItemDetailsState extends State<ItemDetails> {
                             ),
                             IconButton(
                               onPressed: () async {
-                                if (liked) {
-                                  await removeProductFromFavorites(
-                                    userId: currentUser.uid,
-                                    productId: widget.product.product_id,
-                                  );
-                                } else {
-                                  await addProductToFavorites(
-                                    userId: currentUser.uid,
-                                    productId: widget.product.product_id,
-                                  );
-                                }
+                                final wasLiked = liked;
                                 setState(() => liked = !liked);
+
+                                try {
+                                  if (wasLiked) {
+                                    await removeProductFromFavorites(
+                                      userId: currentUser.uid,
+                                      productId: widget.product.product_id,
+                                    );
+                                  } else {
+                                    await addProductToFavorites(
+                                      userId: currentUser.uid,
+                                      productId: widget.product.product_id,
+                                    );
+                                  }
+                                } catch (e) {
+                                  setState(() => liked = wasLiked);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          '요청을 처리하는 동안 오류가 발생했습니다. 다시 시도해주세요.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
                               },
                               icon: ImageIcon(
-                                const AssetImage('assets/grey_007m.png'),
+                                liked
+                                    ? AssetImage('assets/black_007m.png')
+                                    : const AssetImage('assets/grey_007m.png'),
                                 size: 32.sp,
                                 color: liked ? Colors.black : Colors.grey,
                               ),
