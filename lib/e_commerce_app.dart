@@ -88,6 +88,19 @@ class _EcommerceAppState extends State<EcommerceApp> {
                           // scaffoldMessengerKey: scaffoldMessengerKey,
                           title: 'E-commerce App (Web)',
                           theme: ThemeData(
+                            useMaterial3: true,
+                            colorScheme: ColorScheme.fromSeed(
+                              seedColor: Colors.black,
+                              primary: Colors.black,
+                              onPrimary: Colors.white,
+                              secondary: Colors.black,
+                              onSecondary: Colors.white,
+                            ),
+                            textSelectionTheme: const TextSelectionThemeData(
+                              cursorColor: Colors.black,
+                              selectionColor: Colors.black12,
+                              selectionHandleColor: Colors.black,
+                            ),
                             scaffoldBackgroundColor: ColorsManager.primary,
                             appBarTheme: AppBarTheme(
                               backgroundColor: ColorsManager.primary,
@@ -120,6 +133,19 @@ class _EcommerceAppState extends State<EcommerceApp> {
                   // scaffoldMessengerKey: scaffoldMessengerKey,
                   title: 'E-commerce App',
                   theme: ThemeData(
+                    useMaterial3: true,
+                    colorScheme: ColorScheme.fromSeed(
+                      seedColor: Colors.black,
+                      primary: Colors.black,
+                      onPrimary: Colors.white,
+                      secondary: Colors.black,
+                      onSecondary: Colors.white,
+                    ),
+                    textSelectionTheme: const TextSelectionThemeData(
+                      cursorColor: Colors.black,
+                      selectionColor: Colors.black12,
+                      selectionHandleColor: Colors.black,
+                    ),
                     scaffoldBackgroundColor: ColorsManager.primary,
                     appBarTheme: AppBarTheme(
                       backgroundColor: ColorsManager.primary,

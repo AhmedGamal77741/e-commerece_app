@@ -382,12 +382,12 @@ class _AddPostState extends State<AddPost> {
                       vertical: 10.h,
                     ),
                     decoration: BoxDecoration(
-                      color: isArrangeMode ? Colors.blue[50] : Colors.red[50],
+                      color: isArrangeMode ? Colors.grey[100] : Colors.red[50],
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color:
                             isArrangeMode
-                                ? Colors.blue[200]!
+                                ? Colors.grey[300]!
                                 : Colors.red[200]!,
                         width: 1,
                       ),
@@ -404,7 +404,7 @@ class _AddPostState extends State<AddPost> {
                               size: 18,
                               color:
                                   isArrangeMode
-                                      ? Colors.blue[700]
+                                      ? Colors.black
                                       : Colors.red[700],
                             ),
                             SizedBox(width: 8.w),
@@ -416,7 +416,7 @@ class _AddPostState extends State<AddPost> {
                                 fontSize: 12.sp,
                                 color:
                                     isArrangeMode
-                                        ? Colors.blue[900]
+                                        ? Colors.black
                                         : Colors.red[900],
                                 fontWeight: FontWeight.w500,
                               ),
@@ -433,7 +433,7 @@ class _AddPostState extends State<AddPost> {
                           style: TextButton.styleFrom(
                             backgroundColor:
                                 isArrangeMode
-                                    ? Colors.blue[700]
+                                    ? Colors.black
                                     : Colors.red[700],
                             padding: EdgeInsets.symmetric(
                               horizontal: 16.w,
