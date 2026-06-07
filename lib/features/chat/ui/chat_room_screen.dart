@@ -380,7 +380,7 @@ class _ChatScreenState extends State<ChatScreen> {
           subtitle,
           style: TextStyle(
             color: Colors.grey[500],
-            fontSize: 11,
+            fontSize: 11.sp,
             fontWeight: FontWeight.w400,
           ),
         );
@@ -392,9 +392,9 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!_isGroup) {
       return Text(
         _appBarTitle,
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.black,
-          fontSize: 16,
+          fontSize: 16.sp,
           fontWeight: FontWeight.w600,
         ),
       );
@@ -403,20 +403,20 @@ class _ChatScreenState extends State<ChatScreen> {
     if (widget.chatRoomName.trim().isNotEmpty) {
       return Text(
         widget.chatRoomName,
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.black,
-          fontSize: 16,
+          fontSize: 16.sp,
           fontWeight: FontWeight.w600,
         ),
       );
     }
 
     if (_chatRoom == null) {
-      return const Text(
+      return Text(
         '...',
         style: TextStyle(
           color: Colors.black,
-          fontSize: 16,
+          fontSize: 16.sp,
           fontWeight: FontWeight.w600,
         ),
       );
@@ -426,11 +426,11 @@ class _ChatScreenState extends State<ChatScreen> {
       future: _fetchMemberDetails(_chatRoom!.participants),
       builder: (context, snap) {
         if (!snap.hasData) {
-          return const Text(
+          return Text(
             '...',
             style: TextStyle(
               color: Colors.black,
-              fontSize: 16,
+              fontSize: 16.sp,
               fontWeight: FontWeight.w600,
             ),
           );
@@ -448,9 +448,9 @@ class _ChatScreenState extends State<ChatScreen> {
         final targetNames = otherNames.isEmpty ? ['나'] : otherNames;
         return Text(
           targetNames.join(', '),
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.black,
-            fontSize: 16,
+            fontSize: 16.sp,
             fontWeight: FontWeight.w600,
           ),
           maxLines: 1,

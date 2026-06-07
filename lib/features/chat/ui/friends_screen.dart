@@ -2147,7 +2147,7 @@ class _FriendsScreenState extends State<FriendsScreen>
 
     return Container(
       key: itemKey,
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 16.h),
       child: Row(
         children: [
           Stack(
@@ -2165,7 +2165,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                   );
                 },
                 child: CircleAvatar(
-                  radius: 25,
+                  radius: 25.r,
                   backgroundImage: NetworkImage(friend.url),
                 ),
               ),
@@ -2189,7 +2189,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                 ), */
             ],
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2220,12 +2220,10 @@ class _FriendsScreenState extends State<FriendsScreen>
                       },
                       child: Row(
                         children: [
-                          _buildHighlightedName(
-                            displayName,
-                            _effectiveQuery,
-                          ),
-                          if (contactName != null && contactName.isNotEmpty) ...[
-                            const SizedBox(width: 6),
+                          _buildHighlightedName(displayName, _effectiveQuery),
+                          if (contactName != null &&
+                              contactName.isNotEmpty) ...[
+                            SizedBox(width: 6.w),
                             Text(
                               '@$contactName',
                               style: TextStyle(
@@ -2265,24 +2263,25 @@ class _FriendsScreenState extends State<FriendsScreen>
                         children: [
                           Text(
                             displayName,
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w500,
                               color: Colors.black,
                             ),
                           ),
                           if (hasAlias) ...[
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4.w),
                             Text(
                               '(${friend.name})',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 11.sp,
                                 color: Colors.grey[400],
                               ),
                             ),
                           ],
-                          if (contactName != null && contactName.isNotEmpty) ...[
-                            const SizedBox(width: 6),
+                          if (contactName != null &&
+                              contactName.isNotEmpty) ...[
+                            SizedBox(width: 6.w),
                             Text(
                               '@$contactName',
                               style: TextStyle(

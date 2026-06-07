@@ -47,18 +47,18 @@ class _GroupChatsScreenState extends State<GroupChatsScreen>
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    const double popupWidth = 220;
-    const double popupHeight = 210;
+    final double popupWidth = 220.w;
+    final double popupHeight = 210.h;
 
-    double left = offset.dx + tileSize.width - popupWidth - 8;
+    double left = offset.dx + tileSize.width - popupWidth - 8.w;
     double top = offset.dy + (tileSize.height / 2) - (popupHeight / 2);
 
-    if (left < 8) left = 8;
-    if (left + popupWidth > screenWidth - 8)
-      left = screenWidth - popupWidth - 8;
-    if (top < 8) top = 8;
-    if (top + popupHeight > screenHeight - 20)
-      top = screenHeight - popupHeight - 20;
+    if (left < 8.w) left = 8.w;
+    if (left + popupWidth > screenWidth - 8.w)
+      left = screenWidth - popupWidth - 8.w;
+    if (top < 8.h) top = 8.h;
+    if (top + popupHeight > screenHeight - 20.h)
+      top = screenHeight - popupHeight - 20.h;
 
     showDialog(
       context: context,
@@ -86,9 +86,9 @@ class _GroupChatsScreenState extends State<GroupChatsScreen>
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.12),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 4),
+                          blurRadius: 20.r,
+                          spreadRadius: 2.r,
+                          offset: Offset(0, 4.h),
                         ),
                       ],
                     ),
