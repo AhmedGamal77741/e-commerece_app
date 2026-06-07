@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
+import 'package:ecommerece_app/core/cache/user_cache.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -97,11 +98,10 @@ class _GroupChatsScreenState extends State<GroupChatsScreen>
                         SizedBox(height: 20.h),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 12.w),
-                          child: Text(
-                            chat.name,
+                          child: _GroupChatNameText(
+                            chat: chat,
+                            currentUserId: currentUserId,
                             textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 22.sp,
                               fontWeight: FontWeight.w800,
@@ -521,8 +521,9 @@ class _GroupChatsScreenState extends State<GroupChatsScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                chat.name,
+                              _GroupChatNameText(
+                                chat: chat,
+                                currentUserId: currentUserId,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
@@ -641,6 +642,69 @@ class _FadingText extends StatelessWidget {
         overflow: TextOverflow.clip,
         style: const TextStyle(fontSize: 12),
       ),
+    );
+  }
+}
+
+class _GroupChatNameText extends StatelessWidget {
+  final ChatRoomModel chat;
+  final String currentUserId;
+  final TextStyle style;
+  final TextAlign? textAlign;
+
+  const _GroupChatNameText({
+    required this.chat,
+    required this.currentUserId,
+    required this.style,
+    this.textAlign,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (chat.name.trim().isNotEmpty) {
+      return Text(
+        chat.name,
+        style: style,
+        textAlign: textAlign,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
+    final otherParticipants =
+        chat.participants.where((id) => id != currentUserId).toList();
+    final targetIds =
+        otherParticipants.isEmpty ? chat.participants : otherParticipants;
+
+    return FutureBuilder<List<String>>(
+      future: Future.wait(
+        targetIds.map((id) async {
+          try {
+            final doc = await UserCache.getUser(id);
+            if (doc.exists) {
+              return doc.get('name') as String? ?? '알 수 없음';
+            }
+          } catch (_) {}
+          return '알 수 없음';
+        }),
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Text(
+            '...',
+            style: style,
+            textAlign: textAlign,
+          );
+        }
+        final nameStr = snapshot.data!.join(', ');
+        return Text(
+          nameStr,
+          style: style,
+          textAlign: textAlign,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      },
     );
   }
 }
