@@ -210,9 +210,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       if (!snap.hasData) {
                         return Padding(
                           padding: EdgeInsets.all(32.h),
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
+                          child: const SizedBox.shrink(),
                         );
                       }
                       return ListView.separated(
@@ -606,7 +604,7 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body:
           _loadingBlockState
-              ? const Center(child: CircularProgressIndicator())
+              ? const SizedBox.shrink()
               : Column(
                 children: [
                   // ── Message list ────────────────────────────────────────────

@@ -428,9 +428,7 @@ class _ContactsEditTabState extends State<_ContactsEditTab> {
                           stream: _friendsService.getFriendsStream(),
                           builder: (ctx, friendsSnap) {
                             if (!friendsSnap.hasData) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
+                              return const SizedBox.shrink();
                             }
 
                             final allFriends =
@@ -853,7 +851,7 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
             stream: _chatService.getChatRoomsStream(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
+                return const SizedBox.shrink();
               }
 
               final allChats =
@@ -1190,7 +1188,7 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
                 stream: _chatService.getChatRoomsStream(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const SizedBox.shrink();
                   }
 
                   final allGroups =

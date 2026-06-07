@@ -278,11 +278,7 @@ class _UploadStoryScreenState extends State<UploadStoryScreen> {
             ),
             child:
                 _isLoading
-                    ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                    ? const SizedBox.shrink()
                     : const Text(
                       '공유',
                       style: TextStyle(

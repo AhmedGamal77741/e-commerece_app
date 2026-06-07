@@ -106,7 +106,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
           if (_isLoading)
             Container(
               color: Colors.white.withOpacity(0.8),
-              child: const Center(child: CircularProgressIndicator()),
+              child: const SizedBox.shrink(),
             ),
         ],
       ),

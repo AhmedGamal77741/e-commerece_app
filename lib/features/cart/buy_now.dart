@@ -598,11 +598,11 @@ class _BuyNowState extends State<BuyNow> {
                   borderRadius: BorderRadius.all(Radius.circular(16)),
                 ),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(color: Colors.black),
+                      SizedBox.shrink(),
                       SizedBox(height: 16),
                       Text(
                         '결제 처리 중입니다...',
@@ -884,9 +884,7 @@ class _BuyNowState extends State<BuyNow> {
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState ==
                                       ConnectionState.waiting) {
-                                    return const Center(
-                                      child: CircularProgressIndicator(),
-                                    );
+                                    return const SizedBox.shrink();
                                   }
                                   if (snapshot.hasError ||
                                       !snapshot.hasData ||
@@ -912,9 +910,7 @@ class _BuyNowState extends State<BuyNow> {
                                     builder: (context, snapshot) {
                                       if (snapshot.connectionState ==
                                           ConnectionState.waiting) {
-                                        return const Center(
-                                          child: CircularProgressIndicator(),
-                                        );
+                                        return const SizedBox.shrink();
                                       }
                                       if (!snapshot.hasData ||
                                           !snapshot.data!.exists) {

@@ -58,7 +58,7 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
               .snapshots(),
       builder: (context, catSnapshot) {
         if (catSnapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(body: Center(child: CircularProgressIndicator()));
+          return Scaffold(body: const SizedBox.shrink());
         }
         if (catSnapshot.hasError) {
           return Scaffold(
@@ -92,7 +92,7 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
           stream: FirebaseAuth.instance.authStateChanges(),
           builder: (context, authSnapshot) {
             if (authSnapshot.connectionState == ConnectionState.waiting) {
-              return Scaffold(body: Center(child: CircularProgressIndicator()));
+              return Scaffold(body: const SizedBox.shrink());
             }
             final firebaseUser = authSnapshot.data;
             if (firebaseUser == null) {
@@ -107,7 +107,7 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
               builder: (context, userSnapshot) {
                 if (userSnapshot.connectionState == ConnectionState.waiting) {
                   return Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
+                    body: const SizedBox.shrink(),
                   );
                 }
                 if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
@@ -418,7 +418,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
               return Center(child: Text('오류: ${snapshot.error}'));
             }
             /*             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const const SizedBox.shrink();
             } */
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
               return const Center(child: Text('아직 제품이 없습니다'));

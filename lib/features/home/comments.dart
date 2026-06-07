@@ -170,7 +170,7 @@ class _CommentsState extends State<Comments> {
         if (postData == null) {
           return const Scaffold(
             backgroundColor: _kBgColor,
-            body: Center(child: CircularProgressIndicator()),
+            body: SizedBox.shrink(),
           );
         }
 

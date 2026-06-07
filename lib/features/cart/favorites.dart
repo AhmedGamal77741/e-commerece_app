@@ -39,7 +39,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   .snapshots(),
           builder: (context, userSnapshot) {
             if (userSnapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
+              return const SizedBox.shrink();
             }
             if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
               return Center(child: Text('User profile not found'));
@@ -58,7 +58,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 builder: (context, favoritesSnapshot) {
                   if (favoritesSnapshot.connectionState ==
                       ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
+                    return const SizedBox.shrink();
                   }
                   final favoritesDocs = favoritesSnapshot.data!.docs;
 

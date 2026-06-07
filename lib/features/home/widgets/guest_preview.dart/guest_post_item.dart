@@ -55,8 +55,7 @@ class GuestPostItem extends StatelessWidget {
           barrierColor: Colors.black26,
           pageBuilder: (_, __, ___) => AlertDialog(
             content: Row(
-              children: [
-                CircularProgressIndicator(),
+              children: [const SizedBox.shrink(),
                 SizedBox(width: 16.w),
                 Text('처리 중...'),
               ],

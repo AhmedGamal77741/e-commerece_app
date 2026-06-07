@@ -895,11 +895,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                                           child: SizedBox(
                                             width: 16.w,
                                             height: 16.w,
-                                            child:
-                                                const CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: Colors.black,
-                                                ),
+                                            child: const SizedBox.shrink(),
                                           ),
                                         )
                                         : Icon(
@@ -1618,7 +1614,7 @@ class _FriendsScreenState extends State<FriendsScreen>
     if (_isLoadingUser) {
       return Padding(
         padding: EdgeInsets.symmetric(vertical: 16.h),
-        child: const Center(child: CircularProgressIndicator()),
+        child: const SizedBox.shrink(),
       );
     }
     if (_currentUser == null) return const SizedBox.shrink();
@@ -1882,7 +1878,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                     stream: _friendsService.getFriendsStream(),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData || _isSyncing) {
-                        return const Center(child: CircularProgressIndicator());
+                        return const SizedBox.shrink();
                       }
 
                       final allUsers = snapshot.data ?? [];

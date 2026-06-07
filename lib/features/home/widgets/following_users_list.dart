@@ -76,7 +76,7 @@ class _FollowingUsersListState extends State<FollowingUsersList> {
             if (!snapshot.hasData) {
               return const SizedBox(
                 width: 70,
-                /*                 child: Center(child: CircularProgressIndicator()),
+                /*                 child: const SizedBox.shrink(),
  */
               );
             }

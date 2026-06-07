@@ -396,9 +396,7 @@ class _SignupScreenState extends State<SignupScreen> {
             return isLoading
                 ? Container(
                   color: Colors.black54,
-                  child: const Center(
-                    child: CircularProgressIndicator(color: Colors.black),
-                  ),
+                  child: const SizedBox.shrink(),
                 )
                 : const SizedBox.shrink();
           },

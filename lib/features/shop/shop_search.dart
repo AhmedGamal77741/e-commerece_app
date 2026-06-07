@@ -124,9 +124,7 @@ class _ShopSearchState extends State<ShopSearch> {
       ),
       body:
           _filteredProducts.isEmpty
-              ? Center(
-                child: CircularProgressIndicator(),
-              ) // Show loading indicator
+              ? const SizedBox.shrink() // Show loading indicator
               : _filteredProducts.isEmpty && _searchController.text.isNotEmpty
               ? Center(child: Text('결과가 없습니다')) // Show no results message
               : ListView.builder(

@@ -183,7 +183,7 @@ class _UserOptionsContainerState extends State<UserOptionsContainer>
               .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const SizedBox.shrink();
         }
         bool? isSub;
         String? subStatus;
@@ -255,11 +255,7 @@ class _UserOptionsContainerState extends State<UserOptionsContainer>
                             ],
                           ),
                           if (_isLoading)
-                            const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
+                            const SizedBox.shrink(),
                         ],
                       ),
                     ),

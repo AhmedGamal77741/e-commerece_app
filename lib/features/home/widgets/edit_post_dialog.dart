@@ -329,10 +329,8 @@ class _EditPostDialogState extends State<EditPostDialog> {
                                         imageUrl: imageUrl,
                                         fit: BoxFit.cover,
                                         placeholder:
-                                            (context, url) => const Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            ),
+                                            (context, url) =>
+                                                const SizedBox.shrink(),
                                         errorWidget:
                                             (context, url, error) =>
                                                 Icon(Icons.error),

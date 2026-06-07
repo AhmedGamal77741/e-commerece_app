@@ -291,11 +291,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   borderRadius: BorderRadius.all(Radius.circular(16)),
                 ),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(color: Colors.black),
+                      SizedBox.shrink(),
                       SizedBox(height: 16),
                       Text(
                         '결제 처리 중입니다...',
@@ -347,9 +347,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       ),
       body:
           _isLoading
-              ? const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              )
+              ? const SizedBox.shrink()
               : ListView(
                 padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 20.h),
                 children: [

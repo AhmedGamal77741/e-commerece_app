@@ -186,7 +186,7 @@ class _FollowingTabState extends State<FollowingTab>
             builder: (context, snapshot) {
               // Loading user data
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(/* child: CircularProgressIndicator() */);
+                return const Center(/* child:const SizedBox.shrink() */);
               }
 
               // Error loading user data
@@ -263,7 +263,7 @@ class _FollowingTabState extends State<FollowingTab>
                             child: SizedBox(
                               width: 20,
                               height: 20,
-                              /* child: CircularProgressIndicator(strokeWidth: 2), */
+                              /* child:const SizedBox.shrink(), */
                             ),
                           );
                         }
@@ -447,7 +447,7 @@ class _UserCategoriesBarState extends State<UserCategoriesBar> {
               child: SizedBox(
                 width: 20.w,
                 height: 20.h,
-                /* child: const CircularProgressIndicator(strokeWidth: 2), */
+                /* child: const SizedBox.shrink(), */
               ),
             ),
           );
@@ -667,7 +667,7 @@ class FollowingPostsList extends StatelessWidget {
 
         // Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(/* child: CircularProgressIndicator() */);
+          return const Center(/* child:const SizedBox.shrink() */);
         }
 
         // No data state

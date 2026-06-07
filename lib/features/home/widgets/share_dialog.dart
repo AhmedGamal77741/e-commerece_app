@@ -483,9 +483,7 @@ void showShareDialog(
                         builder: (context, asyncSnapshot) {
                           if (asyncSnapshot.connectionState ==
                               ConnectionState.waiting) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
+                            return const SizedBox.shrink();
                           }
                           if (asyncSnapshot.hasError) {
                             return Center(child: Text('친구 목록을 불러오는 데 실패했습니다.'));

@@ -106,7 +106,7 @@ class _GuestCommentsState extends State<GuestComments> {
                             .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
+                        return const SizedBox.shrink();
                       }
                       if (snapshot.hasError) {
                         return const Center(child: Text('댓글을 불러올 수 없습니다'));

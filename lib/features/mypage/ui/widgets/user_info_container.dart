@@ -294,7 +294,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Center(child: CircularProgressIndicator());
+      return const SizedBox.shrink();
     }
     return Container(
       decoration: ShapeDecoration(

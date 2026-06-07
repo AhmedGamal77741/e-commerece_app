@@ -288,8 +288,7 @@ class _PostItemState extends State<PostItem> {
           builder:
               (ctx) => AlertDialog(
                 content: Row(
-                  children: [
-                    CircularProgressIndicator(),
+                  children: [const SizedBox.shrink(),
                     SizedBox(width: 16.w),
                     Text('게시글 수정 중...'),
                   ],
@@ -404,8 +403,7 @@ class _PostItemState extends State<PostItem> {
         pageBuilder:
             (_, __, ___) => AlertDialog(
               content: Row(
-                children: [
-                  CircularProgressIndicator(),
+                children: [const SizedBox.shrink(),
                   SizedBox(width: 16.w),
                   Text('신고 처리 중...'),
                 ],

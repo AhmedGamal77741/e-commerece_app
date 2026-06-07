@@ -94,12 +94,7 @@ class _CommentItemState extends State<CommentItem> {
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
-                          return const SizedBox.shrink(); // Or a small CircularProgressIndicator
-                        }
-
-                        if (snapshot.hasError ||
-                            !snapshot.hasData ||
-                            snapshot.data == null) {
+                          return const SizedBox.shrink(); // Or a smallconst SizedBox.shrink() {
                           return const SizedBox.shrink();
                         }
 
@@ -348,7 +343,7 @@ class _CommentItemState extends State<CommentItem> {
               if (!userSnapshot.hasData) {
                 return SizedBox(
                   height: 50.h,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: const SizedBox.shrink(),
                 );
               }
 

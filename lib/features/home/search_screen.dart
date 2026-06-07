@@ -375,7 +375,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
       builder: (context, authSnapshot) {
         if (authSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(
-            /* child: CircularProgressIndicator(color: Colors.black), */
+            /* child:const SizedBox.shrink(), */
           );
         }
 
@@ -413,7 +413,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                 builder: (context, userSnapshot) {
                   if (userSnapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
-                      /* child: CircularProgressIndicator(color: Colors.black), */
+                      /* child:const SizedBox.shrink(), */
                     );
                   }
 
@@ -453,9 +453,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                         if (postsSnapshot.connectionState ==
                             ConnectionState.waiting) {
                           return Center(
-                            /* child: const CircularProgressIndicator(
-                              color: Colors.black,
-                            ), */
+                            /* child: const SizedBox.shrink(), */
                           );
                         }
 
@@ -474,9 +472,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                           builder: (context, authorsSnapshot) {
                             if (!authorsSnapshot.hasData) {
                               return const Center(
-                                /*  child: CircularProgressIndicator(
-                                  color: Colors.black,
-                                ), */
+                                /*  child:const SizedBox.shrink(), */
                               );
                             }
 
@@ -581,9 +577,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                           if (postsSnapshot.connectionState ==
                               ConnectionState.waiting) {
                             return const Center(
-                              /* child: CircularProgressIndicator(
-                                color: Colors.black,
-                              ), */
+                              /* child:const SizedBox.shrink(), */
                             );
                           }
 
@@ -606,9 +600,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                             builder: (context, authorsSnapshot) {
                               if (!authorsSnapshot.hasData) {
                                 return const Center(
-                                  /* child: CircularProgressIndicator(
-                                    color: Colors.black,
-                                  ), */
+                                  /* child:const SizedBox.shrink(), */
                                 );
                               }
 
@@ -710,7 +702,7 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
       stream: FirebaseFirestore.instance.collection('users').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(/* child: CircularProgressIndicator() */);
+          return const Center(/* child:const SizedBox.shrink() */);
         }
         final docs = snapshot.data?.docs ?? [];
 

@@ -63,7 +63,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                       builder: (context, cartSnapshot) {
                         if (cartSnapshot.connectionState ==
                             ConnectionState.waiting) {
-                          return Center(child: CircularProgressIndicator());
+                          return const SizedBox.shrink();
                         }
                         final cartDocs = cartSnapshot.data!.docs;
 
@@ -332,7 +332,7 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                       ),
                                     ),
                                   )
-                                  : CircularProgressIndicator(),
+                                  :const SizedBox.shrink(),
                               Padding(
                                 padding: EdgeInsets.only(right: 20.w),
                                 child: TextButton(
