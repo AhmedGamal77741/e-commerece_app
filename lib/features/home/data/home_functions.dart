@@ -311,9 +311,10 @@ Future<List<String>> uploadMultipleImagesToFirebaseHome() async {
 
     List<String> downloadUrls = await Future.wait(
       images.map((image) async {
-        DateTime.now().millisecondsSinceEpoch.toString();
-        final String fileName =
-            '\${timestamp}_\${images.indexOf(image)}_\$uid.jpg';
+        final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+        final String uid = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
+        final int index = images.indexOf(image);
+        final String fileName = '${timestamp}_${index}_$uid.jpg';
 
         final Uint8List rawBytes = await image.readAsBytes();
 
@@ -355,7 +356,7 @@ Future<List<String>> uploadMultipleImagesToFirebaseHome() async {
 
     return downloadUrls;
   } catch (e) {
-    print('Error uploading multiple images: \$e');
-    throw Exception('Failed to upload images: \$e');
+    print('Error uploading multiple images: $e');
+    throw Exception('Failed to upload images: $e');
   }
 }
