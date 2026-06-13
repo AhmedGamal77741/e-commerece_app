@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class FollowingUsersList extends StatefulWidget {
-  final List<String> followingIds;
+  final List<MyUser> followingUsers;
   final void Function(String userId)? onUserTap;
   final String? selectedUserId;
 
   const FollowingUsersList({
     Key? key,
-    required this.followingIds,
+    required this.followingUsers,
     this.onUserTap,
     this.selectedUserId,
   }) : super(key: key);
@@ -21,15 +21,6 @@ class FollowingUsersList extends StatefulWidget {
 
 class _FollowingUsersListState extends State<FollowingUsersList> {
   late final PageController _pageController;
-  final Map<String, Future<DocumentSnapshot>> _userFutures = {};
-  Future<DocumentSnapshot> _getUserFuture(String userId) {
-    print(userId);
-    return _userFutures.putIfAbsent(
-      // only fetches once per userId
-      userId,
-      () => FirebaseFirestore.instance.collection('users').doc(userId).get(),
-    );
-  }
 
   @override
   void initState() {
@@ -38,7 +29,7 @@ class _FollowingUsersListState extends State<FollowingUsersList> {
     // 1. Find the initial index of the preselected user
     int initialPage = 0;
     if (widget.selectedUserId != null) {
-      initialPage = widget.followingIds.indexOf(widget.selectedUserId!);
+      initialPage = widget.followingUsers.indexWhere((u) => u.userId == widget.selectedUserId!);
       // If not found (index -1), default back to 0
       if (initialPage == -1) initialPage = 0;
     }
@@ -60,88 +51,71 @@ class _FollowingUsersListState extends State<FollowingUsersList> {
   Widget build(BuildContext context) {
     return PageView.builder(
       controller: _pageController,
-      itemCount: widget.followingIds.length,
+      itemCount: widget.followingUsers.length,
       onPageChanged: (index) {
         if (widget.onUserTap != null) {
-          final userId = widget.followingIds[index];
-          if (widget.onUserTap != null && userId != widget.selectedUserId) {
+          final userId = widget.followingUsers[index].userId;
+          if (userId != widget.selectedUserId) {
             widget.onUserTap!(userId);
           }
         }
       },
       itemBuilder: (context, index) {
-        return FutureBuilder<DocumentSnapshot>(
-          future: _getUserFuture(widget.followingIds[index]),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const SizedBox(
-                width: 70,
-                /*                 child: const SizedBox.shrink(),
- */
-              );
-            }
+        final user = widget.followingUsers[index];
+        final isSelected = widget.selectedUserId == user.userId;
 
-            final userData = snapshot.data!.data() as Map<String, dynamic>?;
-            if (userData == null) return const SizedBox.shrink();
-            final user = MyUser.fromDocument(userData);
-            final isSelected = widget.selectedUserId == user.userId;
-
-            return GestureDetector(
-              onTap: () {
-                widget.onUserTap?.call(user.userId);
-                _pageController.animateToPage(
-                  index,
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                );
-              },
-              child: AnimatedScale(
-                scale: isSelected ? 1.0 : 0.8,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                child: AnimatedOpacity(
-                  opacity:
-                      widget.selectedUserId == null || isSelected ? 1 : 0.5,
-                  duration: const Duration(milliseconds: 200),
-                  child: SizedBox(
-                    width: 72.w,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          decoration:
-                              isSelected
-                                  ? BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      width: 2,
-                                      color: Colors.black,
-                                    ),
-                                  )
-                                  : null,
-                          child: CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Colors.grey[300],
-                            backgroundImage: NetworkImage(user.url),
-                          ),
-                        ),
-                        SizedBox(height: 4.h),
-                        Text(
-                          user.name,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+        return GestureDetector(
+          onTap: () {
+            widget.onUserTap?.call(user.userId);
+            _pageController.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
             );
           },
+          child: AnimatedScale(
+            scale: isSelected ? 1.0 : 0.8,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            child: AnimatedOpacity(
+              opacity: widget.selectedUserId == null || isSelected ? 1 : 0.5,
+              duration: const Duration(milliseconds: 200),
+              child: SizedBox(
+                width: 72.w,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      decoration: isSelected
+                          ? BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                width: 2,
+                                color: Colors.black,
+                              ),
+                            )
+                          : null,
+                      child: CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage: NetworkImage(user.url),
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      user.name,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
       },
     );

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class MyUser {
   String userId;
   String email;
@@ -20,6 +22,7 @@ class MyUser {
   String? bio;
   String type;
   bool isPrivate;
+  final DateTime? lastPostCreatedAt;
   MyUser({
     required this.userId,
     required this.email,
@@ -42,6 +45,7 @@ class MyUser {
     this.phoneNumber,
     this.type = 'user',
     this.isPrivate = false,
+    this.lastPostCreatedAt,
   });
 
   static final empty = MyUser(
@@ -66,6 +70,7 @@ class MyUser {
     phoneNumber: '',
     type: 'user',
     isPrivate: false,
+    lastPostCreatedAt: null,
   );
 
   // Database serialization methods (from MyUserEntity)
@@ -91,6 +96,7 @@ class MyUser {
       'phoneNumber': phoneNumber,
       'type': type,
       'isPrivate': isPrivate,
+      'lastPostCreatedAt': lastPostCreatedAt != null ? Timestamp.fromDate(lastPostCreatedAt!) : null,
     };
   }
 
@@ -122,6 +128,11 @@ class MyUser {
       phoneNumber: (doc['phoneNumber'] ?? '') as String?,
       type: (doc['type'] ?? 'user') as String,
       isPrivate: doc['isPrivate'] ?? false,
+      lastPostCreatedAt: doc['lastPostCreatedAt'] != null
+          ? (doc['lastPostCreatedAt'] is Timestamp
+              ? (doc['lastPostCreatedAt'] as Timestamp).toDate()
+              : DateTime.fromMillisecondsSinceEpoch(doc['lastPostCreatedAt'] as int))
+          : null,
     );
   }
 
@@ -153,6 +164,11 @@ class MyUser {
       phoneNumber: (doc['phoneNumber'] ?? '') as String?,
       type: (doc['type'] ?? 'user') as String,
       isPrivate: doc['isPrivate'] ?? false,
+      lastPostCreatedAt: doc['lastPostCreatedAt'] != null
+          ? (doc['lastPostCreatedAt'] is Timestamp
+              ? (doc['lastPostCreatedAt'] as Timestamp).toDate()
+              : DateTime.fromMillisecondsSinceEpoch(doc['lastPostCreatedAt'] as int))
+          : null,
     );
   }
 
