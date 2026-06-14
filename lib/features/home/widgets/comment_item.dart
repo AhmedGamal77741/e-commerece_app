@@ -8,6 +8,7 @@ import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
 import 'package:ecommerece_app/features/home/models/comment_model.dart';
+import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -52,10 +53,7 @@ class _CommentItemState extends State<CommentItem> {
                     builder:
                         (context) => SafeArea(
                           child: Scaffold(
-                            body: FollowingTab(
-                              firebaseUser: FirebaseAuth.instance.currentUser,
-                              preselectedUser: widget.comment.userId,
-                            ),
+                            body: ProfileTab(userId: widget.comment.userId),
                           ),
                         ),
                   ),
@@ -341,10 +339,7 @@ class _CommentItemState extends State<CommentItem> {
                     .snapshots(),
             builder: (context, userSnapshot) {
               if (!userSnapshot.hasData) {
-                return SizedBox(
-                  height: 50.h,
-                  child: const SizedBox.shrink(),
-                );
+                return SizedBox(height: 50.h, child: const SizedBox.shrink());
               }
 
               final commentUserData =

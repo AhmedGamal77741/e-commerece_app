@@ -34,6 +34,9 @@ class HomeScreenState extends State<HomeScreen>
   int _selectedIndex = 0;
   bool isSub = false;
   late final StreamSubscription<User?> _authSubscription;
+  late final ScrollController _feedTabController;
+  late final ScrollController _followingTabController;
+  late final ScrollController _myStoryTabController;
 
   /// Called by NavBar when the home icon is tapped while already on home.
   void resetToTop() {
@@ -41,12 +44,16 @@ class HomeScreenState extends State<HomeScreen>
     if (mounted) {
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
-    // Reset inner tab to 추천
-    setState(() => _selectedIndex = 0);
-    // Scroll to top
-    if (widget.scrollController != null &&
-        widget.scrollController!.hasClients) {
-      widget.scrollController!.animateTo(
+    // Scroll to top of the current tab
+    final controller =
+        _selectedIndex == 0
+            ? _feedTabController
+            : _selectedIndex == 1
+            ? _followingTabController
+            : _myStoryTabController;
+
+    if (controller.hasClients) {
+      controller.animateTo(
         0,
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeOutCubic,
@@ -57,6 +64,9 @@ class HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+    _feedTabController = ScrollController();
+    _followingTabController = ScrollController();
+    _myStoryTabController = ScrollController();
     _firebaseUser = FirebaseAuth.instance.currentUser;
     if (_firebaseUser != null) {
       _userStream =
@@ -86,6 +96,9 @@ class HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     _authSubscription.cancel();
+    _feedTabController.dispose();
+    _followingTabController.dispose();
+    _myStoryTabController.dispose();
     super.dispose();
   }
 
@@ -218,7 +231,9 @@ class HomeScreenState extends State<HomeScreen>
                   }
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => HomeSearch(initialTabIndex: 1)),
+                    MaterialPageRoute(
+                      builder: (context) => HomeSearch(initialTabIndex: 1),
+                    ),
                   );
                 },
                 child: ImageIcon(
@@ -285,17 +300,21 @@ class HomeScreenState extends State<HomeScreen>
                 )
                 : null,
 
-        body: ListView(
-          controller: widget.scrollController,
+        body: Column(
           children: [
             _buildNormalPillRow(firebaseUser),
-            IndexedStack(
-              index: _selectedIndex,
-              children: [
-                const _HomeFeedTab(),
-                FollowingTab(firebaseUser: firebaseUser),
-                const MyStory(),
-              ],
+            Expanded(
+              child: IndexedStack(
+                index: _selectedIndex,
+                children: [
+                  _HomeFeedTab(scrollController: _feedTabController),
+                  FollowingTab(
+                    firebaseUser: firebaseUser,
+                    scrollController: _followingTabController,
+                  ),
+                  MyStory(scrollController: _myStoryTabController),
+                ],
+              ),
             ),
           ],
         ),
@@ -476,7 +495,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
 
                   return ListView.builder(
                     shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
+                    controller: widget.scrollController,
                     itemCount: filteredPosts.length,
                     itemBuilder: (context, index) {
                       final post =
@@ -570,7 +589,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
 
                       return ListView.builder(
                         shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
+                        controller: widget.scrollController,
                         itemCount: filteredPosts.length,
                         itemBuilder: (context, index) {
                           final post =
@@ -683,7 +702,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
 
                         return ListView.builder(
                           shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
+                          controller: widget.scrollController,
                           itemCount: filteredPosts.length + 1,
                           itemBuilder: (context, index) {
                             if (index == 0) {

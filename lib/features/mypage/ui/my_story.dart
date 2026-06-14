@@ -14,8 +14,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 
 class MyStory extends StatefulWidget {
-  const MyStory({super.key});
-
+  final ScrollController? scrollController;
+  const MyStory({super.key, this.scrollController});
   @override
   State<MyStory> createState() => _MyStoryState();
 }
@@ -26,8 +26,24 @@ class _MyStoryState extends State<MyStory> {
   List<String?> _categoryPages = [null];
   User? _firebaseUser;
   late final StreamSubscription<User?> _authSubscription;
+  final ValueNotifier<int> _currentPageIndex = ValueNotifier(0);
   Stream<MyUser?>? _userStream;
   String imgUrl = "";
+  Stream<QuerySnapshot>? _categoriesStream;
+  String? _cachedCategoriesUserId;
+
+  Stream<QuerySnapshot> _getCategoriesStream(String userId) {
+    if (_categoriesStream == null || _cachedCategoriesUserId != userId) {
+      _cachedCategoriesUserId = userId;
+      _categoriesStream = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('categories')
+          .orderBy('order')
+          .snapshots();
+    }
+    return _categoriesStream!;
+  }
 
   @override
   void initState() {
@@ -53,6 +69,7 @@ class _MyStoryState extends State<MyStory> {
   void dispose() {
     _authSubscription.cancel();
     _pageController.dispose();
+    _currentPageIndex.dispose();
     super.dispose();
   }
 
@@ -66,6 +83,7 @@ class _MyStoryState extends State<MyStory> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
+      _currentPageIndex.value = index;
     }
   }
 
@@ -74,6 +92,7 @@ class _MyStoryState extends State<MyStory> {
     setState(() {
       selectedCategoryId = categoryId;
     });
+    _currentPageIndex.value = index;
   }
 
   /*   void _onCategorySelected(String categoryId) {
@@ -104,13 +123,7 @@ class _MyStoryState extends State<MyStory> {
         final currentUser = userSnapshot.data!;
 
         return StreamBuilder<QuerySnapshot>(
-          stream:
-              FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(currentUser.userId)
-                  .collection('categories')
-                  .orderBy('order')
-                  .snapshots(),
+          stream: _getCategoriesStream(currentUser.userId),
           builder: (context, categorySnapshot) {
             if (categorySnapshot.hasData) {
               _categoryPages = [
@@ -136,7 +149,8 @@ class _MyStoryState extends State<MyStory> {
                   },
                   child: ClipOval(
                     child: SafeNetworkImage(
-                      url: (imgUrl.isEmpty ? (currentUser.url) : imgUrl) ?? '',
+                      url:
+                          (imgUrl.isEmpty ? (currentUser.url) : imgUrl) ?? '',
                       width: 64.w,
                       height: 64.h,
                       fit: BoxFit.cover,
@@ -162,21 +176,27 @@ class _MyStoryState extends State<MyStory> {
                 verticalSpace(10),
 
                 UserCategoriesBar(
-                  userId: currentUser.userId,
+                  categories: categorySnapshot.hasData ? categorySnapshot.data!.docs : const [],
                   selectedCategoryId: selectedCategoryId,
                   onCategorySelected: _onCategorySelected,
                 ),
+                verticalSpace(10),
 
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.8,
+                Expanded(
                   child: PageView.builder(
                     controller: _pageController,
                     itemCount: _categoryPages.length,
                     onPageChanged: _onPageChanged,
                     itemBuilder: (context, index) {
-                      return _PostsPage(
-                        userId: currentUser.userId,
-                        categoryId: _categoryPages[index],
+                      return ValueListenableBuilder<int>(
+                        valueListenable: _currentPageIndex,
+                        builder: (context, activeIndex, _) {
+                          return _PostsPage(
+                            userId: currentUser.userId,
+                            categoryId: _categoryPages[index],
+                            scrollController: (index == activeIndex) ? widget.scrollController : null,
+                          );
+                        },
                       );
                     },
                   ),
@@ -194,8 +214,12 @@ class _MyStoryState extends State<MyStory> {
 class _PostsPage extends StatefulWidget {
   final String userId;
   final String? categoryId;
-
-  const _PostsPage({required this.userId, this.categoryId});
+  final ScrollController? scrollController;
+  const _PostsPage({
+    required this.userId,
+    this.categoryId,
+    this.scrollController,
+  });
 
   @override
   State<_PostsPage> createState() => _PostsPageState();
@@ -254,6 +278,8 @@ class _PostsPageState extends State<_PostsPage>
         }
 
         return ListView.builder(
+          controller: widget.scrollController,
+
           itemCount: posts.length,
           itemBuilder: (context, index) {
             return Padding(
@@ -286,68 +312,51 @@ Stream<QuerySnapshot> _userPostsStream(String userId) {
 } */
 
 class UserCategoriesBar extends StatelessWidget {
-  final String userId;
+  final List<QueryDocumentSnapshot> categories;
   final String? selectedCategoryId;
   final Function(String) onCategorySelected;
 
   const UserCategoriesBar({
     super.key,
-    required this.userId,
+    required this.categories,
     required this.selectedCategoryId,
     required this.onCategorySelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(userId)
-              .collection('categories')
-              .orderBy('order')
-              .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox(height: 50);
-        }
+    if (categories.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-        final categories = snapshot.data!.docs;
-
-        if (categories.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return SizedBox(
-          height: 50.h,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                SizedBox(width: 16.w),
-                _pill(
-                  '전체',
-                  selectedCategoryId == null,
-                  () => onCategorySelected(''),
-                ),
-                ...categories.map((cat) {
-                  final name =
-                      (cat.data() as Map<String, dynamic>)['name'] ?? '';
-                  return Padding(
-                    padding: EdgeInsets.only(left: 8.w),
-                    child: _pill(
-                      name,
-                      selectedCategoryId == cat.id,
-                      () => onCategorySelected(cat.id),
-                    ),
-                  );
-                }),
-                SizedBox(width: 16.w),
-              ],
+    return SizedBox(
+      height: 50.h,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            SizedBox(width: 16.w),
+            _pill(
+              '전체',
+              selectedCategoryId == null,
+              () => onCategorySelected(''),
             ),
-          ),
-        );
-      },
+            ...categories.map((cat) {
+              final name =
+                  (cat.data() as Map<String, dynamic>)['name'] ?? '';
+              return Padding(
+                padding: EdgeInsets.only(left: 8.w),
+                child: _pill(
+                  name,
+                  selectedCategoryId == cat.id,
+                  () => onCategorySelected(cat.id),
+                ),
+              );
+            }),
+            SizedBox(width: 16.w),
+          ],
+        ),
+      ),
     );
   }
 

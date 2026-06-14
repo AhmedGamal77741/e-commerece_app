@@ -12,7 +12,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class FollowingTab extends StatefulWidget {
   final User? firebaseUser;
   final String? preselectedUser;
-  const FollowingTab({super.key, this.firebaseUser, this.preselectedUser});
+  final ScrollController? scrollController;
+  const FollowingTab({
+    super.key,
+    this.firebaseUser,
+    this.preselectedUser,
+    this.scrollController,
+  });
 
   @override
   State<FollowingTab> createState() => _FollowingTabState();
@@ -20,7 +26,7 @@ class FollowingTab extends StatefulWidget {
 
 class _FollowingTabState extends State<FollowingTab>
     with AutomaticKeepAliveClientMixin {
-  final ScrollController _scrollController = ScrollController();
+  late ScrollController _scrollController;
   final ValueNotifier<String?> _selectedUserId = ValueNotifier(null);
   final ValueNotifier<String?> _selectedCategoryId = ValueNotifier(null);
   late StreamSubscription<User?> _authSubscription;
@@ -29,6 +35,7 @@ class _FollowingTabState extends State<FollowingTab>
   late PageController _categoryPageController;
   List<String?> _categoryPages = [null]; // null represents "All" category
   bool get wantKeepAlive => true;
+  final ValueNotifier<int> _currentPageIndex = ValueNotifier(0);
 
   final Map<String, GlobalKey> _userKeys = {};
 
@@ -52,6 +59,7 @@ class _FollowingTabState extends State<FollowingTab>
   @override
   void initState() {
     super.initState();
+    _scrollController = widget.scrollController ?? ScrollController();
     _categoryPageController = PageController();
     _selectedUserId.value = widget.preselectedUser;
     if (widget.preselectedUser != null) {
@@ -95,6 +103,23 @@ class _FollowingTabState extends State<FollowingTab>
     }
   }
 
+  Stream<QuerySnapshot>? _categoriesStream;
+  String? _cachedCategoriesUserId;
+
+  Stream<QuerySnapshot> _getCategoriesStream(String userId) {
+    if (_categoriesStream == null || _cachedCategoriesUserId != userId) {
+      _cachedCategoriesUserId = userId;
+      _categoriesStream =
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .collection('categories')
+              .orderBy('order', descending: false)
+              .snapshots();
+    }
+    return _categoriesStream!;
+  }
+
   @override
   void dispose() {
     _authSubscription.cancel();
@@ -102,6 +127,7 @@ class _FollowingTabState extends State<FollowingTab>
     _categoryPageController.dispose();
     _selectedUserId.dispose();
     _selectedCategoryId.dispose();
+    _currentPageIndex.dispose();
     super.dispose();
   }
 
@@ -114,17 +140,20 @@ class _FollowingTabState extends State<FollowingTab>
     }
 
     final List<MyUser> fetchedUsers = [];
-    await Future.wait(chunks.map((chunk) async {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('userId', whereIn: chunk)
-          .get();
-      for (var doc in querySnapshot.docs) {
-        if (doc.exists) {
-          fetchedUsers.add(MyUser.fromDocument(doc.data()!));
+    await Future.wait(
+      chunks.map((chunk) async {
+        final querySnapshot =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .where('userId', whereIn: chunk)
+                .get();
+        for (var doc in querySnapshot.docs) {
+          if (doc.exists) {
+            fetchedUsers.add(MyUser.fromDocument(doc.data()!));
+          }
         }
-      }
-    }));
+      }),
+    );
 
     fetchedUsers.sort((a, b) {
       if (a.lastPostCreatedAt == null && b.lastPostCreatedAt == null) {
@@ -142,6 +171,7 @@ class _FollowingTabState extends State<FollowingTab>
     _selectedUserId.value = (_selectedUserId.value == userId) ? null : userId;
     _selectedCategoryId.value = null;
     _categoryPages = [null]; // Reset category pages
+    _currentPageIndex.value = 0;
 
     // Only jump if controller has clients (PageView is attached)
     if (_categoryPageController.hasClients) {
@@ -159,12 +189,14 @@ class _FollowingTabState extends State<FollowingTab>
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
+      _currentPageIndex.value = index;
     }
   }
 
   void _onCategoryPageChanged(int index) {
     final categoryId = _categoryPages[index];
     _selectedCategoryId.value = categoryId;
+    _currentPageIndex.value = index;
   }
 
   @override
@@ -340,10 +372,7 @@ class _FollowingTabState extends State<FollowingTab>
                             if (futureSnapshot.connectionState ==
                                 ConnectionState.waiting) {
                               return const Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                ),
+                                child: SizedBox(width: 20, height: 20),
                               );
                             }
 
@@ -355,7 +384,9 @@ class _FollowingTabState extends State<FollowingTab>
                             // if none is selected, or if the selected user is no longer followed.
                             if (sortedIds.isNotEmpty &&
                                 (_selectedUserId.value == null ||
-                                    !sortedIds.contains(_selectedUserId.value))) {
+                                    !sortedIds.contains(
+                                      _selectedUserId.value,
+                                    ))) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 if (mounted &&
                                     (_selectedUserId.value == null ||
@@ -383,73 +414,81 @@ class _FollowingTabState extends State<FollowingTab>
                     ),
                   ),
 
-                  // Categories row and PageView (only shown when a user is selected)
-                  ValueListenableBuilder<String?>(
-                    valueListenable: _selectedUserId,
-                    builder: (context, selectedUserId, _) {
-                      if (selectedUserId == null) {
-                        return const SizedBox.shrink();
-                      }
+                  // Categories bar + PageView
+                  Expanded(
+                    child: ValueListenableBuilder<String?>(
+                      valueListenable: _selectedUserId,
+                      builder: (context, selectedUserId, _) {
+                        if (selectedUserId == null ||
+                            blockedUsers.contains(selectedUserId)) {
+                          return const SizedBox.shrink();
+                        }
 
-                      // Fetch categories and build the pages list
-                      return StreamBuilder<QuerySnapshot>(
-                        stream:
-                            FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(selectedUserId)
-                                .collection('categories')
-                                .orderBy('order', descending: false)
-                                .snapshots(),
-                        builder: (context, categoriesSnapshot) {
-                          if (categoriesSnapshot.hasData) {
+                        return StreamBuilder<QuerySnapshot>(
+                          stream: _getCategoriesStream(selectedUserId),
+                          builder: (context, categoriesSnapshot) {
+                            if (categoriesSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: SizedBox(width: 20, height: 20),
+                              );
+                            }
+
+                            final List<QueryDocumentSnapshot> categories =
+                                categoriesSnapshot.hasData
+                                    ? categoriesSnapshot.data!.docs
+                                    : const [];
+
                             _categoryPages = [
                               null,
-                              ...categoriesSnapshot.data!.docs.map(
-                                (doc) => doc.id,
-                              ),
+                              ...categories.map((doc) => doc.id),
                             ];
-                          }
 
-                          return Column(
-                            children: [
-                              // Categories bar
-                              if (!blockedUsers.contains(selectedUserId))
+                            return Column(
+                              children: [
                                 ValueListenableBuilder<String?>(
                                   valueListenable: _selectedCategoryId,
                                   builder: (context, selectedCategoryId, _) {
                                     return UserCategoriesBar(
-                                      userId: selectedUserId,
+                                      categories: categories,
                                       selectedCategoryId: selectedCategoryId,
                                       onCategorySelected:
                                           _handleCategorySelection,
                                     );
                                   },
                                 ),
-                              // Posts PageView
-                              SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.65,
-                                child: PageView.builder(
-                                  controller: _categoryPageController,
-                                  onPageChanged: _onCategoryPageChanged,
-                                  itemCount: _categoryPages.length,
-                                  itemBuilder: (context, index) {
-                                    return FollowingPostsList(
-                                      currentUserId: currentUserId,
-                                      scrollController: _scrollController,
-                                      selectedUserId: selectedUserId,
-                                      selectedCategoryId: _categoryPages[index],
-                                      useGuestPostItem: false,
-                                      blockedUsers: blockedUsers,
-                                    );
-                                  },
+                                Expanded(
+                                  child: PageView.builder(
+                                    controller: _categoryPageController,
+                                    onPageChanged: _onCategoryPageChanged,
+                                    itemCount: _categoryPages.length,
+                                    itemBuilder: (context, index) {
+                                      return ValueListenableBuilder<int>(
+                                        valueListenable: _currentPageIndex,
+                                        builder: (context, activeIndex, _) {
+                                          return FollowingPostsList(
+                                            currentUserId: currentUserId,
+                                            selectedUserId: selectedUserId,
+                                            selectedCategoryId:
+                                                _categoryPages[index],
+                                            useGuestPostItem: false,
+                                            blockedUsers: blockedUsers,
+                                            scrollController:
+                                                (index == activeIndex)
+                                                    ? _scrollController
+                                                    : null,
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ],
               );
@@ -462,143 +501,74 @@ class _FollowingTabState extends State<FollowingTab>
 }
 
 // New widget to display user's categories
-class UserCategoriesBar extends StatefulWidget {
-  final String userId;
+class UserCategoriesBar extends StatelessWidget {
+  final List<QueryDocumentSnapshot> categories;
   final String? selectedCategoryId;
   final Function(String) onCategorySelected;
 
   const UserCategoriesBar({
     super.key,
-    required this.userId,
+    required this.categories,
     required this.selectedCategoryId,
     required this.onCategorySelected,
   });
 
   @override
-  State<UserCategoriesBar> createState() => _UserCategoriesBarState();
-}
-
-class _UserCategoriesBarState extends State<UserCategoriesBar> {
-  late Stream<QuerySnapshot> _categoriesStream;
-  @override
-  void initState() {
-    super.initState();
-    _categoriesStream = _buildStream(widget.userId);
-  }
-
-  @override
-  void didUpdateWidget(UserCategoriesBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Only recreate stream if userId actually changed
-    if (oldWidget.userId != widget.userId) {
-      _categoriesStream = _buildStream(widget.userId);
-    }
-  }
-
-  Stream<QuerySnapshot> _buildStream(String userId) {
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('categories')
-        .orderBy('order', descending: false)
-        .snapshots();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _categoriesStream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return SizedBox(
-            height: 50.h,
-            child: Center(
-              child: SizedBox(
-                width: 20.w,
-                height: 20.h,
-                /* child: const SizedBox.shrink(), */
-              ),
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return SizedBox(
-            height: 50.h,
-            child: Center(
-              child: Text(
-                '카테고리를 불러올 수 없습니다',
-                style: TextStyle(fontSize: 12.sp, color: Colors.red[300]),
-              ),
-            ),
-          );
-        }
-
-        if (!snapshot.hasData) {
-          return const SizedBox.shrink();
-        }
-
-        final categories = snapshot.data!.docs;
-
-        // If no categories, show a simple message
-        if (categories.isEmpty) {
-          return SizedBox(
-            height: 50.h,
-            child: Center(
-              child: Text(
-                '카테고리가 없습니다',
-                style: TextStyle(fontSize: 12.sp, color: Colors.grey[400]),
-              ),
-            ),
-          );
-        }
-
-        return Container(
-          height: 50.h,
-
-          padding: EdgeInsets.symmetric(vertical: 8.h),
-
-          child: Center(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Add left padding for centering
-                  SizedBox(width: 16.w),
-
-                  // "All" category option
-                  _buildCategoryPill(
-                    '전체',
-                    widget.selectedCategoryId == null,
-                    () => widget.onCategorySelected(''),
-                  ),
-
-                  // User's categories
-                  ...categories.map((category) {
-                    final categoryData =
-                        category.data() as Map<String, dynamic>;
-                    final categoryName = categoryData['name'] ?? '이름 없음';
-                    final isSelected = widget.selectedCategoryId == category.id;
-
-                    return Padding(
-                      padding: EdgeInsets.only(left: 8.w),
-                      child: _buildCategoryPill(
-                        categoryName,
-                        isSelected,
-                        () => widget.onCategorySelected(category.id),
-                      ),
-                    );
-                  }).toList(),
-
-                  // Add right padding for centering
-                  SizedBox(width: 16.w),
-                ],
-              ),
-            ),
+    // If no categories, show a simple message
+    if (categories.isEmpty) {
+      return SizedBox(
+        height: 50.h,
+        child: Center(
+          child: Text(
+            '카테고리가 없습니다',
+            style: TextStyle(fontSize: 12.sp, color: Colors.grey[400]),
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    return Container(
+      height: 50.h,
+      padding: EdgeInsets.symmetric(vertical: 8.h),
+      child: Center(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Add left padding for centering
+              SizedBox(width: 16.w),
+
+              // "All" category option
+              _buildCategoryPill(
+                '전체',
+                selectedCategoryId == null,
+                () => onCategorySelected(''),
+              ),
+
+              // User's categories
+              ...categories.map((category) {
+                final categoryData = category.data() as Map<String, dynamic>;
+                final categoryName = categoryData['name'] ?? '이름 없음';
+                final isSelected = selectedCategoryId == category.id;
+
+                return Padding(
+                  padding: EdgeInsets.only(left: 8.w),
+                  child: _buildCategoryPill(
+                    categoryName,
+                    isSelected,
+                    () => onCategorySelected(category.id),
+                  ),
+                );
+              }).toList(),
+
+              // Add right padding for centering
+              SizedBox(width: 16.w),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -634,27 +604,65 @@ class _UserCategoriesBarState extends State<UserCategoriesBar> {
   }
 }
 
-class FollowingPostsList extends StatelessWidget {
+class FollowingPostsList extends StatefulWidget {
   final String currentUserId;
-  final ScrollController scrollController;
   final String? selectedUserId;
   final String? selectedCategoryId;
   final bool useGuestPostItem;
   final List<String> blockedUsers;
+  final ScrollController? scrollController;
 
   const FollowingPostsList({
     Key? key,
     required this.currentUserId,
-    required this.scrollController,
     this.selectedUserId,
     this.selectedCategoryId,
     this.useGuestPostItem = false,
     this.blockedUsers = const [],
+    this.scrollController,
   }) : super(key: key);
 
   @override
+  State<FollowingPostsList> createState() => _FollowingPostsListState();
+}
+
+class _FollowingPostsListState extends State<FollowingPostsList>
+    with AutomaticKeepAliveClientMixin {
+  late Stream<QuerySnapshot> _postsStream;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _postsStream = _buildStream();
+  }
+
+  @override
+  void didUpdateWidget(FollowingPostsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedUserId != widget.selectedUserId ||
+        oldWidget.selectedCategoryId != widget.selectedCategoryId ||
+        oldWidget.currentUserId != widget.currentUserId) {
+      setState(() {
+        _postsStream = _buildStream();
+      });
+    }
+  }
+
+  Stream<QuerySnapshot> _buildStream() {
+    return _getFollowingPostsStream(
+      widget.selectedUserId,
+      widget.selectedCategoryId,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (selectedUserId != null && blockedUsers.contains(selectedUserId)) {
+    super.build(context);
+    if (widget.selectedUserId != null &&
+        widget.blockedUsers.contains(widget.selectedUserId)) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -682,9 +690,11 @@ class FollowingPostsList extends StatelessWidget {
                 try {
                   await FirebaseFirestore.instance
                       .collection('users')
-                      .doc(currentUserId)
+                      .doc(widget.currentUserId)
                       .update({
-                        'blocked': FieldValue.arrayRemove([selectedUserId]),
+                        'blocked': FieldValue.arrayRemove([
+                          widget.selectedUserId,
+                        ]),
                       });
                   messenger.showSnackBar(
                     const SnackBar(content: Text('차단이 해제되었습니다.')),
@@ -706,7 +716,7 @@ class FollowingPostsList extends StatelessWidget {
     }
 
     return StreamBuilder<QuerySnapshot>(
-      stream: _getFollowingPostsStream(selectedUserId, selectedCategoryId),
+      stream: _postsStream,
       builder: (context, snapshot) {
         // Error state
         if (snapshot.hasError) {
@@ -762,7 +772,7 @@ class FollowingPostsList extends StatelessWidget {
               final postData = doc.data() as Map<String, dynamic>?;
               if (postData == null) return false;
               final authorId = postData['userId'] as String?;
-              if (authorId != null && blockedUsers.contains(authorId)) {
+              if (authorId != null && widget.blockedUsers.contains(authorId)) {
                 return false;
               }
               return true;
@@ -799,7 +809,7 @@ class FollowingPostsList extends StatelessWidget {
         // Success state with posts
         return ListView.builder(
           shrinkWrap: true,
-          controller: scrollController,
+          controller: widget.scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           itemCount: posts.length,
           itemBuilder: (context, index) {
@@ -814,7 +824,7 @@ class FollowingPostsList extends StatelessWidget {
               return Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                 child:
-                    useGuestPostItem
+                    widget.useGuestPostItem
                         ? GuestPostItem(post: postData)
                         : PostItem(
                           postId: posts[index].id,
@@ -861,12 +871,12 @@ class FollowingPostsList extends StatelessWidget {
 
   String _getEmptyStateMessage() {
     // User selected + Category selected
-    if (selectedUserId != null && selectedCategoryId != null) {
+    if (widget.selectedUserId != null && widget.selectedCategoryId != null) {
       return '이 카테고리에 게시물이 없습니다';
     }
 
     // User selected + No category (showing all user's posts)
-    if (selectedUserId != null) {
+    if (widget.selectedUserId != null) {
       return '아직 게시물이 없습니다';
     }
 
@@ -876,12 +886,12 @@ class FollowingPostsList extends StatelessWidget {
 
   String _getEmptyStateSubMessage() {
     // User selected + Category selected
-    if (selectedUserId != null && selectedCategoryId != null) {
+    if (widget.selectedUserId != null && widget.selectedCategoryId != null) {
       return '다른 카테고리를 선택해보세요';
     }
 
     // User selected + No category
-    if (selectedUserId != null) {
+    if (widget.selectedUserId != null) {
       return '첫 게시물을 기다리고 있어요';
     }
 
@@ -911,7 +921,7 @@ class FollowingPostsList extends StatelessWidget {
       // Show all posts from following users (no specific user selected)
       return FirebaseFirestore.instance
           .collection('users')
-          .doc(currentUserId)
+          .doc(widget.currentUserId)
           .collection('following')
           .snapshots()
           .asyncMap((followingSnapshot) async {
