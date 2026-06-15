@@ -270,6 +270,7 @@ class _PostItemState extends State<PostItem> {
     BuildContext context,
     String currentText,
     List<String> currentImgUrls,
+    String? currentCategoryId,
   ) async {
     final result = await showDialog<EditPostDialogResult>(
       context: context,
@@ -277,6 +278,7 @@ class _PostItemState extends State<PostItem> {
           (ctx) => EditPostDialog(
             currentText: currentText,
             currentImgUrls: currentImgUrls,
+            currentCategoryId: currentCategoryId,
           ),
     );
 
@@ -301,6 +303,7 @@ class _PostItemState extends State<PostItem> {
           text: result.text,
           networkImgUrls: result.imgUrls,
           newImages: result.newImages,
+          categoryId: result.categoryId,
         );
 
         Navigator.pop(context); // Close loading dialog
@@ -1015,6 +1018,7 @@ class _PostItemState extends State<PostItem> {
                                         context,
                                         postData['text'] ?? '',
                                         imgUrls.cast<String>(),
+                                        postData['categoryId'] as String?,
                                       ),
                                   onDelete: () => _showDeleteDialog(context),
                                 )
