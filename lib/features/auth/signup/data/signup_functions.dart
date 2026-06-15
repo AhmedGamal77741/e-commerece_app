@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/firebase_auth_error_messages.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
@@ -14,13 +15,20 @@ Future<String> uploadImageToFirebaseStorage(XFile? image) async {
 
     // Compress image before upload
     final originalBytes = await image.readAsBytes();
-    final compressedBytes = await FlutterImageCompress.compressWithList(
-      originalBytes,
-      minWidth: 200,
-      minHeight: 200,
-      quality: 80,
-      format: CompressFormat.jpeg,
-    );
+    Uint8List uploadBytes;
+    try {
+      final Uint8List? compressedBytes = await FlutterImageCompress.compressWithList(
+        originalBytes,
+        minWidth: 200,
+        minHeight: 200,
+        quality: 80,
+        format: CompressFormat.jpeg,
+      );
+      uploadBytes = compressedBytes ?? originalBytes;
+    } catch (e) {
+      print('Compression failed, uploading original bytes: $e');
+      uploadBytes = originalBytes;
+    }
 
     // Get reference to Firebase Storage location
     final Reference storageRef = FirebaseStorage.instance
@@ -29,7 +37,7 @@ Future<String> uploadImageToFirebaseStorage(XFile? image) async {
         .child('$userId.jpg'); // Using user ID as filename
 
     // Upload the compressed file
-    final UploadTask uploadTask = storageRef.putData(compressedBytes);
+    final UploadTask uploadTask = storageRef.putData(uploadBytes);
     final TaskSnapshot snapshot = await uploadTask;
 
     // Get download URL

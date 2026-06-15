@@ -3,6 +3,7 @@ import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class EditPostDialogResult {
@@ -35,7 +36,7 @@ class _EditPostDialogState extends State<EditPostDialog> {
   late TextEditingController _textController;
   late List<String> _networkImgUrls; // Existing network images
   late List<File> _localImages; // New local files to be uploaded
-  final ImagePicker _imagePicker = ImagePicker();
+
 
   @override
   void initState() {
@@ -53,10 +54,7 @@ class _EditPostDialogState extends State<EditPostDialog> {
 
   Future<void> _pickImage(int? replaceIndex) async {
     try {
-      final XFile? pickedFile = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-      );
+      final XFile? pickedFile = await ImagePickerHelper.pickImage();
 
       if (pickedFile != null) {
         setState(() {

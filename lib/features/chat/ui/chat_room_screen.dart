@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import '../services/chat_service.dart';
 import '../models/message_model.dart';
 
@@ -481,7 +482,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final picked = await ImagePickerHelper.pickImage();
     if (picked != null) setState(() => _pickedImage = picked);
   }
 

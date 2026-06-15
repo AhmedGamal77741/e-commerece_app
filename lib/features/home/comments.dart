@@ -20,6 +20,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:provider/provider.dart';
 
 const _kBgColor = Color(0xFFF2F2F2);
@@ -107,7 +108,7 @@ class _CommentsState extends State<Comments> {
   }
 
   Future<void> _pickImage() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final picked = await ImagePickerHelper.pickImage();
     if (picked != null) setState(() => _pickedImage = picked);
   }
 
