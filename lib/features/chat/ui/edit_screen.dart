@@ -1,5 +1,6 @@
 // features/chat/ui/edit_screen.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
@@ -699,6 +700,8 @@ class _DirectChatsEditTab extends StatefulWidget {
 
 class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
   final ChatService _chatService = ChatService();
+  final Map<String, MyUser?> _usersCache = {};
+  final Set<String> _fetchingIds = {};
 
   String get uid => FirebaseAuth.instance.currentUser?.uid ?? '';
 
@@ -734,25 +737,40 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
         });
   }
 
-  Future<MyUser?> _getOtherUser(ChatRoomModel chat) async {
+  Future<void> _getOtherUser(ChatRoomModel chat) async {
     final otherId = chat.participants.firstWhere(
       (id) => id != uid,
       orElse: () => '',
     );
-    if (otherId.isEmpty) return null;
+    if (otherId.isEmpty) return;
+
+    if (_usersCache.containsKey(otherId) || _fetchingIds.contains(otherId)) {
+      return;
+    }
+
+    _fetchingIds.add(otherId);
+
     try {
+      MyUser? user;
       final collection = chat.type == 'seller' ? 'deliveryManagers' : 'users';
       final doc =
           await FirebaseFirestore.instance
               .collection(collection)
               .doc(otherId)
               .get();
-      if (!doc.exists) return null;
-      return chat.type == 'seller'
-          ? MyUser.fromSellerDocument(doc.data()!)
-          : MyUser.fromDocument(doc.data()!);
+      if (doc.exists) {
+        user = chat.type == 'seller'
+            ? MyUser.fromSellerDocument(doc.data()!)
+            : MyUser.fromDocument(doc.data()!);
+      }
+      if (mounted) {
+        setState(() {
+          _usersCache[otherId] = user;
+        });
+      }
     } catch (_) {
-      return null;
+    } finally {
+      _fetchingIds.remove(otherId);
     }
   }
 
@@ -884,158 +902,157 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
                   final chat = allChats[i];
                   final isSelected = _selected.contains(chat.id);
 
-                  return FutureBuilder<MyUser?>(
-                    future: _getOtherUser(chat),
-                    builder: (ctx, userSnap) {
-                      // Resolve the other participant's ID for alias lookup
-                      final otherId = chat.participants.firstWhere(
-                        (id) => id != uid,
-                        orElse: () => '',
-                      );
+                  final otherId = chat.participants.firstWhere(
+                    (id) => id != uid,
+                    orElse: () => '',
+                  );
 
-                      final realName =
-                          userSnap.data?.name ?? chat.name ?? '알 수 없음';
-                      final avatarUrl = userSnap.data?.url ?? '';
+                  if (!_usersCache.containsKey(otherId)) {
+                    _getOtherUser(chat);
+                    return const SizedBox.shrink();
+                  }
 
-                      // Use alias if one exists for this participant
-                      final displayName = _aliases[otherId] ?? realName;
-                      final hasAlias =
-                          _aliases.containsKey(otherId) &&
-                          _aliases[otherId]!.isNotEmpty;
+                  final friend = _usersCache[otherId];
+                  final realName = friend?.name ?? chat.name ?? '알 수 없음';
+                  final avatarUrl = friend?.url ?? '';
 
-                      // Search: match alias OR real name OR last message
-                      if (q.isNotEmpty &&
-                          !displayName.toLowerCase().contains(q) &&
-                          !realName.toLowerCase().contains(q) &&
-                          !(chat.lastMessage ?? '').toLowerCase().contains(q)) {
-                        return const SizedBox.shrink();
-                      }
+                  // Use alias if one exists for this participant
+                  final displayName = _aliases[otherId] ?? realName;
+                  final hasAlias =
+                      _aliases.containsKey(otherId) &&
+                      _aliases[otherId]!.isNotEmpty;
 
-                      return InkWell(
-                        onTap:
-                            () => setState(() {
-                              if (isSelected)
-                                _selected.remove(chat.id);
-                              else
-                                _selected.add(chat.id);
-                            }),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                            vertical: 10.h,
+                  // Search: match alias OR real name OR last message
+                  if (q.isNotEmpty &&
+                      !displayName.toLowerCase().contains(q) &&
+                      !realName.toLowerCase().contains(q) &&
+                      !(chat.lastMessage ?? '').toLowerCase().contains(q)) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return InkWell(
+                    onTap:
+                        () => setState(() {
+                          if (isSelected)
+                            _selected.remove(chat.id);
+                          else
+                            _selected.add(chat.id);
+                        }),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 10.h,
+                      ),
+                      child: Row(
+                        children: [
+                          // ── Select circle ──
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: 22.w,
+                            height: 22.w,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color:
+                                  isSelected
+                                      ? Colors.black
+                                      : Colors.transparent,
+                              border: Border.all(
+                                color:
+                                    isSelected
+                                        ? Colors.black
+                                        : Colors.grey[400]!,
+                                width: 1.5,
+                              ),
+                            ),
+                            child:
+                                isSelected
+                                    ? Icon(
+                                      Icons.check,
+                                      size: 13.sp,
+                                      color: Colors.white,
+                                    )
+                                    : null,
                           ),
-                          child: Row(
-                            children: [
-                              // ── Select circle ──
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 150),
-                                width: 22.w,
-                                height: 22.w,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color:
-                                      isSelected
-                                          ? Colors.black
-                                          : Colors.transparent,
-                                  border: Border.all(
-                                    color:
-                                        isSelected
-                                            ? Colors.black
-                                            : Colors.grey[400]!,
-                                    width: 1.5,
+                          SizedBox(width: 12.w),
+
+                          // ── Avatar ──
+                          CircleAvatar(
+                            radius: 22.r,
+                            backgroundImage:
+                                avatarUrl.isNotEmpty
+                                    ? NetworkImage(avatarUrl)
+                                    : null,
+                            backgroundColor: Colors.grey[200],
+                            child:
+                                avatarUrl.isEmpty
+                                    ? Icon(
+                                      Icons.person,
+                                      size: 20.sp,
+                                      color: Colors.grey,
+                                    )
+                                    : null,
+                          ),
+                          SizedBox(width: 12.w),
+
+                          // ── Name (alias + real name subtitle) ──
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  displayName,
+                                  style: TextStyle(
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
                                   ),
                                 ),
-                                child:
-                                    isSelected
-                                        ? Icon(
-                                          Icons.check,
-                                          size: 13.sp,
-                                          color: Colors.white,
-                                        )
-                                        : null,
-                              ),
-                              SizedBox(width: 12.w),
-
-                              // ── Avatar ──
-                              CircleAvatar(
-                                radius: 22.r,
-                                backgroundImage:
-                                    avatarUrl.isNotEmpty
-                                        ? NetworkImage(avatarUrl)
-                                        : null,
-                                backgroundColor: Colors.grey[200],
-                                child:
-                                    avatarUrl.isEmpty
-                                        ? Icon(
-                                          Icons.person,
-                                          size: 20.sp,
-                                          color: Colors.grey,
-                                        )
-                                        : null,
-                              ),
-                              SizedBox(width: 12.w),
-
-                              // ── Name (alias + real name subtitle) ──
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      displayName,
-                                      style: TextStyle(
-                                        fontSize: 15.sp,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black,
-                                      ),
+                                // Show real name as grey subtitle when alias is active
+                                if (hasAlias)
+                                  Text(
+                                    realName,
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
+                                      color: Colors.grey[400],
                                     ),
-                                    // Show real name as grey subtitle when alias is active
-                                    if (hasAlias)
-                                      Text(
-                                        realName,
-                                        style: TextStyle(
-                                          fontSize: 11.sp,
-                                          color: Colors.grey[400],
-                                        ),
-                                      )
-                                    else if (chat.lastMessage?.isNotEmpty ==
-                                        true)
-                                      Text(
-                                        chat.lastMessage!,
-                                        style: TextStyle(
-                                          fontSize: 12.sp,
-                                          color: Colors.grey[500],
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    // Show last message below real-name subtitle
-                                    if (hasAlias &&
-                                        chat.lastMessage?.isNotEmpty == true)
-                                      Text(
-                                        chat.lastMessage!,
-                                        style: TextStyle(
-                                          fontSize: 12.sp,
-                                          color: Colors.grey[500],
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                  ],
-                                ),
-                              ),
-
-                              // ── Unread dot ──
-                              if ((chat.unreadCount[uid] ?? 0) > 0)
-                                Image.asset(
-                                  'assets/notification_dot.png',
-                                  width: 25.w,
-                                  height: 25.h,
-                                ),
-                            ],
+                                  )
+                                else if (chat.lastMessage?.isNotEmpty ==
+                                    true)
+                                  Text(
+                                    chat.lastMessage!,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: Colors.grey[500],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                // Show last message below real-name subtitle
+                                if (hasAlias &&
+                                    chat.lastMessage?.isNotEmpty == true)
+                                  Text(
+                                    chat.lastMessage!,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: Colors.grey[500],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+
+                          // ── Unread dot ──
+                          if ((chat.unreadCount[uid] ?? 0) > 0)
+                            Image.asset(
+                              'assets/notification_dot.png',
+                              width: 25.w,
+                              height: 25.h,
+                            ),
+                        ],
+                      ),
+                    ),
                   );
                 },
               );
@@ -1297,23 +1314,36 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
                                           : null,
                                 ),
                                 SizedBox(width: 12.w),
-                                CircleAvatar(
-                                  radius: 22.r,
-                                  backgroundImage:
-                                      (chat.groupImage != null &&
-                                              chat.groupImage!.isNotEmpty)
-                                          ? NetworkImage(chat.groupImage!)
-                                          : null,
-                                  backgroundColor: Colors.grey[200],
-                                  child:
-                                      (chat.groupImage == null ||
-                                              chat.groupImage!.isEmpty)
-                                          ? Icon(
+                                Container(
+                                  width: 44.w,
+                                  height: 44.w,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.grey[200],
+                                  ),
+                                  child: ClipOval(
+                                    child: (chat.groupImage != null &&
+                                            chat.groupImage!.isNotEmpty)
+                                        ? CachedNetworkImage(
+                                            imageUrl: chat.groupImage!,
+                                            fit: BoxFit.cover,
+                                            fadeInDuration: Duration.zero,
+                                            fadeOutDuration: Duration.zero,
+                                            placeholder: (context, url) => Container(
+                                              color: Colors.grey[200],
+                                            ),
+                                            errorWidget: (context, url, error) => Icon(
+                                              Icons.group,
+                                              size: 20.sp,
+                                              color: Colors.grey,
+                                            ),
+                                          )
+                                        : Icon(
                                             Icons.group,
                                             size: 20.sp,
                                             color: Colors.grey,
-                                          )
-                                          : null,
+                                          ),
+                                  ),
                                 ),
                                 SizedBox(width: 12.w),
                                 Expanded(

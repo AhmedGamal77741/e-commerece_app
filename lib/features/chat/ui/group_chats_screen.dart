@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:ecommerece_app/core/cache/user_cache.dart';
@@ -505,16 +506,36 @@ class _GroupChatsScreenState extends State<GroupChatsScreen>
                     child: Row(
                       children: [
                         // ── Avatar ──
-                        CircleAvatar(
-                          radius: 25,
-                          backgroundImage:
-                              (chat.groupImage != null &&
-                                      chat.groupImage!.isNotEmpty)
-                                  ? NetworkImage(chat.groupImage!)
-                                      as ImageProvider
-                                  : const AssetImage('assets/009.png'),
+                        Container(
+                          width: 50.w,
+                          height: 50.w,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.grey[200],
+                          ),
+                          child: ClipOval(
+                            child: (chat.groupImage != null &&
+                                    chat.groupImage!.isNotEmpty)
+                                ? CachedNetworkImage(
+                                    imageUrl: chat.groupImage!,
+                                    fit: BoxFit.cover,
+                                    fadeInDuration: Duration.zero,
+                                    fadeOutDuration: Duration.zero,
+                                    placeholder: (context, url) => Container(
+                                      color: Colors.grey[200],
+                                    ),
+                                    errorWidget: (context, url, error) => Image.asset(
+                                      'assets/009.png',
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : Image.asset(
+                                    'assets/009.png',
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12.w),
 
                         // ── Name + last message ──
                         Expanded(
@@ -675,6 +696,29 @@ class _GroupChatNameText extends StatelessWidget {
         chat.participants.where((id) => id != currentUserId).toList();
     final targetIds =
         otherParticipants.isEmpty ? chat.participants : otherParticipants;
+
+    // Synchronously check if all participant documents are cached
+    final allCached = targetIds.every(
+      (id) => UserCache.getUserCached(id) != null,
+    );
+    if (allCached) {
+      final names =
+          targetIds.map((id) {
+            final doc = UserCache.getUserCached(id)!;
+            if (doc.exists) {
+              return doc.get('name') as String? ?? '알 수 없음';
+            }
+            return '알 수 없음';
+          }).toList();
+      final nameStr = names.join(', ');
+      return Text(
+        nameStr,
+        style: style,
+        textAlign: textAlign,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
 
     return FutureBuilder<List<String>>(
       future: Future.wait(
