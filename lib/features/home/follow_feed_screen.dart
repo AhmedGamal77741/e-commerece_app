@@ -542,7 +542,7 @@ class UserCategoriesBar extends StatelessWidget {
 
               // "All" category option
               _buildCategoryPill(
-                '전체',
+                '뉴스',
                 selectedCategoryId == null,
                 () => onCategorySelected(''),
               ),

@@ -36,12 +36,13 @@ class _MyStoryState extends State<MyStory> {
   Stream<QuerySnapshot> _getCategoriesStream(String userId) {
     if (_categoriesStream == null || _cachedCategoriesUserId != userId) {
       _cachedCategoriesUserId = userId;
-      _categoriesStream = FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('categories')
-          .orderBy('order')
-          .snapshots();
+      _categoriesStream =
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .collection('categories')
+              .orderBy('order')
+              .snapshots();
     }
     return _categoriesStream!;
   }
@@ -148,8 +149,7 @@ class _MyStoryState extends State<MyStory> {
                   },
                   child: ClipOval(
                     child: SafeNetworkImage(
-                      url:
-                          (imgUrl.isEmpty ? (currentUser.url) : imgUrl) ?? '',
+                      url: (imgUrl.isEmpty ? (currentUser.url) : imgUrl) ?? '',
                       width: 64.w,
                       height: 64.h,
                       fit: BoxFit.cover,
@@ -175,7 +175,10 @@ class _MyStoryState extends State<MyStory> {
                 verticalSpace(10),
 
                 UserCategoriesBar(
-                  categories: categorySnapshot.hasData ? categorySnapshot.data!.docs : const [],
+                  categories:
+                      categorySnapshot.hasData
+                          ? categorySnapshot.data!.docs
+                          : const [],
                   selectedCategoryId: selectedCategoryId,
                   onCategorySelected: _onCategorySelected,
                 ),
@@ -193,7 +196,10 @@ class _MyStoryState extends State<MyStory> {
                           return _PostsPage(
                             userId: currentUser.userId,
                             categoryId: _categoryPages[index],
-                            scrollController: (index == activeIndex) ? widget.scrollController : null,
+                            scrollController:
+                                (index == activeIndex)
+                                    ? widget.scrollController
+                                    : null,
                           );
                         },
                       );
@@ -336,13 +342,12 @@ class UserCategoriesBar extends StatelessWidget {
           children: [
             SizedBox(width: 16.w),
             _pill(
-              '전체',
+              '뉴스',
               selectedCategoryId == null,
               () => onCategorySelected(''),
             ),
             ...categories.map((cat) {
-              final name =
-                  (cat.data() as Map<String, dynamic>)['name'] ?? '';
+              final name = (cat.data() as Map<String, dynamic>)['name'] ?? '';
               return Padding(
                 padding: EdgeInsets.only(left: 8.w),
                 child: _pill(

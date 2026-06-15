@@ -32,12 +32,13 @@ class _ProfileTabState extends State<ProfileTab> {
   Stream<QuerySnapshot> _getCategoriesStream(String userId) {
     if (_categoriesStream == null || _cachedCategoriesUserId != userId) {
       _cachedCategoriesUserId = userId;
-      _categoriesStream = FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('categories')
-          .orderBy('order')
-          .snapshots();
+      _categoriesStream =
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .collection('categories')
+              .orderBy('order')
+              .snapshots();
     }
     return _categoriesStream!;
   }
@@ -174,7 +175,10 @@ class _ProfileTabState extends State<ProfileTab> {
                     verticalSpace(10),
 
                     UserCategoriesBar(
-                      categories: categorySnapshot.hasData ? categorySnapshot.data!.docs : const [],
+                      categories:
+                          categorySnapshot.hasData
+                              ? categorySnapshot.data!.docs
+                              : const [],
                       selectedCategoryId: selectedCategoryId,
                       onCategorySelected: _onCategorySelected,
                     ),
@@ -327,13 +331,12 @@ class UserCategoriesBar extends StatelessWidget {
           children: [
             SizedBox(width: 16.w),
             _pill(
-              '전체',
+              '뉴스',
               selectedCategoryId == null,
               () => onCategorySelected(''),
             ),
             ...categories.map((cat) {
-              final name =
-                  (cat.data() as Map<String, dynamic>)['name'] ?? '';
+              final name = (cat.data() as Map<String, dynamic>)['name'] ?? '';
               return Padding(
                 padding: EdgeInsets.only(left: 8.w),
                 child: _pill(
