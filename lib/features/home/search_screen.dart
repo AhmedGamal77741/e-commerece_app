@@ -126,6 +126,7 @@ class _HomeSearchState extends State<HomeSearch> {
                       ),
                       child: TextField(
                         controller: _searchController,
+                        autofocus: true,
                         textAlignVertical: TextAlignVertical.center,
                         decoration: InputDecoration(
                           contentPadding: EdgeInsets.symmetric(

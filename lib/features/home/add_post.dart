@@ -432,9 +432,7 @@ class _AddPostState extends State<AddPost> {
                           },
                           style: TextButton.styleFrom(
                             backgroundColor:
-                                isArrangeMode
-                                    ? Colors.black
-                                    : Colors.red[700],
+                                isArrangeMode ? Colors.black : Colors.red[700],
                             padding: EdgeInsets.symmetric(
                               horizontal: 16.w,
                               vertical: 6.h,
@@ -595,6 +593,7 @@ class _AddPostState extends State<AddPost> {
                     TextField(
                       controller: _textController,
                       onChanged: (value) => setState(() {}),
+                      autofocus: true,
                       keyboardType: TextInputType.multiline,
                       minLines: 1,
                       maxLines: null,

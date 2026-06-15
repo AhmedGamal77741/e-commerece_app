@@ -60,6 +60,7 @@ class InputBar extends StatelessWidget {
                     Expanded(
                       child: TextField(
                         controller: controller,
+                        autofocus: true,
                         maxLines: 4,
                         minLines: 1,
                         style: TextStyle(fontSize: 14.sp, color: Colors.black),
