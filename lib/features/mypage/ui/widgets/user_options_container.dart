@@ -254,8 +254,7 @@ class _UserOptionsContainerState extends State<UserOptionsContainer>
                               ),
                             ],
                           ),
-                          if (_isLoading)
-                            const SizedBox.shrink(),
+                          if (_isLoading) const SizedBox.shrink(),
                         ],
                       ),
                     ),
@@ -369,7 +368,7 @@ class _UserOptionsContainerState extends State<UserOptionsContainer>
 }
 
 void _launchPartnerPage() async {
-  final url = Uri.parse('https://tally.so/r/w5O556');
+  final url = Uri.parse('https://link.inpock.co.kr/pang2chocolate');
   if (await canLaunchUrl(url)) {
     await launchUrl(url);
   } else {
