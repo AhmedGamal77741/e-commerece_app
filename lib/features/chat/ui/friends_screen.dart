@@ -2161,6 +2161,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                   );
                 },
                 child: CircleAvatar(
+                  backgroundColor: Colors.grey[300],
                   radius: 25.r,
                   backgroundImage: NetworkImage(friend.url),
                 ),

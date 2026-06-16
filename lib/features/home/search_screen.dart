@@ -738,6 +738,7 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
                 child: Row(
                   children: [
                     CircleAvatar(
+                      backgroundColor: Colors.grey[300],
                       radius: 25.sp,
                       backgroundImage: NetworkImage(user.url),
                     ),

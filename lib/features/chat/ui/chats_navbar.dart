@@ -5,6 +5,7 @@ import 'package:ecommerece_app/features/chat/ui/direct_chats_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/edit_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/friends_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/group_chats_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -28,6 +29,17 @@ class _ChatsNavbarState extends State<ChatsNavbar>
 
   final String supportUserId = 'JuxEfED9YSc2XyHRFgkPcNCFUSJ3';
   final ChatService _chatService = ChatService();
+  Stream<DocumentSnapshot>? _userStream;
+  String? _cachedUid;
+
+  Stream<DocumentSnapshot> _getUserStream(String uid) {
+    if (_userStream == null || _cachedUid != uid) {
+      _cachedUid = uid;
+      _userStream =
+          FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
+    }
+    return _userStream!;
+  }
 
   final List<Map<String, dynamic>> _tabs = [
     {'label': '친구'},
@@ -131,6 +143,46 @@ class _ChatsNavbarState extends State<ChatsNavbar>
                 SizedBox(height: 10.h),
                 Text(
                   '로그인 후 친구들과 자유롭게 채팅하세요.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13.sp, color: Colors.grey[500]),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Shown when the user is not subscribed
+  Widget _buildSubscriptionPrompt() {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.card_membership_rounded,
+                  size: 72.sp,
+                  color: Colors.grey,
+                ),
+                SizedBox(height: 24.h),
+                Text(
+                  '채팅을 이용하려면\n구독이 필요합니다',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Text(
+                  '멤버십 구독 후 친구들과 자유롭게 채팅하세요.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13.sp, color: Colors.grey[500]),
                 ),
@@ -322,32 +374,54 @@ class _ChatsNavbarState extends State<ChatsNavbar>
       return Scaffold(body: DirectChatsScreen());
     }
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              color: ColorsManager.primary,
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                transitionBuilder:
-                    (child, animation) =>
-                        FadeTransition(opacity: animation, child: child),
-                child: _searchMode ? _buildSearchBar() : _buildNormalPillRow(),
-              ),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _getUserStream(user.uid),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final data = snapshot.data?.data() as Map<String, dynamic>?;
+        final bool isSub = data?['isSub'] == true;
+
+        if (!isSub) {
+          return _buildSubscriptionPrompt();
+        }
+
+        return Scaffold(
+          body: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  color: ColorsManager.primary,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 10.h,
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    transitionBuilder:
+                        (child, animation) =>
+                            FadeTransition(opacity: animation, child: child),
+                    child:
+                        _searchMode ? _buildSearchBar() : _buildNormalPillRow(),
+                  ),
+                ),
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: _onPageChanged,
+                    children: _widgetOptions,
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                children: _widgetOptions,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
