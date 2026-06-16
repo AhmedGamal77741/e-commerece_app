@@ -902,11 +902,14 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                             );
                                           }
                                           final d = snapshot.data!.data()!;
+                                          final basic = (d['address'] ?? '') as String;
+                                          final detail = (d['detailAddress'] ?? '') as String;
+                                          final full = detail.isEmpty ? basic : '$basic $detail';
                                           return _buildAddressText(
                                             label: '배송지 정보 (기본 배송지)',
                                             name: d['name'] ?? '',
                                             phone: d['phone'] ?? '',
-                                            address: d['address'] ?? '',
+                                            address: full,
                                           );
                                         },
                                       );
@@ -916,7 +919,9 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                     label: '배송지 정보 (기본 배송지)',
                                     name: address.name,
                                     phone: address.phone,
-                                    address: address.detailAddress,
+                                    address: address.detailAddress.isEmpty
+                                        ? address.address
+                                        : '${address.address} ${address.detailAddress}',
                                   ),
                         ),
                         IconButton(

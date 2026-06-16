@@ -202,8 +202,17 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
                               if (addressSnap != null && addressSnap.exists) {
                                 final addressData =
                                     addressSnap.data() as Map<String, dynamic>?;
-                                displayName =
-                                    addressData?['address'] ?? '배송지 선택';
+                                if (addressData != null) {
+                                  final basic =
+                                      addressData['address'] as String? ?? '';
+                                  final detail =
+                                      addressData['detailAddress'] as String? ??
+                                      '';
+                                  displayName =
+                                      detail.isEmpty
+                                          ? (basic.isEmpty ? '배송지 선택' : basic)
+                                          : '$basic $detail';
+                                }
                               }
                               return TextButton(
                                 style: TextButton.styleFrom(
@@ -227,12 +236,16 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      displayName,
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 16.sp,
-                                        fontWeight: FontWeight.w500,
+                                    Flexible(
+                                      child: Text(
+                                        displayName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16.sp,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                     SizedBox(width: 6.w),
@@ -454,7 +467,8 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
             List<Product> otherRegion = [];
             List<Product> soldOut = [];
 
-            final bool hasUserAddress = userAddressMap != null && userAddressMap!.isNotEmpty;
+            final bool hasUserAddress =
+                userAddressMap != null && userAddressMap!.isNotEmpty;
 
             for (var p in products) {
               Product product = Product.fromMap(
@@ -474,7 +488,8 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
                 }
               } else {
                 if (product.address != null && product.address!.isNotEmpty) {
-                  if (hasUserAddress && _isSameRegion(userAddressMap, product.address)) {
+                  if (hasUserAddress &&
+                      _isSameRegion(userAddressMap, product.address)) {
                     sameRegion.add(product);
                   } else if (!hasUserAddress) {
                     otherRegion.add(product);
@@ -510,11 +525,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
               return weightA.compareTo(weightB);
             });
 
-            final sortedProducts = [
-              ...sameRegion,
-              ...otherRegion,
-              ...soldOut,
-            ];
+            final sortedProducts = [...sameRegion, ...otherRegion, ...soldOut];
             /*             // Sort: available products first, then sold out
             final sortedProducts = List.from(products)..sort((a, b) {
               final stockA = (a.data() as Map<String, dynamic>)['stock'] ?? 0;
