@@ -22,6 +22,7 @@ class _AddPostState extends State<AddPost> {
   List<Map<String, dynamic>> categories = [];
   bool isArrangeMode = false;
   bool isDeleteMode = false;
+  bool isEditMode = false;
 
   @override
   void initState() {
@@ -96,6 +97,21 @@ class _AddPostState extends State<AddPost> {
     }
   }
 
+  Future<void> _updateCategoryName(String categoryId, String newName) async {
+    if (currentUser == null || newName.trim().isEmpty) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser!.uid)
+          .collection('categories')
+          .doc(categoryId)
+          .update({'name': newName.trim()});
+      _loadCategories();
+    } catch (e) {
+      print('Error updating category name: $e');
+    }
+  }
+
   Future<void> _updateCategoryOrder(List<Map<String, dynamic>> newOrder) async {
     if (currentUser == null) return;
     try {
@@ -144,6 +160,35 @@ class _AddPostState extends State<AddPost> {
     );
   }
 
+  void _showEditCategoryDialog(String categoryId, String currentName) {
+    final textEditingController = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.white,
+            title: Text('카테고리 이름 변경'),
+            content: TextField(
+              controller: textEditingController,
+              decoration: InputDecoration(hintText: '카테고리 이름'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('취소', style: TextStyle(color: Colors.black)),
+              ),
+              TextButton(
+                onPressed: () {
+                  _updateCategoryName(categoryId, textEditingController.text);
+                  Navigator.pop(context);
+                },
+                child: Text('저장', style: TextStyle(color: Colors.black)),
+              ),
+            ],
+          ),
+    );
+  }
+
   void _showCategoryMenu() {
     showMenu(
       color: Colors.white,
@@ -159,6 +204,18 @@ class _AddPostState extends State<AddPost> {
         PopupMenuItem(
           value: 'add',
           child: Text('추가', style: TextStyle(fontSize: 13.sp)),
+        ),
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Text('이름 변경', style: TextStyle(fontSize: 13.sp)),
+              if (isEditMode) ...[
+                SizedBox(width: 8.w),
+                Icon(Icons.check, size: 16, color: Colors.green),
+              ],
+            ],
+          ),
         ),
         PopupMenuItem(
           value: 'arrange',
@@ -188,15 +245,29 @@ class _AddPostState extends State<AddPost> {
     ).then((value) {
       if (value == 'add') {
         _showAddCategoryDialog();
+      } else if (value == 'edit') {
+        setState(() {
+          isEditMode = !isEditMode;
+          if (isEditMode) {
+            isArrangeMode = false;
+            isDeleteMode = false;
+          }
+        });
       } else if (value == 'arrange') {
         setState(() {
           isArrangeMode = !isArrangeMode;
-          if (isArrangeMode) isDeleteMode = false;
+          if (isArrangeMode) {
+            isDeleteMode = false;
+            isEditMode = false;
+          }
         });
       } else if (value == 'delete') {
         setState(() {
           isDeleteMode = !isDeleteMode;
-          if (isDeleteMode) isArrangeMode = false;
+          if (isDeleteMode) {
+            isArrangeMode = false;
+            isEditMode = false;
+          }
         });
       }
     });
@@ -206,12 +277,15 @@ class _AddPostState extends State<AddPost> {
     String categoryName,
     bool isSelected,
     bool isInDeleteMode,
+    bool isInEditMode,
     String categoryId,
   ) {
     return GestureDetector(
       onTap:
           isInDeleteMode
               ? null
+              : isInEditMode
+              ? () => _showEditCategoryDialog(categoryId, categoryName)
               : () {
                 setState(() {
                   if (selectedCategoryId == categoryId) {
@@ -255,6 +329,10 @@ class _AddPostState extends State<AddPost> {
                 onTap: () => _deleteCategory(categoryId),
                 child: Icon(Icons.close, size: 14, color: Colors.red),
               ),
+            ],
+            if (isInEditMode) ...[
+              SizedBox(width: 6.w),
+              Icon(Icons.edit, size: 14, color: Colors.orange),
             ],
           ],
         ),
@@ -492,6 +570,7 @@ class _AddPostState extends State<AddPost> {
                                                     category['name'],
                                                     isSelected,
                                                     isDeleteMode,
+                                                    isEditMode,
                                                     category['id'],
                                                   ),
                                                 ),
@@ -501,6 +580,7 @@ class _AddPostState extends State<AddPost> {
                                                     category['name'],
                                                     isSelected,
                                                     isDeleteMode,
+                                                    isEditMode,
                                                     category['id'],
                                                   ),
                                                 ),
@@ -530,6 +610,7 @@ class _AddPostState extends State<AddPost> {
                                                       category['name'],
                                                       isSelected,
                                                       isDeleteMode,
+                                                      isEditMode,
                                                       category['id'],
                                                     );
                                                   },
@@ -539,6 +620,7 @@ class _AddPostState extends State<AddPost> {
                                                 category['name'],
                                                 isSelected,
                                                 isDeleteMode,
+                                                isEditMode,
                                                 category['id'],
                                               ),
                                     );
