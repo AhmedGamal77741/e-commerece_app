@@ -52,8 +52,14 @@ class ChatMessageItem {
 }
 
 class Comments extends StatefulWidget {
-  const Comments({super.key, required this.postId, this.canInteract = true});
+  const Comments({
+    super.key,
+    required this.postId,
+    this.commentId,
+    this.canInteract = true,
+  });
   final String postId;
+  final String? commentId;
   final bool canInteract;
   @override
   State<Comments> createState() => _CommentsState();
@@ -70,6 +76,9 @@ class _CommentsState extends State<Comments> {
   bool _fetchingPost = false;
   Future<MyUser>? _userFuture;
   String? _loadedUserId;
+
+  bool _hasScrolledToComment = false;
+  final Map<String, GlobalKey> _bubbleKeys = {};
 
   @override
   void dispose() {
@@ -170,9 +179,40 @@ class _CommentsState extends State<Comments> {
         final postData = providerPostData ?? _fetchedPostData;
 
         if (postData == null) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: _kBgColor,
-            body: SizedBox.shrink(),
+            body: SafeArea(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.grey[600],
+                      size: 48.r,
+                    ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      '삭제되었거나 존재하지 않는 게시글입니다.',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        color: Colors.grey[700],
+                        fontFamily: 'NotoSans',
+                      ),
+                    ),
+                    SizedBox(height: 24.h),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[800],
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('닫기'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
         }
 
@@ -266,31 +306,73 @@ class _CommentsState extends State<Comments> {
                             ),
                           );
 
-                          return ListView.builder(
+                          final children = List.generate(chatItems.length, (
+                            index,
+                          ) {
+                            final item = chatItems[index];
+                            final isMe = item.senderId == currentUserId;
+                            final showDate =
+                                index == chatItems.length - 1 ||
+                                !_isSameDay(
+                                  item.timestamp,
+                                  chatItems[index + 1].timestamp,
+                                );
+                            final key = _bubbleKeys.putIfAbsent(
+                              item.id,
+                              () => GlobalKey(),
+                            );
+
+                            return Column(
+                              key: key,
+                              children: [
+                                if (showDate)
+                                  _DateSeparator(date: item.timestamp),
+                                _CommentBubble(item: item, isMe: isMe),
+                              ],
+                            );
+                          });
+
+                          // Scroll to targeted comment if provided
+                          if (widget.commentId != null &&
+                              !_hasScrolledToComment) {
+                            final targetKey = _bubbleKeys[widget.commentId];
+                            if (targetKey != null) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (targetKey.currentContext != null) {
+                                  Scrollable.ensureVisible(
+                                    targetKey.currentContext!,
+                                    duration: const Duration(milliseconds: 300),
+                                    alignment: 0.5,
+                                  );
+                                  _hasScrolledToComment = true;
+                                }
+                              });
+                            } else {
+                              if (!postsProvider.isLoadingComments(
+                                widget.postId,
+                              )) {
+                                _hasScrolledToComment = true;
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('삭제된 댓글입니다.'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                });
+                              }
+                            }
+                          }
+
+                          return ListView(
                             reverse: true,
                             padding: EdgeInsets.symmetric(
                               horizontal: 14.w,
                               vertical: 8.h,
                             ),
-                            itemCount: chatItems.length,
-                            itemBuilder: (context, index) {
-                              final item = chatItems[index];
-                              final isMe = item.senderId == currentUserId;
-                              final showDate =
-                                  index == chatItems.length - 1 ||
-                                  !_isSameDay(
-                                    item.timestamp,
-                                    chatItems[index + 1].timestamp,
-                                  );
-
-                              return Column(
-                                children: [
-                                  if (showDate)
-                                    _DateSeparator(date: item.timestamp),
-                                  _CommentBubble(item: item, isMe: isMe),
-                                ],
-                              );
-                            },
+                            children: children,
                           );
                         },
                       ),

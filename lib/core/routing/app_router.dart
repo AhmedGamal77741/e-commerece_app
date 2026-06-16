@@ -142,7 +142,8 @@ class AppRouter {
             path: '/${Routes.commentsScreen}',
             builder: (context, state) {
               final postId = state.uri.queryParameters['postId'] ?? '';
-              return Comments(postId: postId);
+              final commentId = state.uri.queryParameters['commentId'];
+              return Comments(postId: postId, commentId: commentId);
             },
           ),
           GoRoute(
