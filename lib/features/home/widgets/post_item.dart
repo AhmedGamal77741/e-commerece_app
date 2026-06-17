@@ -869,14 +869,15 @@ class _PostItemState extends State<PostItem> {
                                 ),
                             ],
                           ),
-                          if (postData['text'].toString().isNotEmpty)
+                          if (postData['text'] != null &&
+                              postData['text'].toString().trim().isNotEmpty)
                             Padding(
                               padding: EdgeInsets.only(top: 15.h),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      postData['text'],
+                                      postData['text'].toString(),
                                       style: TextStyle(
                                         color: const Color(0xFF343434),
                                         fontSize: 18.sp,
@@ -1084,11 +1085,15 @@ class _PostItemState extends State<PostItem> {
                                         ),
                                       ],
                                     ),
-                                    if (postData['text'].toString().isNotEmpty)
+                                    if (postData['text'] != null &&
+                                        postData['text']
+                                            .toString()
+                                            .trim()
+                                            .isNotEmpty)
                                       Padding(
                                         padding: EdgeInsets.only(top: 5.h),
                                         child: Text(
-                                          postData['text'],
+                                          postData['text'].toString(),
                                           style: TextStyle(
                                             color: const Color(0xFF343434),
                                             fontSize: 16.sp,

@@ -244,11 +244,11 @@ class GuestPostItem extends StatelessWidget {
                                 ),
                           ],
                         ),
-                        if (post['text'].toString().isNotEmpty)
+                        if (post['text'] != null && post['text'].toString().trim().isNotEmpty)
                           Padding(
                             padding: EdgeInsets.only(top: 15.h),
                             child: Text(
-                              post['text'],
+                              post['text'].toString(),
                               style: TextStyle(
                                 color: const Color(0xFF343434),
                                 fontSize: 18.sp,
@@ -384,11 +384,11 @@ class GuestPostItem extends StatelessWidget {
                                     style: TextStyles.abeezee16px400wPblack
                                         .copyWith(fontWeight: FontWeight.bold),
                                   ),
-                              if (post['text'].toString().isNotEmpty)
+                              if (post['text'] != null && post['text'].toString().trim().isNotEmpty)
                                 Padding(
                                   padding: EdgeInsets.only(top: 5.h),
                                   child: Text(
-                                    post['text'],
+                                    post['text'].toString(),
                                     style: TextStyle(
                                       color: const Color(0xFF343434),
                                       fontSize: 16.sp,
