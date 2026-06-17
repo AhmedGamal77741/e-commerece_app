@@ -120,10 +120,12 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다')));
-        setState(() => _isLoading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다')));
+          setState(() => _isLoading = false);
+        }
         return;
       }
 
@@ -132,46 +134,59 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
           .doc(user.uid)
           .collection('addresses');
 
-      if (_isDefaultAddress) {
-        final addressesSnapshot = await addressesRef.get();
-        final batch = FirebaseFirestore.instance.batch();
-        for (var doc in addressesSnapshot.docs) {
+      // Check if this is the first address
+      final addressesSnapshot = await addressesRef.limit(1).get();
+      final bool isFirstAddress = addressesSnapshot.docs.isEmpty;
+      final bool shouldBeDefault = _isDefaultAddress || isFirstAddress;
+
+      final batch = FirebaseFirestore.instance.batch();
+
+      if (shouldBeDefault && !isFirstAddress) {
+        // Reset existing defaults
+        final defaultAddresses = await addressesRef.where('isDefault', isEqualTo: true).get();
+        for (var doc in defaultAddresses.docs) {
           batch.update(doc.reference, {'isDefault': false});
         }
-        await batch.commit();
       }
 
+      final docRef = addressesRef.doc();
       final addressData = {
-        'id': addressesRef.doc().id,
+        'id': docRef.id,
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'address': _addressController.text.trim(),
         'detailAddress': _detailAddressController.text.trim(),
-        'isDefault': _isDefaultAddress,
+        'isDefault': shouldBeDefault,
         'addressMap': _address,
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      final docRef = await addressesRef.add(addressData);
+      batch.set(docRef, addressData);
 
-      if (_isDefaultAddress) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .update({'defaultAddressId': docRef.id});
+      if (shouldBeDefault) {
+        batch.update(FirebaseFirestore.instance.collection('users').doc(user.uid), {
+          'defaultAddressId': docRef.id,
+        });
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('배송지가 저장되었습니다')));
+      await batch.commit();
 
-      Navigator.of(context).pop(true);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('배송지가 저장되었습니다')));
+        Navigator.of(context).pop(true);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('저장 중 오류가 발생했습니다: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('저장 중 오류가 발생했습니다: $e')));
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -392,7 +407,14 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   ),
                   child:
                       _isLoading
-                          ? const SizedBox.shrink()
+                          ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
                           : Text(
                             '저장',
                             style: TextStyle(

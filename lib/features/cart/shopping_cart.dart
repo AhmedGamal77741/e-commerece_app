@@ -337,62 +337,75 @@ class _ShoppingCartState extends State<ShoppingCart> {
                                 padding: EdgeInsets.only(right: 20.w),
                                 child: TextButton(
                                   onPressed: () async {
-                                    // Extra stock check before proceeding
-                                    final cartDocs = cartSnapshot.data!.docs;
-                                    bool hasInsufficientStock = false;
-                                    String insufficientProductName = '';
-                                    int remainingQuantity = 0;
-                                    for (final cartDoc in cartDocs) {
-                                      final cartData =
-                                          cartDoc.data()
-                                              as Map<String, dynamic>;
-                                      final productId = cartData['product_id'];
-                                      int quantity = 0;
-                                      final productStream =
-                                          await FirebaseFirestore.instance
-                                              .collection('products')
-                                              .doc(productId)
-                                              .get();
-                                      final productData = productStream.data();
-                                      if (productData != null) {
-                                        final prod = Product.fromMap(
-                                          productData,
+                                    // Show loading indicator
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (context) => const Center(
+                                        child: CircularProgressIndicator(color: Colors.white),
+                                      ),
+                                    );
+
+                                    try {
+                                      final cartDocs = cartSnapshot.data!.docs;
+                                      bool hasInsufficientStock = false;
+                                      String insufficientProductName = '';
+                                      int remainingQuantity = 0;
+
+                                      // Run all product fetches in parallel
+                                      final futures = cartDocs.map((cartDoc) {
+                                        final cartData = cartDoc.data() as Map<String, dynamic>;
+                                        final productId = cartData['product_id'];
+                                        return FirebaseFirestore.instance.collection('products').doc(productId).get();
+                                      }).toList();
+
+                                      final productSnapshots = await Future.wait(futures);
+
+                                      for (int i = 0; i < cartDocs.length; i++) {
+                                        final cartData = cartDocs[i].data() as Map<String, dynamic>;
+                                        final productSnapshot = productSnapshots[i];
+                                        final productData = productSnapshot.data();
+
+                                        if (productData != null) {
+                                          final prod = Product.fromMap(productData);
+                                          final quantity = prod.pricePoints[cartData['pricePointIndex']].quantity;
+                                          final currentStock = productData['stock'] ?? 0;
+
+                                          if (quantity > currentStock) {
+                                            hasInsufficientStock = true;
+                                            insufficientProductName = cartData['productName'] ?? '';
+                                            remainingQuantity = currentStock;
+                                            break;
+                                          }
+                                        }
+                                      }
+
+                                      // Dismiss loading indicator
+                                      if (context.mounted) Navigator.pop(context);
+
+                                      if (hasInsufficientStock) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('(${insufficientProductName})의 남은 수량은 (${remainingQuantity})개 입니다.'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                        return;
+                                      }
+
+                                      if (context.mounted) {
+                                        context.go(Routes.placeOrderScreen);
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        Navigator.pop(context); // Dismiss loading
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('오류가 발생했습니다.')),
                                         );
-                                        quantity =
-                                            prod
-                                                .pricePoints[cartData['pricePointIndex']]
-                                                .quantity;
-                                      }
-                                      final productRef = FirebaseFirestore
-                                          .instance
-                                          .collection('products')
-                                          .doc(productId);
-                                      final productSnapshot =
-                                          await productRef.get();
-                                      final currentStock =
-                                          productSnapshot.data()?['stock'] ?? 0;
-                                      if (quantity > currentStock) {
-                                        hasInsufficientStock = true;
-                                        insufficientProductName =
-                                            cartData['productName'] ?? '';
-                                        remainingQuantity = currentStock;
-                                        break;
                                       }
                                     }
-                                    if (hasInsufficientStock) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            '(${insufficientProductName})의 남은 수량은 (${remainingQuantity})개 입니다.',
-                                          ),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                    context.go(Routes.placeOrderScreen);
                                   },
                                   style: TextButton.styleFrom(
                                     backgroundColor: const Color(

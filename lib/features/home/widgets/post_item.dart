@@ -170,8 +170,8 @@ class NaturalAspectPageViewState extends State<NaturalAspectPageView> {
 
     final double currentHeight = availableWidth / currentRatio;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Stack(
+      alignment: Alignment.bottomCenter,
       children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
@@ -238,7 +238,7 @@ class NaturalAspectPageViewState extends State<NaturalAspectPageView> {
         ),
         if (widget.imgUrls.length > 1)
           Padding(
-            padding: EdgeInsets.only(top: 8.h),
+            padding: EdgeInsets.only(bottom: 12.h),
             child: SmoothPageIndicator(
               controller: widget.pageController,
               count: widget.imgUrls.length,
@@ -247,6 +247,7 @@ class NaturalAspectPageViewState extends State<NaturalAspectPageView> {
                 dotColor: Colors.grey,
                 dotHeight: 8,
                 dotWidth: 8,
+                paintStyle: PaintingStyle.fill,
               ),
               onDotClicked: (index) {
                 widget.pageController.animateToPage(
@@ -320,7 +321,8 @@ class _PostItemState extends State<PostItem> {
           builder:
               (ctx) => AlertDialog(
                 content: Row(
-                  children: [const SizedBox.shrink(),
+                  children: [
+                    const SizedBox.shrink(),
                     SizedBox(width: 16.w),
                     Text('게시글 수정 중...'),
                   ],
@@ -436,7 +438,8 @@ class _PostItemState extends State<PostItem> {
         pageBuilder:
             (_, __, ___) => AlertDialog(
               content: Row(
-                children: [const SizedBox.shrink(),
+                children: [
+                  const SizedBox.shrink(),
                   SizedBox(width: 16.w),
                   Text('신고 처리 중...'),
                 ],
@@ -485,21 +488,32 @@ class _PostItemState extends State<PostItem> {
 
         final cachedUser = postsProvider.getUser(postData['userId']);
         return FutureBuilder<MyUser>(
-          future: cachedUser != null ? Future.value(cachedUser) : postsProvider.loadUser(postData['userId']),
+          future:
+              cachedUser != null
+                  ? Future.value(cachedUser)
+                  : postsProvider.loadUser(postData['userId']),
           initialData: cachedUser,
           builder: (context, snapshot) {
-            final isWaiting = snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData;
+            final isWaiting =
+                snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData;
             final bool userMissing =
-                !isWaiting && (snapshot.hasError ||
-                !snapshot.hasData ||
-                (snapshot.data?.userId ?? '').isEmpty);
+                !isWaiting &&
+                (snapshot.hasError ||
+                    !snapshot.hasData ||
+                    (snapshot.data?.userId ?? '').isEmpty);
             final myuser = snapshot.data;
-            final displayName = isWaiting 
-                ? '로딩 중...' 
-                : (myuser?.name.isNotEmpty == true ? myuser!.name : '삭제된 사용자');
-            final String profileUrl = !userMissing && !isWaiting ? (myuser?.url ?? '') : '';
+            final displayName =
+                isWaiting
+                    ? '로딩 중...'
+                    : (myuser?.name.isNotEmpty == true
+                        ? myuser!.name
+                        : '삭제된 사용자');
+            final String profileUrl =
+                !userMissing && !isWaiting ? (myuser?.url ?? '') : '';
             final bool isMyPost =
-                !userMissing && !isWaiting &&
+                !userMissing &&
+                !isWaiting &&
                 myuser!.userId == FirebaseAuth.instance.currentUser?.uid;
 
             final List imgUrls =
@@ -512,14 +526,427 @@ class _PostItemState extends State<PostItem> {
               ignoring: isWaiting,
               child: Column(
                 children: [
-                // ── fromComments branch ───────────────────────────────────
-                if (widget.fromComments)
-                  Padding(
-                    padding: EdgeInsets.only(top: 5.h, left: 10.w, right: 10.w),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  // ── fromComments branch ───────────────────────────────────
+                  if (widget.fromComments)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: 5.h,
+                        left: 10.w,
+                        right: 10.w,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              InkWell(
+                                onTap: () {
+                                  if (myuser != null &&
+                                      widget.currentProfileUserId !=
+                                          myuser.userId) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) => Scaffold(
+                                              body: ProfileTab(
+                                                userId: myuser.userId,
+                                              ),
+                                            ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: Container(
+                                  width: 48.w,
+                                  height: 48.h,
+                                  decoration: ShapeDecoration(
+                                    image: DecorationImage(
+                                      image:
+                                          profileUrl.isNotEmpty
+                                              ? NetworkImage(profileUrl)
+                                              : AssetImage('assets/avatar.png')
+                                                  as ImageProvider,
+                                      fit: BoxFit.cover,
+                                    ),
+                                    shape: OvalBorder(),
+                                  ),
+                                ),
+                              ),
+                              horizontalSpace(10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        isWaiting
+                                            ? Shimmer.fromColors(
+                                              baseColor: Colors.grey[300]!,
+                                              highlightColor: Colors.grey[100]!,
+                                              child: Container(
+                                                width: 80.w,
+                                                height: 16.h,
+                                                color: Colors.white,
+                                                margin: EdgeInsets.only(
+                                                  bottom: 2.h,
+                                                ),
+                                              ),
+                                            )
+                                            : Flexible(
+                                              child: Text(
+                                                displayName,
+                                                style: TextStyles
+                                                    .abeezee16px400wPblack
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                        horizontalSpace(4),
+                                        FutureBuilder<String?>(
+                                          future: ContactService()
+                                              .getContactNickname(
+                                                myuser == null
+                                                    ? ""
+                                                    : myuser.userId,
+                                              ),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.connectionState ==
+                                                ConnectionState.waiting) {
+                                              return const SizedBox.shrink();
+                                            }
+                                            if (snapshot.hasError ||
+                                                !snapshot.hasData ||
+                                                snapshot.data == null) {
+                                              return const SizedBox.shrink();
+                                            }
+                                            final nickname = snapshot.data!;
+                                            return Flexible(
+                                              child: Text(
+                                                '@$nickname',
+                                                style: TextStyle(
+                                                  fontSize: 14.sp,
+                                                  color: Colors.grey[600],
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    if (!userMissing &&
+                                        myuser!.userId.isNotEmpty)
+                                      StreamBuilder<QuerySnapshot>(
+                                        stream:
+                                            FirebaseFirestore.instance
+                                                .collection('users')
+                                                .doc(myuser.userId)
+                                                .collection('followers')
+                                                .snapshots(),
+                                        builder: (context, subSnap) {
+                                          if (subSnap.connectionState ==
+                                              ConnectionState.waiting) {
+                                            return SizedBox(height: 16.sp);
+                                          }
+                                          if (subSnap.hasError) {
+                                            return Text(
+                                              '구독자 오류',
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                                fontSize: 16.sp,
+                                              ),
+                                            );
+                                          }
+                                          final count =
+                                              subSnap.data?.docs.length ?? 0;
+                                          final formatted = count
+                                              .toString()
+                                              .replaceAllMapped(
+                                                RegExp(r'\B(?=(\d{3})+(?!\d))'),
+                                                (match) => ',',
+                                              );
+                                          return Padding(
+                                            padding: EdgeInsets.only(top: 2.h),
+                                            child: Text(
+                                              '구독자 $formatted명',
+                                              style: TextStyle(
+                                                color: const Color(0xFF787878),
+                                                fontSize: 16.sp,
+                                                fontFamily: 'NotoSans',
+                                                fontWeight: FontWeight.w400,
+                                                height: 1.40.h,
+                                                letterSpacing: -0.09.w,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              Spacer(),
+                              if (!userMissing &&
+                                  myuser!.userId !=
+                                      FirebaseAuth.instance.currentUser?.uid)
+                                StreamBuilder<DocumentSnapshot>(
+                                  stream:
+                                      FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(
+                                            FirebaseAuth
+                                                .instance
+                                                .currentUser
+                                                ?.uid,
+                                          )
+                                          .collection('following')
+                                          .doc(myuser.userId)
+                                          .snapshots(),
+                                  builder: (context, snapshot) {
+                                    final isFollowing =
+                                        snapshot.hasData &&
+                                        snapshot.data!.exists;
+                                    final isPrivate =
+                                        myuser?.isPrivate ?? false;
+
+                                    if (isFollowing) {
+                                      return PopupMenuButton<String>(
+                                        onSelected: (value) async {
+                                          if (value == 'share') {
+                                            showShareDialog(
+                                              context,
+                                              'post',
+                                              'https://app.pang2chocolate.com/comment?postId=${widget.postId}',
+                                              widget.postId,
+                                              myuser.name,
+                                              myuser.url,
+                                              postData,
+                                            );
+                                          } else if (value == 'unfollow') {
+                                            FollowService().toggleFollow(
+                                              myuser.userId,
+                                            );
+                                          }
+                                        },
+                                        color: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        itemBuilder:
+                                            (BuildContext context) => [
+                                              PopupMenuItem<String>(
+                                                value: 'share',
+                                                child: Text(
+                                                  '공유',
+                                                  style: TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 13.sp,
+                                                  ),
+                                                ),
+                                              ),
+                                              PopupMenuItem<String>(
+                                                value: 'unfollow',
+                                                child: Text(
+                                                  '구독 취소',
+                                                  style: TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 13.sp,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                        child: Icon(
+                                          Icons.more_horiz,
+                                          color: Colors.black,
+                                          size: 22.sp,
+                                        ),
+                                      );
+                                    }
+
+                                    if (isPrivate) {
+                                      return StreamBuilder<DocumentSnapshot>(
+                                        stream:
+                                            FirebaseFirestore.instance
+                                                .collection('users')
+                                                .doc(myuser.userId)
+                                                .collection('followRequests')
+                                                .doc(
+                                                  FirebaseAuth
+                                                      .instance
+                                                      .currentUser
+                                                      ?.uid,
+                                                )
+                                                .snapshots(),
+                                        builder: (context, requestSnapshot) {
+                                          final hasRequest =
+                                              requestSnapshot.hasData &&
+                                              requestSnapshot.data!.exists;
+                                          return ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  hasRequest
+                                                      ? Colors.grey[300]
+                                                      : Colors.black,
+                                              foregroundColor:
+                                                  hasRequest
+                                                      ? Colors.black
+                                                      : Colors.white,
+                                              minimumSize: Size(35.w, 33.h),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                            ),
+                                            onPressed: () async {
+                                              final ref = FirebaseFirestore
+                                                  .instance
+                                                  .collection('users')
+                                                  .doc(myuser.userId)
+                                                  .collection('followRequests')
+                                                  .doc(
+                                                    FirebaseAuth
+                                                        .instance
+                                                        .currentUser
+                                                        ?.uid,
+                                                  );
+                                              hasRequest
+                                                  ? await ref.delete()
+                                                  : await ref.set({
+                                                    'timestamp':
+                                                        FieldValue.serverTimestamp(),
+                                                  });
+                                            },
+                                            child: Text(
+                                              hasRequest ? '요청 취소' : '구독 신청',
+                                              style: TextStyle(
+                                                fontSize: 12.sp,
+                                                fontFamily: 'NotoSans',
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }
+
+                                    return ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.black,
+                                        foregroundColor: Colors.white,
+                                        minimumSize: Size(40.w, 28.h),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                      ),
+                                      onPressed: () async {
+                                        FollowService().toggleFollow(
+                                          myuser.userId,
+                                        );
+                                      },
+                                      child: Text(
+                                        '구독',
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          fontFamily: 'NotoSans',
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                            ],
+                          ),
+                          if (postData['text'].toString().isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.only(top: 15.h),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      postData['text'],
+                                      style: TextStyle(
+                                        color: const Color(0xFF343434),
+                                        fontSize: 18.sp,
+                                        fontFamily: 'NotoSans',
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.40.h,
+                                        letterSpacing: -0.09.w,
+                                      ),
+                                    ),
+                                  ),
+                                  if (widget.showMoreButton)
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.more_vert,
+                                        color: Colors.black,
+                                        size: 22.sp,
+                                      ),
+                                      onPressed:
+                                          () => showPostMenu(
+                                            context,
+                                            widget.postId,
+                                            myuser?.userId ?? '',
+                                          ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          verticalSpace(5),
+                          if (imgUrls.isNotEmpty)
+                            NaturalAspectPageView(
+                              imgUrls: imgUrls,
+                              pageController: _pageController,
+                              // Use locally computed width — most reliable
+                              explicitWidth: fromCommentsImageWidth,
+                            ),
+                          verticalSpace(30),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              PostActions(
+                                postId: widget.postId,
+                                postData: postData,
+                              ),
+                              horizontalSpace(4),
+                              Expanded(
+                                child: Container(
+                                  height: 1.h,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () => context.pop(),
+                                child: Icon(Icons.close),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // ── !fromComments branch ──────────────────────────────────
+                  if (!widget.fromComments)
+                    Screenshot(
+                      controller: _screenshotController,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 8.h,
+                        ),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             InkWell(
@@ -541,13 +968,14 @@ class _PostItemState extends State<PostItem> {
                                 }
                               },
                               child: Container(
-                                width: 56.w,
-                                height: 56.h,
+                                width: 48.w,
+                                height: 48.h,
                                 decoration: ShapeDecoration(
                                   image: DecorationImage(
                                     image:
-                                        profileUrl.isNotEmpty
-                                            ? NetworkImage(profileUrl)
+                                        (myuser?.url != null &&
+                                                myuser!.url.isNotEmpty)
+                                            ? NetworkImage(myuser.url)
                                             : AssetImage('assets/avatar.png')
                                                 as ImageProvider,
                                     fit: BoxFit.cover,
@@ -556,524 +984,169 @@ class _PostItemState extends State<PostItem> {
                                 ),
                               ),
                             ),
-                            horizontalSpace(5),
+                            horizontalSpace(10),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  verticalSpace(5),
-                                  isWaiting
-                                      ? Shimmer.fromColors(
-                                          baseColor: Colors.grey[300]!,
-                                          highlightColor: Colors.grey[100]!,
-                                          child: Container(width: 80.w, height: 16.h, color: Colors.white, margin: EdgeInsets.only(bottom: 2.h)),
-                                        )
-                                      : Text(
-                                          displayName,
-                                          style: TextStyles.abeezee16px400wPblack
-                                              .copyWith(fontWeight: FontWeight.bold),
-                                        ),
-                                  FutureBuilder<String?>(
-                                    future: ContactService().getContactNickname(
-                                      myuser == null ? "" : myuser.userId,
-                                    ),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      if (snapshot.hasError ||
-                                          !snapshot.hasData ||
-                                          snapshot.data == null) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      final nickname = snapshot.data!;
-                                      return Padding(
-                                        padding: EdgeInsets.only(top: 2.h),
-                                        child: Text(
-                                          '@$nickname',
-                                          style: TextStyle(
-                                            fontSize: 11.sp,
-                                            color: Colors.grey[600],
-                                            fontWeight: FontWeight.w400,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  if (!userMissing && myuser!.userId.isNotEmpty)
-                                    StreamBuilder<QuerySnapshot>(
-                                      stream:
-                                          FirebaseFirestore.instance
-                                              .collection('users')
-                                              .doc(myuser.userId)
-                                              .collection('followers')
-                                              .snapshots(),
-                                      builder: (context, subSnap) {
-                                        if (subSnap.connectionState ==
-                                            ConnectionState.waiting) {
-                                          return SizedBox(height: 16.sp);
-                                        }
-                                        if (subSnap.hasError) {
-                                          return Text(
-                                            '구독자 오류',
-                                            style: TextStyle(
-                                              color: Colors.red,
-                                              fontSize: 16.sp,
-                                            ),
-                                          );
-                                        }
-                                        final count =
-                                            subSnap.data?.docs.length ?? 0;
-                                        final formatted = count
-                                            .toString()
-                                            .replaceAllMapped(
-                                              RegExp(r'\B(?=(\d{3})+(?!\d))'),
-                                              (match) => ',',
-                                            );
-                                        return Padding(
-                                          padding: EdgeInsets.only(top: 2.h),
-                                          child: Text(
-                                            '구독자 $formatted명',
-                                            style: TextStyle(
-                                              color: const Color(0xFF787878),
-                                              fontSize: 16.sp,
-                                              fontFamily: 'NotoSans',
-                                              fontWeight: FontWeight.w400,
-                                              height: 1.40.h,
-                                              letterSpacing: -0.09.w,
+                              child: InkWell(
+                                onTap: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder:
+                                        (context) => Container(
+                                          height:
+                                              MediaQuery.of(
+                                                context,
+                                              ).size.height *
+                                              0.95,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFF2F2F2),
+                                            borderRadius: BorderRadius.vertical(
+                                              top: Radius.circular(20),
                                             ),
                                           ),
-                                        );
-                                      },
-                                    ),
-                                ],
-                              ),
-                            ),
-                            Spacer(),
-                            if (!userMissing &&
-                                myuser!.userId !=
-                                    FirebaseAuth.instance.currentUser?.uid)
-                              StreamBuilder<DocumentSnapshot>(
-                                stream:
-                                    FirebaseFirestore.instance
-                                        .collection('users')
-                                        .doc(
-                                          FirebaseAuth
-                                              .instance
-                                              .currentUser
-                                              ?.uid,
-                                        )
-                                        .collection('following')
-                                        .doc(myuser.userId)
-                                        .snapshots(),
-                                builder: (context, snapshot) {
-                                  final isFollowing =
-                                      snapshot.hasData && snapshot.data!.exists;
-                                  final isPrivate = myuser?.isPrivate ?? false;
-
-                                  if (isFollowing) {
-                                    return PopupMenuButton<String>(
-                                      onSelected: (value) async {
-                                        if (value == 'share') {
-                                          showShareDialog(
-                                            context,
-                                            'post',
-                                            'https://app.pang2chocolate.com/comment?postId=${widget.postId}',
-                                            widget.postId,
-                                            myuser.name,
-                                            myuser.url,
-                                            postData,
-                                          );
-                                        } else if (value == 'unfollow') {
-                                          FollowService().toggleFollow(
-                                            myuser.userId,
-                                          );
-                                        }
-                                      },
-                                      color: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      itemBuilder:
-                                          (BuildContext context) => [
-                                            PopupMenuItem<String>(
-                                              value: 'share',
-                                              child: Text(
-                                                '공유',
-                                                style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontSize: 13.sp,
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                const BorderRadius.vertical(
+                                                  top: Radius.circular(20),
                                                 ),
-                                              ),
-                                            ),
-                                            PopupMenuItem<String>(
-                                              value: 'unfollow',
-                                              child: Text(
-                                                '구독 취소',
-                                                style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontSize: 13.sp,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                      child: Icon(
-                                        Icons.more_horiz,
-                                        color: Colors.black,
-                                        size: 22.sp,
-                                      ),
-                                    );
-                                  }
-
-                                  if (isPrivate) {
-                                    return StreamBuilder<DocumentSnapshot>(
-                                      stream:
-                                          FirebaseFirestore.instance
-                                              .collection('users')
-                                              .doc(myuser.userId)
-                                              .collection('followRequests')
-                                              .doc(
-                                                FirebaseAuth
-                                                    .instance
-                                                    .currentUser
-                                                    ?.uid,
-                                              )
-                                              .snapshots(),
-                                      builder: (context, requestSnapshot) {
-                                        final hasRequest =
-                                            requestSnapshot.hasData &&
-                                            requestSnapshot.data!.exists;
-                                        return ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                hasRequest
-                                                    ? Colors.grey[300]
-                                                    : Colors.black,
-                                            foregroundColor:
-                                                hasRequest
-                                                    ? Colors.black
-                                                    : Colors.white,
-                                            minimumSize: Size(35.w, 33.h),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
+                                            child: Comments(
+                                              postId: widget.postId,
                                             ),
                                           ),
-                                          onPressed: () async {
-                                            final ref = FirebaseFirestore
-                                                .instance
-                                                .collection('users')
-                                                .doc(myuser.userId)
-                                                .collection('followRequests')
-                                                .doc(
-                                                  FirebaseAuth
-                                                      .instance
-                                                      .currentUser
-                                                      ?.uid,
-                                                );
-                                            hasRequest
-                                                ? await ref.delete()
-                                                : await ref.set({
-                                                  'timestamp':
-                                                      FieldValue.serverTimestamp(),
-                                                });
-                                          },
-                                          child: Text(
-                                            hasRequest ? '요청 취소' : '구독 신청',
-                                            style: TextStyle(
-                                              fontSize: 12.sp,
-                                              fontFamily: 'NotoSans',
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  }
-
-                                  return ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.black,
-                                      foregroundColor: Colors.white,
-                                      minimumSize: Size(40.w, 28.h),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                    ),
-                                    onPressed: () async {
-                                      FollowService().toggleFollow(
-                                        myuser.userId,
-                                      );
-                                    },
-                                    child: Text(
-                                      '구독',
-                                      style: TextStyle(
-                                        fontSize: 12.sp,
-                                        fontFamily: 'NotoSans',
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
+                                        ),
                                   );
                                 },
-                              ),
-                          ],
-                        ),
-                        if (postData['text'].toString().isNotEmpty)
-                          Padding(
-                            padding: EdgeInsets.only(top: 15.h),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    postData['text'],
-                                    style: TextStyle(
-                                      color: const Color(0xFF343434),
-                                      fontSize: 18.sp,
-                                      fontFamily: 'NotoSans',
-                                      fontWeight: FontWeight.w500,
-                                      height: 1.40.h,
-                                      letterSpacing: -0.09.w,
-                                    ),
-                                  ),
-                                ),
-                                if (widget.showMoreButton)
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.more_vert,
-                                      color: Colors.black,
-                                      size: 22.sp,
-                                    ),
-                                    onPressed:
-                                        () => showPostMenu(
-                                          context,
-                                          widget.postId,
-                                          myuser?.userId ?? '',
-                                        ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        verticalSpace(5),
-                        if (imgUrls.isNotEmpty)
-                          NaturalAspectPageView(
-                            imgUrls: imgUrls,
-                            pageController: _pageController,
-                            // Use locally computed width — most reliable
-                            explicitWidth: fromCommentsImageWidth,
-                          ),
-                        verticalSpace(30),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            PostActions(
-                              postId: widget.postId,
-                              postData: postData,
-                            ),
-                            horizontalSpace(4),
-                            Expanded(
-                              child: Container(
-                                height: 1.h,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () => context.pop(),
-                              child: Icon(Icons.close),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // ── !fromComments branch ──────────────────────────────────
-                if (!widget.fromComments)
-                  Screenshot(
-                    controller: _screenshotController,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 8.h,
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          InkWell(
-                            onTap: () {
-                              if (myuser != null &&
-                                  widget.currentProfileUserId !=
-                                      myuser.userId) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => Scaffold(
-                                          body: ProfileTab(
-                                            userId: myuser.userId,
-                                          ),
-                                        ),
-                                  ),
-                                );
-                              }
-                            },
-                            child: Container(
-                              width: 65.w,
-                              height: 65.h,
-                              decoration: ShapeDecoration(
-                                image: DecorationImage(
-                                  image:
-                                      (myuser?.url != null &&
-                                              myuser!.url.isNotEmpty)
-                                          ? NetworkImage(myuser.url)
-                                          : AssetImage('assets/avatar.png')
-                                              as ImageProvider,
-                                  fit: BoxFit.cover,
-                                ),
-                                shape: OvalBorder(),
-                              ),
-                            ),
-                          ),
-                          horizontalSpace(8),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder:
-                                      (context) => Container(
-                                        height:
-                                            MediaQuery.of(context).size.height *
-                                            0.95,
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFFF2F2F2),
-                                          borderRadius: BorderRadius.vertical(
-                                            top: Radius.circular(20),
-                                          ),
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              const BorderRadius.vertical(
-                                                top: Radius.circular(20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        isWaiting
+                                            ? Shimmer.fromColors(
+                                              baseColor: Colors.grey[300]!,
+                                              highlightColor: Colors.grey[100]!,
+                                              child: Container(
+                                                width: 80.w,
+                                                height: 16.h,
+                                                color: Colors.white,
+                                                margin: EdgeInsets.only(
+                                                  bottom: 2.h,
+                                                ),
                                               ),
-                                          child: Comments(
-                                            postId: widget.postId,
-                                          ),
+                                            )
+                                            : Flexible(
+                                              child: Text(
+                                                displayName,
+                                                style: TextStyles
+                                                    .abeezee16px400wPblack
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                        horizontalSpace(4),
+                                        FutureBuilder<String?>(
+                                          future: ContactService()
+                                              .getContactNickname(
+                                                myuser == null
+                                                    ? ""
+                                                    : myuser.userId,
+                                              ),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.connectionState ==
+                                                ConnectionState.waiting) {
+                                              return const SizedBox.shrink();
+                                            }
+                                            if (snapshot.hasError ||
+                                                !snapshot.hasData ||
+                                                snapshot.data == null) {
+                                              return const SizedBox.shrink();
+                                            }
+                                            return Flexible(
+                                              child: Text(
+                                                '@${snapshot.data!}',
+                                                style: TextStyle(
+                                                  fontSize: 14.sp,
+                                                  color: Colors.grey[600],
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      ),
-                                );
-                              },
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  verticalSpace(10),
-                                  isWaiting
-                                      ? Shimmer.fromColors(
-                                          baseColor: Colors.grey[300]!,
-                                          highlightColor: Colors.grey[100]!,
-                                          child: Container(width: 80.w, height: 16.h, color: Colors.white, margin: EdgeInsets.only(bottom: 2.h)),
-                                        )
-                                      : Text(
-                                          displayName,
-                                          style: TextStyles.abeezee16px400wPblack
-                                              .copyWith(fontWeight: FontWeight.bold),
-                                        ),
-                                  FutureBuilder<String?>(
-                                    future: ContactService().getContactNickname(
-                                      myuser == null ? "" : myuser.userId,
+                                      ],
                                     ),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      if (snapshot.hasError ||
-                                          !snapshot.hasData ||
-                                          snapshot.data == null) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      return Padding(
-                                        padding: EdgeInsets.only(top: 2.h),
+                                    if (postData['text'].toString().isNotEmpty)
+                                      Padding(
+                                        padding: EdgeInsets.only(top: 5.h),
                                         child: Text(
-                                          '@${snapshot.data!}',
+                                          postData['text'],
                                           style: TextStyle(
-                                            fontSize: 11.sp,
-                                            color: Colors.grey[600],
+                                            color: const Color(0xFF343434),
+                                            fontSize: 16.sp,
+                                            fontFamily: 'NotoSans',
                                             fontWeight: FontWeight.w400,
+                                            height: 1.40.h,
+                                            letterSpacing: -0.09.w,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  if (postData['text'].toString().isNotEmpty)
-                                    Padding(
-                                      padding: EdgeInsets.only(top: 5.h),
-                                      child: Text(
-                                        postData['text'],
-                                        style: TextStyle(
-                                          color: const Color(0xFF343434),
-                                          fontSize: 16.sp,
-                                          fontFamily: 'NotoSans',
-                                          fontWeight: FontWeight.w400,
-                                          height: 1.40.h,
-                                          letterSpacing: -0.09.w,
                                         ),
                                       ),
-                                    ),
-                                  verticalSpace(5),
-                                  if (imgUrls.isNotEmpty)
-                                    NaturalAspectPageView(
-                                      imgUrls: imgUrls,
-                                      pageController: _pageController,
-                                      // No explicitWidth — Expanded provides
-                                      // bounded width to LayoutBuilder.
-                                    ),
-                                ],
+                                    verticalSpace(5),
+                                    if (imgUrls.isNotEmpty)
+                                      NaturalAspectPageView(
+                                        imgUrls: imgUrls,
+                                        pageController: _pageController,
+                                        // No explicitWidth — Expanded provides
+                                        // bounded width to LayoutBuilder.
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          if (widget.showMoreButton)
-                            isMyPost
-                                ? _OwnPostMenu(
-                                  postId: widget.postId,
-                                  currentText: postData['text'] ?? '',
-                                  onEdit:
-                                      () => _showEditDialog(
-                                        context,
-                                        postData['text'] ?? '',
-                                        imgUrls.cast<String>(),
-                                        postData['categoryId'] as String?,
-                                      ),
-                                  onDelete: () => _showDeleteDialog(context),
-                                )
-                                : OtherPostMenu(
-                                  postId: widget.postId,
-                                  userId: myuser?.userId ?? '',
-                                  onRunWithLoading: _runWithLoading,
-                                  displayName: displayName,
-                                  profileUrl: profileUrl,
-                                  postData: postData,
-                                ),
-                        ],
+                            if (widget.showMoreButton)
+                              isMyPost
+                                  ? _OwnPostMenu(
+                                    postId: widget.postId,
+                                    currentText: postData['text'] ?? '',
+                                    onEdit:
+                                        () => _showEditDialog(
+                                          context,
+                                          postData['text'] ?? '',
+                                          imgUrls.cast<String>(),
+                                          postData['categoryId'] as String?,
+                                        ),
+                                    onDelete: () => _showDeleteDialog(context),
+                                  )
+                                  : OtherPostMenu(
+                                    postId: widget.postId,
+                                    userId: myuser?.userId ?? '',
+                                    onRunWithLoading: _runWithLoading,
+                                    displayName: displayName,
+                                    profileUrl: profileUrl,
+                                    postData: postData,
+                                  ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          );
-            
+                ],
+              ),
+            );
+
             return isWaiting
                 ? Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
-                    child: content,
-                  )
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: content,
+                )
                 : content;
           },
         );

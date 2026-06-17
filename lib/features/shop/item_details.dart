@@ -93,49 +93,43 @@ class _ItemDetailsState extends State<ItemDetails> {
     required PricePoint pricePoint,
     required int currentStock,
   }) async {
-    try {
-      // Generate paymentId server-side style (Firestore doc id)
-      final paymentId =
-          FirebaseFirestore.instance.collection('orders').doc().id;
+    // Generate paymentId server-side style (Firestore doc id)
+    final paymentId = FirebaseFirestore.instance.collection('orders').doc().id;
 
-      final finalPrice =
-          isSub ? pricePoint.price : (pricePoint.price / 0.8).round();
+    final finalPrice =
+        isSub ? pricePoint.price : (pricePoint.price / 0.8).round();
 
-      final pendingColl = FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('pending_buynow');
+    final pendingColl = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('pending_buynow');
 
-      // Clear any stale pending_buynow docs for this user
-      final existing = await pendingColl.get();
-      for (final doc in existing.docs) {
-        try {
-          await doc.reference.delete();
-        } catch (_) {}
-      }
+    final batch = FirebaseFirestore.instance.batch();
 
-      // Write new pending_buynow — includes imgUrl for BuyNow UI display
-      await pendingColl.doc(paymentId).set({
-        'product_id': widget.product.product_id,
-        'product_name': widget.product.productName,
-        'imgUrl': widget.product.imgUrl ?? '', // ← ADDED
-        'deliveryManagerId': widget.product.deliveryManagerId,
-        'price': finalPrice,
-        'quantity': pricePoint.quantity,
-        'pricePointIndex': int.parse(_selectedOption!),
-        'paymentId': paymentId,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+    // Clear any stale pending_buynow docs for this user
+    final existing = await pendingColl.get();
+    for (final doc in existing.docs) {
+      batch.delete(doc.reference);
+    }
 
-      if (mounted) {
-        context.go('/buy-now?paymentId=$paymentId');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
-      }
+    // Write new pending_buynow — includes imgUrl for BuyNow UI display
+    batch.set(pendingColl.doc(paymentId), {
+      'product_id': widget.product.product_id,
+      'product_name': widget.product.productName,
+      'imgUrl': widget.product.imgUrl ?? '', // ← ADDED
+      'deliveryManagerId': widget.product.deliveryManagerId,
+      'price': finalPrice,
+      'quantity': pricePoint.quantity,
+      'pricePointIndex': int.parse(_selectedOption!),
+      'paymentId': paymentId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
+
+    if (mounted) {
+      Navigator.pop(context); // Dismiss loading dialog
+      context.go('/buy-now?paymentId=$paymentId');
     }
   }
 
@@ -772,18 +766,40 @@ class _ItemDetailsState extends State<ItemDetails> {
           _showQuantityRequiredMessage();
           return;
         }
-        final pricePoint =
-            widget.product.pricePoints[int.parse(_selectedOption!)];
-        final currentStock = await _getValidatedStock(pricePoint);
-        if (currentStock == null) return;
 
-        // NEW LOGIC: write pending_buynow then navigate with paymentId
-        await _handleBuyNow(
-          uid: uid,
-          isSub: isSub,
-          pricePoint: pricePoint,
-          currentStock: currentStock,
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (context) => const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
         );
+
+        try {
+          final pricePoint =
+              widget.product.pricePoints[int.parse(_selectedOption!)];
+          final currentStock = await _getValidatedStock(pricePoint);
+          if (currentStock == null) {
+            if (mounted) Navigator.pop(context); // Dismiss loading
+            return;
+          }
+
+          // NEW LOGIC: write pending_buynow then navigate with paymentId
+          await _handleBuyNow(
+            uid: uid,
+            isSub: isSub,
+            pricePoint: pricePoint,
+            currentStock: currentStock,
+          );
+        } catch (e) {
+          if (mounted) {
+            Navigator.pop(context); // Dismiss loading
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
+          }
+        }
       },
       style: TextButton.styleFrom(
         backgroundColor: ColorsManager.primaryblack,

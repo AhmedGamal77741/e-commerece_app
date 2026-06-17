@@ -132,20 +132,6 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
     int initialIndex = 0;
     final bool isSub = userData != null && (userData['isSub'] ?? false);
 
-    // Get default address name
-    if (userData != null &&
-        userData['defaultAddressId'] != null &&
-        userData['defaultAddressId'] != '') {
-      final addressId = userData['defaultAddressId'];
-      final addressSnapshot = FirebaseFirestore.instance
-          .collection('addresses')
-          .doc(addressId);
-      addressSnapshot.get().then((addressDoc) {
-        if (addressDoc.exists) {
-          setState(() {});
-        }
-      });
-    }
     return DefaultTabController(
       key: ValueKey(categories.map((c) => c['id']).join(',')),
       length: categories.length,
@@ -382,31 +368,78 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
   bool get wantKeepAlive => true;
 
   Map<String, dynamic>? userAddressMap;
+  bool _isAddressLoading = false;
   final Map<String, double> _productRandomWeight = {};
+  late Stream<QuerySnapshot> _productsStream;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Get user address from ancestor widget if passed, or fetch from Firestore if needed
-    final shopState = context.findAncestorStateOfType<ShopState>();
-    if (shopState != null && widget.userData != null) {
-      final userData = widget.userData!;
-      if (userData['defaultAddressId'] != null &&
-          userData['defaultAddressId'] != '') {
+  void initState() {
+    super.initState();
+    _productsStream =
         FirebaseFirestore.instance
-            .collection('users')
-            .doc(userData['userId'])
-            .collection('addresses')
-            .doc(userData['defaultAddressId'] as String)
-            .get()
-            .then((doc) {
-              if (doc.exists && mounted) {
-                setState(() {
+            .collection('products')
+            .where('categoryList', arrayContains: widget.categoryId)
+            .orderBy('createdAt', descending: true)
+            .snapshots();
+    _fetchAddress();
+  }
+
+  @override
+  void didUpdateWidget(covariant CategoryProductsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.categoryId != oldWidget.categoryId) {
+      _productsStream =
+          FirebaseFirestore.instance
+              .collection('products')
+              .where('categoryList', arrayContains: widget.categoryId)
+              .orderBy('createdAt', descending: true)
+              .snapshots();
+    }
+    if (widget.userData?['defaultAddressId'] !=
+        oldWidget.userData?['defaultAddressId']) {
+      _fetchAddress();
+    }
+  }
+
+  void _fetchAddress() {
+    if (widget.userData != null &&
+        widget.userData!['defaultAddressId'] != null &&
+        widget.userData!['defaultAddressId'] != '') {
+      setState(() {
+        _isAddressLoading = true;
+      });
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userData!['userId'])
+          .collection('addresses')
+          .doc(widget.userData!['defaultAddressId'] as String)
+          .get()
+          .then((doc) {
+            if (mounted) {
+              setState(() {
+                if (doc.exists) {
                   userAddressMap =
                       (doc.data() as Map<String, dynamic>)['addressMap'];
-                });
-              }
-            });
+                } else {
+                  userAddressMap = null;
+                }
+                _isAddressLoading = false;
+              });
+            }
+          })
+          .catchError((_) {
+            if (mounted) {
+              setState(() {
+                _isAddressLoading = false;
+              });
+            }
+          });
+    } else {
+      if (mounted) {
+        setState(() {
+          userAddressMap = null;
+          _isAddressLoading = false;
+        });
       }
     }
   }
@@ -440,17 +473,15 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    if (_isAddressLoading) {
+      return Scaffold(body: const SizedBox.shrink());
+    }
     // Display products in a grid
     return Scaffold(
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 12.w),
         child: StreamBuilder<QuerySnapshot>(
-          stream:
-              FirebaseFirestore.instance
-                  .collection('products')
-                  .where('categoryList', arrayContains: widget.categoryId)
-                  .orderBy('createdAt', descending: true)
-                  .snapshots(),
+          stream: _productsStream,
           builder: (context, snapshot) {
             final formatCurrency = NumberFormat('#,###');
             if (snapshot.hasError) {
