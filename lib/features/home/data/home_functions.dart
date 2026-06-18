@@ -205,24 +205,21 @@ Future<List<String>> _uploadNewImages(List<XFile> files) async {
 
       final Uint8List rawBytes = await file.readAsBytes();
 
-      // Compress on mobile, upload raw on web
+      // Compress on both mobile and web using flutter_image_compress (WASM on web)
       Uint8List uploadBytes;
-      if (kIsWeb) {
+      try {
+        final Uint8List? compressed =
+            await FlutterImageCompress.compressWithList(
+              rawBytes,
+              minWidth: 1080,
+              minHeight: 1080,
+              quality: 82,
+              format: CompressFormat.jpeg,
+            );
+        uploadBytes = compressed ?? rawBytes;
+      } catch (e) {
+        print('Compression failed, uploading raw bytes: $e');
         uploadBytes = rawBytes;
-      } else {
-        try {
-          final Uint8List? compressed = await FlutterImageCompress.compressWithList(
-            rawBytes,
-            minWidth: 1080,
-            minHeight: 1080,
-            quality: 82,
-            format: CompressFormat.jpeg,
-          );
-          uploadBytes = compressed ?? rawBytes;
-        } catch (e) {
-          print('Compression failed, uploading raw bytes: $e');
-          uploadBytes = rawBytes;
-        }
       }
 
       final UploadTask uploadTask = storageRef.putData(
@@ -328,29 +325,22 @@ Future<List<String>> uploadMultipleImagesToFirebaseHome() async {
 
         final Uint8List rawBytes = await image.readAsBytes();
 
-        // flutter_image_compress uses native code — not supported on web.
-        // On mobile (Android/iOS) we compress; on web we upload raw bytes.
+        // Compress on both mobile and web using flutter_image_compress (WASM on web)
         Uint8List uploadBytes;
-        if (kIsWeb) {
-          // Web: no compression available, upload as-is
+        try {
+          final Uint8List? compressed =
+              await FlutterImageCompress.compressWithList(
+                rawBytes,
+                minWidth: 1080,
+                minHeight: 1080,
+                quality: 82,
+                format: CompressFormat.jpeg,
+              );
+          // Fall back to raw bytes if compression somehow returns null
+          uploadBytes = compressed ?? rawBytes;
+        } catch (e) {
+          print('Compression failed, uploading raw bytes: $e');
           uploadBytes = rawBytes;
-        } else {
-          // Mobile: compress to max 1080px on longest side, quality 82
-          // Visually lossless but typically 60-80% smaller file size
-          try {
-            final Uint8List? compressed = await FlutterImageCompress.compressWithList(
-              rawBytes,
-              minWidth: 1080,
-              minHeight: 1080,
-              quality: 82,
-              format: CompressFormat.jpeg,
-            );
-            // Fall back to raw bytes if compression somehow returns null
-            uploadBytes = compressed ?? rawBytes;
-          } catch (e) {
-            print('Compression failed, uploading raw bytes: $e');
-            uploadBytes = rawBytes;
-          }
         }
 
         final Reference storageRef = FirebaseStorage.instance
@@ -417,7 +407,10 @@ Future<void> migrateLastPostCreatedAt() async {
       final latestPostDate = entry.value;
 
       final userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(userId).get();
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .get();
       if (userDoc.exists) {
         final userData = userDoc.data();
         final currentLastPostRaw = userData?['lastPostCreatedAt'];
@@ -431,7 +424,8 @@ Future<void> migrateLastPostCreatedAt() async {
           );
         }
 
-        if (currentLastPost == null || latestPostDate.isAfter(currentLastPost)) {
+        if (currentLastPost == null ||
+            latestPostDate.isAfter(currentLastPost)) {
           await FirebaseFirestore.instance
               .collection('users')
               .doc(userId)
