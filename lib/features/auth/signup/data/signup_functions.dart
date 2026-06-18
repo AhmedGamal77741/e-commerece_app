@@ -217,14 +217,6 @@ class FirebaseUserRepo {
 
   Future signIn(String email, String password) async {
     try {
-      final sellerCheck =
-          await sellersCollection
-              .where('email', isEqualTo: email)
-              .limit(1)
-              .get();
-      if (sellerCheck.docs.isNotEmpty) {
-        return "판매자 계정으로는 로그인할 수 없습니다.";
-      }
       var result = await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
