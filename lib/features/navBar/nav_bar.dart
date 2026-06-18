@@ -1,9 +1,9 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/widgets/no_account_screen.dart';
 import 'package:ecommerece_app/core/widgets/receipt_setup_screen.dart';
-import 'package:ecommerece_app/features/cart/cart.dart';
 import 'package:ecommerece_app/features/cart/sub_screens/add_address_screen.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/ui/chats_navbar.dart';
@@ -33,23 +33,30 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
   late TabController homeTabController;
   List<Widget> widgetOptions = [];
 
+  StreamSubscription<User?>? _authSubscription;
+  StreamSubscription<DocumentSnapshot>? _userSubscription;
+  StreamSubscription<QuerySnapshot>? _chatRoomsSubscription;
+
+  Map<String, dynamic>? _currentUserData;
+  bool _hasUnreadMessages = false;
+
   @override
   void initState() {
     super.initState();
     homeTabController = TabController(length: 2, vsync: this);
     widgetOptions = [
-      _buildMainWidget(
-        () => HomeScreen(
-          key: homeKey,
-          scrollController: homeScrollController,
-          tabController: homeTabController,
-        ),
+      HomeScreen(
+        key: homeKey,
+        scrollController: homeScrollController,
+        tabController: homeTabController,
       ),
-      _buildMainWidget(() => ChatsNavbar()),
-      _buildMainWidget(() => const Center(child: Text('home'))),
-      _buildMainWidget(() => Shop(key: shopKey)),
-      _buildMainWidget(() => LandingScreen()),
+      ChatsNavbar(),
+      const Center(child: Text('home')),
+      Shop(key: shopKey),
+      LandingScreen(),
     ];
+
+    _initSubscriptions();
 
     // Check if we need to resume a pending navigation after bank registration
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -58,9 +65,80 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const AssetImage('assets/001m.png'), context);
+    precacheImage(const AssetImage('assets/grey_001m.png'), context);
+    precacheImage(const AssetImage('assets/chat_with_seller.png'), context);
+    precacheImage(const AssetImage('assets/chat_with_seller_grey.png'), context);
+    precacheImage(const AssetImage('assets/notification.png'), context);
+    precacheImage(const AssetImage('assets/mypage_avatar.png'), context);
+    precacheImage(const AssetImage('assets/mypage_avatar_grey.png'), context);
+    precacheImage(const AssetImage('assets/002m.png'), context);
+    precacheImage(const AssetImage('assets/grey_002m.png'), context);
+    precacheImage(const AssetImage('assets/005m.png'), context);
+    precacheImage(const AssetImage('assets/grey_005m.png'), context);
+  }
+
+  void _initSubscriptions() {
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      _userSubscription?.cancel();
+      _chatRoomsSubscription?.cancel();
+
+      if (user != null) {
+        // Listen to user document updates
+        _userSubscription = FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .snapshots()
+            .listen((snapshot) {
+          if (mounted) {
+            setState(() {
+              _currentUserData = snapshot.data();
+            });
+          }
+        });
+
+        // Listen to chat rooms updates for unread notifications
+        _chatRoomsSubscription = FirebaseFirestore.instance
+            .collection('chatRooms')
+            .where('participants', arrayContains: user.uid)
+            .snapshots()
+            .listen((snapshot) {
+          final currentUserId = user.uid;
+          bool unreadFound = false;
+          for (var doc in snapshot.docs) {
+            final room = ChatRoomModel.fromMap(doc.data());
+            if (!room.deletedBy.contains(currentUserId) &&
+                (room.unreadCount[currentUserId] ?? 0) > 0) {
+              unreadFound = true;
+              break;
+            }
+          }
+          if (mounted) {
+            setState(() {
+              _hasUnreadMessages = unreadFound;
+            });
+          }
+        });
+      } else {
+        if (mounted) {
+          setState(() {
+            _currentUserData = null;
+            _hasUnreadMessages = false;
+          });
+        }
+      }
+    });
+  }
+
+  @override
   void dispose() {
     homeTabController.dispose();
     homeScrollController.dispose();
+    _authSubscription?.cancel();
+    _userSubscription?.cancel();
+    _chatRoomsSubscription?.cancel();
     super.dispose();
   }
 
@@ -84,12 +162,12 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final userDoc =
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-    final data = userDoc.data();
+    final data = _currentUserData ??
+        (await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .get())
+            .data();
 
     final accounts = data?['bankAccounts'];
     final hasBankAccount =
@@ -143,55 +221,6 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
     }
   }
 
-  Widget _buildMainWidget(Widget Function() builder) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, authSnapshot) {
-        final user = authSnapshot.data;
-        if (user == null) {
-          return builder();
-        }
-        return StreamBuilder<DocumentSnapshot>(
-          stream:
-              FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(user.uid)
-                  .snapshots(),
-          builder: (context, userSnapshot) {
-            if (!userSnapshot.hasData) {
-              return builder();
-            }
-            final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
-            if (userData == null) {
-              return const Center(child: Text('User profile not found'));
-            }
-            if (userData['deleted'] == true) {
-              return DeletedAccount(
-                deletedAt: userData['deletedAt']?.toString() ?? '',
-                onRecover: () async {
-                  final uid = FirebaseAuth.instance.currentUser?.uid;
-                  if (uid != null) {
-                    await FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(uid)
-                        .update({'deleted': false, 'deletedAt': null});
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('계정이 복구되었습니다.')),
-                    );
-                  }
-                },
-                onSignOut: () async {
-                  await FirebaseAuth.instance.signOut();
-                },
-              );
-            }
-            return builder();
-          },
-        );
-      },
-    );
-  }
-
   Future<void> _onItemTapped(int index) async {
     if (_selectedIndex == index && index == 3) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -209,12 +238,12 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
     } else if (index == 3) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final userDoc =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(user.uid)
-                .get();
-        final data = userDoc.data();
+        final data = _currentUserData ??
+            (await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .get())
+                .data();
 
         // Deleted account — just navigate
         if (data != null && data['deleted'] == true) {
@@ -234,12 +263,13 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
             ),
           );
           if (result != true) {
-            final refreshed =
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .get();
-            final refreshedAccounts = refreshed.data()?['bankAccounts'];
+            final refreshed = _currentUserData ??
+                (await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(user.uid)
+                        .get())
+                    .data();
+            final refreshedAccounts = refreshed?['bankAccounts'];
             final nowHasAccount =
                 refreshedAccounts != null &&
                 refreshedAccounts is List &&
@@ -273,16 +303,16 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
         }
 
         // ── Gate 3: default address ─────────────────────────────────────
-        final freshDoc =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(user.uid)
-                .get();
-        final freshData = freshDoc.data();
+        final freshData = _currentUserData ??
+            (await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .get())
+                .data();
         if (freshData == null ||
             (freshData['defaultAddressId'] == null ||
                 freshData['defaultAddressId'] == '')) {
-          final result = await Navigator.of(context).push(
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => const AddAddressScreen(showSkip: true),
             ),
@@ -297,6 +327,29 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    // Check if user account is deleted
+    final isDeleted = _currentUserData != null && _currentUserData!['deleted'] == true;
+    if (isDeleted) {
+      return DeletedAccount(
+        deletedAt: _currentUserData!['deletedAt']?.toString() ?? '',
+        onRecover: () async {
+          final uid = FirebaseAuth.instance.currentUser?.uid;
+          if (uid != null) {
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(uid)
+                .update({'deleted': false, 'deletedAt': null});
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('계정이 복구되었습니다.')),
+            );
+          }
+        },
+        onSignOut: () async {
+          await FirebaseAuth.instance.signOut();
+        },
+      );
+    }
+
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: widgetOptions),
       bottomNavigationBar: BottomNavigationBar(
@@ -310,169 +363,97 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
         unselectedLabelStyle: TextStyle(fontSize: 10.sp),
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: ImageIcon(
-              AssetImage(
-                _selectedIndex == 0
-                    ? 'assets/001m.png'
-                    : 'assets/grey_001m.png',
-              ),
-              size: 30.r,
+            icon: Image.asset(
+              'assets/grey_001m.png',
+              width: 30.r,
+              height: 30.r,
+            ),
+            activeIcon: Image.asset(
+              'assets/001m.png',
+              width: 30.r,
+              height: 30.r,
             ),
             label: '상점',
           ),
           BottomNavigationBarItem(
-            icon: StreamBuilder<User?>(
-              stream: FirebaseAuth.instance.authStateChanges(),
-              builder: (context, authSnapshot) {
-                final user = authSnapshot.data;
-                if (user == null) {
-                  return Image.asset(
-                    'assets/chat_with_seller_grey.png',
-                    width: 30.r,
-                    height: 30.r,
-                  );
-                }
-                return StreamBuilder(
-                  stream: FirebaseFirestore.instance
-                      .collection('chatRooms')
-                      .where('participants', arrayContains: user.uid)
-                      .orderBy('lastMessageTime', descending: true)
-                      .snapshots()
-                      .map(
-                        (snapshot) =>
-                            snapshot.docs
-                                .map((doc) => ChatRoomModel.fromMap(doc.data()))
-                                .toList(),
-                      ),
-                  builder: (context, snapshot) {
-                    final currentUserId = user.uid;
-                    bool hasUnread = false;
-                    if (snapshot.hasData) {
-                      final chatRooms = snapshot.data!;
-                      hasUnread = chatRooms.any(
-                        (room) =>
-                            !room.deletedBy.contains(currentUserId) &&
-                            (room.unreadCount[currentUserId] ?? 0) > 0,
-                      );
-                    }
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Image.asset(
-                          'assets/chat_with_seller_grey.png',
-                          width: 30.r,
-                          height: 30.r,
-                        ),
-                        if (hasUnread)
-                          Positioned(
-                            left: -10.w,
-                            top: -5.h,
-                            child: Image.asset(
-                              'assets/notification.png',
-                              width: 18.w,
-                              height: 18.h,
-                            ),
-                          ),
-                      ],
-                    );
-                  },
-                );
-              },
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Image.asset(
+                  'assets/chat_with_seller_grey.png',
+                  width: 30.r,
+                  height: 30.r,
+                ),
+                if (_hasUnreadMessages)
+                  Positioned(
+                    left: -10.w,
+                    top: -5.h,
+                    child: Image.asset(
+                      'assets/notification.png',
+                      width: 18.w,
+                      height: 18.h,
+                    ),
+                  ),
+              ],
             ),
-            activeIcon: StreamBuilder<User?>(
-              stream: FirebaseAuth.instance.authStateChanges(),
-              builder: (context, authSnapshot) {
-                final user = authSnapshot.data;
-                if (user == null) {
-                  return Image.asset(
-                    'assets/chat_with_seller.png',
-                    width: 30.r,
-                    height: 30.r,
-                  );
-                }
-                return StreamBuilder(
-                  stream: FirebaseFirestore.instance
-                      .collection('chatRooms')
-                      .where('participants', arrayContains: user.uid)
-                      .orderBy('lastMessageTime', descending: true)
-                      .snapshots()
-                      .map(
-                        (snapshot) =>
-                            snapshot.docs
-                                .map((doc) => ChatRoomModel.fromMap(doc.data()))
-                                .toList(),
-                      ),
-                  builder: (context, snapshot) {
-                    final currentUserId = user.uid;
-                    bool hasUnread = false;
-                    if (snapshot.hasData) {
-                      final chatRooms = snapshot.data!;
-                      hasUnread = chatRooms.any(
-                        (room) =>
-                            !room.deletedBy.contains(currentUserId) &&
-                            (room.unreadCount[currentUserId] ?? 0) > 0,
-                      );
-                    }
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Image.asset(
-                          'assets/chat_with_seller.png',
-                          width: 30.r,
-                          height: 30.r,
-                        ),
-                        if (hasUnread)
-                          Positioned(
-                            left: -10.w,
-                            top: -5.h,
-                            child: Image.asset(
-                              'assets/notification.png',
-                              width: 18.w,
-                              height: 18.h,
-                            ),
-                          ),
-                      ],
-                    );
-                  },
-                );
-              },
+            activeIcon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Image.asset(
+                  'assets/chat_with_seller.png',
+                  width: 30.r,
+                  height: 30.r,
+                ),
+                if (_hasUnreadMessages)
+                  Positioned(
+                    left: -10.w,
+                    top: -5.h,
+                    child: Image.asset(
+                      'assets/notification.png',
+                      width: 18.w,
+                      height: 18.h,
+                    ),
+                  ),
+              ],
             ),
             label: '채팅',
           ),
           BottomNavigationBarItem(
-            icon: CircleAvatar(
-              radius: 30.r,
-              backgroundColor: Colors.transparent,
-              backgroundImage: const AssetImage(
-                'assets/mypage_avatar_grey.png',
-              ),
+            icon: Image.asset(
+              'assets/mypage_avatar_grey.png',
+              width: 30.r,
+              height: 30.r,
             ),
-            activeIcon: CircleAvatar(
-              radius: 30.r,
-              backgroundColor: Colors.transparent,
-              backgroundImage: const AssetImage('assets/mypage_avatar.png'),
+            activeIcon: Image.asset(
+              'assets/mypage_avatar.png',
+              width: 30.r,
+              height: 30.r,
             ),
             label: '홈',
           ),
           BottomNavigationBarItem(
-            icon: ImageIcon(
-              AssetImage(
-                _selectedIndex == 3
-                    ? 'assets/002m.png'
-                    : 'assets/grey_002m.png',
-              ),
-              size: 30.r,
+            icon: Image.asset(
+              'assets/grey_002m.png',
+              width: 30.r,
+              height: 30.r,
+            ),
+            activeIcon: Image.asset(
+              'assets/002m.png',
+              width: 30.r,
+              height: 30.r,
             ),
             label: '장바구니',
           ),
           BottomNavigationBarItem(
-            icon: ImageIcon(
-              AssetImage(
-                _selectedIndex == 4
-                    ? 'assets/005m.png'
-                    : 'assets/grey_005m.png',
-              ),
-              size: 30.r,
+            icon: Image.asset(
+              'assets/grey_005m.png',
+              width: 30.r,
+              height: 30.r,
+            ),
+            activeIcon: Image.asset(
+              'assets/005m.png',
+              width: 30.r,
+              height: 30.r,
             ),
             label: '내페이지',
           ),
