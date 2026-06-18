@@ -431,7 +431,14 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    precacheImage(const AssetImage('assets/sold_out.png'), context);
+    precacheImage(
+      const ResizeImage(
+        AssetImage('assets/sold_out.png'),
+        width: 200,
+        height: 200,
+      ),
+      context,
+    );
   }
 
   @override
@@ -706,7 +713,11 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen>
                                   color: Colors.transparent,
                                   child: const Center(
                                     child: Image(
-                                      image: AssetImage('assets/sold_out.png'),
+                                      image: ResizeImage(
+                                        AssetImage('assets/sold_out.png'),
+                                        width: 200,
+                                        height: 200,
+                                      ),
                                       fit: BoxFit.contain,
                                     ),
                                   ),
