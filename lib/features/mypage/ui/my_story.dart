@@ -134,79 +134,74 @@ class _MyStoryState extends State<MyStory> {
               ];
             }
 
-            return Column(
-              children: [
-                verticalSpace(10),
-
-                InkWell(
-                  onTap: () async {
-                    LoadingService().showLoading();
-                    final newUrl = await uploadImageToFirebaseStorage(
-                      await ImagePickerHelper.pickImage(),
-                    );
-                    LoadingService().hideLoading();
-                    /* setState(() => imgUrl = newUrl); */
-                  },
-                  child: ClipOval(
-                    child: SafeNetworkImage(
-                      url: (imgUrl.isEmpty ? (currentUser.url) : imgUrl) ?? '',
-                      width: 64.w,
-                      height: 64.h,
-                      fit: BoxFit.cover,
-                      errorWidget: Icon(Icons.person, size: 64.h),
-                      placeholder: SizedBox(
-                        width: 64.w,
-                        height: 64.h,
-                        child: const SizedBox.shrink(),
-                      ),
+            return NestedScrollView(
+              controller: widget.scrollController,
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      children: [
+                        verticalSpace(10),
+                        InkWell(
+                          onTap: () async {
+                            LoadingService().showLoading();
+                            final newUrl = await uploadImageToFirebaseStorage(
+                              await ImagePickerHelper.pickImage(),
+                            );
+                            LoadingService().hideLoading();
+                            /* setState(() => imgUrl = newUrl); */
+                          },
+                          child: ClipOval(
+                            child: SafeNetworkImage(
+                              url: (imgUrl.isEmpty ? (currentUser.url) : imgUrl) ?? '',
+                              width: 64.w,
+                              height: 64.h,
+                              fit: BoxFit.cover,
+                              errorWidget: Icon(Icons.person, size: 64.h),
+                              placeholder: SizedBox(
+                                width: 64.w,
+                                height: 64.h,
+                                child: const SizedBox.shrink(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          currentUser.name,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        verticalSpace(10),
+                        UserCategoriesBar(
+                          categories:
+                              categorySnapshot.hasData
+                                  ? categorySnapshot.data!.docs
+                                  : const [],
+                          selectedCategoryId: selectedCategoryId,
+                          onCategorySelected: _onCategorySelected,
+                        ),
+                        verticalSpace(10),
+                      ],
                     ),
                   ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  currentUser.name,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                verticalSpace(10),
-
-                UserCategoriesBar(
-                  categories:
-                      categorySnapshot.hasData
-                          ? categorySnapshot.data!.docs
-                          : const [],
-                  selectedCategoryId: selectedCategoryId,
-                  onCategorySelected: _onCategorySelected,
-                ),
-                verticalSpace(10),
-
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: _categoryPages.length,
-                    onPageChanged: _onPageChanged,
-                    itemBuilder: (context, index) {
-                      return ValueListenableBuilder<int>(
-                        valueListenable: _currentPageIndex,
-                        builder: (context, activeIndex, _) {
-                          return _PostsPage(
-                            userId: currentUser.userId,
-                            categoryId: _categoryPages[index],
-                            scrollController:
-                                (index == activeIndex)
-                                    ? widget.scrollController
-                                    : null,
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
+                ];
+              },
+              body: PageView.builder(
+                controller: _pageController,
+                itemCount: _categoryPages.length,
+                onPageChanged: _onPageChanged,
+                itemBuilder: (context, index) {
+                  return _PostsPage(
+                    userId: currentUser.userId,
+                    categoryId: _categoryPages[index],
+                  );
+                },
+              ),
             );
           },
         );
@@ -219,11 +214,9 @@ class _MyStoryState extends State<MyStory> {
 class _PostsPage extends StatefulWidget {
   final String userId;
   final String? categoryId;
-  final ScrollController? scrollController;
   const _PostsPage({
     required this.userId,
     this.categoryId,
-    this.scrollController,
   });
 
   @override
@@ -283,8 +276,6 @@ class _PostsPageState extends State<_PostsPage>
         }
 
         return ListView.builder(
-          controller: widget.scrollController,
-
           itemCount: posts.length,
           itemBuilder: (context, index) {
             return Padding(
