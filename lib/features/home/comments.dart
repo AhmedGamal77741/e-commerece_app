@@ -76,6 +76,7 @@ class _CommentsState extends State<Comments> {
   bool _fetchingPost = false;
   Future<MyUser>? _userFuture;
   String? _loadedUserId;
+  Future<DocumentSnapshot>? _currentUserDocFuture;
 
   bool _hasScrolledToComment = false;
   final Map<String, GlobalKey> _bubbleKeys = {};
@@ -89,6 +90,9 @@ class _CommentsState extends State<Comments> {
   @override
   void initState() {
     super.initState();
+    if (currentUserId.isNotEmpty) {
+      _currentUserDocFuture = FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
+    }
     Provider.of<PostsProvider>(context, listen: false).startListening();
     _maybeFetchPost();
   }
@@ -411,21 +415,103 @@ class _CommentsState extends State<Comments> {
                         ),
                       ),
                     if (widget.canInteract)
-                      InputBar(
-                        controller: _commentController,
-                        pickedImage: _pickedImage,
-                        onPickImage: _pickImage,
-                        onSend: () async {
-                          if (_pickedImage != null) {
-                            showLoadingDialog(context);
-                            final navigator = Navigator.of(context);
-                            await _submitImageComment();
-                            navigator.pop();
-                          } else {
-                            await _submitComment();
-                          }
-                        },
-                      ),
+                      currentUserId.isEmpty
+                          ? Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16.w,
+                                vertical: 12.h,
+                              ),
+                              color: Colors.white,
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.add, color: Colors.grey),
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 16.w,
+                                        vertical: 10.h,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF2F2F2),
+                                        borderRadius: BorderRadius.circular(20.r),
+                                      ),
+                                      child: Text(
+                                        '일반 사용자는 댓글을 작성할 수 없습니다.',
+                                        style: TextStyle(
+                                          color: Colors.grey[500],
+                                          fontSize: 14.sp,
+                                          fontFamily: 'NotoSans',
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : FutureBuilder<DocumentSnapshot>(
+                              future: _currentUserDocFuture,
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return const SizedBox.shrink();
+                                }
+                                
+                                final userData = snapshot.data?.data() as Map<String, dynamic>?;
+                                final isNormalUser = userData == null || (userData['type'] == 'user' && userData['isSub'] != true);
+                                
+                                if (isNormalUser) {
+                                  return Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 16.w,
+                                      vertical: 12.h,
+                                    ),
+                                    color: Colors.white,
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.add, color: Colors.grey),
+                                        SizedBox(width: 12.w),
+                                        Expanded(
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 16.w,
+                                              vertical: 10.h,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF2F2F2),
+                                              borderRadius: BorderRadius.circular(20.r),
+                                            ),
+                                            child: Text(
+                                              '일반 사용자는 댓글을 작성할 수 없습니다.',
+                                              style: TextStyle(
+                                                color: Colors.grey[500],
+                                                fontSize: 14.sp,
+                                                fontFamily: 'NotoSans',
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+
+                                return InputBar(
+                                  controller: _commentController,
+                                  pickedImage: _pickedImage,
+                                  onPickImage: _pickImage,
+                                  onSend: () async {
+                                    if (_pickedImage != null) {
+                                      showLoadingDialog(context);
+                                      final navigator = Navigator.of(context);
+                                      await _submitImageComment();
+                                      navigator.pop();
+                                    } else {
+                                      await _submitComment();
+                                    }
+                                  },
+                                );
+                              },
+                            ),
                   ],
                 ),
               ),
