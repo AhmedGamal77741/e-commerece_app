@@ -493,6 +493,11 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                                     return false;
                                   }
 
+                                  final authorBlockedUsers = List<dynamic>.from(authorData['blocked'] ?? []);
+                                  if (authorBlockedUsers.contains(currentUser.uid)) {
+                                    return false;
+                                  }
+
                                   // FIX: Safe string comparison for search query
                                   if (widget.searchQuery.isNotEmpty) {
                                     final postText =
@@ -622,6 +627,11 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                                       return false;
                                     }
 
+                                    final authorBlockedUsers = List<dynamic>.from(authorData['blocked'] ?? []);
+                                    if (authorBlockedUsers.contains(currentUser.uid)) {
+                                      return false;
+                                    }
+
                                     // FIX: Safe string comparison for search query
                                     if (widget.searchQuery.isNotEmpty) {
                                       final postText =
@@ -703,32 +713,48 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
     if (searchQuery.trim().isEmpty) {
       return const SizedBox.shrink();
     }
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(/* child:const SizedBox.shrink() */);
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(currentUser.uid).snapshots(),
+      builder: (context, currentUserSnapshot) {
+        if (!currentUserSnapshot.hasData) {
+          return const Center();
         }
-        final docs = snapshot.data?.docs ?? [];
+        final currentUserData = currentUserSnapshot.data?.data() as Map<String, dynamic>?;
+        final myBlockedUsers = List<String>.from(currentUserData?['blocked'] ?? []);
 
-        return ListView.builder(
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final doc = docs[index].data() as Map<String, dynamic>;
-            final user = MyUser.fromDocument(doc);
-
-            // FIX: Safe search query comparison
-            final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-            final searchQuery = widget.searchQuery ?? '';
-            if (user.userId == currentUserId ||
-                (searchQuery.isNotEmpty &&
-                    !user.name.toLowerCase().contains(
-                      searchQuery.toLowerCase(),
-                    ))) {
-              return const SizedBox.shrink();
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('users').snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center();
             }
+            final docs = snapshot.data?.docs ?? [];
 
-            return Container(
+            return ListView.builder(
+              itemCount: docs.length,
+              itemBuilder: (context, index) {
+                final doc = docs[index].data() as Map<String, dynamic>;
+                final user = MyUser.fromDocument(doc);
+
+                final currentUserId = currentUser.uid;
+                final userBlockedList = user.blocked ?? [];
+
+                // Hide if mutually blocked
+                if (myBlockedUsers.contains(user.userId) || userBlockedList.contains(currentUserId)) {
+                  return const SizedBox.shrink();
+                }
+
+                // FIX: Safe search query comparison
+                final searchQuery = widget.searchQuery ?? '';
+                if (user.userId == currentUserId ||
+                    (searchQuery.isNotEmpty &&
+                        !user.name.toLowerCase().contains(
+                          searchQuery.toLowerCase(),
+                        ))) {
+                  return const SizedBox.shrink();
+                }
+
+                return Container(
               margin: const EdgeInsets.only(bottom: 16),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -919,6 +945,8 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
             );
           },
         );
+      },
+    );
       },
     );
   }

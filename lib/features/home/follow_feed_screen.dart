@@ -32,6 +32,7 @@ class _FollowingTabState extends State<FollowingTab>
   late StreamSubscription<User?> _authSubscription;
   User? _currentUser;
   Stream<DocumentSnapshot>? _userStream;
+  Stream<QuerySnapshot>? _followingStream;
   late PageController _categoryPageController;
   List<String?> _categoryPages = [null]; // null represents "All" category
   bool get wantKeepAlive => true;
@@ -73,6 +74,11 @@ class _FollowingTabState extends State<FollowingTab>
               .collection('users')
               .doc(_currentUser!.uid)
               .snapshots();
+      _followingStream = FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .collection('following')
+          .snapshots();
     }
 
     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
@@ -85,8 +91,14 @@ class _FollowingTabState extends State<FollowingTab>
                     .collection('users')
                     .doc(user.uid)
                     .snapshots();
+            _followingStream = FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .collection('following')
+                .snapshots();
           } else {
             _userStream = null;
+            _followingStream = null;
           }
         });
       }
@@ -120,6 +132,11 @@ class _FollowingTabState extends State<FollowingTab>
     return _categoriesStream!;
   }
 
+  List<MyUser>? _cachedFollowingUsers;
+  List<String> _lastFollowingIds = [];
+  List<String> _lastBlockedUsers = [];
+  bool _isFetchingUsers = false;
+
   @override
   void dispose() {
     _authSubscription.cancel();
@@ -131,12 +148,13 @@ class _FollowingTabState extends State<FollowingTab>
     super.dispose();
   }
 
-  Future<List<MyUser>> _fetchAndSortFollowingUsers(List<String> ids) async {
-    if (ids.isEmpty) return [];
+  Future<List<MyUser>> _fetchAndSortFollowingUsers(List<String> ids, List<String> blockedUsers) async {
+    final filteredIds = ids.where((id) => !blockedUsers.contains(id)).toList();
+    if (filteredIds.isEmpty) return [];
 
     final List<List<String>> chunks = [];
-    for (var i = 0; i < ids.length; i += 30) {
-      chunks.add(ids.sublist(i, i + 30 > ids.length ? ids.length : i + 30));
+    for (var i = 0; i < filteredIds.length; i += 30) {
+      chunks.add(filteredIds.sublist(i, i + 30 > filteredIds.length ? filteredIds.length : i + 30));
     }
 
     final List<MyUser> fetchedUsers = [];
@@ -149,7 +167,13 @@ class _FollowingTabState extends State<FollowingTab>
                 .get();
         for (var doc in querySnapshot.docs) {
           if (doc.exists) {
-            fetchedUsers.add(MyUser.fromDocument(doc.data()!));
+            final userData = doc.data()!;
+            final user = MyUser.fromDocument(userData);
+            final userBlockedList = List<dynamic>.from(userData['blocked'] ?? []);
+            
+            if (!userBlockedList.contains(_currentUser?.uid)) {
+              fetchedUsers.add(user);
+            }
           }
         }
       }),
@@ -304,12 +328,7 @@ class _FollowingTabState extends State<FollowingTab>
                   SizedBox(
                     height: 100.h,
                     child: StreamBuilder<QuerySnapshot>(
-                      stream:
-                          FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(currentUserId)
-                              .collection('following')
-                              .snapshots(),
+                      stream: _followingStream,
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
                           return Center(
@@ -373,19 +392,60 @@ class _FollowingTabState extends State<FollowingTab>
                           );
                         }
 
-                        return FutureBuilder<List<MyUser>>(
-                          future: _fetchAndSortFollowingUsers(followingIds),
-                          builder: (context, futureSnapshot) {
-                            if (futureSnapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: SizedBox(width: 20, height: 20),
-                              );
+                        // Check if we need to fetch users
+                        bool needsFetch = false;
+                        if (_cachedFollowingUsers == null) {
+                          needsFetch = true;
+                        } else {
+                          // Compare ids
+                          if (followingIds.length != _lastFollowingIds.length) {
+                            needsFetch = true;
+                          } else {
+                            for (var id in followingIds) {
+                              if (!_lastFollowingIds.contains(id)) {
+                                needsFetch = true;
+                                break;
+                              }
                             }
+                          }
+                          // Compare blocked users
+                          if (!needsFetch) {
+                            if (blockedUsers.length != _lastBlockedUsers.length) {
+                              needsFetch = true;
+                            } else {
+                              for (var id in blockedUsers) {
+                                if (!_lastBlockedUsers.contains(id)) {
+                                  needsFetch = true;
+                                  break;
+                                }
+                              }
+                            }
+                          }
+                        }
 
-                            final sortedUsers = futureSnapshot.data ?? [];
-                            final sortedIds =
-                                sortedUsers.map((u) => u.userId).toList();
+                        if (needsFetch && !_isFetchingUsers) {
+                          _isFetchingUsers = true;
+                          WidgetsBinding.instance.addPostFrameCallback((_) async {
+                            final users = await _fetchAndSortFollowingUsers(followingIds, blockedUsers);
+                            if (mounted) {
+                              setState(() {
+                                _cachedFollowingUsers = users;
+                                _lastFollowingIds = followingIds;
+                                _lastBlockedUsers = blockedUsers;
+                                _isFetchingUsers = false;
+                              });
+                            }
+                          });
+                        }
+
+                        if (_cachedFollowingUsers == null) {
+                          return const Center(
+                            child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                          );
+                        }
+
+                        final sortedUsers = _cachedFollowingUsers!;
+                        final sortedIds = sortedUsers.map((u) => u.userId).toList();
 
                             // Automatically select the account that most recently posted (first item)
                             // if none is selected, or if the selected user is no longer followed.
@@ -422,8 +482,6 @@ class _FollowingTabState extends State<FollowingTab>
                                 );
                               },
                             );
-                          },
-                        );
                       },
                     ),
                   ),
