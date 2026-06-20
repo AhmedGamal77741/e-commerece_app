@@ -31,114 +31,138 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
-        child: Column(
-          children: [
-            Container(
-              decoration: ShapeDecoration(
-                color: ColorsManager.white,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(width: 1, color: ColorsManager.primary100),
-                  borderRadius: BorderRadius.circular(25),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 40.h),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: TextFormField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    hintText: '이메일',
+                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 15,
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val!.isEmpty) {
+                      return '이 필드를 작성해 주세요';
+                    } else if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+.)+[\w-]{2,4}$',
+                    ).hasMatch(val)) {
+                      return '유효한 이메일을 입력해 주세요';
+                    }
+                    return null;
+                  },
                 ),
               ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      verticalSpace(20),
-                      Text('아이디', style: TextStyles.abeezee16px400wPblack),
-                      UnderlineTextField(
-                        controller: emailController,
-                        hintText: '이메일',
-                        obscureText: false,
-                        keyboardType: TextInputType.emailAddress,
-                        errorMsg: _errorMsg,
-                        validator: (val) {
-                          if (val!.isEmpty) {
-                            return 'Please fill in this field';
-                          } else if (!RegExp(
-                            r'^[\w-\.]+@([\w-]+.)+[\w-]{2,4}$',
-                          ).hasMatch(val)) {
-                            return '유효한 이메일을 입력해 주세요';
-                          }
-                          return null;
-                        },
+              verticalSpace(12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: TextFormField(
+                  controller: passwordController,
+                  obscureText: obsecurepassword,
+                  keyboardType: TextInputType.visiblePassword,
+                  decoration: InputDecoration(
+                    hintText: '영어, 숫자 조합',
+                    hintStyle: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 15,
+                    ),
+                    suffixIcon: IconButton(
+                      onPressed: () {
+                        setState(() {
+                          obsecurepassword = !obsecurepassword;
+                        });
+                      },
+                      icon: Icon(
+                        obsecurepassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.grey,
                       ),
-                      verticalSpace(20),
-                      Text('비밀번호', style: TextStyles.abeezee16px400wPblack),
-                      UnderlineTextField(
-                        controller: passwordController,
-                        hintText: '영문,숫자 조합',
-                        obscureText: obsecurepassword,
-                        keyboardType: TextInputType.visiblePassword,
-                        errorMsg: _errorMsg,
-                        validator: (val) {
-                          if (val!.isEmpty) {
-                            return '이 필드를 작성해 주세요';
-                          } else if (!RegExp(
-                            r'^(?=.*[A-Za-z])(?=.*\d).{8,}$',
-                          ).hasMatch(val)) {
-                            return '유효한 비밀번호를 입력해 주세요';
-                          }
-                          return null;
-                        },
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              obsecurepassword = !obsecurepassword;
-                            });
-                          },
-                          icon: Icon(
-                            obsecurepassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                        ),
-                      ),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val!.isEmpty) {
+                      return '이 필드를 작성해 주세요';
+                    } else if (!RegExp(
+                      r'^(?=.*[A-Za-z])(?=.*\d).{8,}$',
+                    ).hasMatch(val)) {
+                      return '유효한 비밀번호를 입력해 주세요';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              if (error.isNotEmpty) ...[
+                verticalSpace(12),
+                Text(error, style: TextStyles.abeezee16px400wPred),
+              ],
+              verticalSpace(20),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    dynamic result = await fireBaseRepo.signIn(
+                      emailController.text,
+                      passwordController.text,
+                    );
 
-                    ],
+                    if (result is String) {
+                      setState(() {
+                        error = result;
+                      });
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 16.h),
+                ),
+                child: const Text(
+                  '로그인',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-            ),
-            verticalSpace(30),
-            Text(error, style: TextStyles.abeezee16px400wPred),
-            WideTextButton(
-              txt: '로그인',
-              func: () async {
-                if (_formKey.currentState!.validate()) {
-                  dynamic result = await fireBaseRepo.signIn(
-                    emailController.text,
-                    passwordController.text,
-                  );
-
-                  if (result is String) {
-                    setState(() {
-                      error = result;
-                    });
-                  }
-                }
-              },
-              color: ColorsManager.primaryblack,
-              txtColor: ColorsManager.white,
-            ),
-            verticalSpace(20),
-            TextButton(
-              onPressed: () {
-                _showForgotPasswordDialog(context);
-              },
-              child: Text(
-                '비밀번호 찾기',
-                style: TextStyles.abeezee14px400wP600.copyWith(
-                  decoration: TextDecoration.underline,
+              verticalSpace(16),
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    _showForgotPasswordDialog(context);
+                  },
+                  child: Text(
+                    '비밀번호 찾기',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -160,18 +184,33 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('가입한 이메일을 입력해주세요.', style: TextStyles.abeezee13px400wPblack),
+                  Text(
+                    '가입한 이메일을 입력해주세요.',
+                    style: TextStyles.abeezee13px400wPblack,
+                  ),
                   verticalSpace(10),
-                  UnderlineTextField(
-                    controller: resetEmailController,
-                    hintText: '이메일',
-                    obscureText: false,
-                    keyboardType: TextInputType.emailAddress,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: TextFormField(
+                      controller: resetEmailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        hintText: '이메일',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 15,
+                        ),
+                      ),
+                    ),
                   ),
                   if (dialogError.isNotEmpty) ...[
                     verticalSpace(10),
                     Text(dialogError, style: TextStyles.abeezee16px400wPred),
-                  ]
+                  ],
                 ],
               ),
               actions: [
@@ -190,12 +229,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       return;
                     }
 
-                    final result = await fireBaseRepo.sendPasswordReset(resetEmailController.text);
+                    final result = await fireBaseRepo.sendPasswordReset(
+                      resetEmailController.text,
+                    );
                     if (result == null) {
                       if (context.mounted) {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('비밀번호 재설정 이메일이 전송되었습니다.')),
+                          const SnackBar(
+                            content: Text('비밀번호 재설정 이메일이 전송되었습니다.'),
+                          ),
                         );
                       }
                     } else {
@@ -204,7 +247,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       });
                     }
                   },
-                  child: Text('전송', style: TextStyles.abeezee14px400wP600.copyWith(color: ColorsManager.primaryblack)),
+                  child: Text(
+                    '전송',
+                    style: TextStyles.abeezee14px400wP600.copyWith(
+                      color: ColorsManager.primaryblack,
+                    ),
+                  ),
                 ),
               ],
             );
