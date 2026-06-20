@@ -8,6 +8,7 @@ import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_po
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ecommerece_app/core/helpers/spacing.dart';
 
 class FollowingTab extends StatefulWidget {
   final User? firebaseUser;
@@ -919,16 +920,17 @@ class _FollowingPostsListState extends State<FollowingPostsList>
                 return const SizedBox.shrink();
               }
 
-              return Padding(
+              return Column(
                 key: ValueKey(posts[index].id),
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                child:
-                    widget.useGuestPostItem
-                        ? GuestPostItem(post: postData)
-                        : PostItem(
-                          postId: posts[index].id,
-                          fromComments: false,
-                        ),
+                children: [
+                  widget.useGuestPostItem
+                      ? GuestPostItem(post: postData)
+                      : PostItem(
+                        postId: posts[index].id,
+                        fromComments: false,
+                      ),
+                  verticalSpace(10),
+                ],
               );
             } catch (e) {
               // Handle individual post rendering errors

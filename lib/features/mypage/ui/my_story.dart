@@ -278,14 +278,11 @@ class _PostsPageState extends State<_PostsPage>
         return ListView.builder(
           itemCount: posts.length,
           itemBuilder: (context, index) {
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-              child: Column(
-                children: [
-                  if (index != 0) Divider(color: ColorsManager.primary100),
-                  PostItem(postId: posts[index].id, fromComments: false),
-                ],
-              ),
+            return Column(
+              children: [
+                PostItem(postId: posts[index].id, fromComments: false),
+                verticalSpace(10),
+              ],
             );
           },
         );
