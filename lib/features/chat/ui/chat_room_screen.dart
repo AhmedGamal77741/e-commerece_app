@@ -60,10 +60,12 @@ class _ChatScreenState extends State<ChatScreen> {
   List<MessageModel> _messages = [];
   bool _messagesLoaded = false;
   StreamSubscription<List<MessageModel>>? _messageSubscription;
+  StreamSubscription<DocumentSnapshot>? _roomSubscription;
 
   // ── Chat room state ───────────────────────────────────────────────────────
   ChatRoomModel? _chatRoom;
   bool _isGroup = false;
+  bool _roomDeleted = false;
 
   // ── Alias state ───────────────────────────────────────────────────────────
   // userId → alias (only populated after _loadAliases completes)
@@ -109,41 +111,49 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ── Load chat room + aliases ──────────────────────────────────────────────
 
-  Future<void> _loadChatRoom() async {
+  void _loadChatRoom() {
     try {
-      final doc =
-          await FirebaseFirestore.instance
-              .collection('chatRooms')
-              .doc(widget.chatRoomId)
-              .get();
-      if (!doc.exists || !mounted) return;
-
-      final room = ChatRoomModel.fromMap(doc.data()!);
-
-      if (room.type == 'group') {
-        // Group: load aliases for all participants so member names resolve
-        await _loadAliases(room.participants);
-        if (mounted) {
-          setState(() {
-            _chatRoom = room;
-            _isGroup = true;
-          });
+      _roomSubscription = FirebaseFirestore.instance
+          .collection('chatRooms')
+          .doc(widget.chatRoomId)
+          .snapshots()
+          .listen((doc) async {
+        if (!doc.exists) {
+          if (mounted) {
+            setState(() {
+              _roomDeleted = true;
+            });
+          }
+          return;
         }
-      } else {
-        // Direct: identify the other participant and load their alias
-        final otherId = room.participants.firstWhere(
-          (id) => id != currentUserId,
-          orElse: () => '',
-        );
-        _otherUserId = otherId;
-        await _loadAliases(room.participants);
-        if (mounted) {
-          setState(() {
-            _chatRoom = room;
-            _isGroup = false;
-          });
+
+        final room = ChatRoomModel.fromMap(doc.data()!);
+
+        if (room.type == 'group') {
+          // Group: load aliases for all participants so member names resolve
+          await _loadAliases(room.participants);
+          if (mounted) {
+            setState(() {
+              _chatRoom = room;
+              _isGroup = true;
+            });
+          }
+        } else {
+          // Direct: identify the other participant and load their alias
+          final otherId = room.participants.firstWhere(
+            (id) => id != currentUserId,
+            orElse: () => '',
+          );
+          _otherUserId = otherId;
+          await _loadAliases(room.participants);
+          if (mounted) {
+            setState(() {
+              _chatRoom = room;
+              _isGroup = false;
+            });
+          }
         }
-      }
+      });
     } catch (e) {
       debugPrint('Error loading chat room: $e');
     }
@@ -564,6 +574,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     _messageSubscription?.cancel();
+    _roomSubscription?.cancel();
     super.dispose();
   }
 
@@ -918,7 +929,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
 
                   // ── Input bar ───────────────────────────────────────────────
-                  if (!widget.isDeleted)
+                  if (!widget.isDeleted && !_roomDeleted)
                     (_blocked || _isBlocked)
                         ? _BlockedBar(
                           blocked: _blocked,
@@ -941,7 +952,21 @@ class _ChatScreenState extends State<ChatScreen> {
                               await _sendMessage();
                             }
                           },
+                        )
+                  else
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(vertical: 20.h),
+                      color: _kBgColor,
+                      alignment: Alignment.center,
+                      child: Text(
+                        '대화에 더 이상 참여할 수 없습니다.',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14.sp,
                         ),
+                      ),
+                    ),
                 ],
               ),
     );
