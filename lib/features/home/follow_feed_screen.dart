@@ -33,6 +33,7 @@ class _FollowingTabState extends State<FollowingTab>
   User? _currentUser;
   Stream<DocumentSnapshot>? _userStream;
   Stream<QuerySnapshot>? _followingStream;
+  Stream<QuerySnapshot>? _hiddenFriendsStream;
   late PageController _categoryPageController;
   List<String?> _categoryPages = [null]; // null represents "All" category
   bool get wantKeepAlive => true;
@@ -79,6 +80,11 @@ class _FollowingTabState extends State<FollowingTab>
           .doc(_currentUser!.uid)
           .collection('following')
           .snapshots();
+      _hiddenFriendsStream = FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .collection('hiddenFriends')
+          .snapshots();
     }
 
     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
@@ -96,9 +102,15 @@ class _FollowingTabState extends State<FollowingTab>
                 .doc(user.uid)
                 .collection('following')
                 .snapshots();
+            _hiddenFriendsStream = FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .collection('hiddenFriends')
+                .snapshots();
           } else {
             _userStream = null;
             _followingStream = null;
+            _hiddenFriendsStream = null;
           }
         });
       }
@@ -322,8 +334,20 @@ class _FollowingTabState extends State<FollowingTab>
                 (data?['blocked'] as List<dynamic>?) ?? [],
               );
 
-              return Column(
-                children: [
+              return StreamBuilder<QuerySnapshot>(
+                stream: _hiddenFriendsStream,
+                builder: (context, hiddenFriendsSnapshot) {
+                  final hiddenFriendsSet = <String>{};
+                  if (hiddenFriendsSnapshot.hasData) {
+                    for (var doc in hiddenFriendsSnapshot.data!.docs) {
+                      hiddenFriendsSet.add(doc.id);
+                    }
+                  }
+                  
+                  final effectiveBlockedUsers = [...blockedUsers, ...hiddenFriendsSet].toSet().toList();
+
+                  return Column(
+                    children: [
                   // Following users horizontal list
                   SizedBox(
                     height: 100.h,
@@ -410,10 +434,10 @@ class _FollowingTabState extends State<FollowingTab>
                           }
                           // Compare blocked users
                           if (!needsFetch) {
-                            if (blockedUsers.length != _lastBlockedUsers.length) {
+                            if (effectiveBlockedUsers.length != _lastBlockedUsers.length) {
                               needsFetch = true;
                             } else {
-                              for (var id in blockedUsers) {
+                              for (var id in effectiveBlockedUsers) {
                                 if (!_lastBlockedUsers.contains(id)) {
                                   needsFetch = true;
                                   break;
@@ -426,12 +450,12 @@ class _FollowingTabState extends State<FollowingTab>
                         if (needsFetch && !_isFetchingUsers) {
                           _isFetchingUsers = true;
                           WidgetsBinding.instance.addPostFrameCallback((_) async {
-                            final users = await _fetchAndSortFollowingUsers(followingIds, blockedUsers);
+                            final users = await _fetchAndSortFollowingUsers(followingIds, effectiveBlockedUsers);
                             if (mounted) {
                               setState(() {
                                 _cachedFollowingUsers = users;
                                 _lastFollowingIds = followingIds;
-                                _lastBlockedUsers = blockedUsers;
+                                _lastBlockedUsers = effectiveBlockedUsers;
                                 _isFetchingUsers = false;
                               });
                             }
@@ -544,7 +568,7 @@ class _FollowingTabState extends State<FollowingTab>
                                             selectedCategoryId:
                                                 _categoryPages[index],
                                             useGuestPostItem: false,
-                                            blockedUsers: blockedUsers,
+                                            blockedUsers: effectiveBlockedUsers,
                                             scrollController:
                                                 (index == activeIndex)
                                                     ? _scrollController
@@ -563,6 +587,8 @@ class _FollowingTabState extends State<FollowingTab>
                     ),
                   ),
                 ],
+              );
+                },
               );
             },
           );

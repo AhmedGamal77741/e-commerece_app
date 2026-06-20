@@ -341,16 +341,18 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
   QuerySnapshot? _lastPostsDocs;
   Map<String, Map<String, dynamic>>? _lastAuthorsData;
 
-  final Stream<QuerySnapshot> _postsStream = FirebaseFirestore.instance
-      .collection('posts')
-      .orderBy('createdAt', descending: true)
-      .snapshots();
+  final Stream<QuerySnapshot> _postsStream =
+      FirebaseFirestore.instance
+          .collection('posts')
+          .orderBy('createdAt', descending: true)
+          .snapshots();
 
   Stream<DocumentSnapshot>? _userProfileStream;
   Stream<QuerySnapshot>? _followingStream;
+  Stream<QuerySnapshot>? _hiddenFriendsStream;
   Stream<User?>? _authStream;
   String? _cachedUserId;
-  
+
   List<String> _cachedAuthorIds = [];
   Stream<Map<String, Map<String, dynamic>>>? _cachedAuthorStream;
 
@@ -364,19 +366,26 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
   void _updateStreamsIfNecessary(String uid) {
     if (_cachedUserId != uid) {
       _cachedUserId = uid;
-      _userProfileStream = FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .snapshots();
-      _followingStream = FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('following')
-          .snapshots();
+      _userProfileStream =
+          FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
+      _followingStream =
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('following')
+              .snapshots();
+      _hiddenFriendsStream =
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('hiddenFriends')
+              .snapshots();
     }
   }
 
-  Stream<Map<String, Map<String, dynamic>>> _getStableAuthorStream(List<String> newAuthorIds) {
+  Stream<Map<String, Map<String, dynamic>>> _getStableAuthorStream(
+    List<String> newAuthorIds,
+  ) {
     bool isSame = _cachedAuthorIds.length == newAuthorIds.length;
     if (isSame) {
       final sortedCached = List<String>.from(_cachedAuthorIds)..sort();
@@ -388,12 +397,12 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
         }
       }
     }
-    
+
     if (!isSame || _cachedAuthorStream == null) {
       _cachedAuthorIds = List.from(newAuthorIds);
       _cachedAuthorStream = _streamAuthorDataRealtime(_cachedAuthorIds);
     }
-    
+
     return _cachedAuthorStream!;
   }
 
@@ -516,6 +525,12 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
         });
 
         if (firebaseUser == null) {
+          _cachedUserId = null;
+          _lastProfileDoc = null;
+          _lastFollowingDocs = null;
+          _lastAuthorsData = null;
+          _cachedAuthorIds.clear();
+          _cachedAuthorStream = null;
           return StreamBuilder<QuerySnapshot>(
             stream: _postsStream,
             initialData: _lastPostsDocs,
@@ -608,220 +623,108 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
               (userData['blocked'] as List<dynamic>?) ?? [],
             );
 
-            if (!currentUser.isSub) {
-              return StreamBuilder<QuerySnapshot>(
-                stream: _postsStream,
-                initialData: _lastPostsDocs,
-                builder: (context, postsSnapshot) {
-                  if (postsSnapshot.hasData) {
-                    _lastPostsDocs = postsSnapshot.data;
+            return StreamBuilder<QuerySnapshot>(
+              stream: _hiddenFriendsStream,
+              builder: (context, hiddenFriendsSnapshot) {
+                final hiddenFriendsSet = <String>{};
+                if (hiddenFriendsSnapshot.hasData) {
+                  for (var doc in hiddenFriendsSnapshot.data!.docs) {
+                    hiddenFriendsSet.add(doc.id);
                   }
-                  if (postsSnapshot.connectionState ==
-                          ConnectionState.waiting &&
-                      !postsSnapshot.hasData) {
-                    return Center();
-                  }
-                  if (postsSnapshot.hasError) {
-                    return Center(child: Text('Error: ${postsSnapshot.error}'));
-                  }
+                }
 
-                  final posts = postsSnapshot.data?.docs ?? [];
-
-                  final authorIds = <String>{};
-                  for (var post in posts) {
-                    final data = post.data() as Map<String, dynamic>;
-                    if ((data['userId'] as String) == currentUser.userId) {
-                      continue;
-                    }
-                    authorIds.add(data['userId'] as String);
-                  }
-
-                  return StreamBuilder<Map<String, Map<String, dynamic>>>(
-                    stream: _getStableAuthorStream(authorIds.toList()),
-                    initialData: _lastAuthorsData,
-                    builder: (context, authorsSnapshot) {
-                      if (authorsSnapshot.hasData) {
-                        _lastAuthorsData = authorsSnapshot.data;
+                if (!currentUser.isSub) {
+                  return StreamBuilder<QuerySnapshot>(
+                    stream: _postsStream,
+                    initialData: _lastPostsDocs,
+                    builder: (context, postsSnapshot) {
+                      if (postsSnapshot.hasData) {
+                        _lastPostsDocs = postsSnapshot.data;
                       }
-                      if (!authorsSnapshot.hasData) {
+                      if (postsSnapshot.connectionState ==
+                              ConnectionState.waiting &&
+                          !postsSnapshot.hasData) {
                         return Center();
                       }
-
-                      final authorsMap = authorsSnapshot.data ?? {};
-
-                      final filteredPosts =
-                          posts.where((doc) {
-                            final data = doc.data() as Map<String, dynamic>;
-                            final postAuthorId = data['userId'] as String;
-
-                            if (postAuthorId == currentUser.userId) {
-                              return false;
-                            }
-                            if (blockedUsers.contains(postAuthorId)) {
-                              return false;
-                            }
-
-                            final authorData = authorsMap[postAuthorId] ?? {};
-                            final authorBlockedUsers = List<dynamic>.from(
-                              authorData['blocked'] ?? [],
-                            );
-                            if (authorBlockedUsers.contains(
-                              currentUser.userId,
-                            )) {
-                              return false;
-                            }
-
-                            final notInterestedBy = List<dynamic>.from(
-                              data['notInterestedBy'] ?? [],
-                            );
-                            if (notInterestedBy.contains(currentUser.userId)) {
-                              return false;
-                            }
-
-                            return (authorData['isPrivate'] ?? false) == false;
-                          }).toList();
-
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        controller: widget.scrollController,
-                        itemCount: filteredPosts.length,
-                        itemBuilder: (context, index) {
-                          final post =
-                              filteredPosts[index].data()
-                                  as Map<String, dynamic>;
-                          final postId = filteredPosts[index].id;
-                          if (post['postId'] == null) {
-                            post['postId'] = postId;
-                          }
-                          return Column(
-                            key: ValueKey(post['postId']),
-                            children: [
-                              PostItem(
-                                postId: post['postId'],
-                                fromComments: false,
-                              ),
-                              verticalSpace(10),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              );
-            }
-
-            // (blockedUsers already extracted above)
-
-            return StreamBuilder<QuerySnapshot>(
-              stream: _followingStream,
-              initialData: _lastFollowingDocs,
-              builder: (context, followingSnapshot) {
-                if (followingSnapshot.hasData) {
-                  _lastFollowingDocs = followingSnapshot.data;
-                }
-                final followingSet = <String>{};
-                if (followingSnapshot.hasData) {
-                  for (var doc in followingSnapshot.data!.docs) {
-                    final userId = doc.get('userId') as String?;
-                    if (userId != null) {
-                      followingSet.add(userId);
-                    }
-                  }
-                }
-
-                return StreamBuilder<QuerySnapshot>(
-                  stream: _postsStream,
-                  initialData: _lastPostsDocs,
-                  builder: (context, postsSnapshot) {
-                    if (postsSnapshot.hasData) {
-                      _lastPostsDocs = postsSnapshot.data;
-                    }
-                    if (postsSnapshot.connectionState ==
-                            ConnectionState.waiting &&
-                        !postsSnapshot.hasData) {
-                      return Center();
-                    }
-                    if (postsSnapshot.hasError) {
-                      return Center(
-                        child: Text('Error: ${postsSnapshot.error}'),
-                      );
-                    }
-
-                    final posts = postsSnapshot.data?.docs ?? [];
-
-                    final authorIds = <String>{};
-                    for (var post in posts) {
-                      final data = post.data() as Map<String, dynamic>;
-                      if ((data['userId'] as String) == currentUser.userId) {
-                        continue;
+                      if (postsSnapshot.hasError) {
+                        return Center(
+                          child: Text('Error: ${postsSnapshot.error}'),
+                        );
                       }
-                      authorIds.add(data['userId'] as String);
-                    }
 
-                    return StreamBuilder<Map<String, Map<String, dynamic>>>(
-                      stream: _getStableAuthorStream(authorIds.toList()),
-                      initialData: _lastAuthorsData,
-                      builder: (context, authorsSnapshot) {
-                        if (authorsSnapshot.hasData) {
-                          _lastAuthorsData = authorsSnapshot.data;
+                      final posts = postsSnapshot.data?.docs ?? [];
+
+                      final authorIds = <String>{};
+                      for (var post in posts) {
+                        final data = post.data() as Map<String, dynamic>;
+                        if ((data['userId'] as String) == currentUser.userId) {
+                          continue;
                         }
-                        if (!authorsSnapshot.hasData) {
-                          return Center();
-                        }
+                        authorIds.add(data['userId'] as String);
+                      }
 
-                        final authorsMap = authorsSnapshot.data ?? {};
+                      return StreamBuilder<Map<String, Map<String, dynamic>>>(
+                        stream: _getStableAuthorStream(authorIds.toList()),
+                        initialData: _lastAuthorsData,
+                        builder: (context, authorsSnapshot) {
+                          if (authorsSnapshot.hasData) {
+                            _lastAuthorsData = authorsSnapshot.data;
+                          }
+                          if (!authorsSnapshot.hasData) {
+                            return Center();
+                          }
 
-                        final List<DocumentSnapshot> filteredPosts =
-                            posts.where((doc) {
-                              final data = doc.data() as Map<String, dynamic>;
-                              final postAuthorId = data['userId'] as String;
-                              final authorData = authorsMap[postAuthorId] ?? {};
+                          final authorsMap = authorsSnapshot.data ?? {};
 
-                              if (blockedUsers.contains(postAuthorId)) {
-                                return false;
-                              }
+                          final filteredPosts =
+                              posts.where((doc) {
+                                final data = doc.data() as Map<String, dynamic>;
+                                final postAuthorId = data['userId'] as String;
 
-                              final authorBlockedUsers = List<dynamic>.from(
-                                authorData['blocked'] ?? [],
-                              );
-                              if (authorBlockedUsers.contains(
-                                currentUser.userId,
-                              )) {
-                                return false;
-                              }
+                                if (postAuthorId == currentUser.userId) {
+                                  return false;
+                                }
+                                if (blockedUsers.contains(postAuthorId) ||
+                                    hiddenFriendsSet.contains(postAuthorId)) {
+                                  return false;
+                                }
 
-                              final notInterestedBy = List<dynamic>.from(
-                                data['notInterestedBy'] ?? [],
-                              );
-                              if (notInterestedBy.contains(
-                                currentUser.userId,
-                              )) {
-                                return false;
-                              }
+                                final authorData =
+                                    authorsMap[postAuthorId] ?? {};
+                                final authorBlockedUsers = List<dynamic>.from(
+                                  authorData['blocked'] ?? [],
+                                );
+                                if (authorBlockedUsers.contains(
+                                  currentUser.userId,
+                                )) {
+                                  return false;
+                                }
 
-                              return _shouldShowPost(
-                                postAuthorId: postAuthorId,
-                                currentUserId: currentUser.userId,
-                                authorData: authorData,
-                                followingSet: followingSet,
-                              );
-                            }).toList();
+                                final notInterestedBy = List<dynamic>.from(
+                                  data['notInterestedBy'] ?? [],
+                                );
+                                if (notInterestedBy.contains(
+                                  currentUser.userId,
+                                )) {
+                                  return false;
+                                }
 
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          controller: widget.scrollController,
-                          itemCount: filteredPosts.length + 1,
-                          itemBuilder: (context, index) {
-                            if (index == 0) {
-                              return Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [],
-                              );
-                            } else {
+                                return (authorData['isPrivate'] ?? false) ==
+                                    false;
+                              }).toList();
+
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            controller: widget.scrollController,
+                            itemCount: filteredPosts.length,
+                            itemBuilder: (context, index) {
                               final post =
-                                  filteredPosts[index - 1].data()
+                                  filteredPosts[index].data()
                                       as Map<String, dynamic>;
+                              final postId = filteredPosts[index].id;
+                              if (post['postId'] == null) {
+                                post['postId'] = postId;
+                              }
                               return Column(
                                 key: ValueKey(post['postId']),
                                 children: [
@@ -829,10 +732,145 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                                     postId: post['postId'],
                                     fromComments: false,
                                   ),
-                                  SizedBox(height: 16.h),
+                                  verticalSpace(10),
                                 ],
                               );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  );
+                }
+
+                // (blockedUsers already extracted above)
+
+                return StreamBuilder<QuerySnapshot>(
+                  stream: _followingStream,
+                  initialData: _lastFollowingDocs,
+                  builder: (context, followingSnapshot) {
+                    if (followingSnapshot.hasData) {
+                      _lastFollowingDocs = followingSnapshot.data;
+                    }
+                    final followingSet = <String>{};
+                    if (followingSnapshot.hasData) {
+                      for (var doc in followingSnapshot.data!.docs) {
+                        final userId = doc.get('userId') as String?;
+                        if (userId != null) {
+                          followingSet.add(userId);
+                        }
+                      }
+                    }
+
+                    return StreamBuilder<QuerySnapshot>(
+                      stream: _postsStream,
+                      initialData: _lastPostsDocs,
+                      builder: (context, postsSnapshot) {
+                        if (postsSnapshot.hasData) {
+                          _lastPostsDocs = postsSnapshot.data;
+                        }
+                        if (postsSnapshot.connectionState ==
+                                ConnectionState.waiting &&
+                            !postsSnapshot.hasData) {
+                          return Center();
+                        }
+                        if (postsSnapshot.hasError) {
+                          return Center(
+                            child: Text('Error: ${postsSnapshot.error}'),
+                          );
+                        }
+
+                        final posts = postsSnapshot.data?.docs ?? [];
+
+                        final authorIds = <String>{};
+                        for (var post in posts) {
+                          final data = post.data() as Map<String, dynamic>;
+                          if ((data['userId'] as String) ==
+                              currentUser.userId) {
+                            continue;
+                          }
+                          authorIds.add(data['userId'] as String);
+                        }
+
+                        return StreamBuilder<Map<String, Map<String, dynamic>>>(
+                          stream: _getStableAuthorStream(authorIds.toList()),
+                          initialData: _lastAuthorsData,
+                          builder: (context, authorsSnapshot) {
+                            if (authorsSnapshot.hasData) {
+                              _lastAuthorsData = authorsSnapshot.data;
                             }
+                            if (!authorsSnapshot.hasData) {
+                              return Center();
+                            }
+
+                            final authorsMap = authorsSnapshot.data ?? {};
+
+                            final List<DocumentSnapshot> filteredPosts =
+                                posts.where((doc) {
+                                  final data =
+                                      doc.data() as Map<String, dynamic>;
+                                  final postAuthorId = data['userId'] as String;
+                                  final authorData =
+                                      authorsMap[postAuthorId] ?? {};
+
+                                  if (blockedUsers.contains(postAuthorId) ||
+                                      hiddenFriendsSet.contains(postAuthorId)) {
+                                    return false;
+                                  }
+
+                                  final authorBlockedUsers = List<dynamic>.from(
+                                    authorData['blocked'] ?? [],
+                                  );
+                                  if (authorBlockedUsers.contains(
+                                    currentUser.userId,
+                                  )) {
+                                    return false;
+                                  }
+
+                                  final notInterestedBy = List<dynamic>.from(
+                                    data['notInterestedBy'] ?? [],
+                                  );
+                                  if (notInterestedBy.contains(
+                                    currentUser.userId,
+                                  )) {
+                                    return false;
+                                  }
+
+                                  return _shouldShowPost(
+                                    postAuthorId: postAuthorId,
+                                    currentUserId: currentUser.userId,
+                                    authorData: authorData,
+                                    followingSet: followingSet,
+                                  );
+                                }).toList();
+
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              controller: widget.scrollController,
+                              itemCount: filteredPosts.length + 1,
+                              itemBuilder: (context, index) {
+                                if (index == 0) {
+                                  return Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [],
+                                  );
+                                } else {
+                                  final post =
+                                      filteredPosts[index - 1].data()
+                                          as Map<String, dynamic>;
+                                  return Column(
+                                    key: ValueKey(post['postId']),
+                                    children: [
+                                      PostItem(
+                                        postId: post['postId'],
+                                        fromComments: false,
+                                      ),
+                                      SizedBox(height: 16.h),
+                                    ],
+                                  );
+                                }
+                              },
+                            );
                           },
                         );
                       },

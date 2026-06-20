@@ -608,16 +608,16 @@ class _ContactsEditTabState extends State<_ContactsEditTab> {
                                           user: u,
                                           aliases: aliases,
                                           trailing: _pillButton(
-                                            '숨김',
+                                            '거리두기',
                                             () => _hide(u),
                                           ),
                                         ),
                                       ),
                                     ],
 
-                                    // ── 숨긴 친구 ───────────────────────────
+                                    // ── 거리두기한 친구 ───────────────────────────
                                     if (hiddenUsers.isNotEmpty) ...[
-                                      _sectionHeader('숨긴 친구'),
+                                      _sectionHeader('거리두기한 친구'),
                                       ...hiddenUsers.map(
                                         (u) => _friendRow(
                                           user: u,
@@ -758,9 +758,10 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
               .doc(otherId)
               .get();
       if (doc.exists) {
-        user = chat.type == 'seller'
-            ? MyUser.fromSellerDocument(doc.data()!)
-            : MyUser.fromDocument(doc.data()!);
+        user =
+            chat.type == 'seller'
+                ? MyUser.fromSellerDocument(doc.data()!)
+                : MyUser.fromDocument(doc.data()!);
       }
       if (mounted) {
         setState(() {
@@ -1015,8 +1016,7 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
                                       color: Colors.grey[400],
                                     ),
                                   )
-                                else if (chat.lastMessage?.isNotEmpty ==
-                                    true)
+                                else if (chat.lastMessage?.isNotEmpty == true)
                                   Text(
                                     chat.lastMessage!,
                                     style: TextStyle(
@@ -1321,27 +1321,30 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
                                     color: Colors.grey[200],
                                   ),
                                   child: ClipOval(
-                                    child: (chat.groupImage != null &&
-                                            chat.groupImage!.isNotEmpty)
-                                        ? CachedNetworkImage(
-                                            imageUrl: chat.groupImage!,
-                                            fit: BoxFit.cover,
-                                            fadeInDuration: Duration.zero,
-                                            fadeOutDuration: Duration.zero,
-                                            placeholder: (context, url) => Container(
-                                              color: Colors.grey[200],
-                                            ),
-                                            errorWidget: (context, url, error) => Icon(
+                                    child:
+                                        (chat.groupImage != null &&
+                                                chat.groupImage!.isNotEmpty)
+                                            ? CachedNetworkImage(
+                                              imageUrl: chat.groupImage!,
+                                              fit: BoxFit.cover,
+                                              fadeInDuration: Duration.zero,
+                                              fadeOutDuration: Duration.zero,
+                                              placeholder:
+                                                  (context, url) => Container(
+                                                    color: Colors.grey[200],
+                                                  ),
+                                              errorWidget:
+                                                  (context, url, error) => Icon(
+                                                    Icons.group,
+                                                    size: 20.sp,
+                                                    color: Colors.grey,
+                                                  ),
+                                            )
+                                            : Icon(
                                               Icons.group,
                                               size: 20.sp,
                                               color: Colors.grey,
                                             ),
-                                          )
-                                        : Icon(
-                                            Icons.group,
-                                            size: 20.sp,
-                                            color: Colors.grey,
-                                          ),
                                   ),
                                 ),
                                 SizedBox(width: 12.w),
