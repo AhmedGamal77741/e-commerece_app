@@ -61,6 +61,8 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _messagesLoaded = false;
   StreamSubscription<List<MessageModel>>? _messageSubscription;
   StreamSubscription<DocumentSnapshot>? _roomSubscription;
+  StreamSubscription<DocumentSnapshot>? _currentUserSubscription;
+  StreamSubscription<DocumentSnapshot>? _otherUserSubscription;
 
   // ── Chat room state ───────────────────────────────────────────────────────
   ChatRoomModel? _chatRoom;
@@ -78,8 +80,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _resetUnreadCount();
-    _checkBlockState();
-    _loadChatRoom();
+    _loadChatRoom(); // _loadChatRoom will also set up block listeners
     _messageSubscription = _chatService
         .getMessagesStream(widget.chatRoomId)
         .listen((messages) {
@@ -146,6 +147,36 @@ class _ChatScreenState extends State<ChatScreen> {
           );
           _otherUserId = otherId;
           await _loadAliases(room.participants);
+          
+          // Listen to block state in real-time
+          _currentUserSubscription?.cancel();
+          _currentUserSubscription = FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUserId)
+              .snapshots()
+              .listen((doc) {
+            if (mounted) {
+              setState(() {
+                _blocked = List<String>.from(doc.data()?['blocked'] ?? []).contains(_otherUserId);
+                _loadingBlockState = false;
+              });
+            }
+          });
+
+          _otherUserSubscription?.cancel();
+          _otherUserSubscription = FirebaseFirestore.instance
+              .collection('users')
+              .doc(_otherUserId)
+              .snapshots()
+              .listen((doc) {
+            if (mounted) {
+              setState(() {
+                _isBlocked = List<String>.from(doc.data()?['blocked'] ?? []).contains(currentUserId);
+                _loadingBlockState = false;
+              });
+            }
+          });
+
           if (mounted) {
             setState(() {
               _chatRoom = room;
@@ -156,6 +187,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     } catch (e) {
       debugPrint('Error loading chat room: $e');
+      if (mounted) setState(() => _loadingBlockState = false);
     }
   }
 
@@ -575,6 +607,8 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollController.dispose();
     _messageSubscription?.cancel();
     _roomSubscription?.cancel();
+    _currentUserSubscription?.cancel();
+    _otherUserSubscription?.cancel();
     super.dispose();
   }
 
@@ -590,68 +624,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _checkBlockState() async {
-    try {
-      final chatRoomDoc =
-          await FirebaseFirestore.instance
-              .collection('chatRooms')
-              .doc(widget.chatRoomId)
-              .get();
-      if (!chatRoomDoc.exists || chatRoomDoc.data() == null) {
-        if (mounted) setState(() => _loadingBlockState = false);
-        return;
-      }
-      final chatRoom = ChatRoomModel.fromMap(chatRoomDoc.data()!);
-      if (chatRoom.type != 'direct') {
-        if (mounted) {
-          setState(() {
-            _blocked = false;
-            _isBlocked = false;
-            _loadingBlockState = false;
-          });
-        }
-        return;
-      }
-      final otherUserId = chatRoom.participants.firstWhere(
-        (id) => id != currentUserId,
-        orElse: () => '',
-      );
-      if (otherUserId.isEmpty) {
-        if (mounted) {
-          setState(() {
-            _blocked = false;
-            _isBlocked = false;
-            _loadingBlockState = false;
-          });
-        }
-        return;
-      }
-      final currentDoc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(currentUserId)
-              .get();
-      final otherDoc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(otherUserId)
-              .get();
-      if (mounted) {
-        setState(() {
-          _blocked = List<String>.from(
-            currentDoc.data()?['blocked'] ?? [],
-          ).contains(otherUserId);
-          _isBlocked = List<String>.from(
-            otherDoc.data()?['blocked'] ?? [],
-          ).contains(currentUserId);
-          _loadingBlockState = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error checking block state: $e');
-      if (mounted) {
-        setState(() => _loadingBlockState = false);
-      }
-    }
+    // Left empty because block state is now monitored via real-time streams in _loadChatRoom
   }
 
   Future<void> _unblockUser(String otherUserId) async {
@@ -929,31 +902,16 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
 
                   // ── Input bar ───────────────────────────────────────────────
-                  if (!widget.isDeleted && !_roomDeleted)
-                    (_blocked || _isBlocked)
-                        ? _BlockedBar(
-                          blocked: _blocked,
-                          isBlocked: _isBlocked,
-                          chatRoomId: widget.chatRoomId,
-                          currentUserId: currentUserId,
-                          onUnblock: _unblockUser,
-                          onCheckState: _checkBlockState,
-                        )
-                        : InputBar(
-                          controller: _messageController,
-                          pickedImage: _pickedImage,
-                          onPickImage: _pickImage,
-                          onSend: () async {
-                            if (_pickedImage != null) {
-                              showLoadingDialog(context);
-                              await _sendImageMessage();
-                              if (mounted) Navigator.pop(context);
-                            } else {
-                              await _sendMessage();
-                            }
-                          },
-                        )
-                  else
+                  if (_blocked || _isBlocked)
+                    _BlockedBar(
+                      blocked: _blocked,
+                      isBlocked: _isBlocked,
+                      chatRoomId: widget.chatRoomId,
+                      currentUserId: currentUserId,
+                      onUnblock: _unblockUser,
+                      onCheckState: () {}, // Handled by streams now
+                    )
+                  else if (widget.isDeleted || _roomDeleted)
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.symmetric(vertical: 20.h),
@@ -966,6 +924,21 @@ class _ChatScreenState extends State<ChatScreen> {
                           fontSize: 14.sp,
                         ),
                       ),
+                    )
+                  else
+                    InputBar(
+                      controller: _messageController,
+                      pickedImage: _pickedImage,
+                      onPickImage: _pickImage,
+                      onSend: () async {
+                        if (_pickedImage != null) {
+                          showLoadingDialog(context);
+                          await _sendImageMessage();
+                          if (mounted) Navigator.pop(context);
+                        } else {
+                          await _sendMessage();
+                        }
+                      },
                     ),
                 ],
               ),
