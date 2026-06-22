@@ -318,7 +318,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                       IconButton(
                         onPressed: () {
                           final url =
-                              'https://app.pang2chocolate.com/product/${widget.product.product_id}';
+                              'https://www.pang2chocolate.com/product/${widget.product.product_id}';
                           showShareDialog(
                             context,
                             'product',
@@ -544,7 +544,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                             IconButton(
                               onPressed: () {
                                 final url =
-                                    'https://app.pang2chocolate.com/product/${widget.product.product_id}';
+                                    'https://www.pang2chocolate.com/product/${widget.product.product_id}';
                                 showShareDialog(
                                   context,
                                   'product',

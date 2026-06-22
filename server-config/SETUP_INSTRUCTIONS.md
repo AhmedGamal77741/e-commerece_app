@@ -20,7 +20,7 @@ You'll need the SHA256 from your signing keystore. Contact your team lead for th
 ## 📋 Files to Upload to Your Server
 
 ### 1. assetlinks.json
-- **Destination:** `https://app.pang2chocolate.com/.well-known/assetlinks.json`
+- **Destination:** `https://www.pang2chocolate.com/.well-known/assetlinks.json`
 - **Content-Type:** application/json
 - **Action:** 
   1. Open `assetlinks.json` file
@@ -28,7 +28,7 @@ You'll need the SHA256 from your signing keystore. Contact your team lead for th
   3. Upload to your server
 
 ### 2. apple-app-site-association
-- **Destination:** `https://app.pang2chocolate.com/.well-known/apple-app-site-association`
+- **Destination:** `https://www.pang2chocolate.com/.well-known/apple-app-site-association`
 - **NO file extension** (no .json)
 - **Content-Type:** application/json
 - **Action:**
@@ -39,8 +39,8 @@ You'll need the SHA256 from your signing keystore. Contact your team lead for th
 
 ### 3. Verify Files Are Accessible
 After upload, test these URLs in your browser:
-- `https://app.pang2chocolate.com/.well-known/assetlinks.json` - should download as JSON
-- `https://app.pang2chocolate.com/.well-known/apple-app-site-association` - should show JSON content
+- `https://www.pang2chocolate.com/.well-known/assetlinks.json` - should download as JSON
+- `https://www.pang2chocolate.com/.well-known/apple-app-site-association` - should show JSON content
 
 ---
 

@@ -95,7 +95,7 @@ void _routeDeepLink(Uri uri) {
 
   // ── Bank registered: /bank-registered ─────────────────────────────────────
   // Fired when handleBankRegCallback HTML page navigates to
-  // app.pang2chocolate.com/bank-registered?success=...&userId=...&paymentId=...
+  // www.pang2chocolate.com/bank-registered?success=...&userId=...&paymentId=...
   // OS intercepts → brings Flutter app to foreground → this handler runs.
   if (uri.path == Routes.bankRegisteredScreen) {
     final success = uri.queryParameters['success'] ?? 'false';
