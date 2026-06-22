@@ -1274,7 +1274,7 @@ class _BubbleContent extends StatelessWidget {
             ChatPostShareWidget(
               type: 'post',
               imageUrl: message.postData!['imgUrl'],
-              authorName: message.postData!['authorName'],
+              authorName: message.postData!['userId'] ?? '',
               postTitle: message.postData!['text'],
               onTap: () {
                 showModalBottomSheet(
