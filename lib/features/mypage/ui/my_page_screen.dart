@@ -5,15 +5,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+
 class MyPageScreen extends StatefulWidget {
-  const MyPageScreen({super.key});
+  final MyUser currentUser;
+  const MyPageScreen({super.key, required this.currentUser});
 
   @override
   State<MyPageScreen> createState() => _MyPageScreenState();
 }
 
 class _MyPageScreenState extends State<MyPageScreen> {
-  final String userId = FirebaseAuth.instance.currentUser!.uid;
   bool _hasShownBankPrompt = false;
 
   @override
@@ -51,7 +53,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Scaffold(body: MyPage()),
+        Scaffold(body: MyPage(currentUser: widget.currentUser)),
         ValueListenableBuilder<bool>(
           valueListenable: LoadingService().isLoading,
           builder: (context, isLoading, child) {
