@@ -16,14 +16,14 @@ class SafeNetworkImage extends StatelessWidget {
   final Widget? errorWidget;
 
   const SafeNetworkImage({
-    Key? key,
+    super.key,
     required this.url,
     this.width,
     this.height,
     this.fit,
     this.placeholder,
     this.errorWidget,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

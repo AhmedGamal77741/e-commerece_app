@@ -4,23 +4,34 @@ import 'package:ecommerece_app/core/theming/colors.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: ColorsManager.primary,
+      primary: ColorsManager.primary,
+      onPrimary: Colors.white,
+      secondary: Colors.black,
+      onSecondary: Colors.white,
+      surface: Colors.white,
+      onSurface: Colors.black,
+      error: Colors.red,
+      onError: Colors.white,
+    );
+
+    final textTheme = GoogleFonts.notoSansTextTheme().copyWith(
+      displayLarge: GoogleFonts.notoSans(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black),
+      bodyLarge: GoogleFonts.notoSans(fontSize: 16, color: Colors.black),
+      bodyMedium: GoogleFonts.notoSans(fontSize: 14, color: Colors.black),
+    );
+
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.black,
-        primary: Colors.black,
-        onPrimary: Colors.white,
-        secondary: Colors.black,
-        onSecondary: Colors.white,
-        surface: Colors.white,
-      ),
-      textTheme: GoogleFonts.outfitTextTheme(),
+      colorScheme: colorScheme,
+      textTheme: textTheme,
       scaffoldBackgroundColor: ColorsManager.primary,
       appBarTheme: AppBarTheme(
         backgroundColor: ColorsManager.primary,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        titleTextStyle: GoogleFonts.outfit(
+        titleTextStyle: GoogleFonts.notoSans(
           color: Colors.black,
           fontSize: 18,
           fontWeight: FontWeight.w600,
@@ -34,7 +45,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
-          textStyle: GoogleFonts.outfit(
+          textStyle: GoogleFonts.notoSans(
             fontWeight: FontWeight.w600,
             fontSize: 16,
           ),
@@ -46,22 +57,22 @@ class AppTheme {
         selectionHandleColor: Colors.black,
       ),
       radioTheme: RadioThemeData(
-        fillColor: WidgetStateColor.resolveWith(
+        fillColor: WidgetStateProperty.resolveWith(
           (states) => Colors.black,
         ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(16)),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
-        titleTextStyle: GoogleFonts.outfit(
+        titleTextStyle: GoogleFonts.notoSans(
           color: Colors.black,
           fontWeight: FontWeight.bold,
           fontSize: 18,
         ),
-        contentTextStyle: GoogleFonts.outfit(
+        contentTextStyle: GoogleFonts.notoSans(
           color: Colors.black,
           fontSize: 15,
         ),

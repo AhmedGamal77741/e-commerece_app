@@ -1,21 +1,14 @@
-import 'dart:io';
-
-import 'package:ecommerece_app/core/helpers/loading_service.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
-import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/features/auth/widgets/profile_image_picker.dart';
+import 'package:ecommerece_app/features/auth/widgets/terms_and_conditions_checkbox.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -34,24 +27,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   final _formKey = GlobalKey<FormState>();
   bool obscurePassword = true;
-  bool signUpRequired = false;
   bool isPrivate = false;
   String imgUrl = '';
   String error = '';
   XFile? selectedImage;
-
-  Future<void> pickImage() async {
-    try {
-      final XFile? image = await ImagePickerHelper.pickImage();
-      if (image != null) {
-        setState(() {
-          selectedImage = image;
-        });
-      }
-    } catch (e) {
-      print('Error picking image: $e');
-    }
-  }
 
   @override
   void dispose() {
@@ -64,6 +43,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final authState = ref.watch(authNotifierProvider);
+
     return Stack(
       children: [
         SingleChildScrollView(
@@ -74,49 +56,45 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Center(
-                    child: GestureDetector(
-                      onTap: () async {
-                        await pickImage();
-                      },
-                      child: selectedImage != null
-                          ? ClipOval(
-                              child: Image.file(
-                                File(selectedImage!.path),
-                                height: 80.h,
-                                width: 80.h,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : Container(
-                              height: 80.h,
-                              width: 80.h,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300],
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.person, size: 50.h, color: Colors.white),
-                            ),
-                    ),
+                  ProfileImagePicker(
+                    selectedImage: selectedImage,
+                    onImagePicked: (image) {
+                      setState(() {
+                        selectedImage = image;
+                      });
+                    },
                   ),
                   verticalSpace(30),
                   Padding(
                     padding: EdgeInsets.only(bottom: 8.h),
-                    child: const Text('닉네임', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                    child: Text(
+                      '닉네임', 
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
                   Container(
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface, 
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     child: TextFormField(
                       controller: nameController,
                       keyboardType: TextInputType.name,
-                      decoration: const InputDecoration(
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
                         hintText: '한글',
-                        hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                        hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                       ),
                       validator: (val) {
-                        if (val!.isEmpty) {
+                        if (val == null || val.isEmpty) {
                           return '이름을 입력하세요';
                         } else if (val.length > 30) {
                           return '이름이 너무 깁니다';
@@ -128,13 +106,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   verticalSpace(16),
                   Padding(
                     padding: EdgeInsets.only(bottom: 8.h),
-                    child: const Text('전화번호', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                    child: Text(
+                      '전화번호', 
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
                   Container(
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface, 
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     child: TextFormField(
                       controller: phoneController,
                       keyboardType: TextInputType.phone,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
@@ -156,19 +145,30 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   verticalSpace(16),
                   Padding(
                     padding: EdgeInsets.only(bottom: 8.h),
-                    child: const Text('이메일', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                    child: Text(
+                      '이메일', 
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
                   Container(
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface, 
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     child: TextFormField(
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                       ),
                       validator: (val) {
-                        if (val!.isEmpty) {
+                        if (val == null || val.isEmpty) {
                           return '이 필드를 작성해 주세요';
                         } else if (!RegExp(
                           r'^[\w-\.]+@([\w-]+.)+[\w-]{2,4}$',
@@ -182,17 +182,30 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   verticalSpace(16),
                   Padding(
                     padding: EdgeInsets.only(bottom: 8.h),
-                    child: const Text('비밀번호', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                    child: Text(
+                      '비밀번호', 
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
                   Container(
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface, 
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     child: TextFormField(
                       controller: passwordController,
                       obscureText: obscurePassword,
                       keyboardType: TextInputType.visiblePassword,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
                       decoration: InputDecoration(
                         hintText: '영문, 숫자 조합 8자 이상',
-                        hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+                        hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                         suffixIcon: IconButton(
@@ -203,12 +216,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           },
                           icon: Icon(
                             obscurePassword ? Icons.visibility_off : Icons.visibility,
-                            color: Colors.grey,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
                       validator: (val) {
-                        if (val!.isEmpty) {
+                        if (val == null || val.isEmpty) {
                           return '이 필드를 작성해 주세요';
                         } else if (!RegExp(
                           r'^(?=.*[A-Za-z])(?=.*\d).{8,}$',
@@ -222,12 +235,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   verticalSpace(16),
                   Padding(
                     padding: EdgeInsets.only(bottom: 8.h),
-                    child: const Text('비공개 프로필', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                    child: Text(
+                      '비공개 프로필', 
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -239,146 +257,120 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               isPrivate = s;
                             });
                           },
-                          activeColor: Colors.black,
+                          activeTrackColor: theme.colorScheme.primary,
                         ),
                         SizedBox(width: 16.w),
                         Expanded(
                           child: Text(
                             '친구로 수락한 사람만 회원님을\n구독하고 게시물을 볼수있어요.',
-                            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
                   verticalSpace(20),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20.w,
-                        height: 20.w,
-                        child: Checkbox(
-                          value: agreedToTerms && agreedToPrivacy,
-                          onChanged: (value) {
-                            setState(() {
-                              agreedToTerms = value ?? false;
-                              agreedToPrivacy = value ?? false;
-                            });
-                          },
-                          activeColor: Colors.black,
-                          checkColor: Colors.white,
-                          side: const BorderSide(color: Colors.black, width: 1.5),
-                        ),
-                      ),
-                      SizedBox(width: 8.w),
-                      const Text(
-                        '개인정보 수집 및 이용약관 동의 ',
-                        style: TextStyle(fontSize: 13, color: Colors.black87),
-                      ),
-                      GestureDetector(
-                        onTap: () async {
-                          final url = Uri.parse(
-                            'https://flowery-tub-f11.notion.site/1d938af9230b80fa9d64ce280f6eacbd',
-                          );
-                          if (await canLaunchUrl(url)) {
-                            await launchUrl(url);
-                          }
-                        },
-                        child: const Text(
-                          '이용약관',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.black87,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ],
+                  TermsAndConditionsCheckbox(
+                    agreedToTerms: agreedToTerms,
+                    agreedToPrivacy: agreedToPrivacy,
+                    onChanged: (value) {
+                      setState(() {
+                        agreedToTerms = value;
+                        agreedToPrivacy = value;
+                      });
+                    },
                   ),
                   if (error.isNotEmpty) ...[
                     verticalSpace(16),
-                    Text(error, style: TextStyles.abeezee16px400wPred),
+                    Text(
+                      error, 
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
                   ],
                   verticalSpace(20),
                   ElevatedButton(
-                    onPressed: () async {
-                      if (!agreedToTerms || !agreedToPrivacy) {
-                        setState(() {
-                          error = '모든 약관에 동의해야 가입할 수 있습니다.';
-                        });
-                        return;
-                      }
-                      if (selectedImage == null) {
-                        setState(() {
-                          error = '프로필 사진을 등록해야 가입할 수 있습니다.';
-                        });
-                        return;
-                      }
-                      if (_formKey.currentState!.validate()) {
-                        LoadingService().showLoading();
+                    onPressed: authState.isLoading
+                        ? null
+                        : () async {
+                            if (!agreedToTerms || !agreedToPrivacy) {
+                              setState(() {
+                                error = '모든 약관에 동의해야 가입할 수 있습니다.';
+                              });
+                              return;
+                            }
+                            if (selectedImage == null) {
+                              setState(() {
+                                error = '프로필 사진을 등록해야 가입할 수 있습니다.';
+                              });
+                              return;
+                            }
+                            if (_formKey.currentState!.validate()) {
+                              MyUser myUser = MyUser.empty;
+                              myUser.email = emailController.text;
+                              myUser.name = nameController.text.trim();
+                              myUser.isPrivate = isPrivate;
+                              imgUrl.isEmpty
+                                  ? myUser.url = "https://i.ibb.co/mrVrHy7z/avatar.png"
+                                  : myUser.url = imgUrl;
+                              myUser.phoneNumber = phoneController.text;
 
-                        MyUser myUser = MyUser.empty;
-                        myUser.email = emailController.text;
-                        myUser.name = nameController.text.trim();
-                        myUser.isPrivate = isPrivate;
-                        imgUrl.isEmpty
-                            ? myUser.url = "https://i.ibb.co/mrVrHy7z/avatar.png"
-                            : myUser.url = imgUrl;
-                        myUser.phoneNumber = phoneController.text;
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.setBool('show_bank_prompt_after_login', true);
 
-                        // ── Set flag BEFORE signUp so it's ready when
-                        // the auth stream fires and MyPageScreen mounts.
-                        final prefs = await SharedPreferences.getInstance();
-                        await prefs.setBool('show_bank_prompt_after_login', true);
-
-                        var errorMsg = await ref.read(authControllerProvider).signUp(
-                          myUser,
-                          passwordController.text,
-                          selectedImage,
-                        );
-                        LoadingService().hideLoading();
-
-                        if (errorMsg != null) {
-                          // Signup failed — clear the flag we just set
-                          await prefs.remove('show_bank_prompt_after_login');
-                          setState(() {
-                            error = errorMsg;
-                          });
-                        }
-                        // On success: no action needed — LandingScreen's
-                        // StreamBuilder reacts to auth state and renders
-                        // MyPageScreen, which reads the flag in initState.
-                      }
-                    },
+                              try {
+                                await ref.read(authNotifierProvider.notifier).signUp(
+                                  myUser,
+                                  passwordController.text,
+                                  selectedImage,
+                                );
+                                if (context.mounted) {
+                                  setState(() {
+                                    error = '';
+                                  });
+                                }
+                              } catch (e) {
+                                await prefs.remove('show_bank_prompt_after_login');
+                                if (context.mounted) {
+                                  setState(() {
+                                    error = e.toString().replaceAll('Exception: ', '');
+                                  });
+                                }
+                              }
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
+                      backgroundColor: theme.colorScheme.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                       padding: EdgeInsets.symmetric(vertical: 16.h),
                     ),
-                    child: const Text(
-                      '가입하기',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
+                    child: authState.isLoading
+                        ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: theme.colorScheme.onPrimary,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            '가입하기',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: theme.colorScheme.onPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                   verticalSpace(30),
                 ],
               ),
             ),
           ),
-        ),
-        ValueListenableBuilder<bool>(
-          valueListenable: LoadingService().isLoading,
-          builder: (context, isLoading, child) {
-            return isLoading
-                ? Container(
-                    color: Colors.black54,
-                    child: const SizedBox.shrink(),
-                  )
-                : const SizedBox.shrink();
-          },
         ),
       ],
     );

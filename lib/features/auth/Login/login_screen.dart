@@ -1,12 +1,9 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
-import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/features/auth/widgets/forgot_password_dialog.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -17,18 +14,23 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final passwordController = TextEditingController();
-
   final emailController = TextEditingController();
-
   bool obsecurepassword = true;
-
   final _formKey = GlobalKey<FormState>();
-
-  String? _errorMsg;
-
   String error = '';
+
+  @override
+  void dispose() {
+    passwordController.dispose();
+    emailController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final authState = ref.watch(authNotifierProvider);
+
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 40.h),
@@ -39,23 +41,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextFormField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  decoration: InputDecoration(
                     hintText: '이메일',
-                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
+                    contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 15,
                     ),
                   ),
                   validator: (val) {
-                    if (val!.isEmpty) {
+                    if (val == null || val.isEmpty) {
                       return '이 필드를 작성해 주세요';
                     } else if (!RegExp(
                       r'^[\w-\.]+@([\w-]+.)+[\w-]{2,4}$',
@@ -69,18 +76,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               verticalSpace(12),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextFormField(
                   controller: passwordController,
                   obscureText: obsecurepassword,
                   keyboardType: TextInputType.visiblePassword,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
                   decoration: InputDecoration(
                     hintText: '영어, 숫자 조합',
-                    hintStyle: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
+                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
@@ -97,12 +106,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         obsecurepassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: Colors.grey,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
                   validator: (val) {
-                    if (val!.isEmpty) {
+                    if (val == null || val.isEmpty) {
                       return '이 필드를 작성해 주세요';
                     } else if (!RegExp(
                       r'^(?=.*[A-Za-z])(?=.*\d).{8,}$',
@@ -115,49 +124,73 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               if (error.isNotEmpty) ...[
                 verticalSpace(12),
-                Text(error, style: TextStyles.abeezee16px400wPred),
+                Text(
+                  error, 
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
               ],
               verticalSpace(20),
               ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    final errorMsg = await ref.read(authControllerProvider).signIn(
-                      emailController.text,
-                      passwordController.text,
-                    );
-
-                    if (errorMsg != null) {
-                      setState(() {
-                        error = errorMsg;
-                      });
-                    }
-                  }
-                },
+                onPressed: authState.isLoading
+                    ? null
+                    : () async {
+                        if (_formKey.currentState!.validate()) {
+                          try {
+                            await ref.read(authNotifierProvider.notifier).signIn(
+                                  emailController.text,
+                                  passwordController.text,
+                                );
+                            if (context.mounted) {
+                              setState(() {
+                                error = '';
+                              });
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              setState(() {
+                                error = e.toString().replaceAll('Exception: ', '');
+                              });
+                            }
+                          }
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: theme.colorScheme.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                   padding: EdgeInsets.symmetric(vertical: 16.h),
                 ),
-                child: const Text(
-                  '로그인',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: authState.isLoading
+                    ? SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: theme.colorScheme.onPrimary,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        '로그인',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
               verticalSpace(16),
               Center(
                 child: TextButton(
                   onPressed: () {
-                    _showForgotPasswordDialog(context);
+                    showForgotPasswordDialog(context);
                   },
                   child: Text(
                     '비밀번호 찾기',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ),
@@ -165,100 +198,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Future<void> _showForgotPasswordDialog(BuildContext context) async {
-    final resetEmailController = TextEditingController();
-    String dialogError = '';
-
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: ColorsManager.white,
-              title: Text('비밀번호 찾기', style: TextStyles.abeezee16px400wPblack),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '가입한 이메일을 입력해주세요.',
-                    style: TextStyles.abeezee13px400wPblack,
-                  ),
-                  verticalSpace(10),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: TextFormField(
-                      controller: resetEmailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        hintText: '이메일',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 15,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (dialogError.isNotEmpty) ...[
-                    verticalSpace(10),
-                    Text(dialogError, style: TextStyles.abeezee16px400wPred),
-                  ],
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text('취소', style: TextStyles.abeezee14px400wP600),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    if (resetEmailController.text.isEmpty) {
-                      setDialogState(() {
-                        dialogError = '이메일을 입력해주세요.';
-                      });
-                      return;
-                    }
-
-                    final result = await ref.read(authControllerProvider).sendPasswordReset(
-                      resetEmailController.text,
-                    );
-                    if (result == null) {
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('비밀번호 재설정 이메일이 전송되었습니다.'),
-                          ),
-                        );
-                      }
-                    } else {
-                      setDialogState(() {
-                        dialogError = result;
-                      });
-                    }
-                  },
-                  child: Text(
-                    '전송',
-                    style: TextStyles.abeezee14px400wP600.copyWith(
-                      color: ColorsManager.primaryblack,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 }
