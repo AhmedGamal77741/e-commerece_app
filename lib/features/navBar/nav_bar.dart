@@ -1,30 +1,30 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/widgets/no_account_screen.dart';
 import 'package:ecommerece_app/core/widgets/receipt_setup_screen.dart';
-import 'package:ecommerece_app/features/cart/cart.dart';
 import 'package:ecommerece_app/features/cart/sub_screens/add_address_screen.dart';
-import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/ui/chats_navbar.dart';
 import 'package:ecommerece_app/features/home/home_screen.dart';
 import 'package:ecommerece_app/features/shop/shop.dart';
 import 'package:ecommerece_app/landing.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:ecommerece_app/core/widgets/deleted_account.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class NavBar extends StatefulWidget {
+import 'providers/nav_bar_providers.dart';
+import 'widgets/chat_nav_icon.dart';
+
+class NavBar extends ConsumerStatefulWidget {
   const NavBar({super.key});
 
   @override
-  State<NavBar> createState() => _NavBarState();
+  ConsumerState<NavBar> createState() => _NavBarState();
 }
 
-class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
+class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
   final shopKey = GlobalKey<ShopState>();
   final homeKey = GlobalKey<HomeScreenState>();
   int _selectedIndex = 0;
@@ -43,13 +43,12 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
         scrollController: homeScrollController,
         tabController: homeTabController,
       ),
-      ChatsNavbar(),
+      const ChatsNavbar(),
       const Center(child: Text('멤버십 라운지')),
       Shop(key: shopKey),
-      LandingScreen(),
+      const LandingScreen(),
     ];
 
-    // Check if we need to resume a pending navigation after bank registration
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPendingNavigation();
     });
@@ -62,7 +61,6 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  // ── Resume navigation after bank registration deep link ───────────────────
   Future<void> _checkPendingNavigation() async {
     final prefs = await SharedPreferences.getInstance();
     final pendingSource = prefs.getString('pending_nav_source');
@@ -71,63 +69,35 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
     if (!mounted) return;
 
     if (pendingSource == 'sub') {
-      await _navigateToSubscription(context);
+      await _navigateToSubscription();
     } else if (pendingSource == 'shop') {
       await _onItemTapped(3);
     }
   }
 
-  // ── Subscription gate helper ──────────────────────────────────────────────
-  Future<void> _navigateToSubscription(BuildContext context) async {
-    final user = FirebaseAuth.instance.currentUser;
+  Future<void> _navigateToSubscription() async {
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
-    final userDoc =
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-    final data = userDoc.data();
+    final navBarService = ref.read(navBarServiceProvider);
 
-    final accounts = data?['bankAccounts'];
-    final hasBankAccount =
-        accounts != null && accounts is List && accounts.isNotEmpty;
+    final hasBankAccount = await navBarService.hasBankAccount(user.uid);
 
     if (!hasBankAccount) {
+      if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => const NoBankAccountScreen(source: 'sub'),
         ),
       );
-      final refreshed =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-      final refreshedAccounts = refreshed.data()?['bankAccounts'];
-      final nowHasAccount =
-          refreshedAccounts != null &&
-          refreshedAccounts is List &&
-          refreshedAccounts.isNotEmpty;
+      final nowHasAccount = await navBarService.hasBankAccount(user.uid);
       if (!nowHasAccount) return;
     }
 
-    // ── Gate 2: receipt / invoice data ──────────────────────────────────
-    final cacheDoc =
-        await FirebaseFirestore.instance
-            .collection('usercached_values')
-            .doc(user.uid)
-            .get();
-    final cacheData = cacheDoc.data();
-    final hasReceiptData =
-        cacheData != null &&
-        (cacheData['selectedOption'] == 1 ||
-            cacheData['selectedOption'] == 2) &&
-        (cacheData['name'] as String? ?? '').isNotEmpty &&
-        (cacheData['email'] as String? ?? '').isNotEmpty &&
-        (cacheData['phone'] as String? ?? '').isNotEmpty;
+    final hasReceiptData = await navBarService.hasReceiptData(user.uid);
 
     if (!hasReceiptData) {
+      if (!mounted) return;
       final result = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
           builder: (_) => const ReceiptSetupScreen(source: 'sub'),
@@ -136,12 +106,10 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
       if (result != true) return;
     }
 
-    if (context.mounted) {
+    if (mounted) {
       context.push(Routes.subscriptionScreen);
     }
   }
-
-  // Removed _buildMainWidget as it was causing massive rebuilds of all tabs
 
   Future<void> _onItemTapped(int index) async {
     if (_selectedIndex == index && index == 3) {
@@ -152,69 +120,40 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
     }
     if (index == 0) {
       if (_selectedIndex == 0) {
-        // Already on home — reset inner tab and scroll to top
         homeKey.currentState?.resetToTop();
       }
       setState(() => _selectedIndex = 0);
       return;
     } else if (index == 3) {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = ref.read(authStateProvider).value;
       if (user != null) {
-        final userDoc =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(user.uid)
-                .get();
-        final data = userDoc.data();
+        final navBarService = ref.read(navBarServiceProvider);
 
-        // Deleted account — just navigate
-        if (data != null && data['deleted'] == true) {
+        final isDeleted = await navBarService.isAccountDeleted(user.uid);
+        if (isDeleted) {
           setState(() => _selectedIndex = index);
           return;
         }
 
-        // ── Gate 1: bank account ────────────────────────────────────────
-        final accounts = data?['bankAccounts'];
-        final hasBankAccount =
-            accounts != null && accounts is List && accounts.isNotEmpty;
+        final hasBankAccount = await navBarService.hasBankAccount(user.uid);
 
         if (!hasBankAccount) {
+          if (!mounted) return;
           final result = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
               builder: (_) => const NoBankAccountScreen(source: 'shop'),
             ),
           );
           if (result != true) {
-            final refreshed =
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .get();
-            final refreshedAccounts = refreshed.data()?['bankAccounts'];
-            final nowHasAccount =
-                refreshedAccounts != null &&
-                refreshedAccounts is List &&
-                refreshedAccounts.isNotEmpty;
+            final nowHasAccount = await navBarService.hasBankAccount(user.uid);
             if (!nowHasAccount) return;
           }
         }
 
-        // ── Gate 2: receipt / invoice data ──────────────────────────────
-        final cacheDoc =
-            await FirebaseFirestore.instance
-                .collection('usercached_values')
-                .doc(user.uid)
-                .get();
-        final cacheData = cacheDoc.data();
-        final hasReceiptData =
-            cacheData != null &&
-            (cacheData['selectedOption'] == 1 ||
-                cacheData['selectedOption'] == 2) &&
-            (cacheData['name'] as String? ?? '').isNotEmpty &&
-            (cacheData['email'] as String? ?? '').isNotEmpty &&
-            (cacheData['phone'] as String? ?? '').isNotEmpty;
+        final hasReceiptData = await navBarService.hasReceiptData(user.uid);
 
         if (!hasReceiptData) {
+          if (!mounted) return;
           final result = await Navigator.of(context).push<dynamic>(
             MaterialPageRoute(
               builder: (_) => const ReceiptSetupScreen(source: 'shop'),
@@ -223,17 +162,12 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
           if (result != true && result != 'skip') return;
         }
 
-        // ── Gate 3: default address ─────────────────────────────────────
-        final freshDoc =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(user.uid)
-                .get();
-        final freshData = freshDoc.data();
-        if (freshData == null ||
-            (freshData['defaultAddressId'] == null ||
-                freshData['defaultAddressId'] == '')) {
-          final result = await Navigator.of(context).push(
+        final hasDefaultAddress = await navBarService.hasDefaultAddress(
+          user.uid,
+        );
+        if (!hasDefaultAddress) {
+          if (!mounted) return;
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => const AddAddressScreen(showSkip: true),
             ),
@@ -248,61 +182,63 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, authSnapshot) {
-          final user = authSnapshot.data;
-          if (user == null) {
-            return IndexedStack(index: _selectedIndex, children: widgetOptions);
-          }
-          return StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('users')
-                .doc(user.uid)
-                .snapshots(),
-            builder: (context, userSnapshot) {
-              if (userSnapshot.hasData) {
-                final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
-                if (userData != null && userData['deleted'] == true) {
-                  return DeletedAccount(
-                    deletedAt: userData['deletedAt']?.toString() ?? '',
-                    onRecover: () async {
-                      final uid = FirebaseAuth.instance.currentUser?.uid;
-                      if (uid != null) {
-                        await FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(uid)
-                            .update({'deleted': false, 'deletedAt': null});
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('계정이 복구되었습니다.')),
-                          );
-                        }
-                      }
-                    },
-                    onSignOut: () async {
-                      await FirebaseAuth.instance.signOut();
-                    },
-                  );
-                }
+    final user = ref.watch(authStateProvider).value;
+    final theme = Theme.of(context);
+
+    Widget bodyWidget;
+
+    if (user == null) {
+      bodyWidget = IndexedStack(index: _selectedIndex, children: widgetOptions);
+    } else {
+      final userProfileAsync = ref.watch(userProfileStreamProvider);
+
+      if (userProfileAsync.hasValue) {
+        final userData = userProfileAsync.value;
+        if (userData != null && userData['deleted'] == true) {
+          bodyWidget = DeletedAccount(
+            deletedAt: userData['deletedAt']?.toString() ?? '',
+            onRecover: () async {
+              final uid = user.uid;
+              await ref.read(navBarServiceProvider).recoverAccount(uid);
+              if (context.mounted) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('계정이 복구되었습니다.')));
               }
-              // Return the cached widgetOptions list. This prevents the children from rebuilding
-              // when the user document updates!
-              return IndexedStack(index: _selectedIndex, children: widgetOptions);
+            },
+            onSignOut: () async {
+              await ref.read(navBarServiceProvider).signOut();
             },
           );
-        },
-      ),
+        } else {
+          bodyWidget = IndexedStack(
+            index: _selectedIndex,
+            children: widgetOptions,
+          );
+        }
+      } else {
+        bodyWidget = IndexedStack(
+          index: _selectedIndex,
+          children: widgetOptions,
+        );
+      }
+    }
+
+    return Scaffold(
+      body: bodyWidget,
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: ColorsManager.primary,
+        backgroundColor: theme.colorScheme.surface,
         showSelectedLabels: false,
         showUnselectedLabels: false,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.grey[400],
-        selectedLabelStyle: TextStyle(fontSize: 10.sp),
-        unselectedLabelStyle: TextStyle(fontSize: 10.sp),
+        selectedItemColor: theme.colorScheme.primary,
+        unselectedItemColor: theme.colorScheme.onSurfaceVariant,
+        selectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
+          fontSize: 10.sp,
+        ),
+        unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
+          fontSize: 10.sp,
+        ),
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: ImageIcon(
@@ -315,123 +251,9 @@ class _NavBarState extends State<NavBar> with TickerProviderStateMixin {
             ),
             label: '상점',
           ),
-          BottomNavigationBarItem(
-            icon: StreamBuilder<User?>(
-              stream: FirebaseAuth.instance.authStateChanges(),
-              builder: (context, authSnapshot) {
-                final user = authSnapshot.data;
-                if (user == null) {
-                  return Image.asset(
-                    'assets/chat_with_seller_grey.png',
-                    width: 30.r,
-                    height: 30.r,
-                  );
-                }
-                return StreamBuilder(
-                  stream: FirebaseFirestore.instance
-                      .collection('chatRooms')
-                      .where('participants', arrayContains: user.uid)
-                      .orderBy('lastMessageTime', descending: true)
-                      .snapshots()
-                      .map(
-                        (snapshot) =>
-                            snapshot.docs
-                                .map((doc) => ChatRoomModel.fromMap(doc.data()))
-                                .toList(),
-                      ),
-                  builder: (context, snapshot) {
-                    final currentUserId = user.uid;
-                    bool hasUnread = false;
-                    if (snapshot.hasData) {
-                      final chatRooms = snapshot.data!;
-                      hasUnread = chatRooms.any(
-                        (room) =>
-                            !room.deletedBy.contains(currentUserId) &&
-                            (room.unreadCount[currentUserId] ?? 0) > 0,
-                      );
-                    }
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Image.asset(
-                          'assets/chat_with_seller_grey.png',
-                          width: 30.r,
-                          height: 30.r,
-                        ),
-                        if (hasUnread)
-                          Positioned(
-                            left: -10.w,
-                            top: -5.h,
-                            child: Image.asset(
-                              'assets/notification.png',
-                              width: 18.w,
-                              height: 18.h,
-                            ),
-                          ),
-                      ],
-                    );
-                  },
-                );
-              },
-            ),
-            activeIcon: StreamBuilder<User?>(
-              stream: FirebaseAuth.instance.authStateChanges(),
-              builder: (context, authSnapshot) {
-                final user = authSnapshot.data;
-                if (user == null) {
-                  return Image.asset(
-                    'assets/chat_with_seller.png',
-                    width: 30.r,
-                    height: 30.r,
-                  );
-                }
-                return StreamBuilder(
-                  stream: FirebaseFirestore.instance
-                      .collection('chatRooms')
-                      .where('participants', arrayContains: user.uid)
-                      .orderBy('lastMessageTime', descending: true)
-                      .snapshots()
-                      .map(
-                        (snapshot) =>
-                            snapshot.docs
-                                .map((doc) => ChatRoomModel.fromMap(doc.data()))
-                                .toList(),
-                      ),
-                  builder: (context, snapshot) {
-                    final currentUserId = user.uid;
-                    bool hasUnread = false;
-                    if (snapshot.hasData) {
-                      final chatRooms = snapshot.data!;
-                      hasUnread = chatRooms.any(
-                        (room) =>
-                            !room.deletedBy.contains(currentUserId) &&
-                            (room.unreadCount[currentUserId] ?? 0) > 0,
-                      );
-                    }
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Image.asset(
-                          'assets/chat_with_seller.png',
-                          width: 30.r,
-                          height: 30.r,
-                        ),
-                        if (hasUnread)
-                          Positioned(
-                            left: -10.w,
-                            top: -5.h,
-                            child: Image.asset(
-                              'assets/notification.png',
-                              width: 18.w,
-                              height: 18.h,
-                            ),
-                          ),
-                      ],
-                    );
-                  },
-                );
-              },
-            ),
+          const BottomNavigationBarItem(
+            icon: ChatNavIcon(isActive: false),
+            activeIcon: ChatNavIcon(isActive: true),
             label: '채팅',
           ),
           BottomNavigationBarItem(
