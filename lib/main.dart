@@ -1,15 +1,13 @@
 import 'package:app_links/app_links.dart';
-import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
-import 'package:ecommerece_app/features/home/data/post_provider.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:ecommerece_app/core/routing/app_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/e_commerce_app.dart';
 import 'package:ecommerece_app/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 late AppLinks _appLinks;
 late GoRouter _router;
@@ -30,11 +28,7 @@ void main() async {
   _handleDeepLinks();
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => PostsProvider()),
-        Provider<FirebaseUserRepo>(create: (_) => FirebaseUserRepo()),
-      ],
+    ProviderScope(
       child: EcommerceApp(appRouter: AppRouter()),
     ),
   );

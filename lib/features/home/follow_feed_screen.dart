@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 
-class FollowingTab extends StatefulWidget {
+class FollowingTab extends ConsumerStatefulWidget {
   final User? firebaseUser;
   final String? preselectedUser;
   final ScrollController? scrollController;
@@ -22,10 +23,10 @@ class FollowingTab extends StatefulWidget {
   });
 
   @override
-  State<FollowingTab> createState() => _FollowingTabState();
+  ConsumerState<FollowingTab> createState() => _FollowingTabState();
 }
 
-class _FollowingTabState extends State<FollowingTab>
+class _FollowingTabState extends ConsumerState<FollowingTab>
     with AutomaticKeepAliveClientMixin {
   late ScrollController _scrollController;
   final ValueNotifier<String?> _selectedUserId = ValueNotifier(null);
@@ -37,6 +38,7 @@ class _FollowingTabState extends State<FollowingTab>
   Stream<QuerySnapshot>? _hiddenFriendsStream;
   late PageController _categoryPageController;
   List<String?> _categoryPages = [null]; // null represents "All" category
+  @override
   bool get wantKeepAlive => true;
   final ValueNotifier<int> _currentPageIndex = ValueNotifier(0);
 
@@ -180,7 +182,7 @@ class _FollowingTabState extends State<FollowingTab>
                 .get();
         for (var doc in querySnapshot.docs) {
           if (doc.exists) {
-            final userData = doc.data()!;
+            final userData = doc.data();
             final user = MyUser.fromDocument(userData);
             final userBlockedList = List<dynamic>.from(userData['blocked'] ?? []);
             
@@ -345,7 +347,7 @@ class _FollowingTabState extends State<FollowingTab>
                     }
                   }
                   
-                  final effectiveBlockedUsers = [...blockedUsers, ...hiddenFriendsSet].toSet().toList();
+                  final effectiveBlockedUsers = {...blockedUsers, ...hiddenFriendsSet}.toList();
 
                   return Column(
                     children: [
@@ -600,7 +602,7 @@ class _FollowingTabState extends State<FollowingTab>
 }
 
 // New widget to display user's categories
-class UserCategoriesBar extends StatelessWidget {
+class UserCategoriesBar extends ConsumerWidget {
   final List<QueryDocumentSnapshot> categories;
   final String? selectedCategoryId;
   final Function(String) onCategorySelected;
@@ -613,7 +615,7 @@ class UserCategoriesBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // If no categories, show a simple message
     if (categories.isEmpty) {
       return SizedBox(
@@ -660,7 +662,7 @@ class UserCategoriesBar extends StatelessWidget {
                     () => onCategorySelected(category.id),
                   ),
                 );
-              }).toList(),
+              }),
 
               // Add right padding for centering
               SizedBox(width: 16.w),
@@ -703,7 +705,7 @@ class UserCategoriesBar extends StatelessWidget {
   }
 }
 
-class FollowingPostsList extends StatefulWidget {
+class FollowingPostsList extends ConsumerStatefulWidget {
   final String currentUserId;
   final String? selectedUserId;
   final String? selectedCategoryId;
@@ -712,20 +714,20 @@ class FollowingPostsList extends StatefulWidget {
   final ScrollController? scrollController;
 
   const FollowingPostsList({
-    Key? key,
+    super.key,
     required this.currentUserId,
     this.selectedUserId,
     this.selectedCategoryId,
     this.useGuestPostItem = false,
     this.blockedUsers = const [],
     this.scrollController,
-  }) : super(key: key);
+  });
 
   @override
-  State<FollowingPostsList> createState() => _FollowingPostsListState();
+  ConsumerState<FollowingPostsList> createState() => _FollowingPostsListState();
 }
 
-class _FollowingPostsListState extends State<FollowingPostsList>
+class _FollowingPostsListState extends ConsumerState<FollowingPostsList>
     with AutomaticKeepAliveClientMixin {
   late Stream<QuerySnapshot> _postsStream;
 
@@ -934,7 +936,7 @@ class _FollowingPostsListState extends State<FollowingPostsList>
               );
             } catch (e) {
               // Handle individual post rendering errors
-              print('Error rendering post at index $index: $e');
+              debugPrint('Error rendering post at index $index: $e');
               return Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                 child: Container(
@@ -970,35 +972,7 @@ class _FollowingPostsListState extends State<FollowingPostsList>
     );
   }
 
-  String _getEmptyStateMessage() {
-    // User selected + Category selected
-    if (widget.selectedUserId != null && widget.selectedCategoryId != null) {
-      return '이 카테고리에 게시물이 없습니다';
-    }
 
-    // User selected + No category (showing all user's posts)
-    if (widget.selectedUserId != null) {
-      return '아직 게시물이 없습니다';
-    }
-
-    // No user selected (showing all following users' posts)
-    return '팔로우한 사용자의 게시물이 없습니다';
-  }
-
-  String _getEmptyStateSubMessage() {
-    // User selected + Category selected
-    if (widget.selectedUserId != null && widget.selectedCategoryId != null) {
-      return '다른 카테고리를 선택해보세요';
-    }
-
-    // User selected + No category
-    if (widget.selectedUserId != null) {
-      return '첫 게시물을 기다리고 있어요';
-    }
-
-    // No user selected
-    return '더 많은 사용자를 팔로우해보세요';
-  }
 
   Stream<QuerySnapshot> _getFollowingPostsStream(
     String? userId,
@@ -1082,7 +1056,7 @@ class _FollowingPostsListState extends State<FollowingPostsList>
                     if (aTimestamp == null || bTimestamp == null) return 0;
                     return bTimestamp.compareTo(aTimestamp);
                   } catch (e) {
-                    print('Error sorting posts: $e');
+                    debugPrint('Error sorting posts: $e');
                     return 0;
                   }
                 });
@@ -1091,7 +1065,7 @@ class _FollowingPostsListState extends State<FollowingPostsList>
                 return _MockQuerySnapshot(allDocs.take(50).toList());
               }
             } catch (e) {
-              print('Error fetching following posts: $e');
+              debugPrint('Error fetching following posts: $e');
               // Return empty result on error
               return FirebaseFirestore.instance
                   .collection('posts')
@@ -1100,7 +1074,7 @@ class _FollowingPostsListState extends State<FollowingPostsList>
             }
           });
     } catch (e) {
-      print('Error creating posts stream: $e');
+      debugPrint('Error creating posts stream: $e');
       // Return a stream that emits an empty result
       return Stream.value(_MockQuerySnapshot([]));
     }

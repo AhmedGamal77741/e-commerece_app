@@ -8,24 +8,25 @@ import 'package:ecommerece_app/core/widgets/black_text_button.dart';
 import 'package:ecommerece_app/core/widgets/no_account_screen.dart';
 import 'package:ecommerece_app/core/widgets/receipt_setup_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:ecommerece_app/features/chat/services/chat_service.dart';
+import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 
-class UserOptionsContainer extends StatefulWidget {
+class UserOptionsContainer extends ConsumerStatefulWidget {
   final bool isSub;
   const UserOptionsContainer({super.key, required this.isSub});
 
   @override
-  State<UserOptionsContainer> createState() => _UserOptionsContainerState();
+  ConsumerState<UserOptionsContainer> createState() => _UserOptionsContainerState();
 }
 
-class _UserOptionsContainerState extends State<UserOptionsContainer>
+class _UserOptionsContainerState extends ConsumerState<UserOptionsContainer>
     with RouteAware {
   final user = FirebaseAuth.instance.currentUser;
-  final ChatService _chatService = ChatService();
+  
   final String supportUserId = 'JuxEfED9YSc2XyHRFgkPcNCFUSJ3';
 
   bool _isLoading = false;
@@ -64,7 +65,7 @@ class _UserOptionsContainerState extends State<UserOptionsContainer>
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      final chatRoomId = await _chatService.createDirectChatRoom(
+      final chatRoomId = await ref.read(chatControllerProvider).createDirectChatRoom(
         supportUserId,
         true,
       );

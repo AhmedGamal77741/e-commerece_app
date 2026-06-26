@@ -2,22 +2,24 @@ import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
-import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/features/auth/data/auth_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
+import 'package:ecommerece_app/features/mypage/domain/profile_controller.dart';
 
-class UserInfoContainer extends StatefulWidget {
+
+class UserInfoContainer extends ConsumerStatefulWidget {
   final MyUser currentUser;
   const UserInfoContainer({super.key, required this.currentUser});
 
   @override
-  State<UserInfoContainer> createState() => _UserInfoContainerState();
+  ConsumerState<UserInfoContainer> createState() => _UserInfoContainerState();
 }
 
-class _UserInfoContainerState extends State<UserInfoContainer> {
+class _UserInfoContainerState extends ConsumerState<UserInfoContainer> {
   final passwordController = TextEditingController();
   final nameController = TextEditingController();
   /*   final bioController = TextEditingController();
@@ -27,7 +29,6 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
   final _formKey = GlobalKey<FormState>();
   String imgUrl = "";
   String error = '';
-  final fireBaseRepo = FirebaseUserRepo();
 
   late MyUser currentUser;
 
@@ -55,7 +56,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
     // Check for unique nickname if updating name
     if (isUpdatingName) {
       final name = newNickname.trim();
-      final existing = await fireBaseRepo.checkNameExists(name);
+      final existing = await ref.read(authRepositoryProvider).isNicknameTaken(name);
       // Only block if the name exists and is not the current user's name
       if (existing && name != currentUser.name) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,7 +92,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
         final reauth = await _reauthenticateUser(context);
         if (!reauth) return;
       }
-      await fireBaseRepo.updateUser(
+      await ref.read(authControllerProvider).updateUser(
         updatedUser,
         isUpdatingPassword ? passwordController.text : "",
       );
@@ -132,7 +133,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
   void initState() {
     super.initState();
     currentUser = widget.currentUser;
-    Provider.of<PostsProvider>(context, listen: false).startListening();
+
     _initData();
   }
 
@@ -234,15 +235,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                   onPressed: () async {
                     final passwordText = reauthController.text;
                     try {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user == null || user.email == null) {
-                        throw Exception('로그인 정보가 없습니다');
-                      }
-                      final cred = EmailAuthProvider.credential(
-                        email: user.email!,
-                        password: passwordText,
-                      );
-                      await user.reauthenticateWithCredential(cred);
+                      await ref.read(profileControllerProvider).reauthenticateUser(passwordText);
                       success = true;
                       if (dialogContext.mounted) {
                         Navigator.of(dialogContext).pop();
@@ -252,7 +245,7 @@ class _UserInfoContainerState extends State<UserInfoContainer> {
                         ScaffoldMessenger.of(dialogContext).showSnackBar(
                           SnackBar(
                             content: Text(
-                              '재인증 실패: 비밀번호를 확인하세요.',
+                              '비밀번호 오류: 비밀번호를 확인해주세요.',
                               style: TextStyle(fontSize: 14.sp),
                             ),
                           ),

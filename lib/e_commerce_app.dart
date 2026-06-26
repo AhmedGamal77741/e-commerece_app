@@ -1,5 +1,6 @@
 import 'package:ecommerece_app/core/routing/app_router.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
+import 'package:ecommerece_app/core/theming/app_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -87,53 +88,7 @@ class _EcommerceAppState extends State<EcommerceApp> {
                         (context, child) => MaterialApp.router(
                           // scaffoldMessengerKey: scaffoldMessengerKey,
                           title: 'E-commerce App (Web)',
-                          theme: ThemeData(
-                            useMaterial3: true,
-                            colorScheme: ColorScheme.fromSeed(
-                              seedColor: Colors.black,
-                              primary: Colors.black,
-                              onPrimary: Colors.white,
-                              secondary: Colors.black,
-                              onSecondary: Colors.white,
-                            ),
-                            textSelectionTheme: const TextSelectionThemeData(
-                              cursorColor: Colors.black,
-                              selectionColor: Colors.black12,
-                              selectionHandleColor: Colors.black,
-                            ),
-                            scaffoldBackgroundColor: ColorsManager.primary,
-                            appBarTheme: AppBarTheme(
-                              backgroundColor: ColorsManager.primary,
-                            ),
-                            unselectedWidgetColor: Colors.grey,
-                            radioTheme: RadioThemeData(
-                              fillColor: WidgetStateColor.resolveWith(
-                                (states) => Colors.black,
-                              ),
-                            ),
-                            dialogTheme: const DialogThemeData(
-                              backgroundColor: Colors.white,
-                              surfaceTintColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(16),
-                                ),
-                              ),
-                              titleTextStyle: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                              contentTextStyle: TextStyle(
-                                color: Colors.black,
-                                fontSize: 15,
-                              ),
-                            ),
-                            progressIndicatorTheme:
-                                const ProgressIndicatorThemeData(
-                                  color: Colors.black,
-                                ),
-                          ),
+                          theme: AppTheme.lightTheme,
                           debugShowCheckedModeBanner: false,
                           routerConfig: AppRouter.router,
                         ),
@@ -150,47 +105,7 @@ class _EcommerceAppState extends State<EcommerceApp> {
                 (context, child) => MaterialApp.router(
                   // scaffoldMessengerKey: scaffoldMessengerKey,
                   title: 'E-commerce App',
-                  theme: ThemeData(
-                    useMaterial3: true,
-                    colorScheme: ColorScheme.fromSeed(
-                      seedColor: Colors.black,
-                      primary: Colors.black,
-                      onPrimary: Colors.white,
-                      secondary: Colors.black,
-                      onSecondary: Colors.white,
-                    ),
-                    textSelectionTheme: const TextSelectionThemeData(
-                      cursorColor: Colors.black,
-                      selectionColor: Colors.black12,
-                      selectionHandleColor: Colors.black,
-                    ),
-                    scaffoldBackgroundColor: ColorsManager.primary,
-                    appBarTheme: AppBarTheme(
-                      backgroundColor: ColorsManager.primary,
-                    ),
-                    unselectedWidgetColor: Colors.grey,
-                    radioTheme: RadioThemeData(
-                      fillColor: WidgetStateColor.resolveWith(
-                        (states) => Colors.black,
-                      ),
-                    ),
-                    dialogTheme: const DialogThemeData(
-                      backgroundColor: Colors.white,
-                      surfaceTintColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(16)),
-                      ),
-                      titleTextStyle: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                      contentTextStyle: TextStyle(
-                        color: Colors.black,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
+                  theme: AppTheme.lightTheme,
                   debugShowCheckedModeBanner: false,
                   routerConfig: AppRouter.router,
                 ),

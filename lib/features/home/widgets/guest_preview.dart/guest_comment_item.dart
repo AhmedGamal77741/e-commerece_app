@@ -1,14 +1,15 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class GuestCommentItem extends StatelessWidget {
+class GuestCommentItem extends ConsumerWidget {
   final Map<String, dynamic> comment;
-  const GuestCommentItem({Key? key, required this.comment}) : super(key: key);
+  const GuestCommentItem({super.key, required this.comment});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: EdgeInsets.only(left: 10.w),
       child: Row(

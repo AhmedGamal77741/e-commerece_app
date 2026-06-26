@@ -6,8 +6,11 @@ import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ecommerece_app/features/review/domain/review_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ExchangeBody extends StatelessWidget {
+
+class ExchangeBody extends ConsumerWidget {
   final String userId;
   final String orderId;
   final _formKey = GlobalKey<FormState>();
@@ -15,7 +18,7 @@ class ExchangeBody extends StatelessWidget {
   ExchangeBody({super.key, required this.userId, required this.orderId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         Container(
@@ -74,62 +77,11 @@ class ExchangeBody extends StatelessWidget {
           txtColor: ColorsManager.white,
           func: () async {
             if (!_formKey.currentState!.validate()) return;
-            // Fetch order date
-            final orderDoc =
-                await FirebaseFirestore.instance
-                    .collection('orders')
-                    .doc(orderId)
-                    .get();
-            if (!orderDoc.exists) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text('주문 정보를 찾을 수 없습니다.')));
-              return;
-            }
-            final orderDataMap = orderDoc.data();
-            final orderDateStr = orderDataMap?['orderDate'];
-            if (orderDateStr == null) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text('주문 날짜 정보가 없습니다.')));
-              return;
-            }
-            final orderDate = DateTime.tryParse(orderDateStr);
-            if (orderDate == null) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text('주문 날짜 형식이 올바르지 않습니다.')));
-              return;
-            }
-            final now = DateTime.now();
-            final daysSinceOrder = now.difference(orderDate).inDays;
-            if (daysSinceOrder > 7) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('주문 후 7일이 지나 교환 요청이 불가합니다.')),
-              );
-              return;
-            }
-            final docRef =
-                FirebaseFirestore.instance.collection('exchanges').doc();
-            final exchangeId = docRef.id;
-            final exchangeData = {
-              'exchangeId': exchangeId,
-              'userId': userId,
-              'orderId': orderId,
-              'reason': reasonController.text.trim(),
-              'createdAt': DateTime.now().toIso8601String(),
-            };
             try {
-              await docRef.set(exchangeData);
-              await FirebaseFirestore.instance
-                  .collection('orders')
-                  .doc(orderId)
-                  .update({'isRequested': true});
+              await ref.read(reviewControllerProvider).submitExchangeRequest(orderId, reasonController.text);
               context.pop();
             } catch (e) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text('요청에 실패했습니다. 다시 시도하세요.')));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
             }
           },
         ),

@@ -1,240 +1,57 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerece_app/core/helpers/basetime.dart';
-import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/models/product_model.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:ecommerece_app/features/cart/services/cart_service.dart';
-import 'package:ecommerece_app/features/cart/services/favorites_service.dart';
-import 'package:ecommerece_app/features/shop/item_details.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
+import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
+import 'package:ecommerece_app/features/cart/widgets/favorite_item_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
-class FavoritesScreen extends StatefulWidget {
+class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});
 
   @override
-  State<FavoritesScreen> createState() => _FavoritesScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(authStateProvider);
 
-class _FavoritesScreenState extends State<FavoritesScreen> {
-  final formatCurrency = NumberFormat('#,###');
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, authSnapshot) {
-        final user = authSnapshot.data;
+    return userAsync.when(
+      data: (user) {
         if (user == null) {
-          return Center(child: Text('내 페이지 탭에서 회원가입 후 이용가능합니다.'));
+          return const Center(child: Text('내 페이지 탭에서 회원가입 후 이용가능합니다.'));
         }
-        return StreamBuilder<DocumentSnapshot>(
-          stream:
-              FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(user.uid)
-                  .snapshots(),
-          builder: (context, userSnapshot) {
-            if (userSnapshot.connectionState == ConnectionState.waiting) {
-              return const SizedBox.shrink();
+
+        final favoritesAsync = ref.watch(userFavoritesStreamProvider);
+
+        return favoritesAsync.when(
+          data: (favoritesDocs) {
+            if (favoritesDocs.isEmpty) {
+              return const Center(child: Text('찜한 상품이 없습니다.'));
             }
-            if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-              return Center(child: Text('User profile not found'));
-            }
-            final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
-            final isSub = userData != null && (userData['isSub'] ?? false);
+
             return Padding(
               padding: EdgeInsets.only(left: 10.w, top: 12.h, bottom: 12.h),
-              child: StreamBuilder(
-                stream:
-                    FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(user.uid)
-                        .collection('favorites')
-                        .snapshots(),
-                builder: (context, favoritesSnapshot) {
-                  if (favoritesSnapshot.connectionState ==
-                      ConnectionState.waiting) {
+              child: ListView.separated(
+                separatorBuilder: (context, index) {
+                  if (index == favoritesDocs.length - 1) {
                     return const SizedBox.shrink();
                   }
-                  final favoritesDocs = favoritesSnapshot.data!.docs;
-
-                  return ListView.separated(
-                    separatorBuilder: (context, index) {
-                      if (index == favoritesDocs.length - 1) {
-                        return SizedBox.shrink();
-                      }
-                      return Divider();
-                    },
-                    itemCount: favoritesDocs.length,
-                    itemBuilder: (ctx, index) {
-                      final favoriteData = favoritesDocs[index].data();
-                      final productId = favoriteData['product_id'];
-
-                      return FutureBuilder<DocumentSnapshot>(
-                        future:
-                            FirebaseFirestore.instance
-                                .collection('products')
-                                .doc(productId)
-                                .get(),
-                        builder: (context, productSnapshot) {
-                          if (productSnapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return ListTile(title: Text('로딩 중...'));
-                          }
-                          if (!productSnapshot.hasData ||
-                              !productSnapshot.data!.exists) {
-                            // delete the cart item if product is gone
-                            WidgetsBinding.instance.addPostFrameCallback((
-                              _,
-                            ) async {
-                              await deleteFavItem(favoritesDocs[index].id);
-                            });
-                            return SizedBox.shrink(); // don't render anything
-                          }
-                          final productData =
-                              productSnapshot.data!.data()
-                                  as Map<String, dynamic>;
-                          Product p = Product.fromMap(productData);
-                          return InkWell(
-                            onTap: () async {
-                              String arrivalTime = await getArrivalDay(
-                                p.meridiem,
-                                p.baselineTime,
-                              );
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => ItemDetails(
-                                        product: p,
-                                        arrivalDay: arrivalTime,
-                                        isSub: isSub,
-                                      ),
-                                ),
-                              );
-                            },
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 1.h),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: CachedNetworkImage(
-                                      imageUrl: p.imgUrl ?? '',
-                                      width: 106.w,
-                                      height: 110.h,
-                                      fit: BoxFit.cover,
-                                      fadeInDuration: Duration.zero,
-                                      fadeOutDuration: Duration.zero,
-                                      placeholder: (context, url) => Container(
-                                        width: 106.w,
-                                        height: 110.h,
-                                        color: Colors.grey[200],
-                                      ),
-                                      errorWidget: (context, url, error) => Container(
-                                        width: 106.w,
-                                        height: 110.h,
-                                        color: Colors.grey[200],
-                                        child: const Center(
-                                          child: Icon(
-                                            Icons.broken_image,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: 10.w),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          p.sellerName,
-                                          style: TextStyles.abeezee14px400wP600,
-                                        ),
-
-                                        Text(
-                                          p.productName,
-                                          style:
-                                              TextStyles.abeezee16px400wPblack,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.visible,
-                                        ),
-                                        Text(
-                                          isSub
-                                              ? '${formatCurrency.format(p.price)} 원'
-                                              : '${formatCurrency.format(p.price / 0.9)} 원',
-                                          style:
-                                              TextStyles.abeezee16px400wPblack,
-                                        ),
-
-                                        Text(
-                                          '${p.arrivalDate ?? ''} ',
-                                          style: TextStyles.abeezee14px400wP600,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: () async {
-                                      await removeProductFromFavorites(
-                                        userId:
-                                            FirebaseAuth
-                                                .instance
-                                                .currentUser!
-                                                .uid,
-                                        productId: p.product_id,
-                                      );
-                                    },
-                                    icon: Icon(Icons.close, size: 18),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
+                  return const Divider();
+                },
+                itemCount: favoritesDocs.length,
+                itemBuilder: (ctx, index) {
+                  final favoriteDoc = favoritesDocs[index];
+                  return FavoriteItemWidget(
+                    favoriteData: favoriteDoc.data(),
+                    favoriteId: favoriteDoc.id,
                   );
                 },
               ),
             );
           },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('Error: $error')),
         );
       },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
     );
   }
 }
-// Function to remove a product from favorites
-//   Future<void> removeProductFromFavorites({
-//     required String userId,
-//     required String productId,
-//   }) async {
-//     final favoritesRef = FirebaseFirestore.instance
-//         .collection('users')
-//         .doc(userId)
-//         .collection('favorites');
-
-//     // Query for the product that matches the productId
-//     final querySnapshot =
-//         await favoritesRef.where('product_id', isEqualTo: productId).get();
-
-//     // Check if the product exists in favorites
-//     if (querySnapshot.docs.isNotEmpty) {
-//       // Loop through all documents found (should be only one)
-//       for (var doc in querySnapshot.docs) {
-//         // Delete the document
-//         await doc.reference.delete();
-//       }
-//     } else {
-//       print("Product not found in favorites.");
-//     }
-//   }
-// }

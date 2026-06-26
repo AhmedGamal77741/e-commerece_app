@@ -5,117 +5,78 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/black_text_button.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/features/review/domain/review_controller.dart';
 import 'package:ecommerece_app/features/review/ui/exchange_or_refund.dart';
 import 'package:ecommerece_app/features/review/ui/track_order.dart';
 import 'package:ecommerece_app/features/review/ui/widgets/text_and_buttons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // ---------------------------------------------------------------------------
 // OrderHistory — main page
 // ---------------------------------------------------------------------------
-class OrderHistory extends StatefulWidget {
+class OrderHistory extends ConsumerWidget {
   const OrderHistory({super.key});
 
   @override
-  State<OrderHistory> createState() => _OrderHistoryState();
-}
-
-class _OrderHistoryState extends State<OrderHistory> {
-  final Map<String, Map<String, dynamic>?> _productCache = {};
-
-  Future<Map<String, dynamic>?> _getProduct(String productId) async {
-    if (_productCache.containsKey(productId)) return _productCache[productId];
-    try {
-      final doc =
-          await FirebaseFirestore.instance
-              .collection('products')
-              .doc(productId)
-              .get();
-      final data = doc.exists ? doc.data() as Map<String, dynamic> : null;
-      _productCache[productId] = data;
-      return data;
-    } catch (_) {
-      _productCache[productId] = null;
-      return null;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authStateProvider).value;
+    if (user == null) {
+      return const Center(child: Text('내 페이지 탭에서 회원가입 후 이용가능합니다.'));
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, authSnapshot) {
-        final user = authSnapshot.data;
-        if (user == null) {
-          return const Center(child: Text('내 페이지 탭에서 회원가입 후 이용가능합니다.'));
+    final ordersAsync = ref.watch(userOrdersStreamProvider);
+
+    return ordersAsync.when(
+      loading: () => const _OrderSkeletonList(),
+      error: (error, stack) => Center(child: Text('에러 발생: $error')),
+      data: (orders) {
+        if (orders.isEmpty) {
+          return const Center(child: Text('주문 내역이 없습니다.'));
         }
 
-        return StreamBuilder<QuerySnapshot>(
-          stream:
-              FirebaseFirestore.instance
-                  .collection('orders')
-                  .where('userId', isEqualTo: user.uid)
-                  .orderBy('orderDate', descending: true)
-                  .snapshots(),
-          builder: (context, snapshot) {
-            // ── First load: show shimmer skeletons ──────────────────────────
-            if (snapshot.connectionState == ConnectionState.waiting &&
-                !snapshot.hasData) {
-              return const _OrderSkeletonList();
-            }
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+          child: ListView.separated(
+            itemCount: orders.length,
+            separatorBuilder: (_, __) => Divider(color: ColorsManager.primary300),
+            itemBuilder: (context, index) {
+              final data = orders[index].data() as Map<String, dynamic>;
+              final productId = data['productId'] as String? ?? '';
 
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(child: Text('주문 내역이 없습니다.'));
-            }
+              final productAsync = ref.watch(orderProductProvider(productId));
 
-            final orders = snapshot.data!.docs;
+              return productAsync.when(
+                loading: () => const _OrderCardSkeleton(),
+                error: (_, __) => _FadeIn(
+                  delay: Duration(milliseconds: index * 60),
+                  child: _DeletedProductCard(orderData: data),
+                ),
+                data: (product) {
+                  if (product == null || product.isEmpty) {
+                    return _FadeIn(
+                      delay: Duration(milliseconds: index * 60),
+                      child: _DeletedProductCard(orderData: data),
+                    );
+                  }
 
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-              child: ListView.separated(
-                itemCount: orders.length,
-                separatorBuilder:
-                    (_, __) => Divider(color: ColorsManager.primary300),
-                itemBuilder: (context, index) {
-                  final data = orders[index].data() as Map<String, dynamic>;
-                  final productId = data['productId'] as String? ?? '';
-
-                  return FutureBuilder<Map<String, dynamic>?>(
-                    future: _getProduct(productId),
-                    builder: (context, productSnapshot) {
-                      // Per-item skeleton only on true first fetch
-                      if (productSnapshot.connectionState ==
-                              ConnectionState.waiting &&
-                          !_productCache.containsKey(productId)) {
-                        return const _OrderCardSkeleton();
-                      }
-
-                      final product = productSnapshot.data;
-
-                      if (product == null || product.isEmpty) {
-                        return _FadeIn(
-                          delay: Duration(milliseconds: index * 60),
-                          child: _DeletedProductCard(orderData: data),
-                        );
-                      }
-
-                      return _FadeIn(
-                        delay: Duration(milliseconds: index * 60),
-                        child: _OrderItem(
-                          orderData: data,
-                          product: product,
-                          user: user,
-                          onDelete: () => deleteOrder(data, context),
-                        ),
-                      );
-                    },
+                  return _FadeIn(
+                    delay: Duration(milliseconds: index * 60),
+                    child: _OrderItem(
+                      orderData: data,
+                      product: product,
+                      user: user,
+                      onDelete: () => deleteOrder(data, context, ref),
+                    ),
                   );
                 },
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
@@ -125,16 +86,16 @@ class _OrderHistoryState extends State<OrderHistory> {
 // ---------------------------------------------------------------------------
 // Fade-in wrapper — staggered reveal for each card
 // ---------------------------------------------------------------------------
-class _FadeIn extends StatefulWidget {
+class _FadeIn extends ConsumerStatefulWidget {
   const _FadeIn({required this.child, this.delay = Duration.zero});
   final Widget child;
   final Duration delay;
 
   @override
-  State<_FadeIn> createState() => _FadeInState();
+  ConsumerState<_FadeIn> createState() => _FadeInState();
 }
 
-class _FadeInState extends State<_FadeIn> with SingleTickerProviderStateMixin {
+class _FadeInState extends ConsumerState<_FadeIn> with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _opacity;
   late final Animation<Offset> _slide;
@@ -175,11 +136,11 @@ class _FadeInState extends State<_FadeIn> with SingleTickerProviderStateMixin {
 // ---------------------------------------------------------------------------
 // Shimmer skeleton — full page version shown on first load
 // ---------------------------------------------------------------------------
-class _OrderSkeletonList extends StatelessWidget {
+class _OrderSkeletonList extends ConsumerWidget {
   const _OrderSkeletonList();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
       child: ListView.separated(
@@ -195,15 +156,15 @@ class _OrderSkeletonList extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Shimmer card — each skeleton item animates with a staggered delay
 // ---------------------------------------------------------------------------
-class _ShimmerCard extends StatefulWidget {
+class _ShimmerCard extends ConsumerStatefulWidget {
   const _ShimmerCard({required this.index});
   final int index;
 
   @override
-  State<_ShimmerCard> createState() => _ShimmerCardState();
+  ConsumerState<_ShimmerCard> createState() => _ShimmerCardState();
 }
 
-class _ShimmerCardState extends State<_ShimmerCard>
+class _ShimmerCardState extends ConsumerState<_ShimmerCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _shimmer;
@@ -315,7 +276,7 @@ class _ShimmerCardState extends State<_ShimmerCard>
   }
 }
 
-class _ShimmerLine extends StatelessWidget {
+class _ShimmerLine extends ConsumerWidget {
   const _ShimmerLine({
     required this.gradient,
     required this.width,
@@ -329,7 +290,7 @@ class _ShimmerLine extends StatelessWidget {
   final double radius;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       width: width,
       height: height,
@@ -344,14 +305,14 @@ class _ShimmerLine extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Per-item skeleton (used while product data loads individually)
 // ---------------------------------------------------------------------------
-class _OrderCardSkeleton extends StatefulWidget {
+class _OrderCardSkeleton extends ConsumerStatefulWidget {
   const _OrderCardSkeleton();
 
   @override
-  State<_OrderCardSkeleton> createState() => _OrderCardSkeletonState();
+  ConsumerState<_OrderCardSkeleton> createState() => _OrderCardSkeletonState();
 }
 
-class _OrderCardSkeletonState extends State<_OrderCardSkeleton>
+class _OrderCardSkeletonState extends ConsumerState<_OrderCardSkeleton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _shimmer;
@@ -458,7 +419,7 @@ class _OrderCardSkeletonState extends State<_OrderCardSkeleton>
 // ---------------------------------------------------------------------------
 // Single order row
 // ---------------------------------------------------------------------------
-class _OrderItem extends StatelessWidget {
+class _OrderItem extends ConsumerWidget {
   const _OrderItem({
     required this.orderData,
     required this.product,
@@ -472,7 +433,7 @@ class _OrderItem extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -587,12 +548,12 @@ class _OrderItem extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Deleted product card
 // ---------------------------------------------------------------------------
-class _DeletedProductCard extends StatelessWidget {
+class _DeletedProductCard extends ConsumerWidget {
   const _DeletedProductCard({required this.orderData});
   final Map<String, dynamic> orderData;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
@@ -688,6 +649,7 @@ bool isDispatched(Map<String, dynamic> product, String orderDate) {
 Future<void> deleteOrder(
   Map<String, dynamic> order,
   BuildContext context,
+  WidgetRef ref,
 ) async {
   final navigator = Navigator.of(context);
   final messenger = ScaffoldMessenger.of(context);
@@ -698,11 +660,11 @@ Future<void> deleteOrder(
         (ctx) => AlertDialog(
           backgroundColor: Colors.white,
           title: const Text(
-            '주문취소',
+            '주문 취소',
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
           ),
           content: const Text(
-            '정말로 주문을 취소하시겠습니까?\n취소 시 결제 금액이 환불됩니다.',
+            '정말로 이 주문을 취소하시겠습니까?\n취소 후에는 복구가 불가능합니다.',
             style: TextStyle(fontSize: 16),
           ),
           actions: [
@@ -725,58 +687,29 @@ Future<void> deleteOrder(
   showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => const SizedBox.shrink(),
+    builder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
   );
 
   try {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      navigator.pop();
-      messenger.showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
-      return;
-    }
-
     final orderId = order['orderId'] as String?;
-    final refundTotalRaw = order['totalPrice'];
-    final refundTotal =
-        refundTotalRaw is int
-            ? refundTotalRaw
-            : refundTotalRaw is double
-            ? refundTotalRaw.toInt()
-            : int.tryParse(refundTotalRaw.toString());
-
-    if (orderId == null || refundTotal == null) {
+    if (orderId == null) {
       navigator.pop();
       messenger.showSnackBar(
-        const SnackBar(content: Text('주문 정보가 올바르지 않습니다.')),
+        const SnackBar(content: Text('이 주문은 취소할 수 없습니다.')),
       );
       return;
     }
 
-    final callable = FirebaseFunctions.instance.httpsCallable('requestRefund');
-    final result = await callable.call({
-      'uid': user.uid,
-      'orderId': orderId,
-      'type': 'cancel',
-    });
+    await ref.read(reviewControllerProvider).cancelOrder(orderId);
 
     navigator.pop();
-
-    final data = result.data;
-    if (data != null &&
-        (data['status'] == 'refunded' || data['status'] == 'canceled')) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('주문이 성공적으로 취소되었습니다.')),
-      );
-    } else {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('주문 취소에 실패했습니다. 다시 시도해주세요.')),
-      );
-    }
+    messenger.showSnackBar(
+      const SnackBar(content: Text('주문이 성공적으로 취소되었습니다.')),
+    );
   } catch (e) {
     navigator.pop();
     messenger.showSnackBar(
-      const SnackBar(content: Text('주문 취소 중 오류가 발생했습니다. 다시 시도해주세요.')),
+      SnackBar(content: Text('주문 취소 중 에러가 발생했습니다: ')),
     );
   }
 }

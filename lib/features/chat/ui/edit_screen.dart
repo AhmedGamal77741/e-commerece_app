@@ -4,27 +4,28 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
-import 'package:ecommerece_app/features/chat/services/chat_service.dart';
+import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/services/favorites_service.dart';
-import 'package:ecommerece_app/features/chat/services/friends_service.dart';
+import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
-class EditScreen extends StatefulWidget {
+class EditScreen extends ConsumerStatefulWidget {
   /// 0 = 연락처, 1 = 1:1채팅, 2 = 그룹채팅
   final int initialTab;
 
   const EditScreen({super.key, this.initialTab = 0});
 
   @override
-  State<EditScreen> createState() => _EditScreenState();
+  ConsumerState<EditScreen> createState() => _EditScreenState();
 }
 
-class _EditScreenState extends State<EditScreen> {
+class _EditScreenState extends ConsumerState<EditScreen> {
   late int _selectedTab;
   final List<String> _tabs = ['친구', '1:1채팅', '그룹채팅'];
 
@@ -195,16 +196,16 @@ class _EditScreenState extends State<EditScreen> {
 // TAB 0 — 연락처 edit  (with alias support)
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _ContactsEditTab extends StatefulWidget {
+class _ContactsEditTab extends ConsumerStatefulWidget {
   final String query;
   const _ContactsEditTab({required this.query});
 
   @override
-  State<_ContactsEditTab> createState() => _ContactsEditTabState();
+  ConsumerState<_ContactsEditTab> createState() => _ContactsEditTabState();
 }
 
-class _ContactsEditTabState extends State<_ContactsEditTab> {
-  final FriendsService _friendsService = FriendsService();
+class _ContactsEditTabState extends ConsumerState<_ContactsEditTab> {
+  
   final FavoritesService _favoritesService = FavoritesService();
 
   String get uid => FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -425,7 +426,7 @@ class _ContactsEditTabState extends State<_ContactsEditTab> {
                         final blockedIds = blockedSnap.data ?? [];
 
                         return StreamBuilder<List<MyUser>>(
-                          stream: _friendsService.getFriendsStream(),
+                          stream: ref.read(friendsControllerProvider).getFriendsStream(),
                           builder: (ctx, friendsSnap) {
                             if (!friendsSnap.hasData) {
                               return const SizedBox.shrink();
@@ -689,16 +690,16 @@ class _ContactsEditTabState extends State<_ContactsEditTab> {
 // TAB 1 — 1:1채팅 edit  (with alias support)
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _DirectChatsEditTab extends StatefulWidget {
+class _DirectChatsEditTab extends ConsumerStatefulWidget {
   final String query;
   const _DirectChatsEditTab({required this.query});
 
   @override
-  State<_DirectChatsEditTab> createState() => _DirectChatsEditTabState();
+  ConsumerState<_DirectChatsEditTab> createState() => _DirectChatsEditTabState();
 }
 
-class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
-  final ChatService _chatService = ChatService();
+class _DirectChatsEditTabState extends ConsumerState<_DirectChatsEditTab> {
+  
   final Map<String, MyUser?> _usersCache = {};
   final Set<String> _fetchingIds = {};
 
@@ -781,7 +782,7 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
     );
     if (confirm != true) return;
     for (final id in _selected) {
-      await _chatService.softDeleteChatForCurrentUser(id);
+      await ref.read(chatControllerProvider).softDeleteChatForCurrentUser(id);
     }
     setState(() => _selected.clear());
   }
@@ -866,7 +867,7 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
       children: [
         Expanded(
           child: StreamBuilder<List<ChatRoomModel>>(
-            stream: _chatService.getChatRoomsStream(),
+            stream: ref.read(chatControllerProvider).getChatRoomsStream(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const SizedBox.shrink();
@@ -1072,16 +1073,16 @@ class _DirectChatsEditTabState extends State<_DirectChatsEditTab> {
 // TAB 2 — 그룹채팅 edit  (unchanged — group chats have no aliases)
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _GroupChatsEditTab extends StatefulWidget {
+class _GroupChatsEditTab extends ConsumerStatefulWidget {
   final String query;
   const _GroupChatsEditTab({required this.query});
 
   @override
-  State<_GroupChatsEditTab> createState() => _GroupChatsEditTabState();
+  ConsumerState<_GroupChatsEditTab> createState() => _GroupChatsEditTabState();
 }
 
-class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
-  final ChatService _chatService = ChatService();
+class _GroupChatsEditTabState extends ConsumerState<_GroupChatsEditTab> {
+  
   String get uid => FirebaseAuth.instance.currentUser?.uid ?? '';
 
   final Set<String> _selected = {};
@@ -1184,7 +1185,7 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
 
     if (confirm != true) return;
     for (final id in _selected) {
-      await _chatService.removeParticipantFromGroup(id, uid);
+      await ref.read(chatControllerProvider).removeParticipantFromGroup(id, uid);
     }
     setState(() => _selected.clear());
   }
@@ -1201,7 +1202,7 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
             builder: (ctx, orderSnap) {
               final orderMap = orderSnap.data ?? {};
               return StreamBuilder<List<ChatRoomModel>>(
-                stream: _chatService.getChatRoomsStream(),
+                stream: ref.read(chatControllerProvider).getChatRoomsStream(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const SizedBox.shrink();
@@ -1411,7 +1412,7 @@ class _GroupChatsEditTabState extends State<_GroupChatsEditTab> {
 // Shared bottom bar
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _BottomBar extends StatelessWidget {
+class _BottomBar extends ConsumerWidget {
   final VoidCallback onDeselectAll;
   final VoidCallback onLeave;
   final bool hasSelection;
@@ -1423,7 +1424,7 @@ class _BottomBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       color: hasSelection ? Colors.black : Colors.grey[100],

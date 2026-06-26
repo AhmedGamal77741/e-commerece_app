@@ -1,53 +1,41 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class Notifications extends StatefulWidget {
+class Notifications extends ConsumerStatefulWidget {
   const Notifications({super.key});
 
   @override
-  State<Notifications> createState() => _NotificationsState();
+  ConsumerState<Notifications> createState() => _NotificationsState();
 }
 
-class _NotificationsState extends State<Notifications> {
+class _NotificationsState extends ConsumerState<Notifications> {
   @override
   void initState() {
     super.initState();
-    _markAllAsRead();
-  }
-
-  Future<void> _markAllAsRead() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final notificationsRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('notifications');
-    final unread =
-        await notificationsRef.where('isRead', isEqualTo: false).get();
-    for (final doc in unread.docs) {
-      await doc.reference.update({'isRead': true});
-    }
+    Future.microtask(() {
+      ref.read(feedControllerProvider).markAllNotificationsAsRead();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final userAsync = ref.watch(currentUserProvider);
     return SafeArea(
-      child:
-          user == null
-              ? Center(child: Text('로그인이 필요합니다'))
-              : StreamBuilder<QuerySnapshot>(
-                stream:
-                    FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(user.uid)
-                        .collection('notifications')
-                        .orderBy('timestamp', descending: true)
-                        .snapshots(),
-                builder: (context, snapshot) {
+      child: userAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const Center(child: Text('로그인이 필요합니다')),
+        data: (user) {
+          if (user == null) {
+            return const Center(child: Text('로그인이 필요합니다'));
+          }
+          return StreamBuilder<QuerySnapshot>(
+            stream: ref.read(feedControllerProvider).getNotificationsStream(user.userId),
+            builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const SizedBox.shrink();
                   }
@@ -135,7 +123,9 @@ class _NotificationsState extends State<Notifications> {
                     },
                   );
                 },
-              ),
+              );
+        },
+      ),
     );
   }
 }

@@ -3,18 +3,19 @@ import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
-import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final passwordController = TextEditingController();
 
   final emailController = TextEditingController();
@@ -26,7 +27,6 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _errorMsg;
 
   String error = '';
-  final fireBaseRepo = FirebaseUserRepo();
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -121,14 +121,14 @@ class _LoginScreenState extends State<LoginScreen> {
               ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
-                    dynamic result = await fireBaseRepo.signIn(
+                    final errorMsg = await ref.read(authControllerProvider).signIn(
                       emailController.text,
                       passwordController.text,
                     );
 
-                    if (result is String) {
+                    if (errorMsg != null) {
                       setState(() {
-                        error = result;
+                        error = errorMsg;
                       });
                     }
                   }
@@ -229,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       return;
                     }
 
-                    final result = await fireBaseRepo.sendPasswordReset(
+                    final result = await ref.read(authControllerProvider).sendPasswordReset(
                       resetEmailController.text,
                     );
                     if (result == null) {

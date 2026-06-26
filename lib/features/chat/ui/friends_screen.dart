@@ -1,33 +1,34 @@
 // screens/friends_screen.dart
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
-import 'package:ecommerece_app/features/chat/services/chat_service.dart';
+
+import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
-import 'package:ecommerece_app/features/chat/services/friends_service.dart';
+import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class FriendsScreen extends StatefulWidget {
+class FriendsScreen extends ConsumerStatefulWidget {
   final String searchQuery;
   const FriendsScreen({super.key, this.searchQuery = ''});
   @override
-  _FriendsScreenState createState() => _FriendsScreenState();
+  ConsumerState<FriendsScreen> createState() => _FriendsScreenState();
 }
 
-class _FriendsScreenState extends State<FriendsScreen>
+class _FriendsScreenState extends ConsumerState<FriendsScreen>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   bool get wantKeepAlive => true;
-  final FriendsService _friendsService = FriendsService();
+  
   final ContactService _contactService = ContactService();
-  final ChatService _chatService = ChatService();
-  final FirebaseUserRepo _userRepo = FirebaseUserRepo();
+  
 
   bool _isSyncing = false;
   bool editMode = false;
@@ -118,7 +119,8 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   Future<void> _loadCurrentUser() async {
     try {
-      final user = await _userRepo.user.first;
+      final userStream = ref.read(currentUserProvider.future);
+      final user = await userStream;
       if (mounted) {
         setState(() {
           _currentUser = user;
@@ -285,7 +287,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                             phoneNumber: _currentUser!.phoneNumber,
                           );
                           try {
-                            await _userRepo.updateUser(updatedUser, '');
+                            await ref.read(authControllerProvider).updateUser(updatedUser, '');
                             if (mounted)
                               setState(() => _currentUser = updatedUser);
                           } catch (e) {
@@ -674,9 +676,9 @@ class _FriendsScreenState extends State<FriendsScreen>
     if (confirm != true) return;
     try {
       final currentUid = FirebaseAuth.instance.currentUser!.uid;
-      await _friendsService.removeFriend(friend.userId);
+      await ref.read(friendsControllerProvider).removeFriend(friend.userId);
       final chatRoomId = ([currentUid, friend.userId]..sort()).join('_');
-      await _chatService.softDeleteChatForCurrentUser(chatRoomId);
+      await ref.read(chatControllerProvider).softDeleteChatForCurrentUser(chatRoomId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -779,7 +781,7 @@ class _FriendsScreenState extends State<FriendsScreen>
 
     if (confirm != true) return;
     try {
-      await _friendsService.blockFriend(friend.name);
+      await ref.read(friendsControllerProvider).blockFriend(friend.name);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -829,7 +831,7 @@ class _FriendsScreenState extends State<FriendsScreen>
 
               Future<void> addFriend(MyUser user) async {
                 setDialogState(() => feedbackMessage = null);
-                final success = await _friendsService.addFriend(user.name);
+                final success = await ref.read(friendsControllerProvider).addFriend(user.name);
                 setDialogState(() {
                   if (success) {
                     feedbackMessage = '${user.name}님과 친구가 되었습니다!';
@@ -1098,7 +1100,7 @@ class _FriendsScreenState extends State<FriendsScreen>
     List<String> selectedUserIds = [];
     String? groupImagePath;
     String groupSearch = '';
-    final friends = await _friendsService.getFriendsStream().first;
+    final friends = await ref.watch(friendsProvider).value ?? [].first;
 
     await showDialog(
       context: context,
@@ -1579,7 +1581,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                                     ? null
                                     : () async {
                                       Navigator.pop(ctx);
-                                      await _chatService.createGroupChatRoom(
+                                      await ref.read(chatControllerProvider).createGroupChatRoom(
                                         name: nameController.text,
                                         participantIds: selectedUserIds,
                                         groupImage: groupImagePath,
@@ -1875,7 +1877,7 @@ class _FriendsScreenState extends State<FriendsScreen>
 
                   return StreamBuilder<List<MyUser>>(
                     // Stream 5: friends list
-                    stream: _friendsService.getFriendsStream(),
+                    stream: ref.read(friendsControllerProvider).getFriendsStream(),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData || _isSyncing) {
                         return const SizedBox.shrink();
@@ -2195,7 +2197,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                     ? InkWell(
                       onTap: () async {
                         try {
-                          final chatRoomId = await _chatService
+                          final chatRoomId = await ref.read(chatControllerProvider)
                               .createDirectChatRoom(friend.userId, isBrand);
                           if (chatRoomId != null) {
                             Navigator.push(
@@ -2236,7 +2238,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                     : InkWell(
                       onTap: () async {
                         try {
-                          final chatRoomId = await _chatService
+                          final chatRoomId = await ref.read(chatControllerProvider)
                               .createDirectChatRoom(friend.userId, isBrand);
                           if (chatRoomId != null) {
                             Navigator.push(

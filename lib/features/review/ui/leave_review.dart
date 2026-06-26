@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/review/ui/widgets/avatar_and_title.dart';
@@ -7,11 +8,11 @@ import 'package:ecommerece_app/features/review/ui/widgets/rep_filed.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class LeaveReview extends StatelessWidget {
+class LeaveReview extends ConsumerWidget {
   const LeaveReview({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
       child: SingleChildScrollView(

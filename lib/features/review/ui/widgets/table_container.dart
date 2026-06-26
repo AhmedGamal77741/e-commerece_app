@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
@@ -6,16 +7,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class TableContainer extends StatefulWidget {
+class TableContainer extends ConsumerStatefulWidget {
   final String orderId;
 
   TableContainer({super.key, required this.orderId});
 
   @override
-  State<TableContainer> createState() => _TableContainerState();
+  ConsumerState<TableContainer> createState() => _TableContainerState();
 }
 
-class _TableContainerState extends State<TableContainer> {
+class _TableContainerState extends ConsumerState<TableContainer> {
   final user = FirebaseAuth.instance.currentUser;
 
   @override

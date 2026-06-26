@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
@@ -23,23 +24,23 @@ class EditPostDialogResult {
   });
 }
 
-class EditPostDialog extends StatefulWidget {
+class EditPostDialog extends ConsumerStatefulWidget {
   final String currentText;
   final List<String> currentImgUrls;
   final String? currentCategoryId;
 
   const EditPostDialog({
-    Key? key,
+    super.key,
     required this.currentText,
     required this.currentImgUrls,
     this.currentCategoryId,
-  }) : super(key: key);
+  });
 
   @override
-  State<EditPostDialog> createState() => _EditPostDialogState();
+  ConsumerState<EditPostDialog> createState() => _EditPostDialogState();
 }
 
-class _EditPostDialogState extends State<EditPostDialog> {
+class _EditPostDialogState extends ConsumerState<EditPostDialog> {
   late TextEditingController _textController;
   late List<String> _networkImgUrls; // Existing network images
   late List<XFile> _localImages; // New local files to be uploaded
@@ -76,7 +77,7 @@ class _EditPostDialogState extends State<EditPostDialog> {
         });
       }
     } catch (e) {
-      print('Error loading categories in EditPostDialog: $e');
+      debugPrint('Error loading categories in EditPostDialog: $e');
     }
   }
 
@@ -105,6 +106,7 @@ class _EditPostDialogState extends State<EditPostDialog> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('이미지 선택 실패: $e')));
@@ -317,7 +319,7 @@ class _EditPostDialogState extends State<EditPostDialog> {
               ],
               // Image management section
               Text(
-                '사진 관리 (${totalImages} 개)',
+                '사진 관리 ($totalImages 개)',
                 style: TextStyle(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
@@ -454,7 +456,7 @@ class _EditPostDialogState extends State<EditPostDialog> {
                                 child: Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(8),
-                                    color: Colors.black.withOpacity(0.2),
+                                    color: Colors.black.withValues(alpha: 0.2),
                                   ),
                                   child: Center(
                                     child: Container(

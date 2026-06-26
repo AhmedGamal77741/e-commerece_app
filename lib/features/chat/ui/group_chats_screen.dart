@@ -5,19 +5,20 @@ import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:ecommerece_app/core/cache/user_cache.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../models/chat_room_model.dart';
-import '../services/chat_service.dart';
+import '../domain/chat_controller.dart';
 
-class GroupChatsScreen extends StatefulWidget {
+class GroupChatsScreen extends ConsumerStatefulWidget {
   @override
-  State<GroupChatsScreen> createState() => _GroupChatsScreenState();
+  ConsumerState<GroupChatsScreen> createState() => _GroupChatsScreenState();
 }
 
-class _GroupChatsScreenState extends State<GroupChatsScreen>
+class _GroupChatsScreenState extends ConsumerState<GroupChatsScreen>
     with AutomaticKeepAliveClientMixin {
   bool get wantKeepAlive => true;
-  final ChatService chatService = ChatService();
+  
   String get currentUserId => FirebaseAuth.instance.currentUser!.uid;
 
   // ─── Group chats order stream ─────────────────────────────────────────────
@@ -272,7 +273,7 @@ class _GroupChatsScreenState extends State<GroupChatsScreen>
     );
 
     if (confirm != true) return;
-    await chatService.removeParticipantFromGroup(chat.id, currentUserId);
+    await ref.read(chatControllerProvider).removeParticipantFromGroup(chat.id, currentUserId);
   }
 
   // ─── Change group image ───────────────────────────────────────────────────
@@ -453,7 +454,7 @@ class _GroupChatsScreenState extends State<GroupChatsScreen>
         final orderMap = orderSnapshot.data ?? {};
 
         return StreamBuilder<List<ChatRoomModel>>(
-          stream: chatService.getChatRoomsStream(),
+          stream: ref.read(chatControllerProvider).getChatRoomsStream(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return const SizedBox.shrink();
@@ -582,14 +583,14 @@ class _GroupChatsScreenState extends State<GroupChatsScreen>
 
 // ─── Last message preview widget (optimized — no extra Firestore reads) ───────
 
-class _GroupLastMessage extends StatelessWidget {
+class _GroupLastMessage extends ConsumerWidget {
   final ChatRoomModel chat;
   final String currentUserId;
 
   const _GroupLastMessage({required this.chat, required this.currentUserId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final content = chat.lastMessage ?? '';
     final senderId = chat.lastMessageSenderId ?? '';
     final senderName = chat.lastMessageSenderName ?? '';
@@ -640,12 +641,12 @@ class _GroupLastMessage extends StatelessWidget {
 
 // ─── Fading text for long messages ───────────────────────────────────────────
 
-class _FadingText extends StatelessWidget {
+class _FadingText extends ConsumerWidget {
   final String text;
   const _FadingText({required this.text});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ShaderMask(
       shaderCallback:
           (bounds) => LinearGradient(
@@ -667,7 +668,7 @@ class _FadingText extends StatelessWidget {
   }
 }
 
-class _GroupChatNameText extends StatelessWidget {
+class _GroupChatNameText extends ConsumerWidget {
   final ChatRoomModel chat;
   final String currentUserId;
   final TextStyle style;
@@ -681,7 +682,7 @@ class _GroupChatNameText extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (chat.name.trim().isNotEmpty) {
       return Text(
         chat.name,

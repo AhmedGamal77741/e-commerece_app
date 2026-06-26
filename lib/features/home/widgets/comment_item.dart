@@ -4,33 +4,33 @@ import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/cart/services/cart_service.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
+
 import 'package:ecommerece_app/features/home/comments.dart';
-import 'package:ecommerece_app/features/home/data/post_provider.dart';
-import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/models/comment_model.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
 
-class CommentItem extends StatefulWidget {
+class CommentItem extends ConsumerStatefulWidget {
   final Comment comment;
   final String postId;
   const CommentItem({super.key, required this.comment, required this.postId});
 
   @override
-  State<CommentItem> createState() => _CommentItemState();
+  ConsumerState<CommentItem> createState() => _CommentItemState();
 }
 
-class _CommentItemState extends State<CommentItem> {
+class _CommentItemState extends ConsumerState<CommentItem> {
   final currentUser = FirebaseAuth.instance.currentUser;
   final GlobalKey _commentKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
-    List<String> likedBy = List<String>.from(widget.comment.likedBy ?? []);
+    List<String> likedBy = List<String>.from(widget.comment.likedBy);
     bool isLiked = likedBy.contains(currentUser!.uid);
 
     return Padding(
@@ -38,7 +38,7 @@ class _CommentItemState extends State<CommentItem> {
       padding: EdgeInsets.only(left: 10.w),
       child: InkWell(
         onLongPress: () {
-          print('Long press detected!'); // Debug
+          debugPrint('Long press detected!'); // Debug
           _showCommentMenu(widget.comment.userId);
         },
         child: Row(
@@ -92,7 +92,6 @@ class _CommentItemState extends State<CommentItem> {
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
-                          return const SizedBox.shrink(); // Or a smallconst SizedBox.shrink() {
                           return const SizedBox.shrink();
                         }
 
@@ -204,6 +203,7 @@ class _CommentItemState extends State<CommentItem> {
                                       widget.comment.productData!.productName,
                                   onTap: () async {
                                     bool isSub = await isUserSubscribed();
+                                    if (!context.mounted) return;
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -244,13 +244,12 @@ class _CommentItemState extends State<CommentItem> {
                           children: [
                             InkWell(
                               onTap: () {
-                                Provider.of<PostsProvider>(
-                                  context,
-                                  listen: false,
-                                ).toggleCommentLike(
-                                  widget.postId,
-                                  widget.comment.id,
-                                );
+                                ref
+                                    .read(feedControllerProvider)
+                                    .toggleCommentLike(
+                                      widget.postId,
+                                      widget.comment.id,
+                                    );
                                 setState(() {
                                   isLiked = !isLiked;
                                 });
@@ -290,18 +289,18 @@ class _CommentItemState extends State<CommentItem> {
   }
 
   void _showCommentMenu(String commentUserId) {
-    print('Showing menu for user: $commentUserId'); // Debug
+    debugPrint('Showing menu for user: $commentUserId'); // Debug
 
     // Don't show menu if it's the current user's own comment
     if (commentUserId == currentUser!.uid) {
-      print('Cannot show menu for own comment');
+      debugPrint('Cannot show menu for own comment');
       return;
     }
 
     final RenderBox? renderBox =
         _commentKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) {
-      print('RenderBox is null');
+      debugPrint('RenderBox is null');
       return;
     }
 
@@ -457,6 +456,7 @@ class _CommentItemState extends State<CommentItem> {
         ),
       ],
     ).then((value) async {
+      if (!mounted) return;
       if (value == 'block') {
         await _blockUser(context, commentUserId);
       } else if (value == 'report') {

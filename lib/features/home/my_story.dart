@@ -3,32 +3,29 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/loading_service.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/features/auth/data/auth_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 
-class MyStory extends StatefulWidget {
+class MyStory extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
   const MyStory({super.key, this.scrollController});
   @override
-  State<MyStory> createState() => _MyStoryState();
+  ConsumerState<MyStory> createState() => _MyStoryState();
 }
 
-class _MyStoryState extends State<MyStory> {
+class _MyStoryState extends ConsumerState<MyStory> {
   String? selectedCategoryId;
   late PageController _pageController;
   List<String?> _categoryPages = [null];
-  User? _firebaseUser;
-  late final StreamSubscription<User?> _authSubscription;
   final ValueNotifier<int> _currentPageIndex = ValueNotifier(0);
-  Stream<MyUser?>? _userStream;
   String imgUrl = "";
   Stream<QuerySnapshot>? _categoriesStream;
   String? _cachedCategoriesUserId;
@@ -36,13 +33,7 @@ class _MyStoryState extends State<MyStory> {
   Stream<QuerySnapshot> _getCategoriesStream(String userId) {
     if (_categoriesStream == null || _cachedCategoriesUserId != userId) {
       _cachedCategoriesUserId = userId;
-      _categoriesStream =
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(userId)
-              .collection('categories')
-              .orderBy('order')
-              .snapshots();
+      _categoriesStream = ref.read(feedControllerProvider).getUserCategoriesStream(userId);
     }
     return _categoriesStream!;
   }
@@ -51,25 +42,10 @@ class _MyStoryState extends State<MyStory> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    _firebaseUser = FirebaseAuth.instance.currentUser;
-
-    if (_firebaseUser != null) {
-      _userStream = FirebaseUserRepo().user;
-    }
-
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
-      if (mounted) {
-        setState(() {
-          _firebaseUser = user;
-          _userStream = user != null ? FirebaseUserRepo().user : null;
-        });
-      }
-    });
   }
 
   @override
   void dispose() {
-    _authSubscription.cancel();
     _pageController.dispose();
     _currentPageIndex.dispose();
     super.dispose();
@@ -109,20 +85,15 @@ class _MyStoryState extends State<MyStory> {
 
   @override
   Widget build(BuildContext context) {
-    if (_firebaseUser == null) {
-      return const Center(child: Text('스토리를 보려면 로그인하세요'));
-    }
-    return StreamBuilder<MyUser?>(
-      stream: _userStream,
-      builder: (context, userSnapshot) {
-        if (userSnapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox.shrink();
-        }
-        if (!userSnapshot.hasData) {
-          return const Center(child: Text('사용자 프로필을 찾을 수 없습니다'));
-        }
+    final userAsync = ref.watch(currentUserProvider);
 
-        final currentUser = userSnapshot.data!;
+    return userAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const Center(child: Text('스토리를 보려면 로그인하세요')),
+      data: (currentUser) {
+        if (currentUser == null) {
+          return const Center(child: Text('스토리를 보려면 로그인하세요'));
+        }
 
         return StreamBuilder<QuerySnapshot>(
           stream: _getCategoriesStream(currentUser.userId),
@@ -145,15 +116,35 @@ class _MyStoryState extends State<MyStory> {
                         InkWell(
                           onTap: () async {
                             LoadingService().showLoading();
-                            final newUrl = await uploadImageToFirebaseStorage(
-                              await ImagePickerHelper.pickImage(),
-                            );
+                            final image = await ImagePickerHelper.pickImage();
+                            if (image != null) {
+                              final newUrl = await ref.read(authRepositoryProvider).uploadProfileImage(image, currentUser.userId);
+                              
+                              final updatedUser = MyUser(
+                                userId: currentUser.userId,
+                                email: currentUser.email,
+                                name: currentUser.name,
+                                url: newUrl,
+                                isSub: currentUser.isSub,
+                                defaultAddressId: currentUser.defaultAddressId,
+                                blocked: currentUser.blocked,
+                                payerId: currentUser.payerId,
+                                isOnline: currentUser.isOnline,
+                                lastSeen: currentUser.lastSeen,
+                                chatRooms: currentUser.chatRooms,
+                                friends: currentUser.friends,
+                                friendRequestsSent: currentUser.friendRequestsSent,
+                                friendRequestsReceived: currentUser.friendRequestsReceived,
+                                phoneNumber: currentUser.phoneNumber,
+                              );
+                              
+                              await ref.read(authControllerProvider).updateUser(updatedUser, '');
+                            }
                             LoadingService().hideLoading();
-                            /* setState(() => imgUrl = newUrl); */
                           },
                           child: ClipOval(
                             child: SafeNetworkImage(
-                              url: (imgUrl.isEmpty ? (currentUser.url) : imgUrl) ?? '',
+                              url: imgUrl.isEmpty ? currentUser.url : imgUrl,
                               width: 64.w,
                               height: 64.h,
                               fit: BoxFit.cover,
@@ -211,7 +202,7 @@ class _MyStoryState extends State<MyStory> {
 }
 
 // Each page owns its own stable stream + stays alive when swiped away
-class _PostsPage extends StatefulWidget {
+class _PostsPage extends ConsumerStatefulWidget {
   final String userId;
   final String? categoryId;
   const _PostsPage({
@@ -220,10 +211,10 @@ class _PostsPage extends StatefulWidget {
   });
 
   @override
-  State<_PostsPage> createState() => _PostsPageState();
+  ConsumerState<_PostsPage> createState() => _PostsPageState();
 }
 
-class _PostsPageState extends State<_PostsPage>
+class _PostsPageState extends ConsumerState<_PostsPage>
     with AutomaticKeepAliveClientMixin {
   late final Stream<QuerySnapshot> _stream;
 
@@ -233,16 +224,10 @@ class _PostsPageState extends State<_PostsPage>
   @override
   void initState() {
     super.initState();
-    Query query = FirebaseFirestore.instance
-        .collection('posts')
-        .where('userId', isEqualTo: widget.userId)
-        .orderBy('createdAt', descending: true);
-
-    if (widget.categoryId != null) {
-      query = query.where('categoryId', isEqualTo: widget.categoryId);
-    }
-
-    _stream = query.snapshots();
+    _stream = ref.read(feedControllerProvider).getUserPostsStream(
+      widget.userId,
+      categoryId: widget.categoryId,
+    );
   }
 
   @override
@@ -304,7 +289,7 @@ Stream<QuerySnapshot> _userPostsStream(String userId) {
   return query.orderBy('createdAt', descending: true).snapshots();
 } */
 
-class UserCategoriesBar extends StatelessWidget {
+class UserCategoriesBar extends ConsumerWidget {
   final List<QueryDocumentSnapshot> categories;
   final String? selectedCategoryId;
   final Function(String) onCategorySelected;
@@ -317,7 +302,7 @@ class UserCategoriesBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (categories.isEmpty) {
       return const SizedBox.shrink();
     }

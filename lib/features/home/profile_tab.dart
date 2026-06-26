@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,20 +9,21 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class ProfileTab extends StatefulWidget {
+class ProfileTab extends ConsumerStatefulWidget {
   final String userId;
 
   const ProfileTab({super.key, required this.userId});
 
   @override
-  State<ProfileTab> createState() => _ProfileTabState();
+  ConsumerState<ProfileTab> createState() => _ProfileTabState();
 }
 
-class _ProfileTabState extends State<ProfileTab> {
+class _ProfileTabState extends ConsumerState<ProfileTab> {
   String? selectedCategoryId;
   late PageController _pageController;
   List<String?> _categoryPages = [null];
@@ -32,13 +34,7 @@ class _ProfileTabState extends State<ProfileTab> {
   Stream<QuerySnapshot> _getCategoriesStream(String userId) {
     if (_categoriesStream == null || _cachedCategoriesUserId != userId) {
       _cachedCategoriesUserId = userId;
-      _categoriesStream =
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(userId)
-              .collection('categories')
-              .orderBy('order')
-              .snapshots();
+      _categoriesStream = ref.read(feedControllerProvider).getUserCategoriesStream(userId);
     }
     return _categoriesStream!;
   }
@@ -47,11 +43,7 @@ class _ProfileTabState extends State<ProfileTab> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    _userStream =
-        FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.userId)
-            .snapshots();
+    _userStream = ref.read(feedControllerProvider).getUserStream(widget.userId);
   }
 
   @override
@@ -124,7 +116,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     // Profile Image - no tap for other users
                     ClipOval(
                       child: SafeNetworkImage(
-                        url: profileUser.url ?? '',
+                        url: profileUser.url,
                         width: 64.w,
                         height: 64.h,
                         fit: BoxFit.cover,
@@ -210,17 +202,17 @@ class _ProfileTabState extends State<ProfileTab> {
 }
 
 // Each page owns its own stable stream + stays alive when swiped away
-class _PostsPage extends StatefulWidget {
+class _PostsPage extends ConsumerStatefulWidget {
   final String userId;
   final String? categoryId;
 
   const _PostsPage({required this.userId, this.categoryId});
 
   @override
-  State<_PostsPage> createState() => _PostsPageState();
+  ConsumerState<_PostsPage> createState() => _PostsPageState();
 }
 
-class _PostsPageState extends State<_PostsPage>
+class _PostsPageState extends ConsumerState<_PostsPage>
     with AutomaticKeepAliveClientMixin {
   late final Stream<QuerySnapshot> _stream;
 
@@ -230,16 +222,10 @@ class _PostsPageState extends State<_PostsPage>
   @override
   void initState() {
     super.initState();
-    Query query = FirebaseFirestore.instance
-        .collection('posts')
-        .where('userId', isEqualTo: widget.userId)
-        .orderBy('createdAt', descending: true);
-
-    if (widget.categoryId != null) {
-      query = query.where('categoryId', isEqualTo: widget.categoryId);
-    }
-
-    _stream = query.snapshots();
+    _stream = ref.read(feedControllerProvider).getUserPostsStream(
+      widget.userId,
+      categoryId: widget.categoryId,
+    );
   }
 
   @override
@@ -271,7 +257,7 @@ class _PostsPageState extends State<_PostsPage>
             ),
           );
         }
-        final bool isGuest = FirebaseAuth.instance.currentUser == null;
+        final bool isGuest = ref.watch(currentUserProvider).value == null;
         return ListView.builder(
           itemCount: posts.length,
           itemBuilder: (context, index) {
@@ -305,7 +291,7 @@ class _PostsPageState extends State<_PostsPage>
   }
 }
 
-class UserCategoriesBar extends StatelessWidget {
+class UserCategoriesBar extends ConsumerWidget {
   final List<QueryDocumentSnapshot> categories;
   final String? selectedCategoryId;
   final Function(String) onCategorySelected;
@@ -318,7 +304,7 @@ class UserCategoriesBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (categories.isEmpty) {
       return const SizedBox.shrink();
     }

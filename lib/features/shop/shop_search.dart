@@ -1,114 +1,78 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/features/cart/services/cart_service.dart';
-import 'package:ecommerece_app/features/cart/services/favorites_service.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-class ShopSearch extends StatefulWidget {
+class ShopSearch extends ConsumerStatefulWidget {
   const ShopSearch({super.key});
 
   @override
-  State<ShopSearch> createState() => _ShopSearchState();
+  ConsumerState<ShopSearch> createState() => _ShopSearchState();
 }
 
-class _ShopSearchState extends State<ShopSearch> {
-  TextEditingController _searchController = TextEditingController();
-  List<Product> _allProducts = [];
-  List<Product> _filteredProducts = [];
-  bool _isSub = false;
+class _ShopSearchState extends ConsumerState<ShopSearch> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
-  void initState() {
-    super.initState();
-    _fetchProducts();
-    _checkSubscriptionStatus();
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  Future<void> _checkSubscriptionStatus() async {
-    bool isSub = await isUserSubscribed();
+  void _onSearchChanged(String query) {
     setState(() {
-      _isSub = isSub;
+      _searchQuery = query.toLowerCase();
     });
-  }
-
-  // Fetch all products from Firestore
-  void _fetchProducts() async {
-    final querySnapshot =
-        await FirebaseFirestore.instance.collection('products').get();
-    setState(() {
-      _allProducts =
-          querySnapshot.docs.map((doc) {
-            return Product.fromMap(doc.data());
-          }).toList();
-
-      _filteredProducts =
-          _allProducts; // Initialize filtered list with all products
-    });
-  }
-
-  // Search functionality
-  void _searchProduct(String query) {
-    if (query.isEmpty) {
-      setState(() {
-        _filteredProducts =
-            _allProducts; // Show all products if search is cleared
-      });
-    } else {
-      final filtered =
-          _allProducts
-              .where(
-                (product) => product.productName
-                    .toString()
-                    .toLowerCase()
-                    .contains(query.toLowerCase()),
-              )
-              .toList();
-      setState(() {
-        _filteredProducts = filtered; // Update filtered products list
-      });
-    }
   }
 
   final formatCurrency = NumberFormat('#,###');
 
   @override
   Widget build(BuildContext context) {
+    final productsAsync = ref.watch(categoryProductsStreamProvider('all'));
+    final userProfileAsync = ref.watch(userProfileStreamProvider);
+
+    bool isSub = false;
+    userProfileAsync.whenData((profile) {
+      if (profile != null && profile.containsKey('isSub')) {
+        isSub = profile['isSub'] == true;
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         leadingWidth: 40.w,
         titleSpacing: 0,
-
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: ColorsManager.primary600),
-          onPressed: () {
-            Navigator.pop(context); // Going back
-          },
+          onPressed: () => Navigator.pop(context),
         ),
         title: TextField(
           controller: _searchController,
-          onChanged: _searchProduct,
+          onChanged: _onSearchChanged,
           decoration: InputDecoration(
             hintText: '검색...',
             contentPadding: EdgeInsets.symmetric(
               horizontal: 12.w,
               vertical: 5.h,
             ),
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderSide: BorderSide(color: Colors.grey),
               borderRadius: BorderRadius.zero,
             ),
-            focusedBorder: OutlineInputBorder(
+            focusedBorder: const OutlineInputBorder(
               borderSide: BorderSide(color: Colors.grey),
               borderRadius: BorderRadius.zero,
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderSide: BorderSide(color: Colors.grey),
               borderRadius: BorderRadius.zero,
             ),
@@ -116,100 +80,106 @@ class _ShopSearchState extends State<ShopSearch> {
         ),
         actions: [
           IconButton(
-            icon: ImageIcon(AssetImage('assets/Frame 4.png')),
+            icon: const ImageIcon(AssetImage('assets/Frame 4.png')),
             iconSize: 30.sp,
             onPressed: () {},
           ),
         ],
       ),
-      body:
-          _filteredProducts.isEmpty
-              ? const SizedBox.shrink() // Show loading indicator
-              : _filteredProducts.isEmpty && _searchController.text.isNotEmpty
-              ? Center(child: Text('결과가 없습니다')) // Show no results message
-              : ListView.builder(
-                itemCount: _filteredProducts.length,
-                itemBuilder: (context, index) {
-                  final product = _filteredProducts[index];
-                  return ListTile(
-                    title: Text(product.productName),
-                    subtitle:
-                        _isSub
-                            ? Text('${formatCurrency.format(product.price)} 원')
-                            : Text(
-                              '${formatCurrency.format(product.price / 0.8)} 원',
-                            ),
-                    leading: Stack(
-                      children: [
-                        CachedNetworkImage(
-                          imageUrl: product.imgUrl!,
-                          width: 50.w,
-                          height: 50.h,
-                          fit: BoxFit.cover,
-                          fadeInDuration: Duration.zero,
-                          fadeOutDuration: Duration.zero,
-                          placeholder:
-                              (context, url) => Container(
-                                width: 50.w,
-                                height: 50.h,
-                                color: Colors.grey[200],
-                              ),
-                          errorWidget:
-                              (context, url, error) => Container(
-                                width: 50.w,
-                                height: 50.h,
-                                color: Colors.grey[200],
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    color: Colors.grey,
-                                    size: 24,
-                                  ),
-                                ),
-                              ),
+      body: productsAsync.when(
+        data: (allProducts) {
+          final filteredProducts = _searchQuery.isEmpty
+              ? allProducts
+              : allProducts
+                  .where((p) =>
+                      p.productName.toLowerCase().contains(_searchQuery))
+                  .toList();
+
+          if (filteredProducts.isEmpty && _searchQuery.isNotEmpty) {
+            return const Center(child: Text('결과가 없습니다'));
+          }
+
+          if (filteredProducts.isEmpty) {
+            return const SizedBox.shrink();
+          }
+
+          return ListView.builder(
+            itemCount: filteredProducts.length,
+            itemBuilder: (context, index) {
+              final product = filteredProducts[index];
+              return ListTile(
+                title: Text(product.productName),
+                subtitle: isSub
+                    ? Text('${formatCurrency.format(product.price)} 원')
+                    : Text('${formatCurrency.format(product.price / 0.8)} 원'),
+                leading: Stack(
+                  children: [
+                    CachedNetworkImage(
+                      imageUrl: product.imgUrl ?? '',
+                      width: 50.w,
+                      height: 50.h,
+                      fit: BoxFit.cover,
+                      fadeInDuration: Duration.zero,
+                      fadeOutDuration: Duration.zero,
+                      placeholder: (context, url) => Container(
+                        width: 50.w,
+                        height: 50.h,
+                        color: Colors.grey[200],
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        width: 50.w,
+                        height: 50.h,
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.grey,
+                            size: 24,
+                          ),
                         ),
-                        if (product.stock == 0)
-                          Positioned.fill(
-                            child: Container(
-                              color: Colors.transparent,
-                              child: Center(
-                                child: Image.asset(
-                                  'assets/sold_out.png',
-                                  fit: BoxFit.contain,
-                                  cacheWidth: 100,
-                                  cacheHeight: 100,
-                                ),
-                              ),
+                      ),
+                    ),
+                    if (product.stock == 0)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.transparent,
+                          child: Center(
+                            child: Image.asset(
+                              'assets/sold_out.png',
+                              fit: BoxFit.contain,
+                              cacheWidth: 100,
+                              cacheHeight: 100,
                             ),
                           ),
-                      ],
-                    ),
-                    onTap: () async {
-                      bool isSub = await isUserSubscribed();
-                      bool liked = isFavoritedByUser(
-                        p: product,
-                        userId: FirebaseAuth.instance.currentUser?.uid ?? '',
-                      );
-
-                      String arrivalTime = await getArrivalDay(
-                        product.meridiem,
-                        product.baselineTime,
-                      );
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => ItemDetails(
-                                product: product,
-                                arrivalDay: arrivalTime,
-                                isSub: isSub,
-                              ),
                         ),
-                      );
-                    },
+                      ),
+                  ],
+                ),
+                onTap: () async {
+                  String arrivalTime = await getArrivalDay(
+                    product.meridiem,
+                    product.baselineTime,
                   );
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ItemDetails(
+                          product: product,
+                          arrivalDay: arrivalTime,
+                          isSub: isSub,
+                        ),
+                      ),
+                    );
+                  }
                 },
-              ),
+              );
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator(color: Colors.black)),
+        error: (error, stack) => Center(child: Text('Error: $error')),
+      ),
     );
   }
 }

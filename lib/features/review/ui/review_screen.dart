@@ -1,14 +1,14 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/widgets/tab_app_bar.dart';
-import 'package:ecommerece_app/features/payment/subscription_screen.dart';
-import 'package:ecommerece_app/features/review/ui/leave_review.dart';
+
 import 'package:ecommerece_app/features/review/ui/order_history.dart';
 import 'package:flutter/material.dart';
 
-class ReviewScreen extends StatelessWidget {
+class ReviewScreen extends ConsumerWidget {
   const ReviewScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return DefaultTabController(
       length: 1,
       child: Scaffold(

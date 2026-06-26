@@ -5,18 +5,18 @@ import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/home/data/home_functions.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_actions.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart'; // imports NaturalAspectPageView
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 
-class GuestPostItem extends StatelessWidget {
+class GuestPostItem extends ConsumerWidget {
   final Map<String, dynamic> post;
 
   /// Caller-supplied explicit image width.
@@ -36,9 +36,9 @@ class GuestPostItem extends StatelessWidget {
   final PageController _pageController = PageController();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final bool isGuest = FirebaseAuth.instance.currentUser == null;
-    final postsProvider = Provider.of<PostsProvider>(context, listen: false);
+    final postsProvider = ref.read(feedControllerProvider);
 
     Future<void> runWithLoading(
       BuildContext context,

@@ -1,8 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class ReqButton extends StatelessWidget {
+class ReqButton extends ConsumerWidget {
   final String txt;
   final VoidCallback func;
   final Color color;
@@ -14,7 +15,7 @@ class ReqButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return TextButton(
       onPressed: func,
       style: TextButton.styleFrom(

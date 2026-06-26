@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
@@ -6,16 +7,17 @@ import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/cart/services/cart_service.dart';
 import 'package:ecommerece_app/features/home/data/follow_service.dart';
-import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
+import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomeSearch extends StatefulWidget {
+class HomeSearch extends ConsumerStatefulWidget {
   final bool useGuestPostItem;
   final int initialTabIndex;
   const HomeSearch({
@@ -25,10 +27,10 @@ class HomeSearch extends StatefulWidget {
   });
 
   @override
-  State<HomeSearch> createState() => _HomeSearchState();
+  ConsumerState<HomeSearch> createState() => _HomeSearchState();
 }
 
-class _HomeSearchState extends State<HomeSearch> {
+class _HomeSearchState extends ConsumerState<HomeSearch> {
   final TextEditingController _searchController = TextEditingController();
   String searchQuery = '';
   late int _selectedIndex;
@@ -239,7 +241,7 @@ class _HomeSearchState extends State<HomeSearch> {
   }
 }
 
-class _HomeFeedSearchTab extends StatefulWidget {
+class _HomeFeedSearchTab extends ConsumerStatefulWidget {
   final String searchQuery;
   final bool useGuestPostItem;
 
@@ -249,10 +251,10 @@ class _HomeFeedSearchTab extends StatefulWidget {
   });
 
   @override
-  State<_HomeFeedSearchTab> createState() => _HomeFeedSearchTabState();
+  ConsumerState<_HomeFeedSearchTab> createState() => _HomeFeedSearchTabState();
 }
 
-class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
+class _HomeFeedSearchTabState extends ConsumerState<_HomeFeedSearchTab>
     with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
 
@@ -265,81 +267,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
     super.dispose();
   }
 
-  // Helper: Stream author data in real-time with efficient multi-document listening
-  Stream<Map<String, Map<String, dynamic>>> _streamAuthorDataRealtime(
-    List<String> authorIds,
-  ) {
-    if (authorIds.isEmpty) {
-      return Stream.value({});
-    }
 
-    // Chunk authorIds into groups of 10 (Firestore whereIn limit)
-    final chunks = <List<String>>[];
-    for (var i = 0; i < authorIds.length; i += 10) {
-      chunks.add(
-        authorIds.sublist(
-          i,
-          i + 10 > authorIds.length ? authorIds.length : i + 10,
-        ),
-      );
-    }
-
-    // Create streams for each chunk
-    final streams =
-        chunks.map((chunk) {
-          return FirebaseFirestore.instance
-              .collection('users')
-              .where(FieldPath.documentId, whereIn: chunk)
-              .snapshots()
-              .map((snapshot) {
-                final map = <String, Map<String, dynamic>>{};
-                for (var doc in snapshot.docs) {
-                  map[doc.id] = doc.data();
-                }
-                return map;
-              });
-        }).toList();
-
-    // If only one chunk, return directly
-    if (streams.length == 1) {
-      return streams[0];
-    }
-
-    // For multiple chunks, merge them using StreamController
-    return Stream.multi((controller) async {
-      final dataMaps = List<Map<String, Map<String, dynamic>>>.filled(
-        streams.length,
-        {},
-      );
-
-      final subscriptions =
-          <StreamSubscription<Map<String, Map<String, dynamic>>>>[];
-
-      try {
-        for (var i = 0; i < streams.length; i++) {
-          subscriptions.add(
-            streams[i].listen(
-              (data) {
-                dataMaps[i] = data;
-                // Combine all maps from all chunks
-                final combined = <String, Map<String, dynamic>>{};
-                for (var map in dataMaps) {
-                  combined.addAll(map);
-                }
-                // Add the combined map to controller
-                controller.add(combined);
-              },
-              onError: (e) => controller.addError(e),
-              onDone: () => controller.close(),
-            ),
-          );
-        }
-      } catch (e) {
-        controller.addError(e);
-        controller.close();
-      }
-    });
-  }
 
   // Helper: Check if post should be visible based on privacy rules
   bool _shouldShowPost({
@@ -371,46 +299,34 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
     if (widget.searchQuery.trim().isEmpty) {
       return const SizedBox.shrink();
     }
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, authSnapshot) {
-        if (authSnapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            /* child:const SizedBox.shrink(), */
-          );
-        }
+    final authState = ref.watch(authStateProvider);
+    if (authState.isLoading) {
+      return const Center();
+    }
+    final firebaseUser = authState.value;
+    final postsProvider = ref.read(feedControllerProvider);
 
-        final firebaseUser = authSnapshot.data;
-        final postsProvider = Provider.of<PostsProvider>(
-          context,
-          listen: false,
-        );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (firebaseUser == null) {
+        postsProvider.resetListening();
+      } else {
+        postsProvider.startListening();
+      }
+    });
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (firebaseUser == null) {
-            postsProvider.resetListening();
-          } else {
-            postsProvider.startListening();
-          }
-        });
+    final currentUser = firebaseUser;
 
-        final currentUser = FirebaseAuth.instance.currentUser;
-
-        // FIX: Check if currentUser is null before proceeding
-        if (currentUser == null) {
-          return const Center(child: Text('Please sign in to continue'));
-        }
+    // FIX: Check if currentUser is null before proceeding
+    if (currentUser == null) {
+      return const Center(child: Text('Please sign in to continue'));
+    }
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Expanded(
               child: StreamBuilder<DocumentSnapshot>(
-                stream:
-                    FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(currentUser.uid)
-                        .snapshots(),
+                stream: ref.read(feedControllerProvider).getUserStream(currentUser.uid),
                 builder: (context, userSnapshot) {
                   if (userSnapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
@@ -443,10 +359,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                   // For non-premium users: show only public posts
                   if (!isPremium) {
                     return StreamBuilder<QuerySnapshot>(
-                      stream:
-                          FirebaseFirestore.instance
-                              .collection('posts')
-                              .snapshots(),
+                      stream: ref.read(feedControllerProvider).searchPostsStream(),
                       builder: (context, postsSnapshot) {
                         if (postsSnapshot.hasError) {
                           return Text('Error: ${postsSnapshot.error}');
@@ -469,7 +382,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
 
                         // Stream author data for privacy checking
                         return StreamBuilder<Map<String, Map<String, dynamic>>>(
-                          stream: _streamAuthorDataRealtime(authorIds.toList()),
+                          stream: ref.read(feedControllerProvider).getAuthorsDataStreamRealtime(authorIds.toList()),
                           builder: (context, authorsSnapshot) {
                             if (!authorsSnapshot.hasData) {
                               return const Center(
@@ -552,12 +465,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
 
                   // For premium users: full privacy filtering with following
                   return StreamBuilder<QuerySnapshot>(
-                    stream:
-                        FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(currentUser.uid)
-                            .collection('following')
-                            .snapshots(),
+                    stream: ref.read(feedControllerProvider).getFollowingStreamForUser(currentUser.uid),
                     builder: (context, followingSnapshot) {
                       // Build the following set
                       final followingSet = <String>{};
@@ -571,10 +479,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                       }
 
                       return StreamBuilder<QuerySnapshot>(
-                        stream:
-                            FirebaseFirestore.instance
-                                .collection('posts')
-                                .snapshots(),
+                        stream: ref.read(feedControllerProvider).searchPostsStream(),
                         builder: (context, postsSnapshot) {
                           if (postsSnapshot.hasError) {
                             return Text('Error: ${postsSnapshot.error}');
@@ -600,7 +505,7 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
                           return StreamBuilder<
                             Map<String, Map<String, dynamic>>
                           >(
-                            stream: _streamAuthorDataRealtime(
+                            stream: ref.read(feedControllerProvider).getAuthorsDataStreamRealtime(
                               authorIds.toList(),
                             ),
                             builder: (context, authorsSnapshot) {
@@ -689,23 +594,25 @@ class _HomeFeedSearchTabState extends State<_HomeFeedSearchTab>
             ),
           ],
         );
-      },
-    );
   }
 }
 
-class FollowingSearchTab extends StatefulWidget {
+class FollowingSearchTab extends ConsumerStatefulWidget {
   const FollowingSearchTab({super.key, this.searchQuery});
   final String? searchQuery; // FIX: Added proper type annotation
 
   @override
-  State<FollowingSearchTab> createState() => _FollowingSearchTabState();
+  ConsumerState<FollowingSearchTab> createState() => _FollowingSearchTabState();
 }
 
-class _FollowingSearchTabState extends State<FollowingSearchTab> {
+class _FollowingSearchTabState extends ConsumerState<FollowingSearchTab> {
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final authState = ref.watch(authStateProvider);
+    if (authState.isLoading) {
+      return const Center();
+    }
+    final currentUser = authState.value;
     if (currentUser == null) {
       return const Center(child: Text('Please sign in to continue'));
     }
@@ -714,7 +621,7 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
       return const SizedBox.shrink();
     }
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(currentUser.uid).snapshots(),
+      stream: ref.read(feedControllerProvider).getUserStream(currentUser.uid),
       builder: (context, currentUserSnapshot) {
         if (!currentUserSnapshot.hasData) {
           return const Center();
@@ -723,7 +630,7 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
         final myBlockedUsers = List<String>.from(currentUserData?['blocked'] ?? []);
 
         return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('users').snapshots(),
+          stream: ref.read(feedControllerProvider).searchUsersStream(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return const Center();
@@ -795,13 +702,7 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
                       ),
                     ),
                     StreamBuilder<DocumentSnapshot>(
-                      stream:
-                          FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(currentUserId)
-                              .collection('following')
-                              .doc(user.userId)
-                              .snapshots(),
+                      stream: ref.read(feedControllerProvider).getFollowingDocStream(currentUserId, user.userId),
                       builder: (context, followingSnapshot) {
                         final isFollowing =
                             followingSnapshot.hasData &&
@@ -844,13 +745,7 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
                         if (isPrivate) {
                           // Check for pending follow request
                           return StreamBuilder<DocumentSnapshot>(
-                            stream:
-                                FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(user.userId)
-                                    .collection('followRequests')
-                                    .doc(currentUserId)
-                                    .snapshots(),
+                            stream: ref.read(feedControllerProvider).getFollowRequestDocStream(user.userId, currentUserId),
                             builder: (context, requestSnapshot) {
                               final hasRequest =
                                   requestSnapshot.hasData &&
@@ -877,24 +772,10 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
                                 onPressed: () async {
                                   if (hasRequest) {
                                     // Cancel request
-                                    await FirebaseFirestore.instance
-                                        .collection('users')
-                                        .doc(user.userId)
-                                        .collection('followRequests')
-                                        .doc(currentUserId)
-                                        .delete();
+                                    await ref.read(feedControllerProvider).cancelFollowRequest(user.userId);
                                   } else {
                                     // Send request
-                                    await FirebaseFirestore.instance
-                                        .collection('users')
-                                        .doc(user.userId)
-                                        .collection('followRequests')
-                                        .doc(currentUserId)
-                                        .set({
-                                          'userId': currentUserId,
-                                          'createdAt':
-                                              FieldValue.serverTimestamp(),
-                                        });
+                                    await ref.read(feedControllerProvider).sendFollowRequest(user.userId);
                                   }
                                 },
                                 child: Text(
@@ -952,15 +833,15 @@ class _FollowingSearchTabState extends State<FollowingSearchTab> {
   }
 }
 
-class ShopSearchScreen extends StatefulWidget {
+class ShopSearchScreen extends ConsumerStatefulWidget {
   final String? searchQuery;
   const ShopSearchScreen({super.key, this.searchQuery});
 
   @override
-  State<ShopSearchScreen> createState() => _ShopSearchScreenState();
+  ConsumerState<ShopSearchScreen> createState() => _ShopSearchScreenState();
 }
 
-class _ShopSearchScreenState extends State<ShopSearchScreen> {
+class _ShopSearchScreenState extends ConsumerState<ShopSearchScreen> {
   List<Product> _allProducts = [];
   List<Product> _filteredProducts = [];
   bool _isSub = false;
@@ -982,7 +863,7 @@ class _ShopSearchScreenState extends State<ShopSearchScreen> {
   // Fetch all products from Firestore
   void _fetchProducts() async {
     final querySnapshot =
-        await FirebaseFirestore.instance.collection('products').get();
+        await ref.read(shopControllerProvider).getAllProducts();
     setState(() {
       _allProducts =
           querySnapshot.docs.map((doc) {

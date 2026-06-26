@@ -7,7 +7,8 @@ import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,14 +17,14 @@ import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SignupScreen extends StatefulWidget {
+class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool agreedToTerms = false;
   bool agreedToPrivacy = false;
   final passwordController = TextEditingController();
@@ -37,7 +38,6 @@ class _SignupScreenState extends State<SignupScreen> {
   bool isPrivate = false;
   String imgUrl = '';
   String error = '';
-  final fireBaseRepo = FirebaseUserRepo();
   XFile? selectedImage;
 
   Future<void> pickImage() async {
@@ -318,20 +318,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       if (_formKey.currentState!.validate()) {
                         LoadingService().showLoading();
 
-                        // Check if name is unique
-                        final name = nameController.text.trim();
-                        final existing = await fireBaseRepo.checkNameExists(name);
-                        if (existing) {
-                          LoadingService().hideLoading();
-                          setState(() {
-                            error = '이미 사용 중인 닉네임입니다';
-                          });
-                          return;
-                        }
-
                         MyUser myUser = MyUser.empty;
                         myUser.email = emailController.text;
-                        myUser.name = nameController.text;
+                        myUser.name = nameController.text.trim();
                         myUser.isPrivate = isPrivate;
                         imgUrl.isEmpty
                             ? myUser.url = "https://i.ibb.co/mrVrHy7z/avatar.png"
@@ -343,18 +332,18 @@ class _SignupScreenState extends State<SignupScreen> {
                         final prefs = await SharedPreferences.getInstance();
                         await prefs.setBool('show_bank_prompt_after_login', true);
 
-                        var result = await fireBaseRepo.signUp(
+                        var errorMsg = await ref.read(authControllerProvider).signUp(
                           myUser,
                           passwordController.text,
                           selectedImage,
                         );
                         LoadingService().hideLoading();
 
-                        if (result != '회원가입이 완료되었습니다') {
+                        if (errorMsg != null) {
                           // Signup failed — clear the flag we just set
                           await prefs.remove('show_bank_prompt_after_login');
                           setState(() {
-                            error = result;
+                            error = errorMsg;
                           });
                         }
                         // On success: no action needed — LandingScreen's

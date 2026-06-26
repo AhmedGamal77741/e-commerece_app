@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
@@ -8,7 +9,7 @@ import 'package:ecommerece_app/features/review/ui/widgets/req_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class ExchangeOrRefund extends StatefulWidget {
+class ExchangeOrRefund extends ConsumerStatefulWidget {
   final String userId;
   final String orderId;
 
@@ -19,10 +20,10 @@ class ExchangeOrRefund extends StatefulWidget {
   });
 
   @override
-  State<ExchangeOrRefund> createState() => _ExchangeOrRefundState();
+  ConsumerState<ExchangeOrRefund> createState() => _ExchangeOrRefundState();
 }
 
-class _ExchangeOrRefundState extends State<ExchangeOrRefund> {
+class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
   bool isRefund = false;
   @override
   Widget build(BuildContext context) {

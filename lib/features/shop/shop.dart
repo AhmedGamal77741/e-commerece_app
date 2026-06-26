@@ -1,30 +1,25 @@
-import 'dart:math';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/cart/cart.dart';
 import 'package:ecommerece_app/features/cart/sub_screens/address_list_screen.dart';
-
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
+import 'package:ecommerece_app/features/shop/widgets/category_products_screen.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
-class Shop extends StatefulWidget {
+class Shop extends ConsumerStatefulWidget {
   const Shop({super.key});
 
   @override
-  State<Shop> createState() => ShopState();
+  ConsumerState<Shop> createState() => ShopState();
 }
 
-class ShopState extends State<Shop> with TickerProviderStateMixin {
+class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
   TabController? _tabController;
   final Map<String, ScrollController> _scrollControllers = {};
 
@@ -38,31 +33,6 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
       controller.dispose();
     }
     super.dispose();
-  }
-
-  late Stream<QuerySnapshot> _categoriesStream;
-  late Stream<User?> _authStream;
-  Stream<DocumentSnapshot>? _userStream;
-  String? _lastUserId;
-
-  @override
-  void initState() {
-    super.initState();
-    _categoriesStream =
-        FirebaseFirestore.instance
-            .collection('categories')
-            .orderBy('order')
-            .snapshots();
-    _authStream = FirebaseAuth.instance.authStateChanges();
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      _lastUserId = user.uid;
-      _userStream =
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .snapshots();
-    }
   }
 
   @override
@@ -91,681 +61,193 @@ class ShopState extends State<Shop> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    // listen for realtime category changes (with order field)
-    return StreamBuilder<QuerySnapshot>(
-      stream: _categoriesStream,
-      builder: (context, catSnapshot) {
-        if (catSnapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(body: const SizedBox.shrink());
-        }
-        if (catSnapshot.hasError) {
-          return Scaffold(
-            body: Center(child: Text('Error loading categories')),
-          );
-        }
+    final categoriesAsync = ref.watch(categoriesStreamProvider);
+    final userAddressAsync = ref.watch(userDefaultAddressStreamProvider);
+    final isSub = ref.watch(isSubscribedProvider).value ?? false;
 
-        // convert docs to simple map list
-        final categories =
-            catSnapshot.data?.docs
-                .map(
-                  (doc) => {
-                    'id': doc.id,
-                    'name':
-                        (doc.data() as Map<String, dynamic>)['name'] ??
-                        'Unknown',
-                  },
-                )
-                .toList() ??
-            [];
-
+    return categoriesAsync.when(
+      data: (categories) {
         if (categories.isEmpty) {
           return Scaffold(
-            appBar: AppBar(title: Text('Shop')),
-            body: Center(child: Text('No categories available')),
+            appBar: AppBar(title: const Text('Shop')),
+            body: const Center(child: Text('No categories available')),
           );
         }
 
-        // now continue with auth/user stream as before
-        return StreamBuilder<User?>(
-          stream: _authStream,
-          builder: (context, authSnapshot) {
-            if (authSnapshot.connectionState == ConnectionState.waiting) {
-              return Scaffold(body: const SizedBox.shrink());
-            }
-            final firebaseUser = authSnapshot.data;
-            if (firebaseUser == null) {
-              return _buildShopTabController(null, categories);
-            }
-            if (_userStream == null || _lastUserId != firebaseUser.uid) {
-              _lastUserId = firebaseUser.uid;
-              _userStream =
-                  FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(firebaseUser.uid)
-                      .snapshots();
-            }
-            return StreamBuilder<DocumentSnapshot>(
-              stream: _userStream!,
-              builder: (context, userSnapshot) {
-                if (userSnapshot.connectionState == ConnectionState.waiting) {
-                  return Scaffold(body: const SizedBox.shrink());
-                }
-                if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-                  return Scaffold(
-                    body: Center(child: Text('User profile not found')),
-                  );
-                }
-                final userData =
-                    userSnapshot.data!.data() as Map<String, dynamic>?;
-                return _buildShopTabController(userData, categories);
-              },
-            );
-          },
-        );
-      },
-    );
-  }
+        return DefaultTabController(
+          key: ValueKey(categories.map((c) => c['id']).join(',')),
+          length: categories.length,
+          initialIndex: 0,
+          child: Builder(
+            builder: (context) {
+              _tabController = DefaultTabController.of(context);
 
-  Widget _buildShopTabController(
-    Map<String, dynamic>? userData,
-    List<Map<String, dynamic>> categories,
-  ) {
-    int initialIndex = 0;
-    final bool isSub = userData != null && (userData['isSub'] ?? false);
-
-    return DefaultTabController(
-      key: ValueKey(categories.map((c) => c['id']).join(',')),
-      length: categories.length,
-      initialIndex: initialIndex,
-      child: Builder(
-        builder: (context) {
-          _tabController = DefaultTabController.of(context);
-
-          return Scaffold(
-            floatingActionButton: FloatingActionButton(
-              onPressed: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => Cart()));
-              },
-              elevation: 0,
-              backgroundColor: Colors.black,
-              shape: const CircleBorder(),
-              child: ImageIcon(
-                AssetImage('assets/003m.png'),
-                color: Colors.white,
-                size: 40.r,
-              ),
-            ),
-            appBar: AppBar(
-              toolbarHeight: 0,
-              elevation: 0,
-              title: Text(''),
-              centerTitle: false,
-              bottom: PreferredSize(
-                preferredSize: Size.fromHeight(100.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              return Scaffold(
+                floatingActionButton: FloatingActionButton(
+                  onPressed: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Cart()));
+                  },
+                  elevation: 0,
+                  backgroundColor: Colors.black,
+                  shape: const CircleBorder(),
+                  child: ImageIcon(
+                    const AssetImage('assets/003m.png'),
+                    color: Colors.white,
+                    size: 40.r,
+                  ),
+                ),
+                appBar: AppBar(
+                  toolbarHeight: 0,
+                  elevation: 0,
+                  title: const Text(''),
+                  centerTitle: false,
+                  bottom: PreferredSize(
+                    preferredSize: Size.fromHeight(100.h),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: EdgeInsets.only(left: 8.w),
-                          child: FutureBuilder<DocumentSnapshot<Object?>>(
-                            future:
-                                (userData != null &&
-                                        userData['defaultAddressId'] != null &&
-                                        userData['defaultAddressId'] != '')
-                                    ? FirebaseFirestore.instance
-                                        .collection('users')
-                                        .doc(userData['userId'])
-                                        .collection('addresses')
-                                        .doc(userData['defaultAddressId'])
-                                        .get()
-                                    : null,
-                            builder: (context, snapshot) {
-                              String displayName = '배송지 선택';
-                              final addressSnap = snapshot.data;
-                              if (addressSnap != null && addressSnap.exists) {
-                                final addressData =
-                                    addressSnap.data() as Map<String, dynamic>?;
-                                if (addressData != null) {
-                                  final basic =
-                                      addressData['address'] as String? ?? '';
-                                  final detail =
-                                      addressData['detailAddress'] as String? ??
-                                      '';
-                                  displayName =
-                                      detail.isEmpty
-                                          ? (basic.isEmpty ? '배송지 선택' : basic)
-                                          : '$basic $detail';
-                                }
-                              }
-                              return TextButton(
+                        Row(
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.only(left: 8.w),
+                              child: TextButton(
                                 style: TextButton.styleFrom(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 2.w,
-                                    vertical: 0,
-                                  ),
-                                  minimumSize: Size(0, 0),
+                                  padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0),
+                                  minimumSize: const Size(0, 0),
                                   maximumSize: Size(200.w, 80.h),
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 onPressed: () async {
                                   await Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => AddressListScreen(),
-                                    ),
+                                    MaterialPageRoute(builder: (_) => const AddressListScreen()),
                                   );
-                                  setState(() {});
                                 },
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Flexible(
-                                      child: Text(
-                                        displayName,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 16.sp,
-                                          fontWeight: FontWeight.w500,
+                                      child: userAddressAsync.when(
+                                        data: (addressData) {
+                                          String displayName = '배송지 선택';
+                                          if (addressData != null) {
+                                            final basic = addressData['address'] as String? ?? '';
+                                            final detail = addressData['detailAddress'] as String? ?? '';
+                                            displayName = detail.isEmpty
+                                                ? (basic.isEmpty ? '배송지 선택' : basic)
+                                                : '$basic $detail';
+                                          }
+                                          return Text(
+                                            displayName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 16.sp,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          );
+                                        },
+                                        loading: () => Text(
+                                          '로딩 중...',
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 16.sp,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        error: (err, stack) => Text(
+                                          '배송지 선택',
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 16.sp,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
                                     ),
                                     SizedBox(width: 6.w),
-                                    Icon(
+                                    const Icon(
                                       Icons.arrow_drop_down,
                                       color: Colors.black,
                                       size: 18,
                                     ),
                                   ],
                                 ),
-                              );
-                            },
-                          ),
-                        ),
-                        Spacer(),
-                        InkWell(
-                          onTap: () {
-                            context.go(Routes.reviewScreen);
-                          },
-                          child: Image.asset(
-                            'assets/order_history.png',
-                            color: Colors.black,
-                            width: 28.w,
-                            height: 28.h,
-                          ),
-                        ),
-                        horizontalSpace(12),
-                        InkWell(
-                          onTap: () {
-                            context.go(Routes.shopSearchScreen);
-                          },
-                          child: Image.asset(
-                            'assets/010no_cropped.png',
-                            color: Colors.black,
-                            width: 22.w,
-                            height: 28.h,
-                          ),
-                        ),
-                        horizontalSpace(12),
-                        /*                         IconButton(
-                          onPressed: () {
-                            context.go(Routes.shopSearchScreen);
-                          },
-
-                          icon: ImageIcon(
-                            color: Colors.grey,
-                            AssetImage('assets/010no_cropped.png'),
-                            size: 22.r,
-                          ),
-                        ), */
-                      ],
-                    ),
-
-                    TabBar(
-                      tabAlignment: TabAlignment.start,
-                      dragStartBehavior: DragStartBehavior.start,
-                      padding: EdgeInsets.zero,
-                      labelPadding: EdgeInsets.symmetric(horizontal: 16.w),
-                      labelStyle: TextStyle(
-                        fontSize: 16.sp,
-                        decoration: TextDecoration.none,
-                        fontFamily: 'NotoSans',
-                        fontStyle: FontStyle.normal,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 0,
-                        color: ColorsManager.primaryblack,
-                      ),
-                      unselectedLabelColor: ColorsManager.primary600,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      indicatorColor: ColorsManager.primaryblack,
-                      isScrollable: true,
-
-                      tabs:
-                          categories
-                              .map(
-                                (category) =>
-                                    Tab(text: category['name'], height: 45.h),
-                              )
-                              .toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            body: Padding(
-              padding: EdgeInsets.only(right: 8.w, top: 15.h, bottom: 4.h),
-              child: TabBarView(
-                children:
-                    categories
-                        .map(
-                          (category) => CategoryProductsScreen(
-                            categoryId: category['id'],
-                            categoryName: category['name'],
-                            userData: userData,
-                            isSub: isSub,
-                            scrollController: _getScrollController(
-                              category['id'],
-                            ),
-                          ),
-                        )
-                        .toList(),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class CategoryProductsScreen extends StatefulWidget {
-  final String categoryId;
-  final String categoryName;
-  final bool isSub;
-  final Map<String, dynamic>? userData;
-  final ScrollController? scrollController;
-
-  CategoryProductsScreen({
-    Key? key,
-    required this.categoryId,
-    required this.categoryName,
-    required this.userData,
-    required this.scrollController,
-
-    this.isSub = false,
-  }) : super(key: key);
-
-  @override
-  _CategoryProductsScreenState createState() => _CategoryProductsScreenState();
-}
-
-class _CategoryProductsScreenState extends State<CategoryProductsScreen>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  Map<String, dynamic>? userAddressMap;
-  bool _isAddressLoading = false;
-  final Map<String, double> _productRandomWeight = {};
-  late Stream<QuerySnapshot> _productsStream;
-  List<Product>? _cachedProducts;
-  QuerySnapshot? _lastSnapshot;
-  Map<String, dynamic>? _lastUserAddressMap;
-  @override
-  void initState() {
-    super.initState();
-    _productsStream =
-        FirebaseFirestore.instance
-            .collection('products')
-            .where('categoryList', arrayContains: widget.categoryId)
-            .orderBy('createdAt', descending: true)
-            .snapshots();
-    _fetchAddress();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    precacheImage(
-      const ResizeImage(
-        AssetImage('assets/sold_out.png'),
-        width: 200,
-        height: 200,
-      ),
-      context,
-    );
-  }
-
-  @override
-  void didUpdateWidget(covariant CategoryProductsScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.categoryId != oldWidget.categoryId) {
-      _productsStream =
-          FirebaseFirestore.instance
-              .collection('products')
-              .where('categoryList', arrayContains: widget.categoryId)
-              .orderBy('createdAt', descending: true)
-              .snapshots();
-    }
-    if (widget.userData?['defaultAddressId'] !=
-        oldWidget.userData?['defaultAddressId']) {
-      _fetchAddress();
-    }
-  }
-
-  void _fetchAddress() {
-    if (widget.userData != null &&
-        widget.userData!['defaultAddressId'] != null &&
-        widget.userData!['defaultAddressId'] != '') {
-      setState(() {
-        _isAddressLoading = true;
-      });
-      FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userData!['userId'])
-          .collection('addresses')
-          .doc(widget.userData!['defaultAddressId'] as String)
-          .get()
-          .then((doc) {
-            if (mounted) {
-              setState(() {
-                if (doc.exists) {
-                  userAddressMap =
-                      (doc.data() as Map<String, dynamic>)['addressMap'];
-                } else {
-                  userAddressMap = null;
-                }
-                _isAddressLoading = false;
-              });
-            }
-          })
-          .catchError((_) {
-            if (mounted) {
-              setState(() {
-                _isAddressLoading = false;
-              });
-            }
-          });
-    } else {
-      if (mounted) {
-        setState(() {
-          userAddressMap = null;
-          _isAddressLoading = false;
-        });
-      }
-    }
-  }
-
-  bool _isSameRegion(
-    Map<String, dynamic>? userAddress,
-    Map<String, dynamic>? productAddress,
-  ) {
-    if (userAddress == null || productAddress == null) return false;
-    final userRegion1 =
-        userAddress['road_address']?['region_1depth_name'] ??
-        userAddress['address']?['region_1depth_name'];
-    final userRegion2 =
-        userAddress['road_address']?['region_2depth_name'] ??
-        userAddress['address']?['region_2depth_name'];
-    final productRegion1 =
-        productAddress['road_address']?['region_1depth_name'] ??
-        productAddress['address']?['region_1depth_name'];
-    final productRegion2 =
-        productAddress['road_address']?['region_2depth_name'] ??
-        productAddress['address']?['region_2depth_name'];
-
-    if (userRegion1 == null || productRegion1 == null) return false;
-    if (userRegion1 != productRegion1) return false;
-    if (productRegion2 != null && productRegion2.isNotEmpty) {
-      if (userRegion2 != productRegion2) return false;
-    }
-    return true;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    if (_isAddressLoading) {
-      return const SizedBox.shrink();
-    }
-    // Display products in a grid
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
-      child: StreamBuilder<QuerySnapshot>(
-        stream: _productsStream,
-        builder: (context, snapshot) {
-          final formatCurrency = NumberFormat('#,###');
-          if (snapshot.hasError) {
-            return Center(child: Text('오류: ${snapshot.error}'));
-          }
-          /*             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const const SizedBox.shrink();
-            } */
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('아직 제품이 없습니다'));
-          }
-          final querySnapshot = snapshot.data!;
-          final bool addressChanged = userAddressMap != _lastUserAddressMap;
-
-          if (_cachedProducts == null ||
-              querySnapshot != _lastSnapshot ||
-              addressChanged) {
-            _lastSnapshot = querySnapshot;
-            _lastUserAddressMap = userAddressMap;
-
-            final products = querySnapshot.docs;
-            List<Product> sameRegion = [];
-            List<Product> otherRegion = [];
-            List<Product> soldOutList = [];
-
-            final bool hasUserAddress =
-                userAddressMap != null && userAddressMap!.isNotEmpty;
-
-            for (var p in products) {
-              Product product = Product.fromMap(
-                p.data() as Map<String, dynamic>,
-              );
-              if (product.stock == 0) {
-                if (!hasUserAddress) {
-                  soldOutList.add(product);
-                } else {
-                  if (product.address != null && product.address!.isNotEmpty) {
-                    if (_isSameRegion(userAddressMap, product.address)) {
-                      soldOutList.add(product);
-                    }
-                  } else {
-                    soldOutList.add(product);
-                  }
-                }
-              } else {
-                if (product.address != null && product.address!.isNotEmpty) {
-                  if (hasUserAddress &&
-                      _isSameRegion(userAddressMap, product.address)) {
-                    sameRegion.add(product);
-                  } else if (!hasUserAddress) {
-                    otherRegion.add(product);
-                  }
-                } else {
-                  otherRegion.add(product);
-                }
-              }
-            }
-
-            final random = Random();
-            sameRegion.sort((a, b) {
-              final weightA = _productRandomWeight.putIfAbsent(
-                a.product_id,
-                () => random.nextDouble(),
-              );
-              final weightB = _productRandomWeight.putIfAbsent(
-                b.product_id,
-                () => random.nextDouble(),
-              );
-              return weightA.compareTo(weightB);
-            });
-
-            otherRegion.sort((a, b) {
-              final weightA = _productRandomWeight.putIfAbsent(
-                a.product_id,
-                () => random.nextDouble(),
-              );
-              final weightB = _productRandomWeight.putIfAbsent(
-                b.product_id,
-                () => random.nextDouble(),
-              );
-              return weightA.compareTo(weightB);
-            });
-
-            _cachedProducts = [...sameRegion, ...otherRegion, ...soldOutList];
-          }
-
-          final sortedProducts = _cachedProducts!;
-          /*             // Sort: available products first, then sold out
-            final sortedProducts = List.from(products)..sort((a, b) {
-              final stockA = (a.data() as Map<String, dynamic>)['stock'] ?? 0;
-              final stockB = (b.data() as Map<String, dynamic>)['stock'] ?? 0;
-              if ((stockA > 0 && stockB > 0) || (stockA == 0 && stockB == 0))
-                return 0;
-              if (stockA > 0) return -1;
-              return 1;
-            }); */
-          return ListView.separated(
-            controller: widget.scrollController,
-            separatorBuilder: (context, index) {
-              if (index == sortedProducts.length - 1) {
-                return SizedBox.shrink();
-              }
-              return Divider();
-            },
-            itemCount: sortedProducts.length,
-            itemBuilder: (context, index) {
-              final data2 = sortedProducts[index];
-              Product p = data2;
-              return InkWell(
-                onTap: () {
-                  GoRouter.of(context).pushNamed(
-                    'productDetails',
-                    pathParameters: {
-                      'productId':
-                          p.product_id.toString(), // <- fills :productId
-                    },
-                  );
-                },
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 1.h),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child:
-                                p.imgUrl != null && p.imgUrl!.isNotEmpty
-                                    ? CachedNetworkImage(
-                                      imageUrl: p.imgUrl!,
-                                      width: 106.w,
-                                      height: 106.h,
-                                      fit: BoxFit.cover,
-                                      fadeInDuration: Duration.zero,
-                                      fadeOutDuration: Duration.zero,
-                                      placeholder:
-                                          (context, url) => Container(
-                                            width: 106.w,
-                                            height: 106.h,
-                                            color: Colors.grey[200],
-                                          ),
-                                      errorWidget:
-                                          (context, url, error) => Container(
-                                            width: 106.w,
-                                            height: 106.h,
-                                            color: Colors.grey[200],
-                                            child: const Center(
-                                              child: Icon(
-                                                Icons.broken_image,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                          ),
-                                    )
-                                    : Container(
-                                      width: 106,
-                                      height: 106,
-                                      color: Colors.grey[200],
-                                      child: const Center(
-                                        child: Icon(
-                                          Icons.image_not_supported,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ),
-                          ),
-                          if (p.stock == 0)
-                            Positioned.fill(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Container(
-                                  color: Colors.transparent,
-                                  child: const Center(
-                                    child: Image(
-                                      image: ResizeImage(
-                                        AssetImage('assets/sold_out.png'),
-                                        width: 200,
-                                        height: 200,
-                                      ),
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                ),
                               ),
                             ),
-                        ],
-                      ),
-                      SizedBox(width: 10.w),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p.sellerName,
-                              style: TextStyles.abeezee14px400wP600,
+                            const Spacer(),
+                            InkWell(
+                              onTap: () {
+                                context.go(Routes.reviewScreen);
+                              },
+                              child: Image.asset(
+                                'assets/order_history.png',
+                                color: Colors.black,
+                                width: 28.w,
+                                height: 28.h,
+                              ),
                             ),
-                            verticalSpace(5),
-                            Text(
-                              p.productName,
-                              style: TextStyles.abeezee16px400wPblack,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                            horizontalSpace(12),
+                            InkWell(
+                              onTap: () {
+                                context.go(Routes.shopSearchScreen);
+                              },
+                              child: Image.asset(
+                                'assets/010no_cropped.png',
+                                color: Colors.black,
+                                width: 22.w,
+                                height: 28.h,
+                              ),
                             ),
-                            Text(
-                              widget.isSub
-                                  ? '${formatCurrency.format(p.price)} 원'
-                                  : '${formatCurrency.format(p.price / 0.8)} 원',
-                              style: TextStyles.abeezee16px400wPblack,
-                            ),
-                            verticalSpace(2),
-                            Text(
-                              '${p.arrivalDate ?? ''} ',
-                              style: TextStyles.abeezee14px400wP600,
-                            ),
+                            horizontalSpace(12),
                           ],
                         ),
-                      ),
-                    ],
+                        TabBar(
+                          tabAlignment: TabAlignment.start,
+                          dragStartBehavior: DragStartBehavior.start,
+                          padding: EdgeInsets.zero,
+                          labelPadding: EdgeInsets.symmetric(horizontal: 16.w),
+                          labelStyle: TextStyle(
+                            fontSize: 16.sp,
+                            decoration: TextDecoration.none,
+                            fontFamily: 'NotoSans',
+                            fontStyle: FontStyle.normal,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 0,
+                            color: ColorsManager.primaryblack,
+                          ),
+                          unselectedLabelColor: ColorsManager.primary600,
+                          indicatorSize: TabBarIndicatorSize.label,
+                          indicatorColor: ColorsManager.primaryblack,
+                          isScrollable: true,
+                          tabs: categories
+                              .map((category) => Tab(text: category['name'], height: 45.h))
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                body: Padding(
+                  padding: EdgeInsets.only(right: 8.w, top: 15.h, bottom: 4.h),
+                  child: TabBarView(
+                    children: categories
+                        .map((category) => CategoryProductsScreen(
+                              categoryId: category['id'],
+                              categoryName: category['name'],
+                              isSub: isSub,
+                              scrollController: _getScrollController(category['id']),
+                            ))
+                        .toList(),
                   ),
                 ),
               );
             },
-          );
-        },
-      ),
+          ),
+        );
+      },
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stack) => Scaffold(body: Center(child: Text('Error: $error'))),
     );
   }
 }
-
-// Create a ProductCard widget

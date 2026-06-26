@@ -7,20 +7,18 @@ import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/no_account_screen.dart';
 import 'package:ecommerece_app/core/widgets/receipt_setup_screen.dart';
 // import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
-import 'package:ecommerece_app/features/cart/services/cart_service.dart';
-import 'package:ecommerece_app/features/cart/services/favorites_service.dart';
-import 'package:ecommerece_app/features/chat/services/chat_service.dart'; // NEW UI
+import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/features/shop/widgets/item_image_carousel.dart';
+import 'package:ecommerece_app/features/chat/domain/chat_controller.dart'; // NEW UI
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart'; // NEW UI
 import 'package:ecommerece_app/features/home/widgets/share_dialog.dart'; // NEW UI
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MERGE NOTES:
@@ -31,7 +29,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 //   Added  → imgUrl field in pending_buynow write (requested)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class ItemDetails extends StatefulWidget {
+class ItemDetails extends ConsumerStatefulWidget {
   final Product product;
   final String arrivalDay;
   final bool isSub;
@@ -44,21 +42,21 @@ class ItemDetails extends StatefulWidget {
   });
 
   @override
-  State<ItemDetails> createState() => _ItemDetailsState();
+  ConsumerState<ItemDetails> createState() => _ItemDetailsState();
 }
 
-class _ItemDetailsState extends State<ItemDetails> {
+class _ItemDetailsState extends ConsumerState<ItemDetails> {
   // NEW UI: chat service for floating seller chat button
-  final ChatService _chatService = ChatService();
+  
 
   late bool liked = false;
 
   @override
   void initState() {
     super.initState();
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUser = ref.read(authStateProvider).value;
     if (currentUser != null) {
-      liked = isFavoritedByUser(p: widget.product, userId: currentUser.uid);
+      liked = widget.product.favBy.contains(currentUser.uid);
     }
 
     final defaultIndex = widget.product.pricePoints.indexWhere(
@@ -93,41 +91,14 @@ class _ItemDetailsState extends State<ItemDetails> {
     required PricePoint pricePoint,
     required int currentStock,
   }) async {
-    // Generate paymentId server-side style (Firestore doc id)
-    final paymentId = FirebaseFirestore.instance.collection('orders').doc().id;
+    final paymentId = await ref.read(cartControllerProvider).processBuyNow(
+      product: widget.product,
+      pricePoint: pricePoint,
+      pricePointIndex: int.parse(_selectedOption!),
+      isSub: isSub,
+    );
 
-    final finalPrice =
-        isSub ? pricePoint.price : (pricePoint.price / 0.8).round();
-
-    final pendingColl = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('pending_buynow');
-
-    final batch = FirebaseFirestore.instance.batch();
-
-    // Clear any stale pending_buynow docs for this user
-    final existing = await pendingColl.get();
-    for (final doc in existing.docs) {
-      batch.delete(doc.reference);
-    }
-
-    // Write new pending_buynow — includes imgUrl for BuyNow UI display
-    batch.set(pendingColl.doc(paymentId), {
-      'product_id': widget.product.product_id,
-      'product_name': widget.product.productName,
-      'imgUrl': widget.product.imgUrl ?? '', // ← ADDED
-      'deliveryManagerId': widget.product.deliveryManagerId,
-      'price': finalPrice,
-      'quantity': pricePoint.quantity,
-      'pricePointIndex': int.parse(_selectedOption!),
-      'paymentId': paymentId,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
-
-    if (mounted) {
+    if (paymentId != null && mounted) {
       Navigator.pop(context); // Dismiss loading dialog
       context.go('/buy-now?paymentId=$paymentId');
     }
@@ -135,15 +106,16 @@ class _ItemDetailsState extends State<ItemDetails> {
 
   // ── Shared stock + cart check used by both buttons ─────────────────────────
   Future<int?> _getValidatedStock(PricePoint pricePoint) async {
-    final productRef = FirebaseFirestore.instance
-        .collection('products')
-        .doc(widget.product.product_id);
-    final productSnapshot = await productRef.get();
-    final currentStock = productSnapshot.data()?['stock'] ?? 0;
-    if (pricePoint.quantity > currentStock) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('수량 부족'), backgroundColor: Colors.red),
-      );
+    final currentStock = await ref.read(cartControllerProvider).getValidatedStock(
+      widget.product.product_id,
+      pricePoint.quantity,
+    );
+    if (currentStock == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('수량 부족'), backgroundColor: Colors.red),
+        );
+      }
       return null;
     }
     return currentStock;
@@ -151,113 +123,15 @@ class _ItemDetailsState extends State<ItemDetails> {
 
   @override
   Widget build(BuildContext context) {
-    final List<dynamic> imageUrls = [
-      if (widget.product.imgUrl != null) widget.product.imgUrl,
-      ...widget.product.imgUrls,
-    ];
     final formatCurrency = NumberFormat('#,###');
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUser = ref.watch(authStateProvider).value;
 
     // ── Not logged in scaffold ─────────────────────────────────────────────
     if (currentUser == null) {
       return Scaffold(
         body: ListView(
           children: [
-            SizedBox(
-              height: 428,
-              child: Stack(
-                children: [
-                  if (imageUrls.isNotEmpty)
-                    PageView.builder(
-                      controller: _pageController,
-                      itemCount: imageUrls.length,
-                      physics: const BouncingScrollPhysics(),
-                      itemBuilder:
-                          (context, index) => CachedNetworkImage(
-                            imageUrl: imageUrls[index],
-                            fit: BoxFit.cover,
-                            fadeInDuration: Duration.zero,
-                            fadeOutDuration: Duration.zero,
-                            placeholder:
-                                (context, url) =>
-                                    Container(color: Colors.grey[200]),
-                            errorWidget:
-                                (context, url, error) => Container(
-                                  color: Colors.grey[200],
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ),
-                          ),
-                    )
-                  else
-                    const Center(child: Text("No images available")),
-                  if (imageUrls.isNotEmpty)
-                    Positioned.fill(
-                      bottom: 0,
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: SizedBox(
-                          height: 60,
-                          child: Center(
-                            child: SmoothPageIndicator(
-                              controller: _pageController,
-                              count: imageUrls.length,
-                              effect: const ScrollingDotsEffect(
-                                activeDotColor: Colors.black,
-                                dotColor: Colors.grey,
-                                dotHeight: 10,
-                                dotWidth: 10,
-                              ),
-                              onDotClicked: (index) {
-                                _pageController.animateToPage(
-                                  index,
-                                  duration: const Duration(milliseconds: 400),
-                                  curve: Curves.easeInOut,
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (widget.product.stock == 0)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: Container(
-                          color: Colors.transparent,
-                          child: Center(
-                            child: Image.asset(
-                              'assets/sold_out.png',
-                              color: Colors.black,
-                              fit: BoxFit.contain,
-                              cacheWidth: 600,
-                              cacheHeight: 600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  Positioned(
-                    top: 5,
-                    left: 5,
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () {
-                        if (GoRouter.of(context).canPop()) {
-                          GoRouter.of(context).pop();
-                        } else {
-                          GoRouter.of(context).goNamed(Routes.navBar);
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ItemImageCarousel(product: widget.product),
             Container(
               width: double.infinity,
               height: 500.h,
@@ -371,117 +245,15 @@ class _ItemDetailsState extends State<ItemDetails> {
     }
 
     // ── Logged-in scaffold ─────────────────────────────────────────────────
-    return StreamBuilder<DocumentSnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(currentUser.uid)
-              .snapshots(),
-      builder: (context, snapshot) {
-        bool isSub = widget.isSub;
-        if (snapshot.hasData &&
-            snapshot.data != null &&
-            snapshot.data!.exists) {
-          final data = snapshot.data!.data() as Map<String, dynamic>?;
-          if (data != null && data.containsKey('isSub')) {
-            isSub = data['isSub'] == true;
-          }
-        }
+    final isSub = ref.watch(isSubscribedProvider).value ?? widget.isSub;
 
-        return Scaffold(
+    return Scaffold(
           body: Stack(
             children: [
               // NEW UI: ListView inside Stack to allow floating chat button
               ListView(
                 children: [
-                  SizedBox(
-                    height: 428.h,
-                    child: Stack(
-                      children: [
-                        if (imageUrls.isNotEmpty)
-                          PageView.builder(
-                            controller: _pageController,
-                            itemCount: imageUrls.length,
-                            onPageChanged: (index) => setState(() {}),
-                            itemBuilder:
-                                (context, index) => CachedNetworkImage(
-                                  imageUrl: imageUrls[index],
-                                  fit: BoxFit.cover,
-                                  fadeInDuration: Duration.zero,
-                                  fadeOutDuration: Duration.zero,
-                                  placeholder:
-                                      (context, url) =>
-                                          Container(color: Colors.grey[200]),
-                                  errorWidget:
-                                      (context, url, error) => Container(
-                                        color: Colors.grey[200],
-                                        child: const Center(
-                                          child: Icon(
-                                            Icons.broken_image,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ),
-                                ),
-                          )
-                        else
-                          const Center(child: Text("No images available")),
-                        if (imageUrls.isNotEmpty)
-                          Positioned.fill(
-                            bottom: 0,
-                            child: Align(
-                              alignment: Alignment.bottomCenter,
-                              child: SizedBox(
-                                height: 60.h,
-                                child: Center(
-                                  child: SmoothPageIndicator(
-                                    controller: _pageController,
-                                    count: imageUrls.length,
-                                    effect: ScrollingDotsEffect(
-                                      activeDotColor: Colors.black,
-                                      dotColor: Colors.grey,
-                                      dotHeight: 10.h,
-                                      dotWidth: 10.w,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (widget.product.stock == 0)
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: Container(
-                                color: Colors.transparent,
-                                child: Center(
-                                  child: Image.asset(
-                                    'assets/sold_out.png',
-                                    color: Colors.black,
-                                    fit: BoxFit.contain,
-                                    cacheWidth: 600,
-                                    cacheHeight: 600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        Positioned(
-                          top: 5,
-                          left: 5,
-                          child: IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: () {
-                              if (GoRouter.of(context).canPop()) {
-                                GoRouter.of(context).pop();
-                              } else {
-                                GoRouter.of(context).goNamed(Routes.navBar);
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ItemImageCarousel(product: widget.product),
                   if (!isSub)
                     Container(
                       width: double.infinity,
@@ -568,14 +340,12 @@ class _ItemDetailsState extends State<ItemDetails> {
 
                                 try {
                                   if (wasLiked) {
-                                    await removeProductFromFavorites(
-                                      userId: currentUser.uid,
-                                      productId: widget.product.product_id,
+                                    await ref.read(cartControllerProvider).removeFavItemByProductId(
+                                      widget.product.product_id,
                                     );
                                   } else {
-                                    await addProductToFavorites(
-                                      userId: currentUser.uid,
-                                      productId: widget.product.product_id,
+                                    await ref.read(cartControllerProvider).addFavItem(
+                                      widget.product.product_id,
                                     );
                                   }
                                 } catch (e) {
@@ -619,7 +389,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                 child: IconButton(
                   onPressed: () async {
                     try {
-                      final returnList = await _chatService
+                      final returnList = await ref.read(chatControllerProvider)
                           .createDirectChatRoomWithSeller(
                             widget.product.deliveryManagerId.toString(),
                           );
@@ -674,8 +444,6 @@ class _ItemDetailsState extends State<ItemDetails> {
             ),
           ),
         );
-      },
-    );
   }
 
   // ── Bottom button builders ─────────────────────────────────────────────────
@@ -698,18 +466,7 @@ class _ItemDetailsState extends State<ItemDetails> {
         final currentStock = await _getValidatedStock(pricePoint);
         if (currentStock == null) return;
 
-        final cartQuery =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(uid)
-                .collection('cart')
-                .where('product_id', isEqualTo: widget.product.product_id)
-                .get();
-
-        int cartTotalQuantity = 0;
-        for (var doc in cartQuery.docs) {
-          cartTotalQuantity += (doc.data()['quantity'] ?? 0) as int;
-        }
+        final cartTotalQuantity = await ref.read(cartControllerProvider).getCartItemQuantity(widget.product.product_id);
 
         if (cartTotalQuantity + pricePoint.quantity > currentStock) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -723,8 +480,7 @@ class _ItemDetailsState extends State<ItemDetails> {
           return;
         }
 
-        await addProductAsNewEntryToCart(
-          userId: uid,
+        await ref.read(cartControllerProvider).addToCart(
           productId: widget.product.product_id,
           pricePointIndex: int.parse(_selectedOption!),
           deliveryManagerId: widget.product.deliveryManagerId ?? '',
@@ -945,7 +701,7 @@ class _ItemDetailsState extends State<ItemDetails> {
                     ),
                 ],
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -1025,32 +781,42 @@ class _ItemDetailsState extends State<ItemDetails> {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-void _launchPaymentPage(String amount, String userId) async {
-  final url = Uri.parse(
-    'https://e-commerce-app-34fb2.web.app/web-payment.html?amount=$amount&userId=$userId',
-  );
-  if (await canLaunchUrl(url)) {
-    await launchUrl(url);
-  } else {
-    debugPrint('Could not launch $url');
-    throw 'Could not launch $url';
-  }
+class ShiningPremiumBanner extends ConsumerStatefulWidget {
+  const ShiningPremiumBanner({super.key});
+
+  @override
+  ConsumerState<ShiningPremiumBanner> createState() => _ShiningPremiumBannerState();
 }
 
-class ShiningPremiumBanner extends StatelessWidget {
-  const ShiningPremiumBanner({super.key});
+class _ShiningPremiumBannerState extends ConsumerState<ShiningPremiumBanner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      // NEW UI: responsive padding with .r
-      padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 10.h),
+      padding: EdgeInsets.symmetric(
+        horizontal: 20.w, // NEW UI: responsive padding
+        vertical: 30.h, // NEW UI: responsive padding
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: double.infinity,
-            height: 370.h,
             decoration: ShapeDecoration(
               color: Colors.transparent,
               shape: RoundedRectangleBorder(
@@ -1059,7 +825,7 @@ class ShiningPremiumBanner extends StatelessWidget {
               ),
             ),
             child: Padding(
-              padding: EdgeInsets.all(20.r), // NEW UI: responsive
+              padding: EdgeInsets.all(20.r),
               child: Column(
                 children: [
                   verticalSpace(15),
@@ -1092,14 +858,14 @@ class ShiningPremiumBanner extends StatelessWidget {
           verticalSpace(15),
           TextButton(
             onPressed: () {
-              final currentUser = FirebaseAuth.instance.currentUser;
+              final currentUser = ref.read(authStateProvider).value;
               if (currentUser == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
                 );
                 return;
               }
-              _navigateToSubscriptionFromBanner(context, currentUser.uid);
+              _navigateToSubscriptionFromBanner(context, ref, currentUser.uid);
             },
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.all(Colors.white),
@@ -1125,11 +891,12 @@ class ShiningPremiumBanner extends StatelessWidget {
 
 Future<void> _navigateToSubscriptionFromBanner(
   BuildContext context,
+  WidgetRef ref,
   String uid,
 ) async {
   // ── Gate 1: bank account ────────────────────────────────────────────
-  final userDoc =
-      await FirebaseFirestore.instance.collection('users').doc(uid).get();
+  final firestore = ref.read(firestoreProvider);
+  final userDoc = await firestore.collection('users').doc(uid).get();
   final data = userDoc.data();
 
   final accounts = data?['bankAccounts'];
@@ -1137,13 +904,13 @@ Future<void> _navigateToSubscriptionFromBanner(
       accounts != null && accounts is List && accounts.isNotEmpty;
 
   if (!hasBankAccount) {
+    if (!context.mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => const NoBankAccountScreen(source: 'sub'),
       ),
     );
-    final refreshed =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final refreshed = await firestore.collection('users').doc(uid).get();
     final refreshedAccounts = refreshed.data()?['bankAccounts'];
     final nowHasAccount =
         refreshedAccounts != null &&
@@ -1154,7 +921,7 @@ Future<void> _navigateToSubscriptionFromBanner(
 
   // ── Gate 2: receipt / invoice data ──────────────────────────────────
   final cacheDoc =
-      await FirebaseFirestore.instance
+      await firestore
           .collection('usercached_values')
           .doc(uid)
           .get();
@@ -1167,6 +934,7 @@ Future<void> _navigateToSubscriptionFromBanner(
       (cacheData['phone'] as String? ?? '').isNotEmpty;
 
   if (!hasReceiptData) {
+    if (!context.mounted) return;
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => const ReceiptSetupScreen(source: 'sub'),

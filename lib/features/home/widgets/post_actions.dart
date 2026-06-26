@@ -1,24 +1,17 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerece_app/features/home/comments.dart';
-import 'package:ecommerece_app/features/home/data/home_functions.dart';
-import 'package:ecommerece_app/features/home/data/post_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PostActions extends StatefulWidget {
+class PostActions extends ConsumerStatefulWidget {
   final String postId;
   final Map<String, dynamic> postData;
 
-  const PostActions({Key? key, required this.postId, required this.postData})
-    : super(key: key);
+  const PostActions({super.key, required this.postId, required this.postData});
 
   @override
-  State<PostActions> createState() => _PostActionsState();
+  ConsumerState<PostActions> createState() => _PostActionsState();
 }
 
-class _PostActionsState extends State<PostActions> {
+class _PostActionsState extends ConsumerState<PostActions> {
   @override
   Widget build(BuildContext context) {
     return const SizedBox.shrink();

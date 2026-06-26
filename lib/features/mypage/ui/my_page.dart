@@ -3,24 +3,25 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/mypage/data/firebas_funcs.dart';
+import 'package:ecommerece_app/features/mypage/domain/profile_controller.dart';
 import 'package:ecommerece_app/features/mypage/ui/widgets/profile_type.dart';
 import 'package:ecommerece_app/features/mypage/ui/widgets/user_info_container.dart';
 import 'package:ecommerece_app/features/mypage/ui/widgets/user_options_container.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class MyPage extends StatefulWidget {
+class MyPage extends ConsumerStatefulWidget {
   final MyUser currentUser;
   const MyPage({super.key, required this.currentUser});
 
   @override
-  State<MyPage> createState() => _MyPageState();
+  ConsumerState<MyPage> createState() => _MyPageState();
 }
 
-class _MyPageState extends State<MyPage> {
+class _MyPageState extends ConsumerState<MyPage> {
   final GlobalKey _userInfoKey = GlobalKey();
   final GlobalKey _profileTypeKey = GlobalKey();
 
@@ -134,7 +135,7 @@ class _MyPageState extends State<MyPage> {
                         },
                       );
                       if (shouldSignOut == true) {
-                        await signOut();
+                        await ref.read(profileControllerProvider).signOut();
                       }
                     },
                     child: Text(
@@ -158,10 +159,7 @@ void _launchTermsPage() async {
   );
 
   if (await canLaunchUrl(url)) {
-    await launchUrl(
-      url,
-      // mode: LaunchMode.externalApplication, // Forces external browser
-    );
+    await launchUrl(url);
   } else {
     throw 'Could not launch $url';
   }

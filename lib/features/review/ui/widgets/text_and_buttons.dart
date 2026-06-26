@@ -1,9 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class TextAndButtons extends StatelessWidget {
+class TextAndButtons extends ConsumerWidget {
   final String sellerName;
   final String productName;
   final String qunatity;
@@ -22,7 +23,7 @@ class TextAndButtons extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

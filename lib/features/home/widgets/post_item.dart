@@ -8,8 +8,8 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/data/follow_service.dart';
-import 'package:ecommerece_app/features/home/data/home_functions.dart';
-import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
+import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/home/widgets/edit_post_dialog.dart';
 import 'package:ecommerece_app/features/home/widgets/post_actions.dart';
@@ -20,7 +20,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:shimmer/shimmer.dart';
@@ -29,7 +29,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 // =============================================================================
 // NaturalAspectPageView
 // =============================================================================
-class NaturalAspectPageView extends StatefulWidget {
+class NaturalAspectPageView extends ConsumerStatefulWidget {
   final List imgUrls;
   final PageController pageController;
   final double? explicitWidth;
@@ -41,10 +41,11 @@ class NaturalAspectPageView extends StatefulWidget {
   });
 
   @override
-  State<NaturalAspectPageView> createState() => NaturalAspectPageViewState();
+  ConsumerState<NaturalAspectPageView> createState() =>
+      NaturalAspectPageViewState();
 }
 
-class NaturalAspectPageViewState extends State<NaturalAspectPageView> {
+class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
   List<double?> _ratios = [];
   int _currentPage = 0;
 
@@ -274,7 +275,7 @@ class NaturalAspectPageViewState extends State<NaturalAspectPageView> {
 // =============================================================================
 // PostItem — converted to StatefulWidget so PageController is stable
 // =============================================================================
-class PostItem extends StatefulWidget {
+class PostItem extends ConsumerStatefulWidget {
   final String postId;
   final bool fromComments;
   final bool showMoreButton;
@@ -291,10 +292,10 @@ class PostItem extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<PostItem> createState() => _PostItemState();
+  ConsumerState<PostItem> createState() => _PostItemState();
 }
 
-class _PostItemState extends State<PostItem> {
+class _PostItemState extends ConsumerState<PostItem> {
   // Stable PageController that survives rebuilds
   final PageController _pageController = PageController();
   final ScreenshotController _screenshotController = ScreenshotController();
@@ -338,7 +339,7 @@ class _PostItemState extends State<PostItem> {
               ),
         );
 
-        await updatePost(
+        await ref.read(feedControllerProvider).updatePost(
           postId: widget.postId,
           text: result.text,
           networkImgUrls: result.imgUrls,
@@ -472,7 +473,7 @@ class _PostItemState extends State<PostItem> {
 
   @override
   Widget build(BuildContext context) {
-    final postsProvider = Provider.of<PostsProvider>(context, listen: false);
+    final postsProvider = ref.read(feedControllerProvider);
     if (postsProvider.getComments(widget.postId).isEmpty &&
         !postsProvider.isLoadingComments(widget.postId)) {
       postsProvider.listenToComments(widget.postId);
@@ -489,9 +490,10 @@ class _PostItemState extends State<PostItem> {
       'fromCommentsImageWidth=$fromCommentsImageWidth',
     );
 
-    return Selector<PostsProvider, Map<String, dynamic>?>(
-      selector: (_, provider) => provider.getPost(widget.postId),
-      builder: (context, postData, child) {
+    return ListenableBuilder(
+      listenable: postsProvider,
+      builder: (context, child) {
+        final postData = postsProvider.getPost(widget.postId);
         if (postData == null) return SizedBox.shrink();
 
         final cachedUser = postsProvider.getUser(postData['userId']);
@@ -724,7 +726,7 @@ class _PostItemState extends State<PostItem> {
                                         snapshot.hasData &&
                                         snapshot.data!.exists;
                                     final isPrivate =
-                                        myuser?.isPrivate ?? false;
+                                        myuser.isPrivate ?? false;
 
                                     if (isFollowing) {
                                       return PopupMenuButton<String>(
@@ -740,7 +742,7 @@ class _PostItemState extends State<PostItem> {
                                               postData,
                                             );
                                           } else if (value == 'unfollow') {
-                                            FollowService().toggleFollow(
+                                            ref.read(followControllerProvider).toggleFollow(
                                               myuser.userId,
                                             );
                                           }
@@ -1102,13 +1104,17 @@ class _PostItemState extends State<PostItem> {
                                         padding: EdgeInsets.only(top: 5.h),
                                         child: Builder(
                                           builder: (context) {
-                                            final String text = postData['text'].toString();
+                                            final String text =
+                                                postData['text'].toString();
                                             if (text.length > 110) {
                                               return RichText(
                                                 text: TextSpan(
-                                                  text: '${text.substring(0, 110)}...\n',
+                                                  text:
+                                                      '${text.substring(0, 110)}...\n',
                                                   style: TextStyle(
-                                                    color: const Color(0xFF343434),
+                                                    color: const Color(
+                                                      0xFF343434,
+                                                    ),
                                                     fontSize: 16.sp,
                                                     fontFamily: 'NotoSans',
                                                     fontWeight: FontWeight.w400,
@@ -1198,7 +1204,7 @@ class _PostItemState extends State<PostItem> {
 
 // ── Own-post popup menu ───────────────────────────────────────────────────────
 
-class _OwnPostMenu extends StatelessWidget {
+class _OwnPostMenu extends ConsumerWidget {
   final String postId;
   final String currentText;
   final VoidCallback onEdit;
@@ -1212,7 +1218,7 @@ class _OwnPostMenu extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return PopupMenuButton<String>(
       onSelected: (value) {
         if (value == 'edit') onEdit();
@@ -1252,7 +1258,7 @@ class _OwnPostMenu extends StatelessWidget {
 
 // ── Other user's post popup menu ──────────────────────────────────────────────
 
-class OtherPostMenu extends StatelessWidget {
+class OtherPostMenu extends ConsumerWidget {
   final String postId;
   final String userId;
   final Future<void> Function(
@@ -1267,6 +1273,7 @@ class OtherPostMenu extends StatelessWidget {
   final Map<String, dynamic> postData;
 
   const OtherPostMenu({
+    super.key,
     required this.postId,
     required this.userId,
     required this.onRunWithLoading,
@@ -1276,7 +1283,7 @@ class OtherPostMenu extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
 
     return StreamBuilder(
@@ -1305,12 +1312,12 @@ class OtherPostMenu extends StatelessWidget {
                 );
                 break;
               case 'follow_unfollow':
-                await FollowService().toggleFollow(userId);
+                await ref.read(followControllerProvider).toggleFollow(userId);
                 break;
               case 'block':
                 await onRunWithLoading(
                   context,
-                  () => blockUser(userIdToBlock: userId),
+                  () => ref.read(feedControllerProvider).blockUser(userIdToBlock: userId),
                   '차단되었습니다.',
                   '오류 발생',
                 );
@@ -1318,8 +1325,7 @@ class OtherPostMenu extends StatelessWidget {
               case 'report':
                 await onRunWithLoading(
                   context,
-                  () async =>
-                      await reportUser(reportedUserId: userId, postId: postId),
+                  () => ref.read(feedControllerProvider).reportUser(reportedUserId: userId, postId: postId),
                   '신고가 접수되었습니다.',
                   '신고 처리 중 오류가 발생했습니다',
                 );

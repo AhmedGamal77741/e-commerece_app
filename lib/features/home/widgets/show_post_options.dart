@@ -1,17 +1,17 @@
 import 'package:ecommerece_app/core/services/share_service.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/features/home/data/home_functions.dart';
-import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void showPostMenu(BuildContext context, String postId, String userId) {
   showModalBottomSheet(
     context: context,
     builder:
-        (context) => Container(
-          height: 233.h,
+        (context) => Consumer(
+          builder: (context, ref, child) => Container(
+            height: 233.h,
           padding: EdgeInsets.all(16),
           clipBehavior: Clip.antiAlias,
           decoration: ShapeDecoration(
@@ -99,10 +99,7 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                           );
 
                           try {
-                            await Provider.of<PostsProvider>(
-                              context,
-                              listen: false,
-                            ).addToNotInterested(postId);
+                            await ref.read(feedControllerProvider).markPostNotInterested(postId: postId);
 
                             Navigator.of(context).pop();
                             Navigator.of(context).pop();
@@ -178,7 +175,7 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                     );
 
                     try {
-                      await blockUser(userIdToBlock: userId);
+                      await ref.read(feedControllerProvider).blockUser(userIdToBlock: userId);
 
                       Navigator.of(context).pop();
                       Navigator.of(context).pop();
@@ -267,7 +264,7 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                             );
 
                             try {
-                              await reportUser(
+                              await ref.read(feedControllerProvider).reportUser(
                                 reportedUserId: userId,
                                 postId: postId,
                               );
@@ -334,5 +331,6 @@ void showPostMenu(BuildContext context, String postId, String userId) {
             ),
           ),
         ),
+      ),
   );
 }

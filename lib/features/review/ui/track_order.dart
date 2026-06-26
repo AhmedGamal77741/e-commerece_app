@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
@@ -7,16 +8,16 @@ import 'package:ecommerece_app/features/review/ui/widgets/table_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class TrackOrder extends StatefulWidget {
+class TrackOrder extends ConsumerStatefulWidget {
   final Map<String, dynamic> order;
   final String arrivalDate;
   const TrackOrder({super.key, required this.order, required this.arrivalDate});
 
   @override
-  State<TrackOrder> createState() => _TrackOrderState();
+  ConsumerState<TrackOrder> createState() => _TrackOrderState();
 }
 
-class _TrackOrderState extends State<TrackOrder> {
+class _TrackOrderState extends ConsumerState<TrackOrder> {
   late Map<String, dynamic> order;
   late String arrivalDate;
 

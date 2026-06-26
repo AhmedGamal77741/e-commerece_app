@@ -1,25 +1,25 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class FollowingUsersList extends StatefulWidget {
+class FollowingUsersList extends ConsumerStatefulWidget {
   final List<MyUser> followingUsers;
   final void Function(String userId)? onUserTap;
   final String? selectedUserId;
 
   const FollowingUsersList({
-    Key? key,
+    super.key,
     required this.followingUsers,
     this.onUserTap,
     this.selectedUserId,
-  }) : super(key: key);
+  });
 
   @override
-  State<FollowingUsersList> createState() => _FollowingUsersListState();
+  ConsumerState<FollowingUsersList> createState() => _FollowingUsersListState();
 }
 
-class _FollowingUsersListState extends State<FollowingUsersList> {
+class _FollowingUsersListState extends ConsumerState<FollowingUsersList> {
   late final PageController _pageController;
 
   @override

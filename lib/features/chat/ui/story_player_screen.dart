@@ -1,21 +1,22 @@
 import 'dart:async';
 import 'package:ecommerece_app/features/chat/models/story_model.dart';
-import 'package:ecommerece_app/features/chat/services/chat_service.dart';
+import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/services/story_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class StoryPlayerScreen extends StatefulWidget {
+class StoryPlayerScreen extends ConsumerStatefulWidget {
   final UserStoryGroup group;
 
   const StoryPlayerScreen({super.key, required this.group});
 
   @override
-  State<StoryPlayerScreen> createState() => _StoryPlayerScreenState();
+  ConsumerState<StoryPlayerScreen> createState() => _StoryPlayerScreenState();
 }
 
-class _StoryPlayerScreenState extends State<StoryPlayerScreen> {
+class _StoryPlayerScreenState extends ConsumerState<StoryPlayerScreen> {
   int _currentIndex = 0;
   double _percent = 0.0;
   Timer? _timer;
@@ -292,12 +293,12 @@ class _StoryPlayerScreenState extends State<StoryPlayerScreen> {
                               _isPaused = false;
                             },
                             onSubmitted: (value) async {
-                              final chatRoomId = await ChatService()
+                              final chatRoomId = await ref.read(chatControllerProvider)
                                   .createDirectChatRoom(
                                     widget.group.authorId,
                                     false,
                                   );
-                              await ChatService().sendMessage(
+                              await ref.read(chatControllerProvider).sendMessage(
                                 chatRoomId: chatRoomId,
                                 content: value,
                                 imageUrl:

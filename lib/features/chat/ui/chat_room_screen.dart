@@ -17,11 +17,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
-import '../services/chat_service.dart';
+import '../domain/chat_controller.dart';
 import '../models/message_model.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -30,7 +31,7 @@ const _kBubbleColor = Color(0xFFEEEEEE);
 const _kInputBg = Color(0xFFE8E8E8);
 const _kSendActive = Color(0xFF1A1A1A);
 
-class ChatScreen extends StatefulWidget {
+class ChatScreen extends ConsumerStatefulWidget {
   final String chatRoomId;
   final String chatRoomName;
   final bool isDeleted;
@@ -42,11 +43,11 @@ class ChatScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
-  final ChatService _chatService = ChatService();
+class _ChatScreenState extends ConsumerState<ChatScreen> {
+  
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -81,8 +82,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _resetUnreadCount();
     _loadChatRoom(); // _loadChatRoom will also set up block listeners
-    _messageSubscription = _chatService
-        .getMessagesStream(widget.chatRoomId)
+    _messageSubscription = ref.read(chatControllerProvider).getMessagesStream(widget.chatRoomId)
         .listen((messages) {
           if (mounted) {
             setState(() {
@@ -100,7 +100,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   .map((m) => m.id)
                   .toList();
           if (unreadIds.isNotEmpty) {
-            _chatService.markSpecificMessagesAsRead(
+            ref.read(chatControllerProvider).markSpecificMessagesAsRead(
               widget.chatRoomId,
               unreadIds,
             );
@@ -108,7 +108,7 @@ class _ChatScreenState extends State<ChatScreen> {
         });
   }
 
-  void _resetUnreadCount() => _chatService.resetUnreadCount(widget.chatRoomId);
+  void _resetUnreadCount() => ref.read(chatControllerProvider).resetUnreadCount(widget.chatRoomId);
 
   // ── Load chat room + aliases ──────────────────────────────────────────────
 
@@ -645,7 +645,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_pickedImage == null || _pickedImageBytes == null) return;
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_$currentUserId.jpg';
-    final ref = FirebaseStorage.instance.ref().child('chat_images/$fileName');
+    final storageRef = FirebaseStorage.instance.ref().child('chat_images/$fileName');
 
     final content = _messageController.text.trim();
     final imageBytes = _pickedImageBytes!;
@@ -660,18 +660,19 @@ class _ChatScreenState extends State<ChatScreen> {
     });
 
     try {
-      final UploadTask task = ref.putData(
+      final UploadTask task = storageRef.putData(
         imageBytes,
         SettableMetadata(contentType: 'image/jpeg'),
       );
-      final url = await (await task).ref.getDownloadURL();
-      await _chatService.sendMessage(
+      final TaskSnapshot snapshot = await task;
+      final url = await snapshot.ref.getDownloadURL();
+      await ref.read(chatControllerProvider).sendMessage(
         chatRoomId: widget.chatRoomId,
         content: content,
         imageUrl: url,
         replyToMessageId: replyId,
       );
-      await _chatService.resetDeletedBy(widget.chatRoomId);
+      await ref.read(chatControllerProvider).resetDeletedBy(widget.chatRoomId);
     } catch (e) {
       print('Error sending image message: $e');
     }
@@ -687,12 +688,12 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _replyToMessage = null);
 
     try {
-      await _chatService.sendMessage(
+      await ref.read(chatControllerProvider).sendMessage(
         chatRoomId: widget.chatRoomId,
         content: content,
         replyToMessageId: replyId,
       );
-      await _chatService.resetDeletedBy(widget.chatRoomId);
+      await ref.read(chatControllerProvider).resetDeletedBy(widget.chatRoomId);
     } catch (e) {
       print('Error sending message: $e');
     }
@@ -950,7 +951,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
 // ─── Date separator ───────────────────────────────────────────────────────────
 
-class _DateSeparator extends StatelessWidget {
+class _DateSeparator extends ConsumerWidget {
   final DateTime date;
   const _DateSeparator({required this.date});
 
@@ -964,7 +965,7 @@ class _DateSeparator extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 10.h),
       child: Center(
@@ -988,7 +989,7 @@ class _DateSeparator extends StatelessWidget {
 
 // ─── Blocked bar ──────────────────────────────────────────────────────────────
 
-class _BlockedBar extends StatelessWidget {
+class _BlockedBar extends ConsumerWidget {
   final bool blocked;
   final bool isBlocked;
   final String chatRoomId;
@@ -1006,7 +1007,7 @@ class _BlockedBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SafeArea(
       top: false,
       child: Container(
@@ -1057,7 +1058,7 @@ class _BlockedBar extends StatelessWidget {
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 
-class MessageBubble extends StatelessWidget {
+class MessageBubble extends ConsumerWidget {
   final MessageModel message;
   final bool isMe;
 
@@ -1082,9 +1083,9 @@ class MessageBubble extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onDoubleTap: interactable ? () => _toggleLove(context) : null,
+      onDoubleTap: interactable ? () => _toggleLove(context, ref) : null,
       onLongPress: interactable ? () => _showMessageOptions(context) : null,
       child: Padding(
         padding: EdgeInsets.only(
@@ -1131,7 +1132,7 @@ class MessageBubble extends StatelessWidget {
                             FirebaseAuth.instance.currentUser!.uid,
                           ),
                           onTap:
-                              interactable ? () => _toggleLove(context) : null,
+                              interactable ? () => _toggleLove(context, ref) : null,
                         ),
                       Flexible(
                         child: _BubbleContent(
@@ -1146,7 +1147,7 @@ class MessageBubble extends StatelessWidget {
                             FirebaseAuth.instance.currentUser!.uid,
                           ),
                           onTap:
-                              interactable ? () => _toggleLove(context) : null,
+                              interactable ? () => _toggleLove(context, ref) : null,
                         ),
                     ],
                   ),
@@ -1174,7 +1175,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  void _toggleLove(BuildContext context) => ChatService().toggleLoveReaction(
+  void _toggleLove(BuildContext context, WidgetRef ref) => ref.read(chatControllerProvider).toggleLoveReaction(
     messageId: message.id,
     chatRoomId: message.chatRoomId,
   );
@@ -1231,7 +1232,7 @@ class MessageBubble extends StatelessWidget {
 
 // ─── Bubble content ───────────────────────────────────────────────────────────
 
-class _BubbleContent extends StatelessWidget {
+class _BubbleContent extends ConsumerWidget {
   final MessageModel message;
 
   /// Aliases passed down so reply preview can also resolve names
@@ -1240,7 +1241,7 @@ class _BubbleContent extends StatelessWidget {
   const _BubbleContent({required this.message, required this.aliases});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     Widget? replyWidget;
     if (message.replyToMessageId != null &&
         message.replyToMessageId!.isNotEmpty) {
@@ -1365,13 +1366,13 @@ class _BubbleContent extends StatelessWidget {
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
-class _Avatar extends StatelessWidget {
+class _Avatar extends ConsumerWidget {
   final String senderId;
   final bool isDeleted;
   const _Avatar({required this.senderId, required this.isDeleted});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (isDeleted) {
       return CircleAvatar(
         radius: 16,
@@ -1403,7 +1404,7 @@ class _Avatar extends StatelessWidget {
 
 // ─── Reply preview (inside bubble) ───────────────────────────────────────────
 
-class _ReplyPreview extends StatelessWidget {
+class _ReplyPreview extends ConsumerWidget {
   final String messageId;
   final String chatRoomId;
 
@@ -1417,7 +1418,7 @@ class _ReplyPreview extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return FutureBuilder<DocumentSnapshot>(
       future:
           FirebaseFirestore.instance
@@ -1485,7 +1486,7 @@ class _ReplyPreview extends StatelessWidget {
 
 // ─── Love indicator ───────────────────────────────────────────────────────────
 
-class _LoveIndicator extends StatelessWidget {
+class _LoveIndicator extends ConsumerWidget {
   final int count;
   final bool lovedByMe;
   final VoidCallback? onTap;
@@ -1497,7 +1498,7 @@ class _LoveIndicator extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: onTap,
       child: Padding(

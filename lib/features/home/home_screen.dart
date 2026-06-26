@@ -1,39 +1,37 @@
 import 'dart:async';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/home/data/post_provider.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
 import 'package:ecommerece_app/features/home/search_screen.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
-import 'package:ecommerece_app/features/mypage/ui/my_story.dart';
+import 'package:ecommerece_app/features/home/my_story.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
   final TabController? tabController;
   const HomeScreen({super.key, this.scrollController, this.tabController});
 
   @override
-  State<HomeScreen> createState() => HomeScreenState();
+  ConsumerState<HomeScreen> createState() => HomeScreenState();
 }
 
-class HomeScreenState extends State<HomeScreen>
+class HomeScreenState extends ConsumerState<HomeScreen>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
-  User? _firebaseUser;
-  Stream<DocumentSnapshot>? _userStream;
   int _selectedIndex = 0;
   bool isSub = false;
-  late final StreamSubscription<User?> _authSubscription;
   late final ScrollController _feedTabController;
   late final ScrollController _followingTabController;
   late final ScrollController _myStoryTabController;
@@ -67,35 +65,10 @@ class HomeScreenState extends State<HomeScreen>
     _feedTabController = ScrollController();
     _followingTabController = ScrollController();
     _myStoryTabController = ScrollController();
-    _firebaseUser = FirebaseAuth.instance.currentUser;
-    if (_firebaseUser != null) {
-      _userStream =
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(_firebaseUser!.uid)
-              .snapshots();
-    }
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
-      if (mounted) {
-        setState(() {
-          _firebaseUser = user;
-          if (user != null) {
-            _userStream =
-                FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .snapshots();
-          } else {
-            _userStream = null;
-          }
-        });
-      }
-    });
   }
 
   @override
   void dispose() {
-    _authSubscription.cancel();
     _feedTabController.dispose();
     _followingTabController.dispose();
     _myStoryTabController.dispose();
@@ -186,14 +159,7 @@ class HomeScreenState extends State<HomeScreen>
                           width: 35.w,
                         )
                         : StreamBuilder<QuerySnapshot>(
-                          stream:
-                              FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(firebaseUser.uid)
-                                  .collection('notifications')
-                                  .where('isRead', isEqualTo: false)
-                                  .limit(1)
-                                  .snapshots(),
+                          stream: ref.read(feedControllerProvider).getUnreadNotificationsStream(firebaseUser.uid),
                           builder: (context, notifSnapshot) {
                             final hasUnread =
                                 notifSnapshot.hasData &&
@@ -253,7 +219,9 @@ class HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return _buildScaffold(_firebaseUser, widget.tabController, _selectedIndex);
+    final authState = ref.watch(authStateProvider);
+    final firebaseUser = authState.value;
+    return _buildScaffold(firebaseUser, widget.tabController, _selectedIndex);
   }
 
   Widget _buildScaffold(
@@ -266,7 +234,7 @@ class HomeScreenState extends State<HomeScreen>
         floatingActionButton:
             (floating == 0 || floating == 2) && firebaseUser != null
                 ? StreamBuilder(
-                  stream: _userStream,
+                  stream: ref.read(feedControllerProvider).getUserStream(firebaseUser.uid),
                   builder: (context, asyncSnapshot) {
                     if (!asyncSnapshot.hasData) {
                       return SizedBox.shrink();
@@ -323,14 +291,14 @@ class HomeScreenState extends State<HomeScreen>
   }
 }
 
-class _HomeFeedTab extends StatefulWidget {
+class _HomeFeedTab extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
   const _HomeFeedTab({this.scrollController});
   @override
-  State<_HomeFeedTab> createState() => _HomeFeedTabState();
+  ConsumerState<_HomeFeedTab> createState() => _HomeFeedTabState();
 }
 
-class _HomeFeedTabState extends State<_HomeFeedTab>
+class _HomeFeedTabState extends ConsumerState<_HomeFeedTab>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -341,45 +309,26 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
   QuerySnapshot? _lastPostsDocs;
   Map<String, Map<String, dynamic>>? _lastAuthorsData;
 
-  final Stream<QuerySnapshot> _postsStream =
-      FirebaseFirestore.instance
-          .collection('posts')
-          .orderBy('createdAt', descending: true)
-          .snapshots();
+  Stream<QuerySnapshot>? _postsStream;
 
   Stream<DocumentSnapshot>? _userProfileStream;
   Stream<QuerySnapshot>? _followingStream;
   Stream<QuerySnapshot>? _hiddenFriendsStream;
-  Stream<User?>? _authStream;
   String? _cachedUserId;
 
   List<String> _cachedAuthorIds = [];
   Stream<Map<String, Map<String, dynamic>>>? _cachedAuthorStream;
 
-  @override
-  void initState() {
-    super.initState();
-    _authStream = FirebaseAuth.instance.authStateChanges();
-  }
+
 
   // Helper to get or update stable streams based on current user
   void _updateStreamsIfNecessary(String uid) {
     if (_cachedUserId != uid) {
       _cachedUserId = uid;
-      _userProfileStream =
-          FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
-      _followingStream =
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('following')
-              .snapshots();
-      _hiddenFriendsStream =
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('hiddenFriends')
-              .snapshots();
+      final feedController = ref.read(feedControllerProvider);
+      _userProfileStream = feedController.getUserStream(uid);
+      _followingStream = feedController.getFollowingStreamForUser(uid);
+      _hiddenFriendsStream = feedController.getHiddenFriendsStream(uid);
     }
   }
 
@@ -400,7 +349,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
 
     if (!isSame || _cachedAuthorStream == null) {
       _cachedAuthorIds = List.from(newAuthorIds);
-      _cachedAuthorStream = _streamAuthorDataRealtime(_cachedAuthorIds);
+      _cachedAuthorStream = ref.read(feedControllerProvider).getAuthorsDataStreamRealtime(_cachedAuthorIds);
     }
 
     return _cachedAuthorStream!;
@@ -411,74 +360,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
     super.dispose();
   }
 
-  Stream<Map<String, Map<String, dynamic>>> _streamAuthorDataRealtime(
-    List<String> authorIds,
-  ) {
-    if (authorIds.isEmpty) {
-      return Stream.value(<String, Map<String, dynamic>>{}).asBroadcastStream();
-    }
 
-    final chunks = <List<String>>[];
-    for (var i = 0; i < authorIds.length; i += 10) {
-      chunks.add(
-        authorIds.sublist(
-          i,
-          i + 10 > authorIds.length ? authorIds.length : i + 10,
-        ),
-      );
-    }
-
-    final streams =
-        chunks.map((chunk) {
-          return FirebaseFirestore.instance
-              .collection('users')
-              .where(FieldPath.documentId, whereIn: chunk)
-              .snapshots()
-              .map((snapshot) {
-                final map = <String, Map<String, dynamic>>{};
-                for (var doc in snapshot.docs) {
-                  map[doc.id] = doc.data();
-                }
-                return map;
-              });
-        }).toList();
-
-    if (streams.length == 1) {
-      return streams[0];
-    }
-
-    return Stream.multi((controller) async {
-      final dataMaps = List<Map<String, Map<String, dynamic>>>.filled(
-        streams.length,
-        {},
-      );
-
-      final subscriptions =
-          <StreamSubscription<Map<String, Map<String, dynamic>>>>[];
-
-      try {
-        for (var i = 0; i < streams.length; i++) {
-          subscriptions.add(
-            streams[i].listen(
-              (data) {
-                dataMaps[i] = data;
-                final combined = <String, Map<String, dynamic>>{};
-                for (var map in dataMaps) {
-                  combined.addAll(map);
-                }
-                controller.add(combined);
-              },
-              onError: (e) => controller.addError(e),
-              onDone: () => controller.close(),
-            ),
-          );
-        }
-      } catch (e) {
-        controller.addError(e);
-        controller.close();
-      }
-    });
-  }
 
   bool _shouldShowPost({
     required String postAuthorId,
@@ -503,28 +385,25 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return StreamBuilder<User?>(
-      stream: _authStream,
-      builder: (context, authSnapshot) {
-        if (authSnapshot.connectionState == ConnectionState.waiting) {
-          return Center();
-        }
+    _postsStream ??= ref.read(feedControllerProvider).searchPostsStream();
 
-        final firebaseUser = authSnapshot.data;
-        final postsProvider = Provider.of<PostsProvider>(
-          context,
-          listen: false,
-        );
+    final authState = ref.watch(authStateProvider);
+    if (authState.isLoading) {
+      return const Center();
+    }
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (firebaseUser == null) {
-            postsProvider.resetListening();
-          } else {
-            postsProvider.startListening();
-          }
-        });
+    final firebaseUser = authState.value;
+    final postsProvider = ref.read(feedControllerProvider);
 
-        if (firebaseUser == null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (firebaseUser == null) {
+        postsProvider.resetListening();
+      } else {
+        postsProvider.startListening();
+      }
+    });
+
+    if (firebaseUser == null) {
           _cachedUserId = null;
           _lastProfileDoc = null;
           _lastFollowingDocs = null;
@@ -546,7 +425,7 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
                 return Center(child: Text('Error: ${postsSnapshot.error}'));
               }
 
-              final posts = postsSnapshot.data?.docs ?? [];
+              final List<QueryDocumentSnapshot> posts = postsSnapshot.data?.docs ?? [];
 
               final authorIds = <String>{};
               for (var post in posts) {
@@ -881,7 +760,5 @@ class _HomeFeedTabState extends State<_HomeFeedTab>
             );
           },
         );
-      },
-    );
   }
 }

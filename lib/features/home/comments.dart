@@ -8,9 +8,7 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_input_bar.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
-import 'package:ecommerece_app/features/home/data/post_provider.dart';
-import 'package:ecommerece_app/features/home/models/comment_model.dart';
-import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
@@ -21,7 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const _kBgColor = Color(0xFFF2F2F2);
 
@@ -51,7 +49,7 @@ class ChatMessageItem {
   });
 }
 
-class Comments extends StatefulWidget {
+class Comments extends ConsumerStatefulWidget {
   const Comments({
     super.key,
     required this.postId,
@@ -62,18 +60,16 @@ class Comments extends StatefulWidget {
   final String? commentId;
   final bool canInteract;
   @override
-  State<Comments> createState() => _CommentsState();
+  ConsumerState<Comments> createState() => _CommentsState();
 }
 
-class _CommentsState extends State<Comments> {
+class _CommentsState extends ConsumerState<Comments> {
   final TextEditingController _commentController = TextEditingController();
-  bool _isSubmitting = false;
   final currentUser = FirebaseAuth.instance.currentUser;
   XFile? _pickedImage;
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   Map<String, dynamic>? _fetchedPostData;
-  bool _fetchingPost = false;
   Future<MyUser>? _userFuture;
   String? _loadedUserId;
   Future<DocumentSnapshot>? _currentUserDocFuture;
@@ -91,16 +87,19 @@ class _CommentsState extends State<Comments> {
   void initState() {
     super.initState();
     if (currentUserId.isNotEmpty) {
-      _currentUserDocFuture = FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
+      _currentUserDocFuture =
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUserId)
+              .get();
     }
-    Provider.of<PostsProvider>(context, listen: false).startListening();
+    ref.read(feedControllerProvider).startListening();
     _maybeFetchPost();
   }
 
   void _maybeFetchPost() async {
-    final postsProvider = Provider.of<PostsProvider>(context, listen: false);
+    final postsProvider = ref.read(feedControllerProvider);
     if (postsProvider.getPost(widget.postId) == null) {
-      setState(() => _fetchingPost = true);
       try {
         final doc =
             await FirebaseFirestore.instance
@@ -113,9 +112,7 @@ class _CommentsState extends State<Comments> {
           });
         }
       } catch (e) {
-        print(e);
-      } finally {
-        if (mounted) setState(() => _fetchingPost = false);
+        debugPrint(e.toString());
       }
     }
   }
@@ -129,20 +126,17 @@ class _CommentsState extends State<Comments> {
     if (_pickedImage == null) return;
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_$currentUserId.jpg';
-    final ref = FirebaseStorage.instance.ref().child('chat_images/$fileName');
+    final storageRef = FirebaseStorage.instance.ref().child('chat_images/$fileName');
     UploadTask task;
     if (kIsWeb) {
       final bytes = await _pickedImage!.readAsBytes();
-      task = ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+      task = storageRef.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
     } else {
-      task = ref.putFile(File(_pickedImage!.path));
+      task = storageRef.putFile(File(_pickedImage!.path));
     }
     final url = await (await task).ref.getDownloadURL();
     final text = _commentController.text.trim();
-    await Provider.of<PostsProvider>(
-      context,
-      listen: false,
-    ).addComment(widget.postId, text, imageUrl: url);
+    await ref.read(feedControllerProvider).addComment(widget.postId, text, imageUrl: url);
     _commentController.clear();
     setState(() => _pickedImage = null);
   }
@@ -150,19 +144,14 @@ class _CommentsState extends State<Comments> {
   Future<void> _submitComment() async {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
-    setState(() => _isSubmitting = true);
     try {
-      await Provider.of<PostsProvider>(
-        context,
-        listen: false,
-      ).addComment(widget.postId, text);
+      await ref.read(feedControllerProvider).addComment(widget.postId, text);
       _commentController.clear();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('댓글 추가에 실패했습니다: $e')));
-    } finally {
-      setState(() => _isSubmitting = false);
     }
   }
 
@@ -171,15 +160,15 @@ class _CommentsState extends State<Comments> {
 
   @override
   Widget build(BuildContext context) {
-    final postsProvider = Provider.of<PostsProvider>(context, listen: false);
+    final postsProvider = ref.read(feedControllerProvider);
     if (postsProvider.getComments(widget.postId).isEmpty &&
         !postsProvider.isLoadingComments(widget.postId)) {
       postsProvider.listenToComments(widget.postId);
     }
 
-    return Selector<PostsProvider, Map<String, dynamic>?>(
-      selector: (_, provider) => provider.getPost(widget.postId),
-      builder: (context, providerPostData, child) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final providerPostData = ref.watch(feedControllerProvider).getPost(widget.postId);
         final postData = providerPostData ?? _fetchedPostData;
 
         if (postData == null) {
@@ -251,11 +240,9 @@ class _CommentsState extends State<Comments> {
                     ),
                     SizedBox(height: 10.h),
                     Expanded(
-                      child: Selector<PostsProvider, List<Comment>>(
-                        selector:
-                            (_, provider) =>
-                                provider.getComments(widget.postId),
-                        builder: (context, comments, child) {
+                      child: Consumer(
+                        builder: (context, ref, child) {
+                          final comments = ref.watch(feedControllerProvider).getComments(widget.postId);
                           final List<ChatMessageItem> chatItems = [];
 
                           // Add comments first (newest comments at lower indices)
@@ -417,101 +404,109 @@ class _CommentsState extends State<Comments> {
                     if (widget.canInteract)
                       currentUserId.isEmpty
                           ? Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.w,
-                                vertical: 12.h,
-                              ),
-                              color: Colors.white,
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.add, color: Colors.grey),
-                                  SizedBox(width: 12.w),
-                                  Expanded(
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 16.w,
-                                        vertical: 10.h,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF2F2F2),
-                                        borderRadius: BorderRadius.circular(20.r),
-                                      ),
-                                      child: Text(
-                                        '일반 사용자는 댓글을 작성할 수 없습니다.',
-                                        style: TextStyle(
-                                          color: Colors.grey[500],
-                                          fontSize: 14.sp,
-                                          fontFamily: 'NotoSans',
-                                        ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.w,
+                              vertical: 12.h,
+                            ),
+                            color: Colors.white,
+                            child: Row(
+                              children: [
+                                const Icon(Icons.add, color: Colors.grey),
+                                SizedBox(width: 12.w),
+                                Expanded(
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 16.w,
+                                      vertical: 10.h,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF2F2F2),
+                                      borderRadius: BorderRadius.circular(20.r),
+                                    ),
+                                    child: Text(
+                                      '일반 사용자는 댓글을 작성할 수 없습니다.',
+                                      style: TextStyle(
+                                        color: Colors.grey[500],
+                                        fontSize: 14.sp,
+                                        fontFamily: 'NotoSans',
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
-                            )
+                                ),
+                              ],
+                            ),
+                          )
                           : FutureBuilder<DocumentSnapshot>(
-                              future: _currentUserDocFuture,
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return const SizedBox.shrink();
-                                }
-                                
-                                final userData = snapshot.data?.data() as Map<String, dynamic>?;
-                                final isNormalUser = userData == null || (userData['type'] == 'user' && userData['isSub'] != true);
-                                
-                                if (isNormalUser) {
-                                  return Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 16.w,
-                                      vertical: 12.h,
-                                    ),
-                                    color: Colors.white,
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.add, color: Colors.grey),
-                                        SizedBox(width: 12.w),
-                                        Expanded(
-                                          child: Container(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 16.w,
-                                              vertical: 10.h,
+                            future: _currentUserDocFuture,
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const SizedBox.shrink();
+                              }
+
+                              final userData =
+                                  snapshot.data?.data()
+                                      as Map<String, dynamic>?;
+                              final isNormalUser =
+                                  userData == null ||
+                                  (userData['type'] == 'user' &&
+                                      userData['isSub'] != true);
+
+                              if (isNormalUser) {
+                                return Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 16.w,
+                                    vertical: 12.h,
+                                  ),
+                                  color: Colors.white,
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.add, color: Colors.grey),
+                                      SizedBox(width: 12.w),
+                                      Expanded(
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 16.w,
+                                            vertical: 10.h,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF2F2F2),
+                                            borderRadius: BorderRadius.circular(
+                                              20.r,
                                             ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFF2F2F2),
-                                              borderRadius: BorderRadius.circular(20.r),
-                                            ),
-                                            child: Text(
-                                              '일반 사용자는 댓글을 작성할 수 없습니다.',
-                                              style: TextStyle(
-                                                color: Colors.grey[500],
-                                                fontSize: 14.sp,
-                                                fontFamily: 'NotoSans',
-                                              ),
+                                          ),
+                                          child: Text(
+                                            '일반 사용자는 댓글을 작성할 수 없습니다.',
+                                            style: TextStyle(
+                                              color: Colors.grey[500],
+                                              fontSize: 14.sp,
+                                              fontFamily: 'NotoSans',
                                             ),
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  );
-                                }
-
-                                return InputBar(
-                                  controller: _commentController,
-                                  pickedImage: _pickedImage,
-                                  onPickImage: _pickImage,
-                                  onSend: () async {
-                                    if (_pickedImage != null) {
-                                      showLoadingDialog(context);
-                                      final navigator = Navigator.of(context);
-                                      await _submitImageComment();
-                                      navigator.pop();
-                                    } else {
-                                      await _submitComment();
-                                    }
-                                  },
+                                      ),
+                                    ],
+                                  ),
                                 );
-                              },
-                            ),
+                              }
+
+                              return InputBar(
+                                controller: _commentController,
+                                pickedImage: _pickedImage,
+                                onPickImage: _pickImage,
+                                onSend: () async {
+                                  if (_pickedImage != null) {
+                                    showLoadingDialog(context);
+                                    final navigator = Navigator.of(context);
+                                    await _submitImageComment();
+                                    navigator.pop();
+                                  } else {
+                                    await _submitComment();
+                                  }
+                                },
+                              );
+                            },
+                          ),
                   ],
                 ),
               ),
@@ -523,18 +518,17 @@ class _CommentsState extends State<Comments> {
   }
 }
 
-class _CommentBubble extends StatefulWidget {
+class _CommentBubble extends ConsumerStatefulWidget {
   final ChatMessageItem item;
   final bool isMe;
 
-  const _CommentBubble({Key? key, required this.item, required this.isMe})
-    : super(key: key);
+  const _CommentBubble({required this.item, required this.isMe});
 
   @override
-  State<_CommentBubble> createState() => _CommentBubbleState();
+  ConsumerState<_CommentBubble> createState() => _CommentBubbleState();
 }
 
-class _CommentBubbleState extends State<_CommentBubble> {
+class _CommentBubbleState extends ConsumerState<_CommentBubble> {
   late PageController _pageController;
 
   @override
@@ -785,7 +779,7 @@ class _CommentBubbleState extends State<_CommentBubble> {
   }
 }
 
-class _DateSeparator extends StatelessWidget {
+class _DateSeparator extends ConsumerWidget {
   final DateTime date;
   const _DateSeparator({required this.date});
 
@@ -799,14 +793,14 @@ class _DateSeparator extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 10.h),
       child: Center(
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(20.r),
           ),
           child: Text(

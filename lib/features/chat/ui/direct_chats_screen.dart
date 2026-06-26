@@ -1,26 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/chat/services/friends_service.dart';
+import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
 import 'package:ecommerece_app/features/home/data/home_functions.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../models/chat_room_model.dart';
-import '../services/chat_service.dart';
+import '../domain/chat_controller.dart';
 
-class DirectChatsScreen extends StatefulWidget {
+class DirectChatsScreen extends ConsumerStatefulWidget {
   @override
-  State<DirectChatsScreen> createState() => _DirectChatsScreenState();
+  ConsumerState<DirectChatsScreen> createState() => _DirectChatsScreenState();
 }
 
-class _DirectChatsScreenState extends State<DirectChatsScreen>
+class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
     with AutomaticKeepAliveClientMixin {
   bool get wantKeepAlive => true;
-  final ChatService chatService = ChatService();
+  
   String get currentUserId => FirebaseAuth.instance.currentUser!.uid;
-  final FriendsService _friendsService = FriendsService();
+  
   final Map<String, MyUser?> _usersCache = {};
   final Set<String> _fetchingIds = {};
 
@@ -235,7 +236,7 @@ class _DirectChatsScreenState extends State<DirectChatsScreen>
                           onTap: () async {
                             Navigator.pop(context);
                             showLoadingDialog(context);
-                            await chatService.softDeleteChatForCurrentUser(
+                            await ref.read(chatControllerProvider).softDeleteChatForCurrentUser(
                               chat.id,
                             );
                             if (mounted) Navigator.pop(context);
@@ -298,7 +299,7 @@ class _DirectChatsScreenState extends State<DirectChatsScreen>
             final aliases = aliasSnapshot.data ?? {};
 
             return StreamBuilder<List<ChatRoomModel>>(
-              stream: chatService.getChatRoomsStream(),
+              stream: ref.read(chatControllerProvider).getChatRoomsStream(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const SizedBox.shrink();

@@ -1,14 +1,13 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/features/cart/services/cart_service.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
-import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -40,15 +39,15 @@ class ChatMessageItem {
   });
 }
 
-class GuestComments extends StatefulWidget {
+class GuestComments extends ConsumerStatefulWidget {
   final Map<String, dynamic> post;
-  const GuestComments({Key? key, required this.post}) : super(key: key);
+  const GuestComments({super.key, required this.post});
 
   @override
-  State<GuestComments> createState() => _GuestCommentsState();
+  ConsumerState<GuestComments> createState() => _GuestCommentsState();
 }
 
-class _GuestCommentsState extends State<GuestComments> {
+class _GuestCommentsState extends ConsumerState<GuestComments> {
   Future<MyUser>? _userFuture;
 
   @override
@@ -243,18 +242,17 @@ class _GuestCommentsState extends State<GuestComments> {
   }
 }
 
-class _CommentBubble extends StatefulWidget {
+class _CommentBubble extends ConsumerStatefulWidget {
   final ChatMessageItem item;
   final bool isMe;
 
-  const _CommentBubble({Key? key, required this.item, required this.isMe})
-    : super(key: key);
+  const _CommentBubble({required this.item, required this.isMe});
 
   @override
-  State<_CommentBubble> createState() => _CommentBubbleState();
+  ConsumerState<_CommentBubble> createState() => _CommentBubbleState();
 }
 
-class _CommentBubbleState extends State<_CommentBubble> {
+class _CommentBubbleState extends ConsumerState<_CommentBubble> {
   late PageController _pageController;
 
   @override
@@ -387,12 +385,12 @@ class _CommentBubbleState extends State<_CommentBubble> {
                                 authorName: item.postData!['userId'] ?? '',
                                 postTitle: item.postData!['text'] ?? '',
                                 onTap: () async {
-                                  final navigator = Navigator.of(context);
                                   final doc =
                                       await FirebaseFirestore.instance
                                           .collection('posts')
                                           .doc(item.postData!['postId'])
                                           .get();
+                                  if (!context.mounted) return;
                                   if (doc.exists) {
                                     final postMap =
                                         doc.data() as Map<String, dynamic>;
@@ -512,7 +510,7 @@ class _CommentBubbleState extends State<_CommentBubble> {
   }
 }
 
-class _DateSeparator extends StatelessWidget {
+class _DateSeparator extends ConsumerWidget {
   final DateTime date;
   const _DateSeparator({required this.date});
 
@@ -526,14 +524,14 @@ class _DateSeparator extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 10.h),
       child: Center(
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(20.r),
           ),
           child: Text(

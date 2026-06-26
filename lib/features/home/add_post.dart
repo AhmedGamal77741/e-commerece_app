@@ -6,10 +6,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/features/home/data/home_functions.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class UploadableImage extends ChangeNotifier {
   final String id = UniqueKey().toString();
@@ -55,17 +56,17 @@ class UploadableImage extends ChangeNotifier {
   }
 }
 
-class AddPost extends StatefulWidget {
+class AddPost extends ConsumerStatefulWidget {
   const AddPost({super.key});
 
   @override
-  State<AddPost> createState() => _AddPostState();
+  ConsumerState<AddPost> createState() => _AddPostState();
 }
 
-class _AddPostState extends State<AddPost> {
+class _AddPostState extends ConsumerState<AddPost> {
   List<UploadableImage> images = [];
   final currentUser = FirebaseAuth.instance.currentUser;
-  TextEditingController _textController = TextEditingController();
+  final TextEditingController _textController = TextEditingController();
   String? selectedCategoryId;
   List<Map<String, dynamic>> categories = [];
   bool isArrangeMode = false;
@@ -101,7 +102,7 @@ class _AddPostState extends State<AddPost> {
                 .toList();
       });
     } catch (e) {
-      print('Error loading categories: $e');
+      debugPrint('Error loading categories: $e');
     }
   }
 
@@ -123,7 +124,7 @@ class _AddPostState extends State<AddPost> {
       });
       _loadCategories();
     } catch (e) {
-      print('Error adding category: $e');
+      debugPrint('Error adding category: $e');
     }
   }
 
@@ -141,7 +142,7 @@ class _AddPostState extends State<AddPost> {
       }
       _loadCategories();
     } catch (e) {
-      print('Error deleting category: $e');
+      debugPrint('Error deleting category: $e');
     }
   }
 
@@ -156,7 +157,7 @@ class _AddPostState extends State<AddPost> {
           .update({'name': newName.trim()});
       _loadCategories();
     } catch (e) {
-      print('Error updating category name: $e');
+      debugPrint('Error updating category name: $e');
     }
   }
 
@@ -175,7 +176,7 @@ class _AddPostState extends State<AddPost> {
       await batch.commit();
       _loadCategories();
     } catch (e) {
-      print('Error updating category order: $e');
+      debugPrint('Error updating category order: $e');
     }
   }
 
@@ -421,7 +422,7 @@ class _AddPostState extends State<AddPost> {
                     // Fire and forget the async operation to allow concurrent uploads
                     () async {
                       try {
-                        final url = await uploadSingleImageToFirebase(
+                        final url = await ref.read(feedControllerProvider).uploadSingleImageToFirebase(
                           file,
                           startIndex + i,
                           onProgress: (progress) {
@@ -473,18 +474,20 @@ class _AddPostState extends State<AddPost> {
                             .where((url) => url != null)
                             .cast<String>()
                             .toList();
-                    await uploadPost(
+                    await ref.read(feedControllerProvider).uploadPost(
                       text: _textController.text,
                       imgUrls: finalUrls,
                       categoryId: selectedCategoryId,
                     );
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(
                       context,
                     ).showSnackBar(SnackBar(content: Text('성공')));
                     Navigator.pop(context);
                   } catch (e) {
-                    print(e.toString());
+                    debugPrint(e.toString());
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -682,7 +685,8 @@ class _AddPostState extends State<AddPost> {
                                                   ),
                                                 ),
                                                 child: DragTarget<int>(
-                                                  onAccept: (draggedIndex) {
+                                                  onAcceptWithDetails: (details) {
+                                                    final draggedIndex = details.data;
                                                     final newCategories = List<
                                                       Map<String, dynamic>
                                                     >.from(categories);
@@ -863,8 +867,8 @@ class _AddPostState extends State<AddPost> {
                                       Positioned.fill(
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(
-                                              0.5,
+                                            color: Colors.black.withValues(
+                                              alpha: 0.5,
                                             ),
                                             borderRadius: BorderRadius.circular(
                                               25,
@@ -887,8 +891,8 @@ class _AddPostState extends State<AddPost> {
                                       Positioned.fill(
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(
-                                              0.5,
+                                            color: Colors.black.withValues(
+                                              alpha: 0.5,
                                             ),
                                             borderRadius: BorderRadius.circular(
                                               25,
@@ -912,8 +916,8 @@ class _AddPostState extends State<AddPost> {
                                           index: index,
                                           child: Container(
                                             decoration: BoxDecoration(
-                                              color: Colors.black.withOpacity(
-                                                0.6,
+                                              color: Colors.black.withValues(
+                                                alpha: 0.6,
                                               ),
                                               shape: BoxShape.circle,
                                             ),
@@ -941,8 +945,8 @@ class _AddPostState extends State<AddPost> {
                                         },
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(
-                                              0.6,
+                                            color: Colors.black.withValues(
+                                              alpha: 0.6,
                                             ),
                                             shape: BoxShape.circle,
                                           ),

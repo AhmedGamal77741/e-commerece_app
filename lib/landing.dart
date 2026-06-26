@@ -1,32 +1,26 @@
 import 'package:ecommerece_app/features/auth/auth_screen.dart';
-import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/auth/signup/data/signup_functions.dart';
 import 'package:ecommerece_app/features/mypage/ui/my_page_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 
-class LandingScreen extends StatelessWidget {
+class LandingScreen extends ConsumerWidget {
   const LandingScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final authRepo = Provider.of<FirebaseUserRepo>(context, listen: false);
-    return StreamBuilder<MyUser?>(
-      stream: authRepo.user,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: SizedBox.shrink(),
-          );
-        }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(currentUserProvider);
 
-        final user = snapshot.data;
+    return userAsync.when(
+      data: (user) {
         if (user == null) {
           return AuthScreen();
         } else {
           return MyPageScreen(currentUser: user);
         }
       },
+      loading: () => const Scaffold(body: SizedBox.shrink()),
+      error: (_, __) => AuthScreen(),
     );
   }
 }

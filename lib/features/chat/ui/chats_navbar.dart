@@ -9,15 +9,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../services/chat_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../domain/chat_controller.dart';
 
-class ChatsNavbar extends StatefulWidget {
+class ChatsNavbar extends ConsumerStatefulWidget {
   const ChatsNavbar({super.key});
   @override
-  State<ChatsNavbar> createState() => _ChatsNavbarState();
+  ConsumerState<ChatsNavbar> createState() => _ChatsNavbarState();
 }
 
-class _ChatsNavbarState extends State<ChatsNavbar>
+class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
     with AutomaticKeepAliveClientMixin {
   bool get wantKeepAlive => true;
   int _selectedIndex = 1;
@@ -28,7 +29,6 @@ class _ChatsNavbarState extends State<ChatsNavbar>
   final PageController _pageController = PageController(initialPage: 1);
 
   final String supportUserId = 'JuxEfED9YSc2XyHRFgkPcNCFUSJ3';
-  final ChatService _chatService = ChatService();
 
   final List<Map<String, dynamic>> _tabs = [
     {'label': '친구'},
@@ -85,7 +85,7 @@ class _ChatsNavbarState extends State<ChatsNavbar>
 
   Future<void> _contactAdmin() async {
     try {
-      final chatRoomId = await _chatService.createDirectChatRoomWithAdmin();
+      final chatRoomId = await ref.read(chatControllerProvider).createDirectChatRoomWithAdmin();
       if (!mounted) return;
       Navigator.push(
         context,

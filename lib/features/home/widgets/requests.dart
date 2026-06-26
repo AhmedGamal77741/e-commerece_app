@@ -1,21 +1,22 @@
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
-import 'package:ecommerece_app/features/home/data/follow_service.dart';
-import 'package:ecommerece_app/features/home/data/home_functions.dart';
+import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class Requests extends StatefulWidget {
+class Requests extends ConsumerStatefulWidget {
   const Requests({super.key});
 
   @override
-  State<Requests> createState() => _RequestsState();
+  ConsumerState<Requests> createState() => _RequestsState();
 }
 
-class _RequestsState extends State<Requests> {
+class _RequestsState extends ConsumerState<Requests> {
   final TextEditingController _searchController = TextEditingController();
   String searchQuery = '';
   late Future<Map<String, Map<String, dynamic>>> _recommendationsFuture;
@@ -564,7 +565,7 @@ class _RequestsState extends State<Requests> {
                                                         ),
                                                       ),
                                                       onPressed: () async {
-                                                        FollowService()
+                                                        ref.read(followControllerProvider)
                                                             .toggleFollow(
                                                               userId,
                                                             );
@@ -684,7 +685,7 @@ class _RequestsState extends State<Requests> {
                                                       ),
                                                     ),
                                                     onPressed: () async {
-                                                      FollowService()
+                                                      ref.read(followControllerProvider)
                                                           .toggleFollow(userId);
                                                     },
                                                     child: Text('구독'),
@@ -900,81 +901,13 @@ class _RequestsState extends State<Requests> {
     String currentUserId,
   ) async {
     try {
-      final batch = FirebaseFirestore.instance.batch();
-
-      // Add to followers subcollection
-      final followerRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId)
-          .collection('followers')
-          .doc(requestingUserId);
-
-      batch.set(followerRef, {
-        'userId': requestingUserId,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // Add to requesting user's following subcollection
-      final followingRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(requestingUserId)
-          .collection('following')
-          .doc(currentUserId);
-
-      batch.set(followingRef, {
-        'userId': currentUserId,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // Delete the follow request
-      final requestRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId)
-          .collection('followRequests')
-          .doc(requestingUserId);
-
-      batch.delete(requestRef);
-
-      // Check for mutual follow
-      final mutualFollowCheck = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId)
-          .collection('following')
-          .doc(requestingUserId)
-          .get();
-
-      if (mutualFollowCheck.exists) {
-        // Create friendship
-        batch.update(FirebaseFirestore.instance.collection('users').doc(currentUserId), {
-          'friends': FieldValue.arrayUnion([requestingUserId]),
-        });
-        batch.update(FirebaseFirestore.instance.collection('users').doc(requestingUserId), {
-          'friends': FieldValue.arrayUnion([currentUserId]),
-        });
-
-        // Restore chat room if it was previously soft-deleted
-        final participants = [currentUserId, requestingUserId]..sort();
-        final chatRoomId = participants.join('_');
-        final chatRoomDoc = await FirebaseFirestore.instance.collection('chatRooms').doc(chatRoomId).get();
-        if (chatRoomDoc.exists) {
-          batch.update(chatRoomDoc.reference, {
-            'deletedBy': FieldValue.arrayRemove([currentUserId, requestingUserId]),
-          });
-        }
-      }
-
-      await batch.commit();
-
+      await ref.read(followControllerProvider).acceptFollowRequest(currentUserId, requestingUserId);
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('팔로우 요청을 수락했습니다')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('요청을 수락했습니다')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('오류: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: ')));
       }
     }
   }
@@ -985,24 +918,13 @@ class _RequestsState extends State<Requests> {
     String currentUserId,
   ) async {
     try {
-      // Delete the follow request
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId)
-          .collection('followRequests')
-          .doc(requestingUserId)
-          .delete();
-
+      await ref.read(followControllerProvider).declineFollowRequest(currentUserId, requestingUserId);
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('팔로우 요청을 거절했습니다')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('요청을 거절했습니다')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('오류: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: ')));
       }
     }
   }
@@ -1011,77 +933,7 @@ class _RequestsState extends State<Requests> {
     String currentUserId,
     List<String> followingIds,
   ) async {
-    final firestore = FirebaseFirestore.instance;
-    final recommendations = <String, int>{};
-
-    try {
-      // Get current user's followers to exclude them
-      final currentFollowersSnapshot =
-          await firestore
-              .collection('users')
-              .doc(currentUserId)
-              .collection('followers')
-              .get();
-      final currentFollowers =
-          currentFollowersSnapshot.docs.map((doc) => doc.id).toSet();
-
-      // For each person the current user follows, get their following list
-      for (final followingId in followingIds) {
-        try {
-          final theirFollowingSnapshot =
-              await firestore
-                  .collection('users')
-                  .doc(followingId)
-                  .collection('following')
-                  .get();
-
-          for (final doc in theirFollowingSnapshot.docs) {
-            final userId = doc.id;
-            // Skip current user
-            if (userId == currentUserId) continue;
-            // Skip people already following or followers
-            if (currentFollowers.contains(userId)) continue;
-            // Skip people current user already follows
-            if (followingIds.contains(userId)) continue;
-
-            // Count occurrences
-            recommendations[userId] = (recommendations[userId] ?? 0) + 1;
-          }
-        } catch (e) {
-          // Continue if one person's following list fails
-          continue;
-        }
-      }
-
-      // Sort by count (highest first) and limit to top recommendations
-      final sortedRecs =
-          recommendations.entries.toList()
-            ..sort((a, b) => b.value.compareTo(a.value));
-
-      // Fetch user data for top recommendations
-      final result = <String, Map<String, dynamic>>{};
-      for (final entry in sortedRecs.take(20)) {
-        try {
-          final userDoc =
-              await firestore.collection('users').doc(entry.key).get();
-
-          if (userDoc.exists) {
-            final user = MyUser.fromDocument(
-              userDoc.data() as Map<String, dynamic>,
-            );
-            result[entry.key] = {'user': user, 'count': entry.value};
-          }
-        } catch (e) {
-          // Skip if user data fails to load
-          continue;
-        }
-      }
-
-      return result;
-    } catch (e) {
-      print('Error building recommendations: $e');
-      return {};
-    }
+    return await ref.read(followControllerProvider).getFriendRecommendations(currentUserId, followingIds);
   }
 
   Future<void> _sendFollowRequest(
@@ -1089,17 +941,10 @@ class _RequestsState extends State<Requests> {
     String currentUserId,
   ) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(targetUserId)
-          .collection('followRequests')
-          .doc(currentUserId)
-          .set({'createdAt': FieldValue.serverTimestamp()});
+      await ref.read(followControllerProvider).sendFollowRequest(targetUserId, currentUserId);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('오류: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: ')));
       }
     }
   }
@@ -1109,24 +954,17 @@ class _RequestsState extends State<Requests> {
     String currentUserId,
   ) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(targetUserId)
-          .collection('followRequests')
-          .doc(currentUserId)
-          .delete();
+      await ref.read(followControllerProvider).cancelFollowRequest(targetUserId, currentUserId);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('오류: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: ')));
       }
     }
   }
 
   Future<void> _unblockUser(String blockedUserId, String currentUserId) async {
     try {
-      await unblockUser(userIdToUnblock: blockedUserId);
+      await ref.read(feedControllerProvider).unblockUser(userIdToUnblock: blockedUserId);
 
       if (mounted) {
         ScaffoldMessenger.of(
