@@ -58,7 +58,7 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
         });
       }
     } catch (e) {
-      rethrow;
+      debugPrint('Error: $e');
     } finally {
       _fetchingIds.remove(otherId);
     }

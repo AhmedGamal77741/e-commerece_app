@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
@@ -324,7 +325,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         'notInterestedBy': FieldValue.arrayUnion([currentUser!.uid]),
       });
     } catch (e) {
-      rethrow;
+      debugPrint('Error: $e');
     }
   }
 
@@ -361,8 +362,8 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       try {
         userData = await loadUser(currentUser.uid);
       } catch (e) {
-        rethrow;
-      }
+      debugPrint('Error: $e');
+    }
     }
 
     Map<String, dynamic>? productData;
@@ -406,7 +407,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     try {
       await batch.commit();
     } catch (e) {
-      rethrow;
+      debugPrint('Error: $e');
     }
   }
 
@@ -425,7 +426,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         return data;
       }
     } catch (e) {
-      rethrow;
+      debugPrint('Error: $e');
     }
     return null;
   }
@@ -450,7 +451,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         return data;
       }
     } catch (e) {
-      rethrow;
+      debugPrint('Error: $e');
     }
     return null;
   }
@@ -479,7 +480,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
       });
     } catch (e) {
-      rethrow;
+      debugPrint('Error: $e');
     }
   }
 
@@ -513,7 +514,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
                 isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
           });
     } catch (e) {
-      rethrow;
+      debugPrint('Error: $e');
     }
   }
 
@@ -541,8 +542,8 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         try {
           await loadUser(userId);
         } catch (e) {
-          rethrow;
-        }
+      debugPrint('Error: $e');
+    }
       }
     }
   }
