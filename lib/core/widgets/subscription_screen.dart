@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/cart/slide_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';

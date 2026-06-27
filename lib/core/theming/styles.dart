@@ -9,7 +9,6 @@ class TextStyles {
     required FontWeight fontWeight,
     required color,
     double letterSpacing = 0,
-    String fontFamily = 'NotoSans',
   }) {
     return GoogleFonts.outfit(
       fontSize: fontSize.sp,

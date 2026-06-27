@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/features/home/domain/add_post_notifier.dart';
 import 'package:ecommerece_app/features/home/widgets/category_management_widgets.dart';
 import 'package:ecommerece_app/features/home/widgets/post_text_input.dart';
 import 'package:ecommerece_app/features/home/widgets/image_picker_grid.dart';
@@ -28,15 +27,15 @@ class _AddPostState extends ConsumerState<AddPost> {
   Widget build(BuildContext context) {
     // We only need to listen to _textController changes to update the button state
     // We could use a hook, but a simple ListenableBuilder is fine.
-    
+
     return SafeArea(
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
         bottomNavigationBar: ListenableBuilder(
           listenable: _textController,
           builder: (context, _) {
-             return AddPostBottomBar(textController: _textController);
-          }
+            return AddPostBottomBar(textController: _textController);
+          },
         ),
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.surface,
@@ -55,16 +54,16 @@ class _AddPostState extends ConsumerState<AddPost> {
               ),
               Text(
                 "오늘의 이야기",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w400,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w400),
               ),
             ],
           ),
           bottom: PreferredSize(
             preferredSize: Size.fromHeight(1.5.h),
             child: Container(
-              color: Theme.of(context).colorScheme.outlineVariant, 
+              color: Theme.of(context).colorScheme.outlineVariant,
               height: 1.5.h,
             ),
           ),
@@ -85,7 +84,7 @@ class _AddPostState extends ConsumerState<AddPost> {
                   listenable: _textController,
                   builder: (context, _) {
                     return PostTextInput(controller: _textController);
-                  }
+                  },
                 ),
                 SizedBox(height: 12.h),
                 const ImagePickerGrid(),

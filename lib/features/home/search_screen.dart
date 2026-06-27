@@ -8,7 +8,6 @@ import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
-import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeSearch extends ConsumerStatefulWidget {
@@ -38,7 +37,9 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
     super.initState();
     _selectedIndex = widget.initialTabIndex;
     _searchController.addListener(() {
-      ref.read(searchNotifierProvider.notifier).updateQuery(_searchController.text);
+      ref
+          .read(searchNotifierProvider.notifier)
+          .updateQuery(_searchController.text);
     });
   }
 
@@ -57,13 +58,19 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 6.h),
         decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.surface : theme.colorScheme.surfaceContainerHighest,
+          color:
+              isSelected
+                  ? theme.colorScheme.surface
+                  : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           _userTabs[index]['label'],
           style: theme.textTheme.labelMedium?.copyWith(
-            color: isSelected ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+            color:
+                isSelected
+                    ? theme.colorScheme.onSurface
+                    : theme.colorScheme.onSurfaceVariant,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
@@ -74,7 +81,7 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return SafeArea(
       child: Scaffold(
         backgroundColor: theme.colorScheme.surface,
@@ -87,14 +94,19 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
                   InkWell(
                     onTap: () => Navigator.pop(context),
                     borderRadius: BorderRadius.circular(30.r),
-                    child: Icon(Icons.arrow_back, size: 36.r, color: theme.colorScheme.onSurface),
+                    child: Icon(
+                      Icons.arrow_back,
+                      size: 36.r,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
                   Expanded(
                     child: Container(
                       height: 42.h,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: TextField(
@@ -102,11 +114,15 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
                         autofocus: true,
                         textAlignVertical: TextAlignVertical.center,
                         decoration: InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 20.h),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20.h,
+                          ),
                           border: InputBorder.none,
                           isDense: true,
                         ),
-                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
                     ),
                   ),
@@ -156,37 +172,50 @@ class _FollowingSearchTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final searchState = ref.watch(searchNotifierProvider);
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    
+
     return searchState.when(
       data: (state) {
         if (state.users.isEmpty) return const SizedBox.shrink();
-        
+
         return ListView.builder(
           itemCount: state.users.length,
           itemBuilder: (context, index) {
             final user = state.users[index];
-            
+
             // We use feedControllerProvider to fetch following status and requests since follow state wasn't entirely moved to searchNotifier.
             return StreamBuilder(
-              stream: ref.read(feedControllerProvider.notifier).getFollowingDocStream(currentUserId, user.userId),
+              stream: ref
+                  .read(feedControllerProvider.notifier)
+                  .getFollowingDocStream(currentUserId, user.userId),
               builder: (context, followingSnapshot) {
-                final isFollowing = followingSnapshot.hasData && followingSnapshot.data!.exists;
-                
+                final isFollowing =
+                    followingSnapshot.hasData && followingSnapshot.data!.exists;
+
                 return StreamBuilder(
-                  stream: ref.read(feedControllerProvider.notifier).getFollowRequestDocStream(user.userId, currentUserId),
+                  stream: ref
+                      .read(feedControllerProvider.notifier)
+                      .getFollowRequestDocStream(user.userId, currentUserId),
                   builder: (context, requestSnapshot) {
-                    final hasRequest = requestSnapshot.hasData && requestSnapshot.data!.exists;
-                    
+                    final hasRequest =
+                        requestSnapshot.hasData && requestSnapshot.data!.exists;
+
                     return UserSearchTile(
                       user: user,
                       isFollowing: isFollowing,
                       hasPendingRequest: hasRequest,
-                      onToggleFollow: () => ref.read(followControllerProvider).toggleFollow(user.userId),
+                      onToggleFollow:
+                          () => ref
+                              .read(followControllerProvider)
+                              .toggleFollow(user.userId),
                       onToggleRequest: () async {
                         if (hasRequest) {
-                          await ref.read(followControllerProvider).cancelFollowRequest(user.userId, currentUserId);
+                          await ref
+                              .read(followControllerProvider)
+                              .cancelFollowRequest(user.userId, currentUserId);
                         } else {
-                          await ref.read(followControllerProvider).sendFollowRequest(user.userId, currentUserId);
+                          await ref
+                              .read(followControllerProvider)
+                              .sendFollowRequest(user.userId, currentUserId);
                         }
                       },
                     );
@@ -210,20 +239,20 @@ class _HomeFeedSearchTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final searchState = ref.watch(searchNotifierProvider);
-    
+
     return searchState.when(
       data: (state) {
         if (state.posts.isEmpty) return const SizedBox.shrink();
-        
+
         return ListView.builder(
           itemCount: state.posts.length,
           itemBuilder: (context, index) {
             final post = state.posts[index];
             final postId = post['postId'] ?? post['id'];
             if (postId == null) return const SizedBox.shrink();
-            
-            return useGuestPostItem 
-                ? GuestPostItem(post: post) 
+
+            return useGuestPostItem
+                ? GuestPostItem(post: post)
                 : PostItem(postId: postId, fromComments: false);
           },
         );
