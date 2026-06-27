@@ -9,7 +9,7 @@ import 'package:ecommerece_app/features/cart/registered_screen.dart';
 
 import 'package:ecommerece_app/features/home/add_post.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
-import 'package:ecommerece_app/features/cart/services/cart_service.dart';
+import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:ecommerece_app/features/home/notifications.dart';
 import 'package:ecommerece_app/features/home/widgets/alerts.dart';
 import 'package:ecommerece_app/features/mypage/ui/cancel_subscription.dart';

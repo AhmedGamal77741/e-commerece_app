@@ -38,7 +38,7 @@ class CartItemWidget extends ConsumerWidget {
         if (product == null) {
           // Product was deleted, we should remove the cart item
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            ref.read(cartControllerProvider).removeCartItem(cartId);
+            ref.read(cartControllerProvider.notifier).removeCartItem(cartId);
           });
           return const SizedBox.shrink();
         }
@@ -132,7 +132,7 @@ class CartItemWidget extends ConsumerWidget {
               ),
               IconButton(
                 onPressed: () {
-                  ref.read(cartControllerProvider).removeCartItem(cartId);
+                  ref.read(cartControllerProvider.notifier).removeCartItem(cartId);
                 },
                 icon: Icon(
                   Icons.close,

@@ -8,7 +8,10 @@ import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:ecommerece_app/features/address/domain/models/address.dart';
-import 'package:ecommerece_app/features/cart/services/cart_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/cart/data/cart_repository.dart';
+import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/cart/slide_button.dart';
 import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
 import 'package:ecommerece_app/features/address/ui/address_list_screen.dart';
@@ -108,7 +111,7 @@ class _PlaceOrderState extends State<PlaceOrder> {
     if (uid.isEmpty) return;
 
     // Run refreshCartPrices independently — don't block UI init on it
-    refreshCartPrices(uid);
+    CartRepository(FirebaseFirestore.instance).refreshCartPrices(uid);
 
     // Load user data and bank accounts in parallel
     await Future.wait([_fetchBankAccounts(), _loadCachedUserValues()]);
@@ -681,7 +684,6 @@ class _PlaceOrderState extends State<PlaceOrder> {
         stream:
             FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
         builder: (context, userSnapshot) {
-          final isSub = userSnapshot.data?.get('isSub') ?? false;
 
           return Scaffold(
             appBar: AppBar(
@@ -791,14 +793,12 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                                 ),
                                               ),
                                               verticalSpace(8),
-                                              StreamBuilder<int>(
-                                                stream: getProductQuantityStream(
-                                                  cartData['product_id'],
-                                                  cartData['pricePointIndex'],
-                                                ),
-                                                builder: (context, snap) {
+                                              Consumer(
+                                                builder: (context, ref, child) {
+                                                  final productAsync = ref.watch(productStreamProvider(cartData['product_id']));
+                                                  final quantity = productAsync.value?.pricePoints[cartData['pricePointIndex']].quantity ?? 0;
                                                   return Text(
-                                                    '${snap.data ?? 0} 개',
+                                                    '$quantity 개',
                                                     style: TextStyle(
                                                       color: Colors.black,
                                                       fontSize: 16.sp,
@@ -811,15 +811,16 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                                 },
                                               ),
                                               SizedBox(height: 8.h),
-                                              StreamBuilder<double>(
-                                                stream: getProductPriceStream(
-                                                  cartData['product_id'],
-                                                  cartData['pricePointIndex'],
-                                                  isSub,
-                                                ),
-                                                builder: (context, snap) {
+                                              Consumer(
+                                                builder: (context, ref, child) {
+                                                  final productAsync = ref.watch(productStreamProvider(cartData['product_id']));
+                                                  final isUserSub = ref.watch(isSubscribedProvider).value ?? false;
+                                                  double price = productAsync.value?.pricePoints[cartData['pricePointIndex']].price.toDouble() ?? 0.0;
+                                                  if (!isUserSub) {
+                                                    price = price / 0.8;
+                                                  }
                                                   return Text(
-                                                    '${formatCurrency.format(snap.data ?? 0.0)} 원',
+                                                    '${formatCurrency.format(price)} 원',
                                                     style: TextStyle(
                                                       color: Colors.black,
                                                       fontSize: 16.sp,
@@ -1119,10 +1120,9 @@ class _PlaceOrderState extends State<PlaceOrder> {
                 if (!cartSnapshot.hasData || cartSnapshot.data!.docs.isEmpty) {
                   return const SizedBox.shrink();
                 }
-                return StreamBuilder<int>(
-                  stream: calculateCartTotal(cartSnapshot.data!.docs, isSub),
-                  builder: (context, totalSnapshot) {
-                    final totalPrice = totalSnapshot.data ?? 0;
+                return Consumer(
+                  builder: (context, ref, child) {
+                    final totalPrice = ref.watch(cartTotalProvider);
                     return Container(
                       padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 28.h),
                       decoration: const BoxDecoration(color: Colors.white),
@@ -1143,18 +1143,16 @@ class _PlaceOrderState extends State<PlaceOrder> {
                                   height: 1.40.h,
                                 ),
                               ),
-                              totalSnapshot.hasData
-                                  ? Text(
-                                    '${formatCurrency.format(totalPrice)} 원',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 18.sp,
-                                      fontFamily: 'NotoSans',
-                                      fontWeight: FontWeight.w700,
-                                      height: 1.40.h,
-                                    ),
-                                  )
-                                  : const SizedBox.shrink(),
+                              Text(
+                                '${formatCurrency.format(totalPrice)} 원',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 18.sp,
+                                  fontFamily: 'NotoSans',
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.40.h,
+                                ),
+                              ),
                             ],
                           ),
                           verticalSpace(8),

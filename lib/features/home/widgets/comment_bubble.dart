@@ -6,7 +6,7 @@ import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
-import 'package:ecommerece_app/features/cart/services/cart_service.dart';
+import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 
 class CommentBubble extends ConsumerStatefulWidget {
   final Map<String, dynamic> item;

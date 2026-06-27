@@ -36,7 +36,7 @@ class FavoriteItemWidget extends ConsumerWidget {
         if (product == null) {
           // Product was deleted, we should remove the favorite item
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            ref.read(cartControllerProvider).removeFavItem(favoriteId);
+            ref.read(cartControllerProvider.notifier).removeFavItem(favoriteId);
           });
           return const SizedBox.shrink();
         }
@@ -120,7 +120,7 @@ class FavoriteItemWidget extends ConsumerWidget {
                 ),
                 IconButton(
                   onPressed: () {
-                    ref.read(cartControllerProvider).removeFavItem(favoriteId);
+                    ref.read(cartControllerProvider.notifier).removeFavItem(favoriteId);
                   },
                   icon: const Icon(Icons.close, size: 18),
                 ),

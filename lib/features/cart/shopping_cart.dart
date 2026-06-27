@@ -1,4 +1,4 @@
-import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';

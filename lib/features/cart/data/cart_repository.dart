@@ -185,4 +185,47 @@ class CartRepository {
     await batch.commit();
     return paymentId;
   }
+
+  Future<void> refreshCartPrices(String uid) async {
+    final userSnapshot = await _firestore.collection('users').doc(uid).get();
+    final isSubed = userSnapshot.data()?['isSub'] ?? false;
+    final cartSnapshot = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('cart')
+        .get();
+    
+    for (final cartDoc in cartSnapshot.docs) {
+      final cartData = cartDoc.data();
+      final productId = cartData['product_id'] as String?;
+      final pricePointIndex = cartData['pricePointIndex'] is int
+          ? cartData['pricePointIndex'] as int
+          : int.tryParse('${cartData['pricePointIndex']}') ?? 0;
+      
+      if (productId == null) continue;
+      
+      final productRef = _firestore.collection('products').doc(productId);
+      final productSnap = await productRef.get();
+      if (!productSnap.exists) continue;
+      
+      final prodData = productSnap.data()!;
+      final prod = Product.fromMap(prodData);
+      
+      num computedPrice;
+      try {
+        final pp = prod.pricePoints[pricePointIndex];
+        if (isSubed) {
+          computedPrice = pp.price;
+        } else {
+          computedPrice = (pp.price / 0.8).round();
+        }
+      } catch (e) {
+        final fallback = prodData['price'] ?? cartData['price'] ?? 0;
+        computedPrice = fallback is num ? fallback : num.parse('$fallback');
+      }
+      
+      final intPrice = computedPrice is double ? computedPrice.round() : computedPrice.toInt();
+      await cartDoc.reference.update({'price': intPrice});
+    }
+  }
 }

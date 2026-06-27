@@ -1,12 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/features/cart/data/cart_repository.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final cartControllerProvider = Provider<CartController>((ref) {
-  return CartController(ref);
+final cartControllerProvider = NotifierProvider<CartController, void>(() {
+  return CartController();
 });
 
 final userCartStreamProvider = StreamProvider<List<QueryDocumentSnapshot<Map<String, dynamic>>>>((ref) {
@@ -67,10 +68,9 @@ final cartTotalProvider = Provider<int>((ref) {
   return total;
 });
 
-class CartController {
-  final Ref _ref;
-
-  CartController(this._ref);
+class CartController extends Notifier<void> {
+  @override
+  void build() {}
 
   Future<void> addToCart({
     required String productId,
@@ -78,10 +78,10 @@ class CartController {
     required int pricePointIndex,
     required String productName,
   }) async {
-    final user = _ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
     
-    await _ref.read(cartRepositoryProvider).addProductToCart(
+    await ref.read(cartRepositoryProvider).addProductToCart(
       userId: user.uid,
       productId: productId,
       deliveryManagerId: deliveryManagerId,
@@ -91,39 +91,39 @@ class CartController {
   }
 
   Future<void> removeCartItem(String cartId) async {
-    final user = _ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
-    await _ref.read(cartRepositoryProvider).deleteCartItem(user.uid, cartId);
+    await ref.read(cartRepositoryProvider).deleteCartItem(user.uid, cartId);
   }
 
   Future<void> removeFavItem(String favId) async {
-    final user = _ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
-    await _ref.read(cartRepositoryProvider).deleteFavItem(user.uid, favId);
+    await ref.read(cartRepositoryProvider).deleteFavItem(user.uid, favId);
   }
 
   Future<void> addFavItem(String productId) async {
-    final user = _ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
-    await _ref.read(cartRepositoryProvider).addFavItem(userId: user.uid, productId: productId);
+    await ref.read(cartRepositoryProvider).addFavItem(userId: user.uid, productId: productId);
   }
 
   Future<void> removeFavItemByProductId(String productId) async {
-    final user = _ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
-    await _ref.read(cartRepositoryProvider).removeFavItemByProductId(userId: user.uid, productId: productId);
+    await ref.read(cartRepositoryProvider).removeFavItemByProductId(userId: user.uid, productId: productId);
   }
 
   Future<int?> getValidatedStock(String productId, int requestedQty) async {
-    return await _ref.read(cartRepositoryProvider).getValidatedStock(productId, requestedQty);
+    return await ref.read(cartRepositoryProvider).getValidatedStock(productId, requestedQty);
   }
 
   Future<int> getCartItemQuantity(String productId) async {
-    final user = _ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return 0;
-    return await _ref.read(cartRepositoryProvider).getCartItemQuantity(user.uid, productId);
+    return await ref.read(cartRepositoryProvider).getCartItemQuantity(user.uid, productId);
   }
 
   Future<String?> processBuyNow({
@@ -132,12 +132,12 @@ class CartController {
     required int pricePointIndex,
     required bool isSub,
   }) async {
-    final user = _ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return null;
 
     final finalPrice = isSub ? pricePoint.price : (pricePoint.price / 0.8).round();
 
-    return await _ref.read(cartRepositoryProvider).processBuyNow(
+    return await ref.read(cartRepositoryProvider).processBuyNow(
       userId: user.uid,
       product: product,
       pricePoint: pricePoint,
@@ -145,4 +145,13 @@ class CartController {
       finalPrice: finalPrice,
     );
   }
+}
+
+Future<bool> isUserSubscribed() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return false;
+  final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+  final data = userDoc.data();
+  if (data == null || data['isSub'] == null) return false;
+  return data['isSub'] == true;
 }

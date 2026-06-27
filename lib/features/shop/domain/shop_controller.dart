@@ -64,7 +64,7 @@ class ShopController extends AsyncNotifier<void> {
     required int pricePointIndex,
     required String productName,
   }) async {
-    return ref.read(cartControllerProvider).addToCart(
+    return ref.read(cartControllerProvider.notifier).addToCart(
       productId: productId,
       deliveryManagerId: deliveryManagerId,
       pricePointIndex: pricePointIndex,
@@ -73,11 +73,11 @@ class ShopController extends AsyncNotifier<void> {
   }
 
   Future<int?> getValidatedStock(String productId, int requestedQty) async {
-    return ref.read(cartControllerProvider).getValidatedStock(productId, requestedQty);
+    return ref.read(cartControllerProvider.notifier).getValidatedStock(productId, requestedQty);
   }
 
   Future<int> getCartItemQuantity(String productId) async {
-    return ref.read(cartControllerProvider).getCartItemQuantity(productId);
+    return ref.read(cartControllerProvider.notifier).getCartItemQuantity(productId);
   }
 
   Future<String?> processBuyNow({
@@ -86,7 +86,7 @@ class ShopController extends AsyncNotifier<void> {
     required int pricePointIndex,
     required bool isSub,
   }) async {
-    return ref.read(cartControllerProvider).processBuyNow(
+    return ref.read(cartControllerProvider.notifier).processBuyNow(
       product: product,
       pricePoint: pricePoint,
       pricePointIndex: pricePointIndex,
@@ -95,7 +95,7 @@ class ShopController extends AsyncNotifier<void> {
   }
 
   Future<void> removeFavItemByProductId(String productId) async {
-    return ref.read(cartControllerProvider).removeFavItemByProductId(productId);
+    return ref.read(cartControllerProvider.notifier).removeFavItemByProductId(productId);
   }
 
   Future<bool> checkUserHasBankAccount(String uid) async {
@@ -118,7 +118,7 @@ class ShopController extends AsyncNotifier<void> {
   }
 
   Future<void> addFavItem(String productId) async {
-    return ref.read(cartControllerProvider).addFavItem(productId);
+    return ref.read(cartControllerProvider.notifier).addFavItem(productId);
   }
 
   Future<List<dynamic>> createDirectChatRoomWithSeller(String sellerId) async {
