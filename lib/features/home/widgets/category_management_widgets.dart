@@ -254,6 +254,7 @@ class CategoryList extends ConsumerWidget {
         ),
       ],
     ).then((value) {
+      if (!context.mounted) return;
       if (value == 'add') {
         _showAddCategoryDialog(context, ref);
       } else if (value == 'edit') {

@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_comments.dart';
-import 'package:ecommerece_app/features/home/widgets/share_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
@@ -14,8 +13,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
-
 class GuestPostItem extends ConsumerWidget {
   final Map<String, dynamic> post;
 
@@ -27,18 +24,18 @@ class GuestPostItem extends ConsumerWidget {
   final String? currentProfileUserId;
 
   GuestPostItem({
-    Key? key,
+    super.key,
     required this.post,
     this.imageWidth,
     this.currentProfileUserId,
-  }) : super(key: key);
+  });
 
   final PageController _pageController = PageController();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bool isGuest = FirebaseAuth.instance.currentUser == null;
-    final postsProvider = ref.read(feedControllerProvider);
+    final postsProvider = ref.read(feedControllerProvider.notifier);
 
     Future<void> runWithLoading(
       BuildContext context,

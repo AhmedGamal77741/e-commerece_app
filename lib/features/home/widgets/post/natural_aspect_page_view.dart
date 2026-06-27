@@ -8,7 +8,7 @@ class NaturalAspectPageView extends ConsumerStatefulWidget {
   final PageController pageController;
   final double? explicitWidth;
 
-  const NaturalAspectPageView({
+  const NaturalAspectPageView({super.key, 
     required this.imgUrls,
     required this.pageController,
     this.explicitWidth,

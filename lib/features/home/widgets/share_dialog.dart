@@ -1,263 +1,14 @@
-import 'dart:io';
 
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/services/share_service.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/chat_service.dart';
 import 'package:ecommerece_app/features/chat/services/friends_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
-import 'package:ecommerece_app/features/chat/ui/upload_story_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:screenshot/screenshot.dart';
 
-Future<void> _captureProductAndOpenStory(
-  BuildContext context,
-  String sellerName,
-  String productImgUrl,
-  Map<String, dynamic> productData,
-) async {
-  try {
-    if (productImgUrl.isNotEmpty) {
-      await precacheImage(NetworkImage(productImgUrl), context);
-    }
-    final product = Product.fromMap(productData);
-    final Widget snapshotWidget = Material(
-      child: Container(
-        width: 300.w,
-        height: 600.h,
-        color: ColorsManager.primary,
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(height: 12.h),
-            if (product.imgUrl!.isNotEmpty)
-              Flexible(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16.r),
-                  child: Image(
-                    image: NetworkImage(product.imgUrl!),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                  ),
-                ),
-              ),
-            SizedBox(height: 12.h),
-            Text(
-              product.productName,
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            SizedBox(height: 6.h),
-            Text(
-              '${product.pricePoints[0].price} 원',
-              style: TextStyle(fontSize: 16.sp, color: Colors.black87),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    final controller = ScreenshotController();
-    final bytes = await controller.captureFromWidget(
-      snapshotWidget,
-      pixelRatio: MediaQuery.of(context).devicePixelRatio,
-    );
-
-    if (bytes == null || bytes.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('이미지 생성 실패: 다시 시도하세요.')));
-      return;
-    }
-
-    if (context.mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => UploadStoryScreen(initialImage: bytes),
-        ),
-      );
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('이미지 생성 실패: $e')));
-  }
-}
-
-Future<void> _capturePostFromCommentsAndOpen(
-  BuildContext context,
-  String displayName,
-  String profileUrl,
-  Map<String, dynamic> postData,
-) async {
-  try {
-    // Precache network images so captureFromWidget has pixels ready
-    if (profileUrl.isNotEmpty) {
-      await precacheImage(NetworkImage(profileUrl), context);
-    }
-    if ((postData['imgUrl'] ?? '').isNotEmpty) {
-      await precacheImage(NetworkImage(postData['imgUrl']), context);
-    }
-
-    final Widget snapshotWidget = Material(
-      child: Container(
-        width: 300.w,
-        height: 600.h,
-        color: ColorsManager.primary,
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 56.w,
-                  height: 56.h,
-                  decoration: ShapeDecoration(
-                    image: DecorationImage(
-                      image:
-                          profileUrl.isNotEmpty
-                              ? NetworkImage(profileUrl)
-                              : AssetImage('assets/avatar.png')
-                                  as ImageProvider,
-                      fit: BoxFit.cover,
-                    ),
-                    shape: OvalBorder(),
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Text(
-                  displayName,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16.sp,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            if ((postData['text'] ?? '').toString().isNotEmpty)
-              Padding(
-                padding: EdgeInsets.only(top: 12.h),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    postData['text'] ?? '',
-                    style: TextStyle(
-                      color: const Color(0xFF343434),
-                      fontSize: 16.sp,
-                    ),
-                  ),
-                ),
-              ),
-            if ((postData['imgUrl'] ?? '').toString().isNotEmpty)
-              Flexible(
-                child: Padding(
-                  padding: EdgeInsets.only(top: 10.h),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image(
-                      image: NetworkImage(postData['imgUrl']),
-                      fit: BoxFit.fitWidth,
-                      width: double.infinity,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-
-    final controller = ScreenshotController();
-    final bytes = await controller.captureFromWidget(
-      snapshotWidget,
-      pixelRatio: MediaQuery.of(context).devicePixelRatio,
-    );
-
-    if (bytes == null || bytes.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('이미지 생성 실패: 다시 시도하세요.')));
-      return;
-    }
-
-    /*     final tempDir = await getTemporaryDirectory();
-    final file =
-        await File(
-          '${tempDir.path}/post_story_${DateTime.now().millisecondsSinceEpoch}.png',
-        ).create();
-    await file.writeAsBytes(bytes); */
-
-    if (context.mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => UploadStoryScreen(initialImage: bytes),
-        ),
-      );
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('이미지 생성 실패: $e')));
-  }
-}
-
-/* Future<void> _capturePostAndOpenStory(
-  BuildContext context,
-  ScreenshotController controller,
-) async {
-  try {
-    print('Capturing post screenshot...');
-    final bytes = await controller.capture(
-      delay: const Duration(milliseconds: 300),
-    );
-    if (bytes == null) {
-      // retry with longer delay
-      final bytesRetry = await controller.capture(
-        delay: const Duration(seconds: 1),
-      );
-      if (bytesRetry == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이미지 생성 실패: 화면을 다시 시도하세요.')),
-        );
-        return;
-      }
-      return;
-    }
-    final tempDir = await getTemporaryDirectory();
-    final file =
-        await File(
-          '${tempDir.path}/post_story_${DateTime.now().millisecondsSinceEpoch}.png',
-        ).create();
-    await file.writeAsBytes(bytes);
-    if (context.mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => UploadStoryScreen(initialImage: file),
-        ),
-      );
-    }
-  } catch (e) {
-    print(e);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('이미지 생성 실패: $e')));
-  }
-} */
 
 Widget _buildSquareAction({
   required IconData icon,
@@ -312,34 +63,34 @@ Widget _buildFriendItem({
             friend.userId,
             friend.type != 'user',
           );
-          if (chatRoomId != null) {
-            if (type == 'post') {
-              final contentText = postData['text'] ?? '';
-              ChatService().sendMessage(
-                chatRoomId: chatRoomId,
-                content: contentText.isEmpty ? url : '$url\n$contentText',
-                postData: postData,
-              );
-            } else if (type == 'product') {
-              ChatService().sendMessage(
-                chatRoomId: chatRoomId,
-                content: url,
-                productData: Product.fromMap(postData),
-              );
-            }
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => ChatScreen(
-                      chatRoomId: chatRoomId,
-                      chatRoomName: friend.name,
-                    ),
-              ),
+          if (type == 'post') {
+            final contentText = postData['text'] ?? '';
+            ChatService().sendMessage(
+              chatRoomId: chatRoomId,
+              content: contentText.isEmpty ? url : '$url\n$contentText',
+              postData: postData,
+            );
+          } else if (type == 'product') {
+            ChatService().sendMessage(
+              chatRoomId: chatRoomId,
+              content: url,
+              productData: Product.fromMap(postData),
             );
           }
-        } catch (e) {
+
+          if (!context.mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => ChatScreen(
+                    chatRoomId: chatRoomId,
+                    chatRoomName: friend.name,
+                  ),
+            ),
+          );
+                } catch (e) {
+          if (!context.mounted) return;
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Error: $e')));

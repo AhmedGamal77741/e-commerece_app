@@ -62,7 +62,7 @@ class _RequestsState extends ConsumerState<Requests> {
         setState(() {});
       }
     } catch (e) {
-      print('Error initializing recommendations: $e');
+      debugPrint('Error initializing recommendations: $e');
     }
   }
 
@@ -964,7 +964,7 @@ class _RequestsState extends ConsumerState<Requests> {
 
   Future<void> _unblockUser(String blockedUserId, String currentUserId) async {
     try {
-      await ref.read(feedControllerProvider).unblockUser(userIdToUnblock: blockedUserId);
+      await ref.read(feedControllerProvider.notifier).unblockUser(userIdToUnblock: blockedUserId);
 
       if (mounted) {
         ScaffoldMessenger.of(
@@ -1007,7 +1007,7 @@ class _RequestsState extends ConsumerState<Requests> {
 
       return recommendations;
     } catch (e) {
-      print('Error building recommendations with contacts: $e');
+      debugPrint('Error building recommendations with contacts: $e');
       return {};
     }
   }
@@ -1051,7 +1051,7 @@ class _RequestsState extends ConsumerState<Requests> {
 
       return result;
     } catch (e) {
-      print('Error getting contact matches: $e');
+      debugPrint('Error getting contact matches: $e');
       return {};
     }
   }

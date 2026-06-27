@@ -6,7 +6,6 @@ import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
-import 'package:go_router/go_router.dart';
 class OwnPostMenu extends ConsumerWidget {
   final String postId;
   final String currentText;
@@ -14,6 +13,7 @@ class OwnPostMenu extends ConsumerWidget {
   final VoidCallback onDelete;
 
   const OwnPostMenu({
+    super.key,
     required this.postId,
     required this.currentText,
     required this.onEdit,
@@ -76,6 +76,7 @@ class OtherPostMenu extends ConsumerWidget {
   final Map<String, dynamic> postData;
 
   const OtherPostMenu({
+    super.key,
     required this.postId,
     required this.userId,
     required this.onRunWithLoading,
@@ -119,7 +120,7 @@ class OtherPostMenu extends ConsumerWidget {
               case 'block':
                 await onRunWithLoading(
                   context,
-                  () => ref.read(feedControllerProvider).blockUser(userIdToBlock: userId),
+                  () => ref.read(feedControllerProvider.notifier).blockUser(userIdToBlock: userId),
                   '차단되었습니다.',
                   '오류 발생',
                 );
@@ -128,7 +129,7 @@ class OtherPostMenu extends ConsumerWidget {
                 await onRunWithLoading(
                   context,
                   () async =>
-                      await ref.read(feedControllerProvider).reportUser(reportedUserId: userId, postId: postId),
+                      ref.read(feedControllerProvider.notifier).reportUser(reportedUserId: userId, postId: postId),
                   '신고가 접수되었습니다.',
                   '신고 처리 중 오류가 발생했습니다',
                 );

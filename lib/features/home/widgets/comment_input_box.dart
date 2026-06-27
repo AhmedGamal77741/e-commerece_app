@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
@@ -80,9 +81,8 @@ class _CommentInputBoxState extends State<CommentInputBox> {
               _commentController.clear();
               if (mounted) setState(() => _pickedImage = null);
             } catch (e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('댓글 추가에 실패했습니다: $e')));
-              }
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('댓글 추가에 실패했습니다: $e')));
             }
           },
         ),

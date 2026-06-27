@@ -1,9 +1,5 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/routing/routes.dart';
-import 'package:ecommerece_app/core/services/share_service.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:ecommerece_app/features/auth/signup/data/models/user_entity.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
@@ -35,6 +31,7 @@ class NaturalAspectPageView extends ConsumerStatefulWidget {
   final double? explicitWidth;
 
   const NaturalAspectPageView({
+    super.key,
     required this.imgUrls,
     required this.pageController,
     this.explicitWidth,
@@ -283,13 +280,13 @@ class PostItem extends ConsumerStatefulWidget {
   final String? currentProfileUserId;
 
   const PostItem({
-    Key? key,
+    super.key,
     required this.postId,
     required this.fromComments,
     this.showMoreButton = true,
     this.imageWidth,
     this.currentProfileUserId,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<PostItem> createState() => _PostItemState();
@@ -324,6 +321,7 @@ class _PostItemState extends ConsumerState<PostItem> {
 
     if (result != null) {
       try {
+        if (!context.mounted) return;
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -339,7 +337,7 @@ class _PostItemState extends ConsumerState<PostItem> {
               ),
         );
 
-        await ref.read(feedControllerProvider).updatePost(
+        await ref.read(feedControllerProvider.notifier).updatePost(
           postId: widget.postId,
           text: result.text,
           networkImgUrls: result.imgUrls,
@@ -347,17 +345,17 @@ class _PostItemState extends ConsumerState<PostItem> {
           categoryId: result.categoryId,
         );
 
+        if (!context.mounted) return;
         Navigator.pop(context); // Close loading dialog
         /* Navigator.pop(context); // Close this screen if needed */
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('게시글이 수정되었습니다.')));
       } catch (e) {
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('수정 실패: $e'), backgroundColor: Colors.red),
         );
-        /*         Navigator.pop(context); // Close loading dialog
- */
       }
     }
   }
@@ -418,6 +416,7 @@ class _PostItemState extends ConsumerState<PostItem> {
                               .collection('posts')
                               .doc(widget.postId)
                               .delete();
+                          if (!ctx.mounted) return;
                           Navigator.pop(ctx);
                         },
                         child: Text('삭제'),
@@ -473,7 +472,7 @@ class _PostItemState extends ConsumerState<PostItem> {
 
   @override
   Widget build(BuildContext context) {
-    final postsProvider = ref.read(feedControllerProvider);
+    final postsProvider = ref.read(feedControllerProvider.notifier);
     if (postsProvider.getComments(widget.postId).isEmpty &&
         !postsProvider.isLoadingComments(widget.postId)) {
       postsProvider.listenToComments(widget.postId);
@@ -490,11 +489,15 @@ class _PostItemState extends ConsumerState<PostItem> {
       'fromCommentsImageWidth=$fromCommentsImageWidth',
     );
 
-    return ListenableBuilder(
-      listenable: postsProvider,
-      builder: (context, child) {
-        final postData = postsProvider.getPost(widget.postId);
-        if (postData == null) return SizedBox.shrink();
+    final feedState = ref.watch(feedControllerProvider);
+    
+    return Builder(
+      builder: (context) {
+        final postData = feedState.value?.firstWhere(
+          (p) => p['postId'] == widget.postId,
+          orElse: () => <String, dynamic>{},
+        );
+        if (postData == null || postData.isEmpty) return const SizedBox.shrink();
 
         final cachedUser = postsProvider.getUser(postData['userId']);
         return FutureBuilder<MyUser>(
@@ -725,8 +728,7 @@ class _PostItemState extends ConsumerState<PostItem> {
                                     final isFollowing =
                                         snapshot.hasData &&
                                         snapshot.data!.exists;
-                                    final isPrivate =
-                                        myuser.isPrivate ?? false;
+                                    final isPrivate = myuser.isPrivate;
 
                                     if (isFollowing) {
                                       return PopupMenuButton<String>(
@@ -1317,7 +1319,7 @@ class OtherPostMenu extends ConsumerWidget {
               case 'block':
                 await onRunWithLoading(
                   context,
-                  () => ref.read(feedControllerProvider).blockUser(userIdToBlock: userId),
+                  () => ref.read(feedControllerProvider.notifier).blockUser(userIdToBlock: userId),
                   '차단되었습니다.',
                   '오류 발생',
                 );
@@ -1325,7 +1327,7 @@ class OtherPostMenu extends ConsumerWidget {
               case 'report':
                 await onRunWithLoading(
                   context,
-                  () => ref.read(feedControllerProvider).reportUser(reportedUserId: userId, postId: postId),
+                  () => ref.read(feedControllerProvider.notifier).reportUser(reportedUserId: userId, postId: postId),
                   '신고가 접수되었습니다.',
                   '신고 처리 중 오류가 발생했습니다',
                 );

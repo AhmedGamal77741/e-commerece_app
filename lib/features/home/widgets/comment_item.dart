@@ -245,7 +245,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                             InkWell(
                               onTap: () {
                                 ref
-                                    .read(feedControllerProvider)
+                                    .read(feedControllerProvider.notifier)
                                     .toggleCommentLike(
                                       widget.postId,
                                       widget.comment.id,

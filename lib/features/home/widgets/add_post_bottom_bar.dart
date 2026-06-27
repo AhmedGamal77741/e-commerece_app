@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/home/domain/add_post_notifier.dart';
 
 class AddPostBottomBar extends ConsumerWidget {

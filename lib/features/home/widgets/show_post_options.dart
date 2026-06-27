@@ -99,8 +99,9 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                           );
 
                           try {
-                            await ref.read(feedControllerProvider).markPostNotInterested(postId: postId);
+                            await ref.read(feedControllerProvider.notifier).markPostNotInterested(postId: postId);
 
+                            if (!context.mounted) return;
                             Navigator.of(context).pop();
                             Navigator.of(context).pop();
 
@@ -175,8 +176,9 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                     );
 
                     try {
-                      await ref.read(feedControllerProvider).blockUser(userIdToBlock: userId);
+                      await ref.read(feedControllerProvider.notifier).blockUser(userIdToBlock: userId);
 
+                      if (!context.mounted) return;
                       Navigator.of(context).pop();
                       Navigator.of(context).pop();
 
@@ -264,11 +266,12 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                             );
 
                             try {
-                              await ref.read(feedControllerProvider).reportUser(
+                              await ref.read(feedControllerProvider.notifier).reportUser(
                                 reportedUserId: userId,
                                 postId: postId,
                               );
 
+                              if (!context.mounted) return;
                               Navigator.of(context).pop();
                               Navigator.of(context).pop();
 
