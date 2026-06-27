@@ -1,12 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/black_text_button.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
-import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/review/domain/review_controller.dart';
 import 'package:ecommerece_app/features/review/ui/exchange_or_refund.dart';
 import 'package:ecommerece_app/features/review/ui/track_order.dart';
@@ -70,7 +67,7 @@ class OrderHistory extends ConsumerWidget {
                       orderData: data,
                       product: product,
                       user: user,
-                      onDelete: () => deleteOrder(data, context, ref),
+                      onDelete: () => _confirmAndCancelOrder(data, context, ref),
                     ),
                   );
                 },
@@ -80,6 +77,75 @@ class OrderHistory extends ConsumerWidget {
         );
       },
     );
+  }
+
+  /// Shows a confirmation dialog and cancels the order via the controller.
+  void _confirmAndCancelOrder(
+    Map<String, dynamic> order,
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: Colors.white,
+            title: const Text(
+              '주문 취소',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
+            content: const Text(
+              '정말로 이 주문을 취소하시겠습니까?\n취소 후에는 복구가 불가능합니다.',
+              style: TextStyle(fontSize: 16),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => navigator.pop(false),
+                child: const Text('취소', style: TextStyle(color: Colors.black)),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(backgroundColor: Colors.black),
+                onPressed: () => navigator.pop(true),
+                child: const Text('확인', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+    );
+
+    try {
+      final orderId = order['orderId'] as String?;
+      if (orderId == null) {
+        navigator.pop();
+        messenger.showSnackBar(
+          const SnackBar(content: Text('이 주문은 취소할 수 없습니다.')),
+        );
+        return;
+      }
+
+      await ref.read(reviewControllerProvider.notifier).cancelOrder(orderId);
+
+      navigator.pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('주문이 성공적으로 취소되었습니다.')),
+      );
+    } catch (e) {
+      navigator.pop();
+      messenger.showSnackBar(
+        SnackBar(content: Text('주문 취소 중 에러가 발생했습니다: $e')),
+      );
+    }
   }
 }
 
@@ -609,107 +675,6 @@ class _DeletedProductCard extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-Future<Map<String, dynamic>> fetchProductDetails(String productId) async {
-  final doc =
-      await FirebaseFirestore.instance
-          .collection('products')
-          .doc(productId)
-          .get();
-  return doc.exists ? doc.data() as Map<String, dynamic> : {};
-}
-
-bool isDispatched(Map<String, dynamic> product, String orderDate) {
-  final now = DateTime.now();
-  final orderTime = DateTime.parse(orderDate);
-  int adjustedHour = product['baselineTime'] as int;
-  final meridiem = (product['meridiem'] as String).toLowerCase();
-  if (meridiem == 'pm' && adjustedHour < 12)
-    adjustedHour += 12;
-  else if (meridiem == 'am' && adjustedHour == 12)
-    adjustedHour = 0;
-  final cutoff = DateTime(
-    orderTime.year,
-    orderTime.month,
-    orderTime.day,
-    adjustedHour,
-  );
-  final nextDay = cutoff.add(const Duration(days: 1));
-  if (orderTime.isBefore(cutoff) && now.isAfter(cutoff)) return true;
-  if (orderTime.isAfter(cutoff) && now.isAfter(nextDay)) return true;
-  return false;
-}
-
-Future<void> deleteOrder(
-  Map<String, dynamic> order,
-  BuildContext context,
-  WidgetRef ref,
-) async {
-  final navigator = Navigator.of(context);
-  final messenger = ScaffoldMessenger.of(context);
-
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder:
-        (ctx) => AlertDialog(
-          backgroundColor: Colors.white,
-          title: const Text(
-            '주문 취소',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-          ),
-          content: const Text(
-            '정말로 이 주문을 취소하시겠습니까?\n취소 후에는 복구가 불가능합니다.',
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => navigator.pop(false),
-              child: const Text('취소', style: TextStyle(color: Colors.black)),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(backgroundColor: Colors.black),
-              onPressed: () => navigator.pop(true),
-              child: const Text('확인', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-  );
-
-  if (confirmed != true) return;
-  if (!context.mounted) return;
-
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-  );
-
-  try {
-    final orderId = order['orderId'] as String?;
-    if (orderId == null) {
-      navigator.pop();
-      messenger.showSnackBar(
-        const SnackBar(content: Text('이 주문은 취소할 수 없습니다.')),
-      );
-      return;
-    }
-
-    await ref.read(reviewControllerProvider).cancelOrder(orderId);
-
-    navigator.pop();
-    messenger.showSnackBar(
-      const SnackBar(content: Text('주문이 성공적으로 취소되었습니다.')),
-    );
-  } catch (e) {
-    navigator.pop();
-    messenger.showSnackBar(
-      SnackBar(content: Text('주문 취소 중 에러가 발생했습니다: ')),
     );
   }
 }

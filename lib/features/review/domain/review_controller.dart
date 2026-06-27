@@ -3,8 +3,9 @@ import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/review/data/review_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final reviewControllerProvider = Provider<ReviewController>((ref) {
-  return ReviewController(ref);
+final reviewControllerProvider =
+    AsyncNotifierProvider<ReviewController, void>(() {
+  return ReviewController();
 });
 
 final userOrdersStreamProvider =
@@ -25,16 +26,17 @@ final orderProductProvider = FutureProvider.family
       return repo.getProduct(productId);
     });
 
-class ReviewController {
-  final Ref _ref;
-
-  ReviewController(this._ref);
+class ReviewController extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {
+    // No initial state needed — this controller is action-only.
+  }
 
   Future<void> submitExchangeRequest(String orderId, String reason) async {
-    final user = _ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).value;
     if (user == null) throw Exception('User not signed in');
 
-    final repo = _ref.read(reviewRepositoryProvider);
+    final repo = ref.read(reviewRepositoryProvider);
     final orderData = await repo.getOrder(orderId);
     if (orderData == null) {
       throw Exception('이 주문 정보를 찾을 수 없습니다.');
@@ -57,10 +59,10 @@ class ReviewController {
   }
 
   Future<void> submitRefundRequest(String orderId, String reason) async {
-    final user = _ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).value;
     if (user == null) throw Exception('User not signed in');
 
-    final repo = _ref.read(reviewRepositoryProvider);
+    final repo = ref.read(reviewRepositoryProvider);
     final orderData = await repo.getOrder(orderId);
     if (orderData == null) {
       throw Exception('이 주문 정보를 찾을 수 없습니다.');
@@ -83,15 +85,15 @@ class ReviewController {
   }
 
   Future<void> submitReview(Map<String, dynamic> reviewData) async {
-    final repo = _ref.read(reviewRepositoryProvider);
+    final repo = ref.read(reviewRepositoryProvider);
     await repo.submitReview(reviewData);
   }
 
   Future<void> cancelOrder(String orderId) async {
-    final user = _ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).value;
     if (user == null) throw Exception('User not signed in');
 
-    final repo = _ref.read(reviewRepositoryProvider);
+    final repo = ref.read(reviewRepositoryProvider);
     final data = await repo.requestRefundFunction(user.uid, orderId);
 
     if ((data['status'] != 'refunded' && data['status'] != 'canceled')) {

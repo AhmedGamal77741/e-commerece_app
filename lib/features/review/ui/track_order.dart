@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/review/ui/widgets/delivery_status.dart';
 import 'package:ecommerece_app/features/review/ui/widgets/delivery_text_row.dart';

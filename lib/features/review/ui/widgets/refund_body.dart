@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
@@ -146,7 +145,7 @@ class RefundBody extends ConsumerWidget {
             func: () async {
             if (!_formKey.currentState!.validate()) return;
             try {
-              await ref.read(reviewControllerProvider).submitRefundRequest(orderId, reasonController.text);
+              await ref.read(reviewControllerProvider.notifier).submitRefundRequest(orderId, reasonController.text);
               context.pop();
             } catch (e) {
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));

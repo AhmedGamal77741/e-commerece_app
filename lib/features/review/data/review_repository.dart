@@ -74,4 +74,28 @@ class ReviewRepository {
     });
     return result.data as Map<String, dynamic>;
   }
+
+  /// Returns `true` if the order has been dispatched based on the product's
+  /// baseline shipping cutoff time and the order date.
+  static bool isDispatched(Map<String, dynamic> product, String orderDate) {
+    final now = DateTime.now();
+    final orderTime = DateTime.parse(orderDate);
+    int adjustedHour = product['baselineTime'] as int;
+    final meridiem = (product['meridiem'] as String).toLowerCase();
+    if (meridiem == 'pm' && adjustedHour < 12) {
+      adjustedHour += 12;
+    } else if (meridiem == 'am' && adjustedHour == 12) {
+      adjustedHour = 0;
+    }
+    final cutoff = DateTime(
+      orderTime.year,
+      orderTime.month,
+      orderTime.day,
+      adjustedHour,
+    );
+    final nextDay = cutoff.add(const Duration(days: 1));
+    if (orderTime.isBefore(cutoff) && now.isAfter(cutoff)) return true;
+    if (orderTime.isAfter(cutoff) && now.isAfter(nextDay)) return true;
+    return false;
+  }
 }
