@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/shop/widgets/item_details/shining_premium_banner.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
@@ -8,7 +7,6 @@ import 'package:ecommerece_app/features/mypage/domain/profile_controller.dart';
 import 'package:ecommerece_app/features/mypage/ui/widgets/profile_type.dart';
 import 'package:ecommerece_app/features/mypage/ui/widgets/user_info_container.dart';
 import 'package:ecommerece_app/features/mypage/ui/widgets/user_options_container.dart';
-import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -23,8 +21,42 @@ class MyPage extends ConsumerStatefulWidget {
 }
 
 class _MyPageState extends ConsumerState<MyPage> {
-  final GlobalKey _userInfoKey = GlobalKey();
-  final GlobalKey _profileTypeKey = GlobalKey();
+  late TextEditingController _nicknameController;
+  late TextEditingController _passwordController;
+  late TextEditingController _phoneController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nicknameController = TextEditingController(text: widget.currentUser.name);
+    _passwordController = TextEditingController();
+    _phoneController = TextEditingController(
+      text: (widget.currentUser.phoneNumber != null && widget.currentUser.phoneNumber!.isNotEmpty)
+          ? widget.currentUser.phoneNumber!
+          : '',
+    );
+  }
+
+  @override
+  void didUpdateWidget(MyPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentUser != oldWidget.currentUser) {
+      if (widget.currentUser.name.isNotEmpty) {
+        _nicknameController.text = widget.currentUser.name;
+      }
+      if (widget.currentUser.phoneNumber != null && widget.currentUser.phoneNumber!.isNotEmpty) {
+        _phoneController.text = widget.currentUser.phoneNumber!;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _nicknameController.dispose();
+    _passwordController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,10 +79,9 @@ class _MyPageState extends ConsumerState<MyPage> {
                 verticalSpace(20),
               ],
               ProfileType(
-                key: _profileTypeKey,
                 isPrivate: myuser.isPrivate,
                 userId: myuser.userId,
-                currentUser: myuser,
+                nicknameController: _nicknameController,
               ),
               verticalSpace(20),
               isSub
@@ -61,15 +92,38 @@ class _MyPageState extends ConsumerState<MyPage> {
               verticalSpace(20),
               Text('개인정보', style: TextStyles.abeezee17px800wPblack),
               verticalSpace(20),
-              UserInfoContainer(key: _userInfoKey, currentUser: myuser),
+              UserInfoContainer(
+                currentUser: myuser,
+                passwordController: _passwordController,
+                phoneController: _phoneController,
+              ),
               verticalSpace(20),
               WideTextButton(
                 txt: '저장',
                 func: () async {
-                  final profileState = _profileTypeKey.currentState as dynamic;
-                  final newNickname = profileState?.getNickname() ?? '';
-                  final userState = _userInfoKey.currentState as dynamic;
-                  await userState?.performUpdate(newNickname: newNickname);
+                  try {
+                    await ref.read(profileControllerProvider.notifier).performUpdate(
+                          currentUser: widget.currentUser,
+                          newNickname: _nicknameController.text,
+                          password: _passwordController.text,
+                          phone: _phoneController.text,
+                        );
+                    if (!context.mounted) return;
+                    _passwordController.clear();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('업데이트가 성공적으로 완료되었습니다', style: TextStyle(fontSize: 14.sp))),
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "업데이트 중 오류가 발생했습니다: $e",
+                          style: TextStyle(fontSize: 14.sp),
+                        ),
+                      ),
+                    );
+                  }
                 },
                 color: Colors.black,
                 txtColor: Colors.white,
@@ -112,8 +166,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                                   foregroundColor: Colors.white,
                                   backgroundColor: Colors.black,
                                 ),
-                                onPressed:
-                                    () => Navigator.of(dialogContext).pop(false),
+                                onPressed: () => Navigator.of(dialogContext).pop(false),
                                 child: Text(
                                   '취소',
                                   style: TextStyle(color: Colors.white),
@@ -124,8 +177,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                                   foregroundColor: Colors.white,
                                   backgroundColor: Colors.black,
                                 ),
-                                onPressed:
-                                    () => Navigator.of(dialogContext).pop(true),
+                                onPressed: () => Navigator.of(dialogContext).pop(true),
                                 child: Text(
                                   '로그아웃',
                                   style: TextStyle(color: Colors.white),
@@ -136,7 +188,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                         },
                       );
                       if (shouldSignOut == true) {
-                        await ref.read(profileControllerProvider).signOut();
+                        await ref.read(profileControllerProvider.notifier).signOut();
                       }
                     },
                     child: Text(

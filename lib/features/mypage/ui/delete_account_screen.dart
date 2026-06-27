@@ -76,7 +76,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                       decoration: InputDecoration(
                         hintText: "내용",
                         hintStyle: TextStyles.abeezee16px400wP600,
-                        contentPadding: EdgeInsets.all(12),
+                        contentPadding: const EdgeInsets.all(12),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -107,24 +107,22 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                 final confirmed = await showDeleteAccountDialog(context);
                 if (confirmed) {
                   try {
-                    await ref.read(profileControllerProvider).deleteAccount(
+                    await ref.read(profileControllerProvider.notifier).deleteAccount(
                       reason: reasonController.text.trim(),
                     );
 
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('탈퇴 처리가 완료되었습니다. 30일 이내에 재가입 할 수 없습니다.'),
-                        ),
-                      );
-                      context.pop();
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('탈퇴 처리가 완료되었습니다. 30일 이내에 재가입 할 수 없습니다.'),
+                      ),
+                    );
+                    context.pop();
                   } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('탈퇴 처리에 실패했습니다. 다시 시도해주세요.')),
-                      );
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('탈퇴 처리에 실패했습니다. 다시 시도해주세요.')),
+                    );
                   }
                 }
               },

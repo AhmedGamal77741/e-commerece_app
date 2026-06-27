@@ -44,9 +44,12 @@ class _CancelSubscriptionState extends ConsumerState<CancelSubscription> {
                     option,
                     style: TextStyles.abeezee16px400wPblack,
                   ),
-                  leading: Radio(
+                  // ignore: deprecated_member_use
+                  leading: Radio<String>(
                     value: option,
+                    // ignore: deprecated_member_use
                     groupValue: currentOption,
+                    // ignore: deprecated_member_use
                     onChanged: (val) {
                       setState(() {
                         currentOption = val.toString();
@@ -115,19 +118,17 @@ class _CancelSubscriptionState extends ConsumerState<CancelSubscription> {
                   if (confirmed != true) return;
                   
                   try {
-                    await ref.read(profileControllerProvider).cancelSubscription(currentOption);
-                    if (mounted) {
-                      context.pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('멤버십 해지가 성공적으로 처리되었습니다.')),
-                      );
-                    }
+                    await ref.read(profileControllerProvider.notifier).cancelSubscription(currentOption);
+                    if (!context.mounted) return;
+                    context.pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('멤버십 해지가 성공적으로 처리되었습니다.')),
+                    );
                   } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('해지 처리에 실패했습니다. 다시 시도해주세요.')),
-                      );
-                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('해지 처리에 실패했습니다. 다시 시도해주세요.')),
+                    );
                   }
                 },
               ),

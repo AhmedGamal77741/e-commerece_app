@@ -1,7 +1,6 @@
 import 'package:ecommerece_app/core/helpers/loading_service.dart';
 import 'package:ecommerece_app/features/mypage/ui/my_page.dart';
 import 'package:ecommerece_app/core/widgets/no_account_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

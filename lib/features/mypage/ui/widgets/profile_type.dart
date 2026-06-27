@@ -1,168 +1,48 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:ecommerece_app/features/mypage/domain/profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ProfileType extends StatefulWidget {
+class ProfileType extends ConsumerStatefulWidget {
   final bool isPrivate;
   final String userId;
-  final MyUser? currentUser;
+  final TextEditingController nicknameController;
 
   const ProfileType({
     super.key,
     required this.isPrivate,
     required this.userId,
-    this.currentUser,
+    required this.nicknameController,
   });
 
   @override
-  State<ProfileType> createState() => _ProfileTypeState();
+  ConsumerState<ProfileType> createState() => _ProfileTypeState();
 }
 
-class _ProfileTypeState extends State<ProfileType> {
+class _ProfileTypeState extends ConsumerState<ProfileType> {
   late bool isPrivate;
-  late TextEditingController _nicknameController;
 
   @override
   void initState() {
     super.initState();
     isPrivate = widget.isPrivate;
-    _nicknameController = TextEditingController(
-      text: widget.currentUser?.name ?? '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _nicknameController.dispose();
-    super.dispose();
-  }
-
-  String getNickname() {
-    return _nicknameController.text;
   }
 
   Future<void> _updatePrivacy(bool value) async {
     final wasPrivate = isPrivate;
     setState(() => isPrivate = value);
     try {
-      // If changing from private to public, accept all pending requests
-      if (wasPrivate && !value) {
-        await _acceptAllPendingRequests();
-      }
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .update({'isPrivate': value});
+      await ref.read(profileControllerProvider.notifier).updatePrivacy(value, widget.userId);
     } catch (e) {
-      // If update fails, revert locally and optionally show error
-      setState(() => isPrivate = !value);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('설정 업데이트에 실패했습니다. 다시 시도해 주세요.')));
-    }
-  }
-
-  Future<void> _acceptAllPendingRequests() async {
-    try {
-      final requestsSnapshot =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(widget.userId)
-              .collection('followRequests')
-              .get();
-
-      if (requestsSnapshot.docs.isEmpty) {
-        return;
-      }
-
-      final batch = FirebaseFirestore.instance.batch();
-
-      for (var requestDoc in requestsSnapshot.docs) {
-        final requestingUserId = requestDoc.id;
-
-        // Add to followers subcollection
-        batch.set(
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(widget.userId)
-              .collection('followers')
-              .doc(requestingUserId),
-          {
-            'userId': requestingUserId,
-            'createdAt': FieldValue.serverTimestamp(),
-          },
+      if (mounted) {
+        setState(() => isPrivate = wasPrivate);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('설정 업데이트에 실패했습니다. 다시 시도해 주세요.')),
         );
-
-        // Add to requesting user's following subcollection
-        batch.set(
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(requestingUserId)
-              .collection('following')
-              .doc(widget.userId),
-          {'userId': widget.userId, 'createdAt': FieldValue.serverTimestamp()},
-        );
-
-        // Delete the follow request
-        batch.delete(requestDoc.reference);
-
-        // Check for mutual follow
-        final mutualFollowCheck =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(widget.userId)
-                .collection('following')
-                .doc(requestingUserId)
-                .get();
-
-        if (mutualFollowCheck.exists) {
-          // Create friendship
-          batch.update(
-            FirebaseFirestore.instance.collection('users').doc(widget.userId),
-            {
-              'friends': FieldValue.arrayUnion([requestingUserId]),
-            },
-          );
-          batch.update(
-            FirebaseFirestore.instance
-                .collection('users')
-                .doc(requestingUserId),
-            {
-              'friends': FieldValue.arrayUnion([widget.userId]),
-            },
-          );
-
-          // Restore chat room if it was previously soft-deleted
-          final participants = [widget.userId, requestingUserId]..sort();
-          final chatRoomId = participants.join('_');
-          final chatRoomDoc =
-              await FirebaseFirestore.instance
-                  .collection('chatRooms')
-                  .doc(chatRoomId)
-                  .get();
-          if (chatRoomDoc.exists) {
-            batch.update(chatRoomDoc.reference, {
-              'deletedBy': FieldValue.arrayRemove([
-                widget.userId,
-                requestingUserId,
-              ]),
-            });
-          }
-        }
-      }
-
-      await batch.commit();
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('요청 처리 중 오류: $e')));
       }
     }
   }
@@ -193,9 +73,9 @@ class _ProfileTypeState extends State<ProfileType> {
                 Text('닉네임', style: TextStyles.abeezee17px800wPblack),
                 verticalSpace(5),
                 TextField(
-                  controller: _nicknameController,
+                  controller: widget.nicknameController,
                   keyboardType: TextInputType.name,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: '닉네임 입력',
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -221,7 +101,7 @@ class _ProfileTypeState extends State<ProfileType> {
                         ),
                       ],
                     ),
-                    Spacer(),
+                    const Spacer(),
                     Transform.scale(
                       scale: 1.3.sp,
                       child: CupertinoSwitch(
