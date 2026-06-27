@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
+
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:ecommerece_app/features/address/domain/models/address.dart';
-import 'package:ecommerece_app/features/cart/slide_button.dart';
+
 import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
 import 'package:ecommerece_app/features/address/ui/address_list_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,6 +19,13 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/cart/domain/checkout_controller.dart';
 import 'package:ecommerece_app/features/cart/domain/bank_controller.dart';
+import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_section_card.dart';
+import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_item_summary.dart';
+import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_address_card.dart';
+import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_delivery_request.dart';
+import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_payment_selector.dart';
+import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_receipt_option.dart';
+import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_bottom_bar.dart';
 
 class BuyNow extends ConsumerStatefulWidget {
   final String? paymentId;
@@ -751,183 +758,37 @@ class _BuyNowState extends ConsumerState<BuyNow> {
           child: ListView(
             children: [
               // ── Product summary ───────────────────────────────────────
-              _buildSectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '구매목록',
-                      style: TextStyles.abeezee16px400wPblack.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    verticalSpace(10.h),
-                    Row(
-                      children: [
-                        if (displayImgUrl.isNotEmpty)
-                          Image.network(
-                            displayImgUrl,
-                            width: 80.w,
-                            height: 80.h,
-                            fit: BoxFit.cover,
-                          ),
-                        horizontalSpace(10),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              displayName,
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 16.sp,
-                                fontFamily: 'NotoSans',
-                                fontWeight: FontWeight.w400,
-                                height: 1.40.h,
-                              ),
-                            ),
-                            verticalSpace(8),
-                            Text(
-                              '$pendingQuantity 개',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 16.sp,
-                                fontFamily: 'NotoSans',
-                                fontWeight: FontWeight.w400,
-                                height: 1.40.h,
-                              ),
-                            ),
-                            SizedBox(height: 8.h),
-                            Text(
-                              '${formatCurrency.format(pendingPrice)} 원',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 16.sp,
-                                fontFamily: 'NotoSans',
-                                fontWeight: FontWeight.w400,
-                                height: 1.40.h,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
+              BuyNowSectionCard(
+                child: BuyNowItemSummary(
+                  displayImgUrl: displayImgUrl,
+                  displayName: displayName,
+                  pendingQuantity: pendingQuantity,
+                  pendingPrice: pendingPrice,
                 ),
               ),
               verticalSpace(10),
 
               // ── Address ───────────────────────────────────────────────
-              _buildSectionCard(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child:
-                          address.name.isEmpty
-                              ? FutureBuilder<Map<String, dynamic>?>(
-                                future:
-                                    ref.read(checkoutControllerProvider.notifier)
-                                        .getUserDefaultAddress(uid),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  if (!snapshot.hasData || snapshot.data == null) {
-                                    return _buildNoAddress();
-                                  }
-                                  final d = snapshot.data!;
-                                  return _buildAddressText(
-                                    label: '배송지 정보 (기본 배송지)',
-                                    name: d['name'] ?? '',
-                                    phone: d['phone'] ?? '',
-                                    address: d['address'] ?? '',
-                                  );
-                                },
-                              )
-                              : _buildAddressText(
-                                label: '배송지 정보 (기본 배송지)',
-                                name: address.name,
-                                phone: address.phone,
-                                address: address.detailAddress,
-                              ),
-                    ),
-                    IconButton(
-                      onPressed: _selectAddress,
-                      icon: Icon(
-                        Icons.arrow_forward_ios_sharp,
-                        size: 30.r,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
+              BuyNowSectionCard(
+                child: BuyNowAddressCard(
+                  uid: uid,
+                  address: address,
+                  onSelectAddress: _selectAddress,
                 ),
               ),
               verticalSpace(10),
 
               // ── Delivery request ──────────────────────────────────────
-              _buildSectionCard(
+              BuyNowSectionCard(
                 child: StatefulBuilder(
                   builder: (context, setStateDropdown) {
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '배송 요청사항',
-                                style: TextStyles.abeezee16px400wPblack
-                                    .copyWith(fontWeight: FontWeight.w800),
-                              ),
-                              verticalSpace(5),
-                              Text(
-                                selectedRequest == '직접입력' &&
-                                        manualRequest != null &&
-                                        manualRequest!.isNotEmpty
-                                    ? manualRequest!
-                                    : selectedRequest,
-                                style: TextStyle(
-                                  color: Colors.grey[800],
-                                  fontSize: 16.sp,
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                              if (selectedRequest == '직접입력') ...[
-                                SizedBox(height: 12.h),
-                                TextFormField(
-                                  initialValue: manualRequest,
-                                  onChanged: (text) {
-                                    setState(() => manualRequest = text);
-                                  },
-                                  decoration: InputDecoration(
-                                    labelText: '직접 입력',
-                                    hintText: '배송 요청을 입력하세요',
-                                    border: const OutlineInputBorder(),
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 12.w,
-                                      vertical: 14.h,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.arrow_forward_ios,
-                            size: 30.r,
-                            color: Colors.black,
-                          ),
-                          onPressed:
-                              () => _showDeliveryRequestSheet(setStateDropdown),
-                        ),
-                      ],
+                    return BuyNowDeliveryRequest(
+                      selectedRequest: selectedRequest,
+                      manualRequest: manualRequest,
+                      onManualRequestChanged: (text) {
+                        setState(() => manualRequest = text);
+                      },
+                      onShowSheet: () => _showDeliveryRequestSheet(setStateDropdown),
                     );
                   },
                 ),
@@ -935,99 +796,20 @@ class _BuyNowState extends ConsumerState<BuyNow> {
               verticalSpace(10),
 
               // ── Bank account ──────────────────────────────────────────
-              _buildSectionCard(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '결제 계좌',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 16.sp,
-                              fontFamily: 'NotoSans',
-                              fontWeight: FontWeight.w800,
-                              height: 1.40.h,
-                            ),
-                          ),
-                          verticalSpace(5),
-                          Text(
-                            bankAccounts.isEmpty
-                                ? '등록된 계좌가 없습니다'
-                                : (selectedBankIndex >= 0 &&
-                                    selectedBankIndex < bankAccounts.length)
-                                ? '${bankAccounts[selectedBankIndex]['bankName']} '
-                                    '(${bankAccounts[selectedBankIndex]['bankNum']})'
-                                : '계좌를 선택해주세요',
-                            style: TextStyle(
-                              fontSize: 15.sp,
-                              color:
-                                  bankAccounts.isEmpty
-                                      ? Colors.red[300]
-                                      : Colors.grey[800],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => _showBankAccountBottomSheet(uid),
-                      icon: Icon(
-                        Icons.arrow_forward_ios,
-                        size: 30.r,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
+              BuyNowSectionCard(
+                child: BuyNowPaymentSelector(
+                  bankAccounts: bankAccounts,
+                  selectedBankIndex: selectedBankIndex,
+                  onShowBottomSheet: () => _showBankAccountBottomSheet(uid),
                 ),
               ),
               verticalSpace(10),
 
               // ── Receipt / invoice ─────────────────────────────────────
-              _buildSectionCard(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '현금영수증 · 세금계산서',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 16.sp,
-                              fontFamily: 'NotoSans',
-                              fontWeight: FontWeight.w800,
-                              height: 1.40.h,
-                            ),
-                          ),
-                          verticalSpace(5),
-                          Text(
-                            selectedOption == 1
-                                ? '현금 영수증'
-                                : selectedOption == 2
-                                ? '세금 계산서'
-                                : '필요 없음',
-                            style: TextStyle(
-                              fontSize: 15.sp,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _showReceiptBottomSheet,
-                      icon: Icon(
-                        Icons.arrow_forward_ios,
-                        size: 30.r,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
+              BuyNowSectionCard(
+                child: BuyNowReceiptOption(
+                  selectedOption: selectedOption,
+                  onShowBottomSheet: _showReceiptBottomSheet,
                 ),
               ),
               verticalSpace(15.h),
@@ -1036,86 +818,51 @@ class _BuyNowState extends ConsumerState<BuyNow> {
         ),
 
         // ── Bottom bar ────────────────────────────────────────────────────
-        bottomNavigationBar: Container(
-          padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 28.h),
-          decoration: const BoxDecoration(color: Colors.white),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '총 결제 금액 ',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 18.sp,
-                      fontFamily: 'NotoSans',
-                      fontWeight: FontWeight.w700,
-                      height: 1.40.h,
-                    ),
-                  ),
-                  Text(
-                    '${formatCurrency.format(pendingPrice)} 원',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 18.sp,
-                      fontFamily: 'NotoSans',
-                      fontWeight: FontWeight.w700,
-                      height: 1.40.h,
-                    ),
-                  ),
-                ],
-              ),
-              verticalSpace(8),
-              SlideToPayButton(
-                isProcessing: isProcessing,
-                onValidate: () async {
-                  if (selectedOption != 1 && selectedOption != 2) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('현금 영수증 또는 세금 계산서를 선택해주세요'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                    return false;
-                  }
-                  if (!_validateReceiptTypeFields()) return false;
-                  // ── Gate: address required before payment ────────────────────────
-                  if (address.id.isEmpty) {
-                    final result = await Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => AddAddressScreen()),
-                    );
-                    if (result != true) {
-                      return false; // user didn't add one, block payment
-                    }
-                    // Address was added — re-fetch it into state so the UI reflects it
-                    await _ensureCachedAddressAndInstructions(uid);
-                    return false; // return false here so the slider resets; user slides again
-                  }
-                  if (bankAccounts.isEmpty || selectedBankIndex < 0) {
-                    _showBankAccountBottomSheet(uid);
-                    return false;
-                  }
-                  final payerId =
-                      bankAccounts[selectedBankIndex]['payerId'] as String? ??
-                      '';
-                  if (payerId.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                    return false;
-                  }
-                  return true;
-                },
-                onSlideComplete: () => _handlePlaceOrder(uid),
-              ),
-            ],
-          ),
+        bottomNavigationBar: BuyNowBottomBar(
+          pendingPrice: pendingPrice,
+          isProcessing: isProcessing,
+          onValidate: () async {
+            if (selectedOption != 1 && selectedOption != 2) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('현금 영수증 또는 세금 계산서를 선택해주세요'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return false;
+            }
+            if (!_validateReceiptTypeFields()) return false;
+            // ── Gate: address required before payment ────────────────────────
+            if (address.id.isEmpty) {
+              final result = await Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => AddAddressScreen()),
+              );
+              if (result != true) {
+                return false; // user didn't add one, block payment
+              }
+              // Address was added — re-fetch it into state so the UI reflects it
+              await _ensureCachedAddressAndInstructions(uid);
+              return false; // return false here so the slider resets; user slides again
+            }
+            if (bankAccounts.isEmpty || selectedBankIndex < 0) {
+              _showBankAccountBottomSheet(uid);
+              return false;
+            }
+            final payerId =
+                bankAccounts[selectedBankIndex]['payerId'] as String? ??
+                '';
+            if (payerId.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return false;
+            }
+            return true;
+          },
+          onSlideComplete: () => _handlePlaceOrder(uid),
         ),
       ),
     );
@@ -1124,78 +871,6 @@ class _BuyNowState extends ConsumerState<BuyNow> {
   // ───────────────────────────────────────────────────────────────────────────
   // UI HELPERS
   // ───────────────────────────────────────────────────────────────────────────
-
-  Widget _buildSectionCard({required Widget child}) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(15.w, 15.h, 0, 15.h),
-      decoration: ShapeDecoration(
-        color: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(width: 1.5, color: Colors.black),
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: child,
-    );
-  }
-
-  Widget _buildNoAddress() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '배송지 미설정',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 15.sp,
-            fontFamily: 'NotoSans',
-            fontWeight: FontWeight.w400,
-            height: 1.40.h,
-          ),
-        ),
-        SizedBox(height: 8.h),
-        Text(
-          '배송지를 설정해주세요',
-          style: TextStyle(
-            fontSize: 15.sp,
-            color: const Color(0xFF9E9E9E),
-            fontFamily: 'NotoSans',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAddressText({
-    required String label,
-    required String name,
-    required String phone,
-    required String address,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyles.abeezee16px400wPblack.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        verticalSpace(5),
-        Text(name, style: _greyStyle()),
-        Text(phone, style: _greyStyle()),
-        Text(address, style: _greyStyle()),
-      ],
-    );
-  }
-
-  TextStyle _greyStyle() => TextStyle(
-    fontSize: 15.sp,
-    color: Colors.grey[800],
-    fontFamily: 'NotoSans',
-    fontWeight: FontWeight.w400,
-    height: 1.40.h,
-  );
 
   void _showDeliveryRequestSheet(StateSetter setStateDropdown) {
     showModalBottomSheet(
