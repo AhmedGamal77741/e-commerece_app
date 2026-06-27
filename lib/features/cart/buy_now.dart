@@ -1,24 +1,18 @@
-import 'dart:convert';
-
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
-import 'package:ecommerece_app/features/address/domain/models/address.dart';
-
 import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
 import 'package:ecommerece_app/features/address/ui/address_list_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ecommerece_app/features/cart/domain/checkout_controller.dart';
 import 'package:ecommerece_app/features/cart/domain/bank_controller.dart';
+import 'package:ecommerece_app/features/cart/domain/checkout_form_controller.dart';
 import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_section_card.dart';
 import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_item_summary.dart';
 import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_address_card.dart';
@@ -27,7 +21,7 @@ import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_pa
 import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_receipt_option.dart';
 import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_bottom_bar.dart';
 
-class BuyNow extends ConsumerStatefulWidget {
+class BuyNow extends StatelessWidget {
   final String? paymentId;
   final String? productName;
   final String? productImgUrl;
@@ -35,569 +29,285 @@ class BuyNow extends ConsumerStatefulWidget {
   const BuyNow({super.key, this.paymentId, this.productName, this.productImgUrl});
 
   @override
-  ConsumerState<BuyNow> createState() => _BuyNowState();
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      overrides: [
+        checkoutFormPaymentIdProvider.overrideWithValue(paymentId),
+      ],
+      child: BuyNowContent(
+        productName: productName,
+        productImgUrl: productImgUrl,
+      ),
+    );
+  }
 }
 
-class _BuyNowState extends ConsumerState<BuyNow> {
-  // ── Receipt / invoice fields ──────────────────────────────────────────────
-  String invoiceeType = '사업자';
-  final invoiceeCorpNumController = TextEditingController();
-  final invoiceeCorpNameController = TextEditingController();
-  final invoiceeCEONameController = TextEditingController();
+class BuyNowContent extends ConsumerWidget {
+  final String? productName;
+  final String? productImgUrl;
 
-  // ── Controllers ───────────────────────────────────────────────────────────
-  final deliveryAddressController = TextEditingController();
-  final phoneController = TextEditingController();
-  final nameController = TextEditingController();
-  final emailController = TextEditingController();
+  BuyNowContent({super.key, this.productName, this.productImgUrl});
 
   final _bottomSheetFormKey = GlobalKey<FormState>();
-
-  // ── Address ───────────────────────────────────────────────────────────────
-  Address address = Address(
-    id: '',
-    name: '',
-    phone: '',
-    address: '',
-    detailAddress: '',
-    isDefault: false,
-    addressMap: {},
-  );
-
-  // ── Delivery request ──────────────────────────────────────────────────────
-  final List<String> deliveryRequests = [
-    '문앞',
-    '직접 받고 부재 시 문앞',
-    '택배함',
-    '경비실',
-    '직접입력',
-  ];
-  String selectedRequest = '문앞';
-  String? manualRequest;
-
-  // ── Receipt option ────────────────────────────────────────────────────────
-  int selectedOption = 1;
-
-  // ── Bank accounts ─────────────────────────────────────────────────────────
-  List<Map<String, dynamic>> get bankAccounts => ref.watch(bankAccountsStreamProvider).value ?? [];
-  int selectedBankIndex = -1;
-
-  // ── pending_buynow data ───────────────────────────────────────────────────
-  Map<String, dynamic>? pendingBuynowData;
-  int pendingPrice = 0;
-  int pendingQuantity = 0;
-
-  // ── Payment state ─────────────────────────────────────────────────────────
-  bool isProcessing = false;
-  String? currentPaymentId;
-
-  // ── Guards ────────────────────────────────────────────────────────────────
-
   final formatCurrency = NumberFormat('#,###');
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // LIFECYCLE
-  // ───────────────────────────────────────────────────────────────────────────
-
   @override
-  void initState() {
-    super.initState();
-    _init();
-  }
-
-  @override
-  void dispose() {
-    invoiceeCorpNumController.dispose();
-    invoiceeCorpNameController.dispose();
-    invoiceeCEONameController.dispose();
-    deliveryAddressController.dispose();
-    phoneController.dispose();
-    nameController.dispose();
-    emailController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _init() async {
+  Widget build(BuildContext context, WidgetRef ref) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    if (uid == null) return const Scaffold(body: Center(child: Text('로그인이 필요합니다.')));
 
-    // Load pending_buynow first — needed by _ensureCachedAddressAndInstructions
-    await _loadPendingBuynowData();
+    final asyncState = ref.watch(checkoutFormControllerProvider);
 
-    // Load cached user values
-    await _loadCachedUserValues();
-
-    // After cache loaded, fill address from default if missing
-    await _ensureCachedAddressAndInstructions(uid);
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // DATA FETCHING
-  // ───────────────────────────────────────────────────────────────────────────
-
-  Future<void> _loadPendingBuynowData() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null || widget.paymentId == null) return;
-    try {
-      final data = await ref.read(checkoutControllerProvider.notifier).getPendingBuynow(uid, widget.paymentId!);
-      if (data != null && mounted) {
-        setState(() {
-          pendingBuynowData = data;
-          pendingPrice = pendingBuynowData?['price'] ?? 0;
-          pendingQuantity = pendingBuynowData?['quantity'] ?? 0;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading pending_buynow: $e');
-    }
-  }
-
-  Future<void> _loadCachedUserValues() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    
-    final data = await ref.read(checkoutControllerProvider.notifier).loadCachedValues(uid);
-    if (data == null || !mounted) return;
-
-    setState(() {
-      nameController.text = data['name'] ?? '';
-      emailController.text = data['email'] ?? '';
-      phoneController.text = data['phone'] ?? '';
-
-      invoiceeType = data['invoiceeType'] ?? '사업자';
-      invoiceeCorpNumController.text = data['invoiceeCorpNum'] ?? '';
-      invoiceeCorpNameController.text = data['invoiceeCorpName'] ?? '';
-      invoiceeCEONameController.text = data['invoiceeCEOName'] ?? '';
-      selectedOption = data['selectedOption'] ?? 1;
-
-      // Restore delivery request — handles both preset and 직접입력
-      final cachedInstr = data['deliveryInstructions'] as String? ?? '';
-      if (deliveryRequests.contains(cachedInstr)) {
-        selectedRequest = cachedInstr;
-        manualRequest = null;
-      } else if (cachedInstr.isNotEmpty) {
-        selectedRequest = '직접입력';
-        manualRequest = cachedInstr;
-      }
-
-      // Restore address from cache
-      final cachedAddressId = (data['deliveryAddressId'] ?? '') as String;
-      if (cachedAddressId.isNotEmpty) {
-        address = Address(
-          id: cachedAddressId,
-          name: data['recipientName'] ?? '',
-          phone: data['recipientPhone'] ?? '',
-          address: data['deliveryAddress'] ?? '',
-          detailAddress: data['deliveryAddressDetail'] ?? '',
-          isDefault: false,
-          addressMap: {},
-        );
-        deliveryAddressController.text = data['deliveryAddress'] ?? '';
-      }
-    });
-  }
-
-  // ── Resolve default address + instructions if cache has none ─────────────
-  Future<void> _ensureCachedAddressAndInstructions(String uid) async {
-    final hasAddress = address.id.isNotEmpty;
-    final hasInstr =
-        selectedRequest != '문앞' ||
-        (manualRequest != null && manualRequest!.isNotEmpty);
-
-    if (hasAddress && hasInstr) return;
-
-    if (!hasAddress) {
-      final resolvedData = await ref.read(checkoutControllerProvider.notifier).getUserDefaultAddress(uid);
-      if (resolvedData != null) {
-        final resolved = Address(
-          id: resolvedData['id'] ?? '',
-          name: resolvedData['name'] ?? '',
-          phone: resolvedData['phone'] ?? '',
-          address: resolvedData['address'] ?? '',
-          detailAddress: resolvedData['detailAddress'] ?? '',
-          isDefault: resolvedData['isDefault'] ?? false,
-          addressMap: resolvedData['addressMap'] ?? {},
-        );
-
-        if (mounted) {
-          setState(() {
-            address = resolved;
-            deliveryAddressController.text = resolved.address;
-          });
-        }
-
-        final addressPatch = {
-          'deliveryAddressId': resolved.id,
-          'deliveryAddress': resolved.address,
-          'deliveryAddressDetail': resolved.detailAddress,
-          'recipientName': resolved.name,
-          'recipientPhone': resolved.phone,
-        };
-        await ref.read(checkoutControllerProvider.notifier).saveCachedUserValues(addressPatch);
-        _patchPendingBuynow(addressPatch);
-      }
-    }
-
-    // Persist delivery instructions from pending_buynow if cache is empty
-    if (!hasInstr) {
-      final instrFromOrder =
-          (pendingBuynowData?['deliveryInstructions'] ?? '') as String;
-      if (instrFromOrder.isNotEmpty) {
-        if (deliveryRequests.contains(instrFromOrder)) {
-          if (mounted) setState(() => selectedRequest = instrFromOrder);
-        } else {
-          if (mounted) {
-            setState(() {
-              selectedRequest = '직접입력';
-              manualRequest = instrFromOrder;
-            });
-          }
-        }
-        await ref.read(checkoutControllerProvider.notifier).saveCachedUserValues({
-          'deliveryInstructions': instrFromOrder,
-        });
-      }
-    }
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // BANK ACCOUNT DELETE
-  // ───────────────────────────────────────────────────────────────────────────
-
-  Future<void> _deleteBankAccount(String uid, String payerId) async {
-    await ref.read(bankControllerProvider.notifier).deleteBankAccount(payerId);
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // PATCH pending_buynow
-  // ───────────────────────────────────────────────────────────────────────────
-
-  void _patchPendingBuynow(Map<String, dynamic> fields) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null || widget.paymentId == null) return;
-    ref.read(checkoutControllerProvider.notifier)
-        .patchPendingBuynow(uid, widget.paymentId!, fields)
-        .catchError((e) => debugPrint('Failed to patch pending_buynow: $e'));
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // ADDRESS SELECTION
-  // ───────────────────────────────────────────────────────────────────────────
-
-  Future<void> _selectAddress() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => AddressListScreen()),
-    );
-    if (result != null) {
-      deliveryAddressController.text = result.address;
-      setState(() => address = result);
-      final patch = {
-        'deliveryAddressId': result.id,
-        'deliveryAddress': result.address,
-        'deliveryAddressDetail': result.detailAddress,
-        'recipientName': result.name,
-        'recipientPhone': result.phone,
-      };
-      _patchPendingBuynow(patch);
-      _saveCachedUserValues();
-    }
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // CACHE SAVE
-  // ───────────────────────────────────────────────────────────────────────────
-
-  Future<bool> _saveCachedUserValues({bool showFeedback = false}) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return false;
-    
-    final fields = {
-      'name': nameController.text.trim(),
-      'email': emailController.text.trim(),
-      'phone': phoneController.text.trim(),
-      'invoiceeType': invoiceeType,
-      'invoiceeCorpNum': invoiceeCorpNumController.text.trim(),
-      'invoiceeCorpName': invoiceeCorpNameController.text.trim(),
-      'invoiceeCEOName': invoiceeCEONameController.text.trim(),
-      'selectedOption': selectedOption,
-      'deliveryAddressId': address.id,
-      'deliveryAddress': address.address,
-      'deliveryAddressDetail': address.detailAddress,
-      'deliveryInstructions': selectedRequest == '직접입력'
-          ? (manualRequest?.trim() ?? '')
-          : selectedRequest,
-      'recipientName': address.name,
-      'recipientPhone': address.phone,
-    };
-
-    final success = await ref.read(checkoutControllerProvider.notifier).saveCachedUserValues(fields);
-    
-    if (success && showFeedback && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('정보가 저장되었습니다'),
-          backgroundColor: Colors.green,
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back_ios),
+          ),
+          title: const Text(
+            '주문 / 결제',
+            style: TextStyle(
+              fontFamily: 'NotoSans',
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ),
-      );
-    } else if (!success && showFeedback && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('저장 실패'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-    return success;
-  }
+        body: asyncState.when(
+          data: (state) {
+            final displayName = state.pendingBuynowData?['product_name'] as String? ?? productName ?? '';
+            final displayImgUrl = state.pendingBuynowData?['imgUrl'] as String? ?? productImgUrl ?? '';
+            final bankAccounts = ref.watch(bankAccountsStreamProvider).value ?? [];
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // VALIDATION
-  // ───────────────────────────────────────────────────────────────────────────
-
-  bool _validateReceiptTypeFields() {
-    if (selectedOption == 1) {
-      if (nameController.text.trim().isEmpty ||
-          emailController.text.trim().isEmpty ||
-          phoneController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('현금 영수증: 이름, 이메일, 전화번호를 모두 입력해주세요')),
-        );
-        return false;
-      }
-    } else if (selectedOption == 2) {
-      if (nameController.text.trim().isEmpty ||
-          emailController.text.trim().isEmpty ||
-          phoneController.text.trim().isEmpty ||
-          invoiceeType.isEmpty ||
-          invoiceeCorpNumController.text.trim().isEmpty ||
-          invoiceeCorpNameController.text.trim().isEmpty ||
-          invoiceeCEONameController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('세금 계산서: 모든 필수 필드를 입력해주세요')),
-        );
-        return false;
-      }
-    }
-    return true;
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // BANK REGISTRATION
-  // ───────────────────────────────────────────────────────────────────────────
-
-  void _launchBankRegistration(String uid) {
-    ref.read(bankControllerProvider.notifier).launchBankRegistration(
-      phoneNo: phoneController.text.trim(),
-      option: selectedOption.toString(),
-    );
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // ORDER PLACEMENT
-  // ───────────────────────────────────────────────────────────────────────────
-
-  Future<void> _handlePlaceOrder(String uid) async {
-    if (selectedOption != 1 && selectedOption != 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('현금 영수증 또는 세금 계산서를 선택해주세요'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    if (!_validateReceiptTypeFields()) return;
-    if (address.id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('배송지를 먼저 등록해주세요'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    if (bankAccounts.isEmpty || selectedBankIndex < 0) {
-      _showBankAccountBottomSheet(uid);
-      return;
-    }
-
-    final payerId = bankAccounts[selectedBankIndex]['payerId'] as String? ?? '';
-    if (payerId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    final paymentId = widget.paymentId;
-    if (paymentId == null || paymentId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('주문 처리 중 오류가 발생했습니다. 다시 시도해 주세요.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    final dm = pendingBuynowData?['deliveryManagerId']?.toString() ?? '';
-
-    // Auto-save latest state before payment so CF has up-to-date cached values
-    await _saveCachedUserValues();
-
-    // Also patch pending_buynow with latest delivery instructions
-    _patchPendingBuynow({
-      'deliveryInstructions':
-          selectedRequest == '직접입력'
-              ? (manualRequest?.trim() ?? '')
-              : selectedRequest,
-    });
-    setState(() => isProcessing = true);
-    _showLoadingModal();
-
-    try {
-      final response = await http.post(
-        Uri.parse('https://pay.pang2chocolate.com/api/charge-bank'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'userId': uid,
-          'paymentId': paymentId,
-          'payerId': payerId,
-          'option': selectedOption.toString(),
-          if (dm.isNotEmpty) 'dm': dm,
-        }),
-      );
-
-      final result = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (result['success'] == true) {
-        try {
-          final items = [
-            {
-              'product_id': pendingBuynowData?['product_id'],
-              'productName': pendingBuynowData?['product_name'],
-              'quantity': pendingBuynowData?['quantity'],
-              'pricePointIndex': pendingBuynowData?['pricePointIndex'],
-              'price': pendingBuynowData?['price'],
-              'imgUrl': pendingBuynowData?['imgUrl'],
-            }
-          ];
-          final orderData = {
-            'address': address.toFirestore(),
-            'totalPrice': pendingPrice,
-            'buyerName': nameController.text.trim(),
-            'buyerEmail': emailController.text.trim(),
-            'buyerPhone': phoneController.text.trim(),
-            'deliveryInstructions': selectedRequest == '직접입력' ? manualRequest : selectedRequest,
-          };
-          await ref.read(checkoutControllerProvider.notifier).processCheckoutTransaction(
-            uid: uid,
-            paymentId: paymentId,
-            items: items,
-            orderData: orderData,
-            isCartCheckout: false,
-          );
-        } catch (e) {
-          if (mounted) Navigator.of(context, rootNavigator: true).pop();
-          if (mounted) {
-            setState(() => isProcessing = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(e.toString().replaceAll('Exception: ', '')),
-                backgroundColor: Colors.red,
+            return Padding(
+              padding: EdgeInsets.only(left: 15.w, top: 10.h, right: 15.w),
+              child: ListView(
+                children: [
+                  CheckoutSectionCard(
+                    child: CheckoutItemSummary(
+                      displayImgUrl: displayImgUrl,
+                      displayName: displayName,
+                      pendingQuantity: state.pendingQuantity,
+                      pendingPrice: state.pendingPrice,
+                    ),
+                  ),
+                  verticalSpace(10),
+                  CheckoutSectionCard(
+                    child: CheckoutAddressCard(
+                      uid: uid,
+                      address: state.address,
+                      onSelectAddress: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AddressListScreen()),
+                        );
+                        if (result != null) {
+                          ref.read(checkoutFormControllerProvider.notifier).setAddress(result, ref.read(checkoutFormPaymentIdProvider) ?? '');
+                        }
+                      },
+                    ),
+                  ),
+                  verticalSpace(10),
+                  CheckoutSectionCard(
+                    child: CheckoutDeliveryRequest(
+                      selectedRequest: state.selectedRequest,
+                      manualRequest: state.manualRequest,
+                      onManualRequestChanged: (text) {
+                        ref.read(checkoutFormControllerProvider.notifier).setManualRequest(text);
+                      },
+                      onShowSheet: () => _showDeliveryRequestSheet(context, ref),
+                    ),
+                  ),
+                  verticalSpace(10),
+                  CheckoutSectionCard(
+                    child: CheckoutPaymentSelector(
+                      bankAccounts: bankAccounts,
+                      selectedBankIndex: state.selectedBankIndex,
+                      onShowBottomSheet: () => _showBankAccountBottomSheet(context, ref, uid, bankAccounts),
+                    ),
+                  ),
+                  verticalSpace(10),
+                  CheckoutSectionCard(
+                    child: CheckoutReceiptOption(
+                      selectedOption: state.selectedOption,
+                      onShowBottomSheet: () => _showReceiptBottomSheet(context, ref),
+                    ),
+                  ),
+                  verticalSpace(15.h),
+                ],
               ),
             );
-          }
-          return;
-        }
-
-        if (mounted) Navigator.of(context, rootNavigator: true).pop();
-        if (mounted) context.go(Routes.orderCompleteScreen);
-      } else {
-        if (mounted) Navigator.of(context, rootNavigator: true).pop();
-        final msg = result['message'] as String? ?? '결제에 실패했습니다. 다시 시도해 주세요.';
-        if (mounted) {
-          setState(() => isProcessing = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg), backgroundColor: Colors.red),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-        setState(() => isProcessing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('결제 중 오류가 발생했습니다. 다시 시도해 주세요.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+          },
+          loading: () => const Center(child: CircularProgressIndicator(color: Colors.black)),
+          error: (e, st) => Center(child: Text('오류가 발생했습니다: $e')),
+        ),
+        bottomNavigationBar: asyncState.maybeWhen(
+          data: (state) {
+            final bankAccounts = ref.watch(bankAccountsStreamProvider).value ?? [];
+            return CheckoutBottomBar(
+              pendingPrice: state.pendingPrice,
+              isProcessing: state.isProcessing,
+              onValidate: () async {
+                final controller = ref.read(checkoutFormControllerProvider.notifier);
+                
+                if (state.selectedOption != 1 && state.selectedOption != 2) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('현금 영수증 또는 세금 계산서를 선택해주세요'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return false;
+                }
+                
+                if (!controller.validateReceiptTypeFields(context)) return false;
+                
+                if (state.address.id.isEmpty) {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AddAddressScreen()),
+                  );
+                  if (result != true) {
+                    return false;
+                  }
+                  if (!context.mounted) return false;
+                  await controller.reloadAddressAndInstructions();
+                  return false;
+                }
+                
+                if (bankAccounts.isEmpty || state.selectedBankIndex < 0) {
+                  _showBankAccountBottomSheet(context, ref, uid, bankAccounts);
+                  return false;
+                }
+                
+                final payerId = bankAccounts[state.selectedBankIndex]['payerId'] as String? ?? '';
+                if (payerId.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return false;
+                }
+                return true;
+              },
+              onSlideComplete: () {
+                _showLoadingModal(context);
+                ref.read(checkoutFormControllerProvider.notifier).handlePlaceOrder(
+                  context: context,
+                  uid: uid,
+                  bankAccounts: bankAccounts,
+                  onSuccess: () {
+                    Navigator.of(context, rootNavigator: true).pop(); // pop loading modal
+                    context.go(Routes.orderCompleteScreen);
+                  },
+                  onError: (msg) {
+                    Navigator.of(context, rootNavigator: true).pop(); // pop loading modal
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+                    );
+                  },
+                );
+              },
+            );
+          },
+          orElse: () => const SizedBox.shrink(),
+        ),
+      ),
+    );
   }
 
-  // ── Non-dismissible loading modal ─────────────────────────────────────────
-  void _showLoadingModal() {
+  void _showLoadingModal(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (_) => const PopScope(
-            canPop: false,
-            child: Center(
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(16)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox.shrink(),
-                      SizedBox(height: 16),
-                      Text(
-                        '결제 처리 중입니다...',
-                        style: TextStyle(
-                          fontFamily: 'NotoSans',
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '잠시만 기다려 주세요',
-                        style: TextStyle(
-                          fontFamily: 'NotoSans',
-                          color: Colors.grey,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox.shrink(),
+                  SizedBox(height: 16),
+                  Text(
+                    '결제 처리 중입니다...',
+                    style: TextStyle(
+                      fontFamily: 'NotoSans',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
                   ),
-                ),
+                  SizedBox(height: 4),
+                  Text(
+                    '잠시만 기다려 주세요',
+                    style: TextStyle(
+                      fontFamily: 'NotoSans',
+                      color: Colors.grey,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+        ),
+      ),
     );
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // BANK ACCOUNT BOTTOM SHEET
-  // ───────────────────────────────────────────────────────────────────────────
+  void _showDeliveryRequestSheet(BuildContext context, WidgetRef ref) {
+    final controller = ref.read(checkoutFormControllerProvider.notifier);
+    showModalBottomSheet(
+      backgroundColor: Colors.white,
+      context: context,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.all(15.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: controller.deliveryRequests
+                .map(
+                  (request) => ListTile(
+                    title: Text(
+                      request,
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16.sp,
+                        fontFamily: 'NotoSans',
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    onTap: () {
+                      controller.setSelectedRequest(request);
+                      Navigator.pop(context);
+                    },
+                  ),
+                )
+                .toList(),
+          ),
+        );
+      },
+    );
+  }
 
-  void _showBankAccountBottomSheet(String uid) {
+  void _showBankAccountBottomSheet(BuildContext context, WidgetRef ref, String uid, List<Map<String, dynamic>> bankAccounts) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final state = ref.watch(checkoutFormControllerProvider).value;
+            final controller = ref.read(checkoutFormControllerProvider.notifier);
+            final currentBankAccounts = ref.watch(bankAccountsStreamProvider).value ?? [];
+
             return Padding(
               padding: EdgeInsets.all(20.r),
               child: Column(
@@ -613,12 +323,12 @@ class _BuyNowState extends ConsumerState<BuyNow> {
                     ),
                   ),
                   verticalSpace(16),
-                  if (bankAccounts.isEmpty)
+                  if (currentBankAccounts.isEmpty)
                     const Text(
                       '등록된 계좌가 없습니다.',
                       style: TextStyle(color: Colors.black),
                     ),
-                  ...bankAccounts.asMap().entries.map((entry) {
+                  ...currentBankAccounts.asMap().entries.map((entry) {
                     final idx = entry.key;
                     final bank = entry.value;
                     return Column(
@@ -629,19 +339,15 @@ class _BuyNowState extends ConsumerState<BuyNow> {
                             color: Colors.black,
                           ),
                           title: Text(
-                            '${bank['bankName']} (${bank['bankNum']})',
+                            "${bank['bankName']} (${bank['bankNum']})",
                             style: const TextStyle(color: Colors.black),
                           ),
-                          tileColor:
-                              idx == selectedBankIndex
-                                  ? Colors.black12
-                                  : Colors.white,
+                          tileColor: idx == state?.selectedBankIndex ? Colors.black12 : Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           onTap: () {
-                            setState(() => selectedBankIndex = idx);
-                            setStateDialog(() {});
+                            controller.setSelectedBankIndex(idx);
                             Navigator.of(context).pop();
                           },
                           trailing: IconButton(
@@ -652,48 +358,40 @@ class _BuyNowState extends ConsumerState<BuyNow> {
                             onPressed: () async {
                               final confirm = await showDialog<bool>(
                                 context: context,
-                                builder:
-                                    (ctx) => AlertDialog(
-                                      backgroundColor: Colors.white,
-                                      title: const Text('계좌 삭제'),
-                                      content: Text(
-                                        '${bank['bankName']} (${bank['bankNum']}) '
-                                        '계좌를 삭제하시겠습니까?',
+                                builder: (ctx) => AlertDialog(
+                                  backgroundColor: Colors.white,
+                                  title: const Text('계좌 삭제'),
+                                  content: Text(
+                                    "${bank['bankName']} (${bank['bankNum']}) 계좌를 삭제하시겠습니까?",
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, false),
+                                      child: const Text(
+                                        '취소',
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                        ),
                                       ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed:
-                                              () => Navigator.pop(ctx, false),
-                                          child: const Text(
-                                            '취소',
-                                            style: TextStyle(
-                                              color: Colors.black,
-                                            ),
-                                          ),
-                                        ),
-                                        TextButton(
-                                          onPressed:
-                                              () => Navigator.pop(ctx, true),
-                                          style: TextButton.styleFrom(
-                                            backgroundColor: Colors.black,
-                                          ),
-                                          child: const Text(
-                                            '삭제',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
                                     ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: Colors.black,
+                                      ),
+                                      child: const Text(
+                                        '삭제',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               );
                               if (confirm != true) return;
-                              await _deleteBankAccount(
-                                uid,
-                                bank['payerId'] as String,
-                              );
-                              setStateDialog(() {});
-                              if (!mounted) return;
+                              await controller.deleteBankAccount(bank['payerId'] as String);
+                              if (!context.mounted) return;
                               Navigator.of(context).pop();
                             },
                           ),
@@ -707,7 +405,7 @@ class _BuyNowState extends ConsumerState<BuyNow> {
                     txt: '새 계좌 등록하기',
                     func: () {
                       Navigator.of(context).pop();
-                      _launchBankRegistration(uid);
+                      controller.launchBankRegistration();
                     },
                     color: Colors.black,
                     txtColor: Colors.white,
@@ -721,204 +419,18 @@ class _BuyNowState extends ConsumerState<BuyNow> {
     );
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // BUILD
-  // ───────────────────────────────────────────────────────────────────────────
-
-  @override
-  Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-
-    final displayName =
-        pendingBuynowData?['product_name'] as String? ??
-        widget.productName ??
-        '';
-    final displayImgUrl =
-        pendingBuynowData?['imgUrl'] as String? ?? widget.productImgUrl ?? '';
-
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          leading: IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios),
-          ),
-          title: Text(
-            '주문 / 결제',
-            style: TextStyle(
-              fontFamily: 'NotoSans',
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-
-        body: Padding(
-          padding: EdgeInsets.only(left: 15.w, top: 10.h, right: 15.w),
-          child: ListView(
-            children: [
-              // ── Product summary ───────────────────────────────────────
-              CheckoutSectionCard(
-                child: CheckoutItemSummary(
-                  displayImgUrl: displayImgUrl,
-                  displayName: displayName,
-                  pendingQuantity: pendingQuantity,
-                  pendingPrice: pendingPrice,
-                ),
-              ),
-              verticalSpace(10),
-
-              // ── Address ───────────────────────────────────────────────
-              CheckoutSectionCard(
-                child: CheckoutAddressCard(
-                  uid: uid,
-                  address: address,
-                  onSelectAddress: _selectAddress,
-                ),
-              ),
-              verticalSpace(10),
-
-              // ── Delivery request ──────────────────────────────────────
-              CheckoutSectionCard(
-                child: StatefulBuilder(
-                  builder: (context, setStateDropdown) {
-                    return CheckoutDeliveryRequest(
-                      selectedRequest: selectedRequest,
-                      manualRequest: manualRequest,
-                      onManualRequestChanged: (text) {
-                        setState(() => manualRequest = text);
-                      },
-                      onShowSheet: () => _showDeliveryRequestSheet(setStateDropdown),
-                    );
-                  },
-                ),
-              ),
-              verticalSpace(10),
-
-              // ── Bank account ──────────────────────────────────────────
-              CheckoutSectionCard(
-                child: CheckoutPaymentSelector(
-                  bankAccounts: bankAccounts,
-                  selectedBankIndex: selectedBankIndex,
-                  onShowBottomSheet: () => _showBankAccountBottomSheet(uid),
-                ),
-              ),
-              verticalSpace(10),
-
-              // ── Receipt / invoice ─────────────────────────────────────
-              CheckoutSectionCard(
-                child: CheckoutReceiptOption(
-                  selectedOption: selectedOption,
-                  onShowBottomSheet: _showReceiptBottomSheet,
-                ),
-              ),
-              verticalSpace(15.h),
-            ],
-          ),
-        ),
-
-        // ── Bottom bar ────────────────────────────────────────────────────
-        bottomNavigationBar: CheckoutBottomBar(
-          pendingPrice: pendingPrice,
-          isProcessing: isProcessing,
-          onValidate: () async {
-            if (selectedOption != 1 && selectedOption != 2) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('현금 영수증 또는 세금 계산서를 선택해주세요'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return false;
-            }
-            if (!_validateReceiptTypeFields()) return false;
-            // ── Gate: address required before payment ────────────────────────
-            if (address.id.isEmpty) {
-              final result = await Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => AddAddressScreen()),
-              );
-              if (result != true) {
-                return false; // user didn't add one, block payment
-              }
-              // Address was added — re-fetch it into state so the UI reflects it
-              await _ensureCachedAddressAndInstructions(uid);
-              return false; // return false here so the slider resets; user slides again
-            }
-            if (bankAccounts.isEmpty || selectedBankIndex < 0) {
-              _showBankAccountBottomSheet(uid);
-              return false;
-            }
-            final payerId =
-                bankAccounts[selectedBankIndex]['payerId'] as String? ??
-                '';
-            if (payerId.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return false;
-            }
-            return true;
-          },
-          onSlideComplete: () => _handlePlaceOrder(uid),
-        ),
-      ),
-    );
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // UI HELPERS
-  // ───────────────────────────────────────────────────────────────────────────
-
-  void _showDeliveryRequestSheet(StateSetter setStateDropdown) {
-    showModalBottomSheet(
-      backgroundColor: Colors.white,
-      context: context,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.all(15.w),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children:
-                deliveryRequests
-                    .map(
-                      (request) => ListTile(
-                        title: Text(
-                          request,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 16.sp,
-                            fontFamily: 'NotoSans',
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                        onTap: () {
-                          setStateDropdown(() {
-                            selectedRequest = request;
-                            if (selectedRequest != '직접입력') manualRequest = null;
-                          });
-                          setState(() {});
-                          Navigator.pop(context);
-                        },
-                      ),
-                    )
-                    .toList(),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showReceiptBottomSheet() {
+  void _showReceiptBottomSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
       isScrollControlled: true,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateRadio) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final state = ref.watch(checkoutFormControllerProvider).value;
+            final controller = ref.read(checkoutFormControllerProvider.notifier);
+            if (state == null) return const SizedBox.shrink();
+
             return Padding(
               padding: EdgeInsets.only(
                 top: 20.h,
@@ -939,29 +451,44 @@ class _BuyNowState extends ConsumerState<BuyNow> {
                           _buildRadioOption(
                             value: 1,
                             label: '현금 영수증',
-                            setStateSheet: setStateRadio,
+                            currentValue: state.selectedOption,
+                            onChanged: (v) => controller.setSelectedOption(v),
                           ),
                           _buildRadioOption(
                             value: 2,
                             label: '세금 계산서',
-                            setStateSheet: setStateRadio,
+                            currentValue: state.selectedOption,
+                            onChanged: (v) => controller.setSelectedOption(v),
                           ),
                         ],
                       ),
-                      if (selectedOption == 1)
-                        ..._buildCashReceiptFields()
+                      if (state.selectedOption == 1)
+                        ..._buildCashReceiptFields(controller)
                       else
-                        ..._buildTaxInvoiceFields(setStateRadio),
+                        ..._buildTaxInvoiceFields(controller, state.invoiceeType),
                       verticalSpace(10),
                       WideTextButton(
                         txt: '저장',
                         func: () async {
-                          if (!_bottomSheetFormKey.currentState!.validate())
-                            return;
-                          final success = await _saveCachedUserValues(
-                            showFeedback: true,
-                          );
-                          if (success && mounted) Navigator.pop(context);
+                          if (!_bottomSheetFormKey.currentState!.validate()) return;
+                          final success = await controller.saveCachedUserValues();
+                          if (!context.mounted) return;
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('정보가 저장되었습니다'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                            Navigator.pop(context);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('저장 실패'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         },
                         color: Colors.black,
                         txtColor: Colors.white,
@@ -980,7 +507,8 @@ class _BuyNowState extends ConsumerState<BuyNow> {
   Widget _buildRadioOption({
     required int value,
     required String label,
-    required StateSetter setStateSheet,
+    required int currentValue,
+    required Function(int) onChanged,
   }) {
     return Row(
       children: [
@@ -988,12 +516,11 @@ class _BuyNowState extends ConsumerState<BuyNow> {
           scale: 20.sp / 15,
           child: Radio<int>(
             value: value,
-            groupValue: selectedOption,
+            groupValue: currentValue,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
             onChanged: (v) {
-              setStateSheet(() => selectedOption = v!);
-              setState(() {});
+              if (v != null) onChanged(v);
             },
           ),
         ),
@@ -1010,146 +537,142 @@ class _BuyNowState extends ConsumerState<BuyNow> {
     );
   }
 
-  List<Widget> _buildCashReceiptFields() => [
-    UnderlineTextField(
-      controller: nameController,
-      hintText: '이름',
-      obscureText: false,
-      keyboardType: TextInputType.text,
-      validator:
-          (val) => (val == null || val.trim().isEmpty) ? '이름을 입력해주세요' : null,
-      onChanged: (_) => null,
-    ),
-    SizedBox(height: 10.h),
-    UnderlineTextField(
-      controller: emailController,
-      hintText: '이메일',
-      obscureText: false,
-      keyboardType: TextInputType.emailAddress,
-      validator: (val) {
-        if (val == null || val.trim().isEmpty) return '이메일을 입력해주세요';
-        if (!RegExp(r'^.+@.+\..+$').hasMatch(val.trim())) {
-          return '유효한 이메일을 입력해주세요';
-        }
-        return null;
-      },
-      onChanged: (_) => null,
-    ),
-    SizedBox(height: 10.h),
-    UnderlineTextField(
-      controller: phoneController,
-      hintText: '전화번호',
-      obscureText: false,
-      keyboardType: TextInputType.phone,
-      validator: (val) {
-        if (val == null || val.trim().isEmpty) return '전화번호를 입력해주세요';
-        if (!RegExp(
-          r'^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$',
-        ).hasMatch(val)) {
-          return '유효한 한국 전화번호를 입력하세요';
-        }
-        return null;
-      },
-      onChanged: (_) => null,
-    ),
-  ];
+  List<Widget> _buildCashReceiptFields(CheckoutFormController controller) => [
+        UnderlineTextField(
+          controller: controller.nameController,
+          hintText: '이름',
+          obscureText: false,
+          keyboardType: TextInputType.text,
+          validator: (val) => (val == null || val.trim().isEmpty) ? '이름을 입력해주세요' : null,
+          onChanged: (_) => null,
+        ),
+        SizedBox(height: 10.h),
+        UnderlineTextField(
+          controller: controller.emailController,
+          hintText: '이메일',
+          obscureText: false,
+          keyboardType: TextInputType.emailAddress,
+          validator: (val) {
+            if (val == null || val.trim().isEmpty) return '이메일을 입력해주세요';
+            if (!RegExp(r'^.+@.+\..+$').hasMatch(val.trim())) {
+              return '유효한 이메일을 입력해주세요';
+            }
+            return null;
+          },
+          onChanged: (_) => null,
+        ),
+        SizedBox(height: 10.h),
+        UnderlineTextField(
+          controller: controller.phoneController,
+          hintText: '전화번호',
+          obscureText: false,
+          keyboardType: TextInputType.phone,
+          validator: (val) {
+            if (val == null || val.trim().isEmpty) return '전화번호를 입력해주세요';
+            if (!RegExp(
+              r'^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$',
+            ).hasMatch(val)) {
+              return '유효한 한국 전화번호를 입력하세요';
+            }
+            return null;
+          },
+          onChanged: (_) => null,
+        ),
+      ];
 
-  List<Widget> _buildTaxInvoiceFields(StateSetter setStateSheet) => [
-    DropdownButtonFormField<String>(
-      dropdownColor: Colors.white,
-      value: invoiceeType,
-      items:
-          [
-            '사업자',
-            '개인',
-            '외국인',
-          ].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-      onChanged: (val) {
-        setStateSheet(() => invoiceeType = val ?? '사업자');
-      },
-      decoration: const InputDecoration(
-        border: UnderlineInputBorder(),
-        isDense: true,
-        contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 8),
-      ),
-      icon: const Icon(Icons.keyboard_arrow_down),
-    ),
-    SizedBox(height: 10.h),
-    UnderlineTextField(
-      obscureText: false,
-      controller: invoiceeCorpNumController,
-      hintText: '공급받는자 사업자번호',
-      keyboardType: TextInputType.number,
-      validator: (val) {
-        if (val == null || val.trim().isEmpty) return '사업자번호를 입력해주세요';
-        final cleaned = val.trim().replaceAll('-', '');
-        if (!RegExp(r'^[0-9]+$').hasMatch(cleaned)) {
-          return '사업자번호는 숫자만 입력 가능합니다';
-        }
-        if (cleaned.length != 10) {
-          return '사업자번호는 숫자 10자리여야 합니다 (예: 123-45-67890)';
-        }
-        return null;
-      },
-      onChanged: (_) => null,
-    ),
-    SizedBox(height: 10.h),
-    UnderlineTextField(
-      obscureText: false,
-      controller: invoiceeCorpNameController,
-      hintText: '공급받는자 상호',
-      keyboardType: TextInputType.text,
-      validator: (val) {
-        if (val == null || val.trim().isEmpty) return '이름을 입력해주세요';
-        if (val.trim().length > 200) return '입력은 최대 200자까지 가능합니다';
-        return null;
-      },
-      onChanged: (_) => null,
-    ),
-    SizedBox(height: 10.h),
-    UnderlineTextField(
-      obscureText: false,
-      controller: invoiceeCEONameController,
-      hintText: '공급받는자 대표자 성명',
-      keyboardType: TextInputType.text,
-      validator: (val) {
-        if (val == null || val.trim().isEmpty) return '대표자 성명을 입력해주세요';
-        if (val.trim().length > 200) return '입력은 최대 200자까지 가능합니다';
-        return null;
-      },
-      onChanged: (_) => null,
-    ),
-    SizedBox(height: 10.h),
-    UnderlineTextField(
-      controller: emailController,
-      hintText: '이메일',
-      obscureText: false,
-      keyboardType: TextInputType.emailAddress,
-      validator: (val) {
-        if (val == null || val.trim().isEmpty) return '이메일을 입력해주세요';
-        if (!RegExp(r'^.+@.+\..+$').hasMatch(val.trim())) {
-          return '유효한 이메일을 입력해주세요';
-        }
-        return null;
-      },
-      onChanged: (_) => null,
-    ),
-    SizedBox(height: 10.h),
-    UnderlineTextField(
-      controller: phoneController,
-      hintText: '전화번호',
-      obscureText: false,
-      keyboardType: TextInputType.phone,
-      validator: (val) {
-        if (val == null || val.trim().isEmpty) return '전화번호를 입력해주세요';
-        if (!RegExp(
-          r'^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$',
-        ).hasMatch(val)) {
-          return '유효한 한국 전화번호를 입력하세요';
-        }
-        return null;
-      },
-      onChanged: (_) => null,
-    ),
-  ];
+  List<Widget> _buildTaxInvoiceFields(CheckoutFormController controller, String invoiceeType) => [
+        DropdownButtonFormField<String>(
+          dropdownColor: Colors.white,
+          value: invoiceeType,
+          items: ['사업자', '개인', '외국인']
+              .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+              .toList(),
+          onChanged: (val) {
+            controller.setInvoiceeType(val ?? '사업자');
+          },
+          decoration: const InputDecoration(
+            border: UnderlineInputBorder(),
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+          ),
+          icon: const Icon(Icons.keyboard_arrow_down),
+        ),
+        SizedBox(height: 10.h),
+        UnderlineTextField(
+          obscureText: false,
+          controller: controller.invoiceeCorpNumController,
+          hintText: '공급받는자 사업자번호',
+          keyboardType: TextInputType.number,
+          validator: (val) {
+            if (val == null || val.trim().isEmpty) return '사업자번호를 입력해주세요';
+            final cleaned = val.trim().replaceAll('-', '');
+            if (!RegExp(r'^[0-9]+$').hasMatch(cleaned)) {
+              return '사업자번호는 숫자만 입력 가능합니다';
+            }
+            if (cleaned.length != 10) {
+              return '사업자번호는 숫자 10자리여야 합니다 (예: 123-45-67890)';
+            }
+            return null;
+          },
+          onChanged: (_) => null,
+        ),
+        SizedBox(height: 10.h),
+        UnderlineTextField(
+          obscureText: false,
+          controller: controller.invoiceeCorpNameController,
+          hintText: '공급받는자 상호',
+          keyboardType: TextInputType.text,
+          validator: (val) {
+            if (val == null || val.trim().isEmpty) return '이름을 입력해주세요';
+            if (val.trim().length > 200) return '입력은 최대 200자까지 가능합니다';
+            return null;
+          },
+          onChanged: (_) => null,
+        ),
+        SizedBox(height: 10.h),
+        UnderlineTextField(
+          obscureText: false,
+          controller: controller.invoiceeCEONameController,
+          hintText: '공급받는자 대표자 성명',
+          keyboardType: TextInputType.text,
+          validator: (val) {
+            if (val == null || val.trim().isEmpty) return '대표자 성명을 입력해주세요';
+            if (val.trim().length > 200) return '입력은 최대 200자까지 가능합니다';
+            return null;
+          },
+          onChanged: (_) => null,
+        ),
+        SizedBox(height: 10.h),
+        UnderlineTextField(
+          controller: controller.emailController,
+          hintText: '이메일',
+          obscureText: false,
+          keyboardType: TextInputType.emailAddress,
+          validator: (val) {
+            if (val == null || val.trim().isEmpty) return '이메일을 입력해주세요';
+            if (!RegExp(r'^.+@.+\..+$').hasMatch(val.trim())) {
+              return '유효한 이메일을 입력해주세요';
+            }
+            return null;
+          },
+          onChanged: (_) => null,
+        ),
+        SizedBox(height: 10.h),
+        UnderlineTextField(
+          controller: controller.phoneController,
+          hintText: '전화번호',
+          obscureText: false,
+          keyboardType: TextInputType.phone,
+          validator: (val) {
+            if (val == null || val.trim().isEmpty) return '전화번호를 입력해주세요';
+            if (!RegExp(
+              r'^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$',
+            ).hasMatch(val)) {
+              return '유효한 한국 전화번호를 입력하세요';
+            }
+            return null;
+          },
+          onChanged: (_) => null,
+        ),
+      ];
 }
