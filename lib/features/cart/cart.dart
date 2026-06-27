@@ -2,18 +2,14 @@ import 'package:ecommerece_app/core/widgets/tab_app_bar.dart';
 import 'package:ecommerece_app/features/cart/favorites.dart';
 import 'package:ecommerece_app/features/cart/shopping_cart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class Cart extends StatefulWidget {
+class Cart extends ConsumerWidget {
   const Cart({super.key});
 
   @override
-  State<Cart> createState() => _CartState();
-}
-
-class _CartState extends State<Cart> {
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return const DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: TabAppBar(

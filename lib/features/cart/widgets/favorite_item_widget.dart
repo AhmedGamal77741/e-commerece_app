@@ -41,6 +41,9 @@ class FavoriteItemWidget extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
+        final currentStock = product.stock;
+        final isOutOfStock = currentStock <= 0;
+
         return InkWell(
           onTap: () async {
             String arrivalTime = await getArrivalDay(
@@ -105,6 +108,11 @@ class FavoriteItemWidget extends ConsumerWidget {
                         maxLines: 2,
                         overflow: TextOverflow.visible,
                       ),
+                      if (isOutOfStock)
+                        Text(
+                          '품절',
+                          style: TextStyles.abeezee14px400wP600.copyWith(color: Colors.red),
+                        ),
                       Text(
                         isSub
                             ? '${formatCurrency.format(product.price)} 원'

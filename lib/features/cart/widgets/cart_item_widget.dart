@@ -55,6 +55,13 @@ class CartItemWidget extends ConsumerWidget {
           quantity = pp.quantity;
         }
 
+        final currentStock = product.stock;
+        final isOutOfStock = quantity > currentStock;
+        
+        final cartPrice = cartData['price'] as int?;
+        final currentLivePrice = price.round();
+        final isPriceChanged = cartPrice != null && cartPrice != currentLivePrice;
+
         return InkWell(
           onTap: () async {
             String arrivalTime = await getArrivalDay(
@@ -122,6 +129,16 @@ class CartItemWidget extends ConsumerWidget {
                         '수량 : ${quantity.toString()}  ',
                         style: TextStyles.abeezee14px400wP600,
                       ),
+                      if (isOutOfStock)
+                        Text(
+                          '재고 부족 (남은 수량: $currentStock개)',
+                          style: TextStyles.abeezee14px400wP600.copyWith(color: Colors.red),
+                        ),
+                      if (isPriceChanged)
+                        Text(
+                          '가격 변동됨 (이전: ${formatCurrency.format(cartPrice)} 원)',
+                          style: TextStyles.abeezee14px400wP600.copyWith(color: Colors.orange),
+                        ),
                       Text(
                         '${formatCurrency.format(price.round())} 원',
                         style: TextStyles.abeezee16px400wPblack,
