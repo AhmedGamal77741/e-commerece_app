@@ -23,14 +23,14 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class PlaceOrder extends StatefulWidget {
+class PlaceOrder extends ConsumerStatefulWidget {
   const PlaceOrder({super.key});
 
   @override
-  State<PlaceOrder> createState() => _PlaceOrderState();
+  ConsumerState<PlaceOrder> createState() => _PlaceOrderState();
 }
 
-class _PlaceOrderState extends State<PlaceOrder> {
+class _PlaceOrderState extends ConsumerState<PlaceOrder> {
   // ── Receipt / invoice fields ──────────────────────────────────────────────
   String invoiceeType = '사업자';
   final invoiceeCorpNumController = TextEditingController();
@@ -442,14 +442,35 @@ class _PlaceOrderState extends State<PlaceOrder> {
       return;
     }
 
+    setState(() => isProcessing = true);
+    _showLoadingModal();
+
+    try {
+      // 1. Stock Validation
+      await ref.read(cartControllerProvider.notifier).validateStockAvailability();
+
+      // 2. Price Change Validation
+      await ref.read(cartControllerProvider.notifier).detectPriceChanges();
+    } catch (e) {
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (mounted) {
+        setState(() => isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     // Auto-save latest state before payment so CF has up-to-date cached values
     await _saveCachedUserValues();
 
     final docRef = FirebaseFirestore.instance.collection('orders').doc();
     final paymentId = docRef.id;
     currentPaymentId = paymentId;
-    setState(() => isProcessing = true);
-    _showLoadingModal();
 
     try {
       final response = await http.post(

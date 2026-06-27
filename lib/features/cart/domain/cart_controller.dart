@@ -145,6 +145,117 @@ class CartController extends Notifier<void> {
       finalPrice: finalPrice,
     );
   }
+
+  Future<void> validateStockAvailability() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) throw Exception('사용자 인증이 필요합니다.');
+
+    final cartDocs = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('cart')
+        .get();
+
+    Map<String, int> requestedQuantities = {};
+    
+    for (final doc in cartDocs.docs) {
+      final data = doc.data();
+      final productId = data['product_id'] as String?;
+      final pricePointIndex = data['pricePointIndex'] is int 
+          ? data['pricePointIndex'] as int 
+          : int.tryParse('${data['pricePointIndex']}') ?? 0;
+      
+      if (productId == null) continue;
+
+      final productSnap = await FirebaseFirestore.instance.collection('products').doc(productId).get();
+      if (!productSnap.exists) continue;
+      
+      final product = Product.fromMap(productSnap.data()!);
+      int qty = 1;
+      if (pricePointIndex >= 0 && pricePointIndex < product.pricePoints.length) {
+        qty = product.pricePoints[pricePointIndex].quantity;
+      }
+      
+      requestedQuantities[productId] = (requestedQuantities[productId] ?? 0) + qty;
+    }
+
+    for (final productId in requestedQuantities.keys) {
+      final requestedQty = requestedQuantities[productId]!;
+      final productSnap = await FirebaseFirestore.instance.collection('products').doc(productId).get();
+      if (!productSnap.exists) continue;
+
+      final data = productSnap.data()!;
+      final currentStock = data['stock'] as int? ?? 0;
+      final productName = data['productName'] as String? ?? '상품';
+      
+      if (requestedQty > currentStock) {
+         throw Exception('재고 부족: $productName의 남은 재고가 $currentStock개입니다.');
+      }
+    }
+  }
+
+  Future<void> detectPriceChanges() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) throw Exception('사용자 인증이 필요합니다.');
+
+    final isSub = await isUserSubscribed();
+    
+    final cartDocs = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('cart')
+        .get();
+
+    bool hasChanges = false;
+    List<String> changedItems = [];
+
+    for (final doc in cartDocs.docs) {
+      final cartData = doc.data();
+      final productId = cartData['product_id'] as String?;
+      final pricePointIndex = cartData['pricePointIndex'] is int 
+          ? cartData['pricePointIndex'] as int 
+          : int.tryParse('${cartData['pricePointIndex']}') ?? 0;
+      
+      if (productId == null) continue;
+
+      final productSnap = await FirebaseFirestore.instance.collection('products').doc(productId).get();
+      if (!productSnap.exists) continue;
+
+      final prodData = productSnap.data()!;
+      final prod = Product.fromMap(prodData);
+
+      num computedPrice;
+      try {
+        final pp = prod.pricePoints[pricePointIndex];
+        if (isSub) {
+          computedPrice = pp.price;
+        } else {
+          computedPrice = (pp.price / 0.8).round();
+        }
+      } catch (e) {
+        continue;
+      }
+      
+      final livePrice = computedPrice is double ? computedPrice.round() : computedPrice.toInt();
+      final currentCartPrice = cartData['price'] as int?;
+
+      if (currentCartPrice != null && currentCartPrice != livePrice) {
+        hasChanges = true;
+        if (!changedItems.contains(prod.productName)) {
+          changedItems.add(prod.productName);
+        }
+      }
+      
+      if (currentCartPrice != livePrice) {
+        await doc.reference.update({'price': livePrice});
+      }
+    }
+
+    if (hasChanges) {
+      final itemsStr = changedItems.join(', ');
+      throw Exception('가격 변동 알림: $itemsStr의 가격이 변경되었습니다. 장바구니에서 최신 가격을 확인 후 다시 결제해주세요.');
+    }
+  }
 }
 
 Future<bool> isUserSubscribed() async {
