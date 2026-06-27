@@ -1,53 +1,12 @@
-import 'dart:io';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
-import 'package:ecommerece_app/core/models/product_model.dart';
-import 'package:ecommerece_app/features/cart/services/cart_service.dart';
-import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
-import 'package:ecommerece_app/features/chat/widgets/chat_input_bar.dart';
-import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
-import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
-import 'package:ecommerece_app/features/home/profile_tab.dart';
-import 'package:ecommerece_app/features/home/widgets/post_item.dart';
-import 'package:ecommerece_app/features/shop/item_details.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-const _kBgColor = Color(0xFFF2F2F2);
-
-class ChatMessageItem {
-  final String id;
-  final String senderId;
-  final String senderName;
-  final String senderImage;
-  final String content;
-  final DateTime timestamp;
-  final List<String>? imageUrls;
-  final Map<String, dynamic>? postData;
-  final Product? productData;
-  final bool isPost;
-
-  ChatMessageItem({
-    required this.id,
-    required this.senderId,
-    required this.senderName,
-    required this.senderImage,
-    required this.content,
-    required this.timestamp,
-    this.imageUrls,
-    this.postData,
-    this.productData,
-    required this.isPost,
-  });
-}
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
+import 'package:ecommerece_app/features/home/domain/comments_notifier.dart';
+import 'package:ecommerece_app/features/home/widgets/comment_input_box.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/home/widgets/comment_bubble.dart';
+import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 
 class Comments extends ConsumerStatefulWidget {
   const Comments({
@@ -56,149 +15,50 @@ class Comments extends ConsumerStatefulWidget {
     this.commentId,
     this.canInteract = true,
   });
+  
   final String postId;
   final String? commentId;
   final bool canInteract;
+  
   @override
   ConsumerState<Comments> createState() => _CommentsState();
 }
 
 class _CommentsState extends ConsumerState<Comments> {
-  final TextEditingController _commentController = TextEditingController();
-  final currentUser = FirebaseAuth.instance.currentUser;
-  XFile? _pickedImage;
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-
-  Map<String, dynamic>? _fetchedPostData;
-  Future<MyUser>? _userFuture;
-  String? _loadedUserId;
-  Future<DocumentSnapshot>? _currentUserDocFuture;
-
   bool _hasScrolledToComment = false;
   final Map<String, GlobalKey> _bubbleKeys = {};
-
-  @override
-  void dispose() {
-    _commentController.dispose();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    if (currentUserId.isNotEmpty) {
-      _currentUserDocFuture =
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(currentUserId)
-              .get();
-    }
-    ref.read(feedControllerProvider).startListening();
-    _maybeFetchPost();
-  }
-
-  void _maybeFetchPost() async {
-    final postsProvider = ref.read(feedControllerProvider);
-    if (postsProvider.getPost(widget.postId) == null) {
-      try {
-        final doc =
-            await FirebaseFirestore.instance
-                .collection('posts')
-                .doc(widget.postId)
-                .get();
-        if (doc.exists && mounted) {
-          setState(() {
-            _fetchedPostData = doc.data();
-          });
-        }
-      } catch (e) {
-        debugPrint(e.toString());
-      }
-    }
-  }
-
-  Future<void> _pickImage() async {
-    final picked = await ImagePickerHelper.pickImage();
-    if (picked != null) setState(() => _pickedImage = picked);
-  }
-
-  Future<void> _submitImageComment() async {
-    if (_pickedImage == null) return;
-    final fileName =
-        '${DateTime.now().millisecondsSinceEpoch}_$currentUserId.jpg';
-    final storageRef = FirebaseStorage.instance.ref().child('chat_images/$fileName');
-    UploadTask task;
-    if (kIsWeb) {
-      final bytes = await _pickedImage!.readAsBytes();
-      task = storageRef.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-    } else {
-      task = storageRef.putFile(File(_pickedImage!.path));
-    }
-    final url = await (await task).ref.getDownloadURL();
-    final text = _commentController.text.trim();
-    await ref.read(feedControllerProvider).addComment(widget.postId, text, imageUrl: url);
-    _commentController.clear();
-    setState(() => _pickedImage = null);
-  }
-
-  Future<void> _submitComment() async {
-    final text = _commentController.text.trim();
-    if (text.isEmpty) return;
-    try {
-      await ref.read(feedControllerProvider).addComment(widget.postId, text);
-      _commentController.clear();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('댓글 추가에 실패했습니다: $e')));
-    }
-  }
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   @override
   Widget build(BuildContext context) {
-    final postsProvider = ref.read(feedControllerProvider);
-    if (postsProvider.getComments(widget.postId).isEmpty &&
-        !postsProvider.isLoadingComments(widget.postId)) {
-      postsProvider.listenToComments(widget.postId);
-    }
+    final theme = Theme.of(context);
+    final commentsState = ref.watch(commentsNotifierProvider(widget.postId));
 
-    return Consumer(
-      builder: (context, ref, child) {
-        final providerPostData = ref.watch(feedControllerProvider).getPost(widget.postId);
-        final postData = providerPostData ?? _fetchedPostData;
-
-        if (postData == null) {
+    return commentsState.when(
+      data: (state) {
+        if (state.postData == null) {
           return Scaffold(
-            backgroundColor: _kBgColor,
+            backgroundColor: theme.colorScheme.surface,
             body: SafeArea(
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: Colors.grey[600],
-                      size: 48.r,
-                    ),
+                    Icon(Icons.info_outline, color: theme.colorScheme.onSurfaceVariant, size: 48.r),
                     SizedBox(height: 16.h),
                     Text(
                       '삭제되었거나 존재하지 않는 게시글입니다.',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: Colors.grey[700],
-                        fontFamily: 'NotoSans',
-                      ),
+                      style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurface),
                     ),
                     SizedBox(height: 24.h),
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[800],
-                        foregroundColor: Colors.white,
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
                       ),
                       child: const Text('닫기'),
                     ),
@@ -209,577 +69,147 @@ class _CommentsState extends ConsumerState<Comments> {
           );
         }
 
-        final String postUserId = postData['userId'] ?? '';
-        if (_userFuture == null || _loadedUserId != postUserId) {
-          _loadedUserId = postUserId;
-          _userFuture = postsProvider.loadUser(postUserId);
-        }
+        final postUserId = state.postData!['userId'] ?? '';
+        final displayName = state.postAuthor?.name.isNotEmpty == true ? state.postAuthor!.name : '삭제된 사용자';
+        final profileUrl = state.postAuthor?.url ?? '';
 
-        return FutureBuilder<MyUser>(
-          future: _userFuture,
-          builder: (context, userSnapshot) {
-            final myuser = userSnapshot.data;
-            final displayName =
-                myuser?.name.isNotEmpty == true ? myuser!.name : '삭제된 사용자';
-            final String profileUrl = myuser?.url ?? '';
-
-            return Scaffold(
-              backgroundColor: _kBgColor,
-
-              body: SafeArea(
-                child: Column(
-                  children: [
-                    SizedBox(height: 10.h),
-                    Container(
-                      width: 40.w,
-                      height: 5.h,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[400],
-                        borderRadius: BorderRadius.circular(2.5.r),
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    Expanded(
-                      child: Consumer(
-                        builder: (context, ref, child) {
-                          final comments = ref.watch(feedControllerProvider).getComments(widget.postId);
-                          final List<ChatMessageItem> chatItems = [];
-
-                          // Add comments first (newest comments at lower indices)
-                          for (final comment in comments) {
-                            chatItems.add(
-                              ChatMessageItem(
-                                id: comment.id,
-                                senderId: comment.userId,
-                                senderName: comment.userName ?? '알 수 없음',
-                                senderImage: comment.userImage ?? '',
-                                content: comment.text,
-                                timestamp:
-                                    comment.createdAt is Timestamp
-                                        ? (comment.createdAt as Timestamp)
-                                            .toDate()
-                                        : DateTime.now(),
-                                imageUrls:
-                                    comment.imageUrl != null &&
-                                            comment.imageUrl!.isNotEmpty
-                                        ? [comment.imageUrl!]
-                                        : null,
-                                postData: comment.postData,
-                                productData: comment.productData,
-                                isPost: false,
-                              ),
-                            );
-                          }
-
-                          // Add post itself at the end (will render at the top because of reverse: true)
-                          final String postText = postData['text'] ?? '';
-                          final List imgUrls =
-                              postData['imgUrls'] as List? ?? [];
-                          final List<String> castedUrls =
-                              imgUrls.map((e) => e.toString()).toList();
-                          final DateTime postTime =
-                              postData['createdAt'] is Timestamp
-                                  ? (postData['createdAt'] as Timestamp)
-                                      .toDate()
-                                  : DateTime.now();
-
-                          chatItems.add(
-                            ChatMessageItem(
-                              id: widget.postId,
-                              senderId: postUserId,
-                              senderName: displayName,
-                              senderImage: profileUrl,
-                              content: postText,
-                              timestamp: postTime,
-                              imageUrls: castedUrls,
-                              postData: null,
-                              isPost: true,
-                            ),
-                          );
-
-                          final children = List.generate(chatItems.length, (
-                            index,
-                          ) {
-                            final item = chatItems[index];
-                            final isMe = item.senderId == currentUserId;
-                            final showDate =
-                                index == chatItems.length - 1 ||
-                                !_isSameDay(
-                                  item.timestamp,
-                                  chatItems[index + 1].timestamp,
-                                );
-                            final key = _bubbleKeys.putIfAbsent(
-                              item.id,
-                              () => GlobalKey(),
-                            );
-
-                            return Column(
-                              key: key,
-                              children: [
-                                if (showDate)
-                                  _DateSeparator(date: item.timestamp),
-                                _CommentBubble(item: item, isMe: isMe),
-                              ],
-                            );
-                          });
-
-                          // Scroll to targeted comment if provided
-                          if (widget.commentId != null &&
-                              !_hasScrolledToComment) {
-                            final targetKey = _bubbleKeys[widget.commentId];
-                            if (targetKey != null) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (targetKey.currentContext != null) {
-                                  Scrollable.ensureVisible(
-                                    targetKey.currentContext!,
-                                    duration: const Duration(milliseconds: 300),
-                                    alignment: 0.5,
-                                  );
-                                  _hasScrolledToComment = true;
-                                }
-                              });
-                            } else {
-                              if (!postsProvider.isLoadingComments(
-                                widget.postId,
-                              )) {
-                                _hasScrolledToComment = true;
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('삭제된 댓글입니다.'),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                });
-                              }
-                            }
-                          }
-
-                          return ListView(
-                            reverse: true,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 14.w,
-                              vertical: 8.h,
-                            ),
-                            children: children,
-                          );
-                        },
-                      ),
-                    ),
-                    if (_pickedImage != null)
-                      Padding(
-                        padding: EdgeInsets.all(12.w),
-                        child: Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(16.r),
-                              child:
-                                  kIsWeb
-                                      ? Image.network(
-                                        _pickedImage!.path,
-                                        fit: BoxFit.cover,
-                                      )
-                                      : Image.file(
-                                        File(_pickedImage!.path),
-                                        fit: BoxFit.cover,
-                                      ),
-                            ),
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                ),
-                                onPressed:
-                                    () => setState(() => _pickedImage = null),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (widget.canInteract)
-                      currentUserId.isEmpty
-                          ? Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16.w,
-                              vertical: 12.h,
-                            ),
-                            color: Colors.white,
-                            child: Row(
-                              children: [
-                                const Icon(Icons.add, color: Colors.grey),
-                                SizedBox(width: 12.w),
-                                Expanded(
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 16.w,
-                                      vertical: 10.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF2F2F2),
-                                      borderRadius: BorderRadius.circular(20.r),
-                                    ),
-                                    child: Text(
-                                      '일반 사용자는 댓글을 작성할 수 없습니다.',
-                                      style: TextStyle(
-                                        color: Colors.grey[500],
-                                        fontSize: 14.sp,
-                                        fontFamily: 'NotoSans',
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                          : FutureBuilder<DocumentSnapshot>(
-                            future: _currentUserDocFuture,
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const SizedBox.shrink();
-                              }
-
-                              final userData =
-                                  snapshot.data?.data()
-                                      as Map<String, dynamic>?;
-                              final isNormalUser =
-                                  userData == null ||
-                                  (userData['type'] == 'user' &&
-                                      userData['isSub'] != true);
-
-                              if (isNormalUser) {
-                                return Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 16.w,
-                                    vertical: 12.h,
-                                  ),
-                                  color: Colors.white,
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.add, color: Colors.grey),
-                                      SizedBox(width: 12.w),
-                                      Expanded(
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 16.w,
-                                            vertical: 10.h,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFF2F2F2),
-                                            borderRadius: BorderRadius.circular(
-                                              20.r,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            '일반 사용자는 댓글을 작성할 수 없습니다.',
-                                            style: TextStyle(
-                                              color: Colors.grey[500],
-                                              fontSize: 14.sp,
-                                              fontFamily: 'NotoSans',
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-
-                              return InputBar(
-                                controller: _commentController,
-                                pickedImage: _pickedImage,
-                                onPickImage: _pickImage,
-                                onSend: () async {
-                                  if (_pickedImage != null) {
-                                    showLoadingDialog(context);
-                                    final navigator = Navigator.of(context);
-                                    await _submitImageComment();
-                                    navigator.pop();
-                                  } else {
-                                    await _submitComment();
-                                  }
-                                },
-                              );
-                            },
-                          ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _CommentBubble extends ConsumerStatefulWidget {
-  final ChatMessageItem item;
-  final bool isMe;
-
-  const _CommentBubble({required this.item, required this.isMe});
-
-  @override
-  ConsumerState<_CommentBubble> createState() => _CommentBubbleState();
-}
-
-class _CommentBubbleState extends ConsumerState<_CommentBubble> {
-  late PageController _pageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  String _formatTime(DateTime t) =>
-      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
-
-  @override
-  Widget build(BuildContext context) {
-    final item = widget.item;
-    final isMe = widget.isMe;
-    double maxW = MediaQuery.of(context).size.width - 120.w;
-    if (maxW > 400.w) maxW = 400.w;
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: 6.h,
-        left: isMe ? 52.w : 0,
-        right: isMe ? 0 : 52.w,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        children: [
-          if (!isMe) ...[
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => SafeArea(
-                          child: Scaffold(
-                            body: ProfileTab(userId: item.senderId),
-                          ),
-                        ),
-                  ),
-                );
-              },
-              child: Container(
-                width: 40.w,
-                height: 40.h,
-                decoration: ShapeDecoration(
-                  image: DecorationImage(
-                    image:
-                        item.senderImage.isNotEmpty
-                            ? NetworkImage(item.senderImage)
-                            : const AssetImage('assets/avatar.png')
-                                as ImageProvider,
-                    fit: BoxFit.cover,
-                  ),
-                  shape: const OvalBorder(),
-                ),
-              ),
-            ),
-            SizedBox(width: 6.w),
-          ],
-          Flexible(
+        return Scaffold(
+          backgroundColor: theme.colorScheme.surface,
+          body: SafeArea(
             child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                if (!isMe)
-                  Padding(
-                    padding: EdgeInsets.only(left: 4.w, bottom: 3.h),
-                    child: FutureBuilder<String?>(
-                      future: ContactService().getContactNickname(
-                        item.senderId,
-                      ),
-                      builder: (context, snapshot) {
-                        final nickname = snapshot.data;
-                        final display =
-                            nickname != null && nickname.isNotEmpty
-                                ? '${item.senderName} (@$nickname)'
-                                : item.senderName;
-                        return Text(
-                          display,
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        );
-                      },
-                    ),
+                SizedBox(height: 10.h),
+                Container(
+                  width: 40.w,
+                  height: 5.h,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2.5.r),
                   ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12.w,
-                          vertical: 9.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Color(0xFFEEEEEE),
-                          borderRadius: BorderRadius.all(Radius.circular(16.r)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
+                ),
+                SizedBox(height: 10.h),
+                Expanded(
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final comments = ref.watch(feedControllerProvider.notifier).getComments(widget.postId);
+                      final List<Map<String, dynamic>> chatItems = [];
+
+                      for (final comment in comments) {
+                        chatItems.add({
+                          'id': comment.id,
+                          'senderId': comment.userId,
+                          'senderName': comment.userName ?? '알 수 없음',
+                          'senderImage': comment.userImage ?? '',
+                          'content': comment.text,
+                          'timestamp': comment.createdAt is DateTime ? comment.createdAt : DateTime.now(),
+                          'imageUrls': comment.imageUrl != null && comment.imageUrl!.isNotEmpty ? [comment.imageUrl!] : null,
+                          'postData': comment.postData,
+                          'productData': comment.productData,
+                          'isPost': false,
+                        });
+                      }
+
+                      final String postText = state.postData!['text'] ?? '';
+                      final List imgUrls = state.postData!['imgUrls'] as List? ?? [];
+                      final List<String> castedUrls = imgUrls.map((e) => e.toString()).toList();
+                      final postTimeRaw = state.postData!['createdAt'];
+                      final DateTime postTime = postTimeRaw is DateTime ? postTimeRaw : DateTime.now();
+
+                      chatItems.add({
+                        'id': widget.postId,
+                        'senderId': postUserId,
+                        'senderName': displayName,
+                        'senderImage': profileUrl,
+                        'content': postText,
+                        'timestamp': postTime,
+                        'imageUrls': castedUrls,
+                        'postData': null,
+                        'isPost': true,
+                      });
+
+                      final children = List.generate(chatItems.length, (index) {
+                        final item = chatItems[index];
+                        final isMe = item['senderId'] == currentUserId;
+                        final showDate = index == chatItems.length - 1 ||
+                            !_isSameDay(item['timestamp'], chatItems[index + 1]['timestamp']);
+                        final key = _bubbleKeys.putIfAbsent(item['id'], () => GlobalKey());
+
+                        return Column(
+                          key: key,
                           children: [
-                            if (item.content.isNotEmpty)
-                              Text(
-                                item.content,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 14.sp,
-                                  height: 1.4,
-                                ),
-                              ),
-                            if (item.postData != null) ...[
-                              if (item.content.isNotEmpty)
-                                SizedBox(height: 6.h),
-                              ChatPostShareWidget(
-                                type: 'post',
-                                imageUrl: item.postData!['imgUrl'] ?? '',
-                                authorName: item.postData!['userId'] ?? '',
-                                postTitle: item.postData!['text'] ?? '',
-                                onTap: () {
-                                  if (item.postData!['postId'] != item.id ||
-                                      !item.isPost) {
-                                    showModalBottomSheet(
-                                      context: context,
-                                      isScrollControlled: true,
-                                      backgroundColor: Colors.transparent,
-                                      builder:
-                                          (context) => Container(
-                                            height:
-                                                MediaQuery.of(
-                                                  context,
-                                                ).size.height *
-                                                0.9,
-                                            decoration: const BoxDecoration(
-                                              color: Color(0xFFF2F2F2),
-                                              borderRadius:
-                                                  BorderRadius.vertical(
-                                                    top: Radius.circular(20),
-                                                  ),
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  const BorderRadius.vertical(
-                                                    top: Radius.circular(20),
-                                                  ),
-                                              child: Comments(
-                                                postId:
-                                                    item.postData!['postId'],
-                                              ),
-                                            ),
-                                          ),
-                                    );
-                                  }
-                                },
-                              ),
-                            ],
-                            if (item.productData != null) ...[
-                              if (item.content.isNotEmpty)
-                                SizedBox(height: 6.h),
-                              ChatPostShareWidget(
-                                type: 'product',
-                                imageUrl: item.productData!.imgUrl ?? '',
-                                postTitle:
-                                    '${item.productData!.pricePoints[0].price} 원',
-                                authorName: item.productData!.productName,
-                                onTap: () async {
-                                  final navigator = Navigator.of(context);
-                                  bool isSub = await isUserSubscribed();
-                                  navigator.push(
-                                    MaterialPageRoute(
-                                      builder:
-                                          (_) => ItemDetails(
-                                            product: item.productData!,
-                                            isSub: isSub,
-                                            arrivalDay:
-                                                item.productData!.arrivalDate ??
-                                                '',
-                                          ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                            if (item.imageUrls != null &&
-                                item.imageUrls!.isNotEmpty &&
-                                item.postData == null) ...[
-                              if (item.content.isNotEmpty)
-                                SizedBox(height: 6.h),
-                              if (item.imageUrls!.length == 1)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10.r),
-                                  child: Container(
-                                    constraints: BoxConstraints(maxWidth: maxW),
-                                    child: Image.network(
-                                      item.imageUrls!.first,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                )
-                              else
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10.r),
-                                  child: Container(
-                                    constraints: BoxConstraints(maxWidth: maxW),
-                                    child: NaturalAspectPageView(
-                                      imgUrls: item.imageUrls!,
-                                      pageController: _pageController,
-                                      explicitWidth: maxW,
-                                    ),
-                                  ),
-                                ),
-                            ],
+                            if (showDate) _DateSeparator(date: item['timestamp']),
+                            CommentBubble(item: item, isMe: isMe),
                           ],
+                        );
+                      });
+
+                      if (widget.commentId != null && !_hasScrolledToComment) {
+                        final targetKey = _bubbleKeys[widget.commentId];
+                        if (targetKey != null) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (targetKey.currentContext != null) {
+                              Scrollable.ensureVisible(targetKey.currentContext!, duration: const Duration(milliseconds: 300), alignment: 0.5);
+                              _hasScrolledToComment = true;
+                            }
+                          });
+                        }
+                      }
+
+                      return ListView(
+                        reverse: true,
+                        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+                        children: children,
+                      );
+                    },
+                  ),
+                ),
+                if (widget.canInteract)
+                  currentUserId.isEmpty || state.isNormalUser
+                      ? Container(
+                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                          color: theme.colorScheme.surface,
+                          child: Row(
+                            children: [
+                              Icon(Icons.add, color: theme.colorScheme.onSurfaceVariant),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(20.r),
+                                  ),
+                                  child: Text(
+                                    '일반 사용자는 댓글을 작성할 수 없습니다.',
+                                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : CommentInputBox(
+                          onSubmit: (text, {imageFile, imageBytes}) async {
+                            showLoadingDialog(context);
+                            try {
+                              await ref.read(commentsNotifierProvider(widget.postId).notifier).submitComment(text, imageFile: imageFile, imageBytes: imageBytes);
+                            } finally {
+                              if (context.mounted) Navigator.of(context).pop();
+                            }
+                          },
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: EdgeInsets.only(
-                    top: 3.h,
-                    left: isMe ? 0 : 4.w,
-                    right: isMe ? 4.w : 0,
-                  ),
-                  child: Text(
-                    _formatTime(item.timestamp),
-                    style: TextStyle(fontSize: 10.sp, color: Colors.grey[400]),
-                  ),
-                ),
               ],
             ),
           ),
-        ],
-      ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
     );
   }
 }
 
-class _DateSeparator extends ConsumerWidget {
+class _DateSeparator extends StatelessWidget {
   final DateTime date;
   const _DateSeparator({required this.date});
 
@@ -793,19 +223,20 @@ class _DateSeparator extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 10.h),
       child: Center(
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.07),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(20.r),
           ),
           child: Text(
             _label(),
-            style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
+            style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ),
       ),

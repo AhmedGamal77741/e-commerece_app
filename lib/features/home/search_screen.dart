@@ -1,21 +1,14 @@
-import 'dart:async';
-import 'package:ecommerece_app/core/providers/firebase_providers.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerece_app/core/helpers/basetime.dart';
-import 'package:ecommerece_app/core/models/product_model.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/cart/services/cart_service.dart';
-import 'package:ecommerece_app/features/home/data/follow_service.dart';
-import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
-import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
-import 'package:ecommerece_app/features/home/widgets/post_item.dart';
-import 'package:ecommerece_app/features/shop/item_details.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/home/domain/search_notifier.dart';
+import 'package:ecommerece_app/features/home/widgets/user_search_tile.dart';
+import 'package:ecommerece_app/features/home/widgets/post_item.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
+import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
+import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
+import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeSearch extends ConsumerStatefulWidget {
   final bool useGuestPostItem;
@@ -32,21 +25,19 @@ class HomeSearch extends ConsumerStatefulWidget {
 
 class _HomeSearchState extends ConsumerState<HomeSearch> {
   final TextEditingController _searchController = TextEditingController();
-  String searchQuery = '';
   late int _selectedIndex;
   final List<Map<String, dynamic>> _userTabs = [
     {'label': '프로필'},
     {'label': '게시글'},
     {'label': '쇼핑'},
   ];
+
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialTabIndex;
     _searchController.addListener(() {
-      setState(() {
-        searchQuery = _searchController.text.trim().toLowerCase();
-      });
+      ref.read(searchNotifierProvider.notifier).updateQuery(_searchController.text);
     });
   }
 
@@ -56,7 +47,8 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
     super.dispose();
   }
 
-  Widget _buildPill(int index) {
+  Widget _buildPill(BuildContext context, int index) {
+    final theme = Theme.of(context);
     final bool isSelected = _selectedIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedIndex = index),
@@ -64,14 +56,13 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 6.h),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.grey[200],
+          color: isSelected ? theme.colorScheme.surface : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           _userTabs[index]['label'],
-          style: TextStyle(
-            fontSize: 12.sp,
-            color: Colors.grey[600],
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: isSelected ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
@@ -79,33 +70,13 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
     );
   }
 
-  Widget _buildNormalPillRow() {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(5.w, 0, 5.w, 5.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        key: const ValueKey('pills'),
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (int i = 0; i < _userTabs.length; i++) ...[
-                  _buildPill(i),
-                  if (i < _userTabs.length - 1) SizedBox(width: 8.w),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return SafeArea(
       child: Scaffold(
+        backgroundColor: theme.colorScheme.surface,
         body: Column(
           children: [
             Padding(
@@ -115,15 +86,14 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
                   InkWell(
                     onTap: () => Navigator.pop(context),
                     borderRadius: BorderRadius.circular(30.r),
-                    child: Icon(Icons.arrow_back, size: 36.r),
+                    child: Icon(Icons.arrow_back, size: 36.r, color: theme.colorScheme.onSurface),
                   ),
                   Expanded(
                     child: Container(
                       height: 42.h,
-                      alignment:
-                          Alignment.center, // Vertically centers the text
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: TextField(
@@ -131,31 +101,43 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
                         autofocus: true,
                         textAlignVertical: TextAlignVertical.center,
                         decoration: InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20.h,
-                          ),
-                          border:
-                              InputBorder.none, // Removes the default underline
-                          isDense:
-                              true, // Reduces vertical height to fit the container
+                          contentPadding: EdgeInsets.symmetric(horizontal: 20.h),
+                          border: InputBorder.none,
+                          isDense: true,
                         ),
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            _buildNormalPillRow(),
+            Padding(
+              padding: EdgeInsets.fromLTRB(5.w, 0, 5.w, 5.h),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (int i = 0; i < _userTabs.length; i++) ...[
+                          _buildPill(context, i),
+                          if (i < _userTabs.length - 1) SizedBox(width: 8.w),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: IndexedStack(
                 index: _selectedIndex,
                 children: [
-                  FollowingSearchTab(searchQuery: searchQuery),
-                  _HomeFeedSearchTab(
-                    searchQuery: searchQuery,
-                    useGuestPostItem: widget.useGuestPostItem,
-                  ),
-                  ShopSearchScreen(searchQuery: searchQuery),
+                  const _FollowingSearchTab(),
+                  _HomeFeedSearchTab(useGuestPostItem: widget.useGuestPostItem),
+                  ShopSearchScreen(searchQuery: _searchController.text),
                 ],
               ),
             ),
@@ -163,770 +145,90 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
         ),
       ),
     );
-    /* DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          toolbarHeight: 130.h,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios),
-                  ),
-                  SizedBox(
-                    width: 270.w,
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: '게시글/프로필',
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12.w,
-                          vertical: 5.h,
-                        ),
-                        border: const OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey),
-                          borderRadius: BorderRadius.zero,
-                        ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey),
-                          borderRadius: BorderRadius.zero,
-                        ),
-                        enabledBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey),
-                          borderRadius: BorderRadius.zero,
-                        ),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const ImageIcon(AssetImage('assets/Frame 4.png')),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
-              TabBar(
-                labelStyle: TextStyle(
-                  fontSize: 16.sp,
-                  decoration: TextDecoration.none,
-                  fontFamily: 'NotoSans',
-                  fontStyle: FontStyle.normal,
-                  fontWeight: FontWeight.w400,
-                  letterSpacing: 0,
-                  color: ColorsManager.primaryblack,
-                ),
-                unselectedLabelColor: ColorsManager.primary600,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicatorColor: ColorsManager.primaryblack,
-                tabs: const [Tab(text: '추천'), Tab(text: '구독')],
-              ),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            _HomeFeedSearchTab(
-              searchQuery: searchQuery,
-              useGuestPostItem: widget.useGuestPostItem,
-            ),
-            FollowingSearchTab(searchQuery: searchQuery),
-          ],
-        ),
-      ),
-    ); */
   }
 }
 
-class _HomeFeedSearchTab extends ConsumerStatefulWidget {
-  final String searchQuery;
+class _FollowingSearchTab extends ConsumerWidget {
+  const _FollowingSearchTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searchState = ref.watch(searchNotifierProvider);
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    
+    return searchState.when(
+      data: (state) {
+        if (state.users.isEmpty) return const SizedBox.shrink();
+        
+        return ListView.builder(
+          itemCount: state.users.length,
+          itemBuilder: (context, index) {
+            final user = state.users[index];
+            
+            // We use feedControllerProvider to fetch following status and requests since follow state wasn't entirely moved to searchNotifier.
+            return StreamBuilder(
+              stream: ref.read(feedControllerProvider.notifier).getFollowingDocStream(currentUserId, user.userId),
+              builder: (context, followingSnapshot) {
+                final isFollowing = followingSnapshot.hasData && followingSnapshot.data!.exists;
+                
+                return StreamBuilder(
+                  stream: ref.read(feedControllerProvider.notifier).getFollowRequestDocStream(user.userId, currentUserId),
+                  builder: (context, requestSnapshot) {
+                    final hasRequest = requestSnapshot.hasData && requestSnapshot.data!.exists;
+                    
+                    return UserSearchTile(
+                      user: user,
+                      isFollowing: isFollowing,
+                      hasPendingRequest: hasRequest,
+                      onToggleFollow: () => ref.read(followControllerProvider).toggleFollow(user.userId),
+                      onToggleRequest: () async {
+                        if (hasRequest) {
+                          await ref.read(followControllerProvider).cancelFollowRequest(user.userId, currentUserId);
+                        } else {
+                          await ref.read(followControllerProvider).sendFollowRequest(user.userId, currentUserId);
+                        }
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+      loading: () => const Center(),
+      error: (e, st) => Center(child: Text('Error: $e')),
+    );
+  }
+}
+
+class _HomeFeedSearchTab extends ConsumerWidget {
   final bool useGuestPostItem;
-
-  const _HomeFeedSearchTab({
-    required this.searchQuery,
-    this.useGuestPostItem = false,
-  });
+  const _HomeFeedSearchTab({required this.useGuestPostItem});
 
   @override
-  ConsumerState<_HomeFeedSearchTab> createState() => _HomeFeedSearchTabState();
-}
-
-class _HomeFeedSearchTabState extends ConsumerState<_HomeFeedSearchTab>
-    with AutomaticKeepAliveClientMixin {
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-
-
-  // Helper: Check if post should be visible based on privacy rules
-  bool _shouldShowPost({
-    required String postAuthorId,
-    required String currentUserId,
-    required Map<String, dynamic> authorData,
-    required Set<String> followingSet,
-  }) {
-    // Always show user's own posts
-    if (postAuthorId == currentUserId) {
-      return true;
-    }
-
-    // Get author's privacy setting (default to false if not set)
-    final bool isPrivate = authorData['isPrivate'] ?? false;
-
-    // Show public posts to everyone
-    if (!isPrivate) {
-      return true;
-    }
-
-    // Show private posts only if user follows them
-    return followingSet.contains(postAuthorId);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    if (widget.searchQuery.trim().isEmpty) {
-      return const SizedBox.shrink();
-    }
-    final authState = ref.watch(authStateProvider);
-    if (authState.isLoading) {
-      return const Center();
-    }
-    final firebaseUser = authState.value;
-    final postsProvider = ref.read(feedControllerProvider);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (firebaseUser == null) {
-        postsProvider.resetListening();
-      } else {
-        postsProvider.startListening();
-      }
-    });
-
-    final currentUser = firebaseUser;
-
-    // FIX: Check if currentUser is null before proceeding
-    if (currentUser == null) {
-      return const Center(child: Text('Please sign in to continue'));
-    }
-
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Expanded(
-              child: StreamBuilder<DocumentSnapshot>(
-                stream: ref.read(feedControllerProvider).getUserStream(currentUser.uid),
-                builder: (context, userSnapshot) {
-                  if (userSnapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      /* child:const SizedBox.shrink(), */
-                    );
-                  }
-
-                  if (userSnapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        'Error loading user data: ${userSnapshot.error}',
-                      ),
-                    );
-                  }
-
-                  if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-                    return const Center(child: Text('User profile not found'));
-                  }
-
-                  List<String> blockedUsers = List<String>.from(
-                    userSnapshot.data!.get('blocked') ?? [],
-                  );
-
-                  // Determine user type
-                  final userData =
-                      userSnapshot.data!.data() as Map<String, dynamic>?;
-                  final isPremium =
-                      userData != null && (userData['isSub'] == true);
-
-                  // For non-premium users: show only public posts
-                  if (!isPremium) {
-                    return StreamBuilder<QuerySnapshot>(
-                      stream: ref.read(feedControllerProvider).searchPostsStream(),
-                      builder: (context, postsSnapshot) {
-                        if (postsSnapshot.hasError) {
-                          return Text('Error: ${postsSnapshot.error}');
-                        }
-                        if (postsSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Center(
-                            /* child: const SizedBox.shrink(), */
-                          );
-                        }
-
-                        final posts = postsSnapshot.data?.docs ?? [];
-
-                        // Extract author IDs for batch fetch
-                        final authorIds = <String>{};
-                        for (var post in posts) {
-                          final data = post.data() as Map<String, dynamic>;
-                          authorIds.add(data['userId'] as String);
-                        }
-
-                        // Stream author data for privacy checking
-                        return StreamBuilder<Map<String, Map<String, dynamic>>>(
-                          stream: ref.read(feedControllerProvider).getAuthorsDataStreamRealtime(authorIds.toList()),
-                          builder: (context, authorsSnapshot) {
-                            if (!authorsSnapshot.hasData) {
-                              return const Center(
-                                /*  child:const SizedBox.shrink(), */
-                              );
-                            }
-
-                            final authorsMap = authorsSnapshot.data ?? {};
-
-                            // Filter posts with search query and privacy
-                            final filteredPosts =
-                                posts.where((doc) {
-                                  final data =
-                                      doc.data() as Map<String, dynamic>;
-                                  final authorData =
-                                      authorsMap[data['userId'] as String] ??
-                                      {};
-
-                                  // Check if post is from a blocked user
-                                  if (blockedUsers.contains(data['userId'])) {
-                                    return false;
-                                  }
-
-                                  final authorBlockedUsers = List<dynamic>.from(authorData['blocked'] ?? []);
-                                  if (authorBlockedUsers.contains(currentUser.uid)) {
-                                    return false;
-                                  }
-
-                                  // FIX: Safe string comparison for search query
-                                  if (widget.searchQuery.isNotEmpty) {
-                                    final postText =
-                                        data['text']
-                                            ?.toString()
-                                            .toLowerCase() ??
-                                        '';
-                                    if (!postText.contains(
-                                      widget.searchQuery,
-                                    )) {
-                                      return false;
-                                    }
-                                  }
-
-                                  // Check if user marked post as not interested
-                                  final notInterestedBy = List<dynamic>.from(
-                                    data['notInterestedBy'] ?? [],
-                                  );
-                                  if (notInterestedBy.contains(
-                                    currentUser.uid,
-                                  )) {
-                                    return false;
-                                  }
-
-                                  // Only show if author's profile is public
-                                  return (authorData['isPrivate'] ?? false) ==
-                                      false;
-                                }).toList();
-
-                            return ListView.builder(
-                              controller: _scrollController,
-                              itemCount: filteredPosts.length,
-                              itemBuilder: (context, index) {
-                                final post =
-                                    filteredPosts[index].data()
-                                        as Map<String, dynamic>;
-                                final postId = filteredPosts[index].id;
-                                if (post['postId'] == null) {
-                                  post['postId'] = postId;
-                                }
-                                return PostItem(
-                                  postId: post['postId'],
-                                  fromComments: false,
-                                );
-                              },
-                            );
-                          },
-                        );
-                      },
-                    );
-                  }
-
-                  // For premium users: full privacy filtering with following
-                  return StreamBuilder<QuerySnapshot>(
-                    stream: ref.read(feedControllerProvider).getFollowingStreamForUser(currentUser.uid),
-                    builder: (context, followingSnapshot) {
-                      // Build the following set
-                      final followingSet = <String>{};
-                      if (followingSnapshot.hasData) {
-                        for (var doc in followingSnapshot.data!.docs) {
-                          final userId = doc.get('userId') as String?;
-                          if (userId != null) {
-                            followingSet.add(userId);
-                          }
-                        }
-                      }
-
-                      return StreamBuilder<QuerySnapshot>(
-                        stream: ref.read(feedControllerProvider).searchPostsStream(),
-                        builder: (context, postsSnapshot) {
-                          if (postsSnapshot.hasError) {
-                            return Text('Error: ${postsSnapshot.error}');
-                          }
-
-                          if (postsSnapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              /* child:const SizedBox.shrink(), */
-                            );
-                          }
-
-                          final posts = postsSnapshot.data?.docs ?? [];
-
-                          // Extract author IDs for batch fetch
-                          final authorIds = <String>{};
-                          for (var post in posts) {
-                            final data = post.data() as Map<String, dynamic>;
-                            authorIds.add(data['userId'] as String);
-                          }
-
-                          // Stream author data for privacy and follower checking
-                          return StreamBuilder<
-                            Map<String, Map<String, dynamic>>
-                          >(
-                            stream: ref.read(feedControllerProvider).getAuthorsDataStreamRealtime(
-                              authorIds.toList(),
-                            ),
-                            builder: (context, authorsSnapshot) {
-                              if (!authorsSnapshot.hasData) {
-                                return const Center(
-                                  /* child:const SizedBox.shrink(), */
-                                );
-                              }
-
-                              final authorsMap = authorsSnapshot.data ?? {};
-
-                              // Filter posts with search query and privacy
-                              final filteredPosts =
-                                  posts.where((doc) {
-                                    final data =
-                                        doc.data() as Map<String, dynamic>;
-                                    final postAuthorId =
-                                        data['userId'] as String;
-                                    final authorData =
-                                        authorsMap[postAuthorId] ?? {};
-
-                                    // Check if post is from a blocked user
-                                    if (blockedUsers.contains(postAuthorId)) {
-                                      return false;
-                                    }
-
-                                    final authorBlockedUsers = List<dynamic>.from(authorData['blocked'] ?? []);
-                                    if (authorBlockedUsers.contains(currentUser.uid)) {
-                                      return false;
-                                    }
-
-                                    // FIX: Safe string comparison for search query
-                                    if (widget.searchQuery.isNotEmpty) {
-                                      final postText =
-                                          data['text']
-                                              ?.toString()
-                                              .toLowerCase() ??
-                                          '';
-                                      if (!postText.contains(
-                                        widget.searchQuery,
-                                      )) {
-                                        return false;
-                                      }
-                                    }
-
-                                    // Check if user marked post as not interested
-                                    final notInterestedBy = List<dynamic>.from(
-                                      data['notInterestedBy'] ?? [],
-                                    );
-                                    if (notInterestedBy.contains(
-                                      currentUser.uid,
-                                    )) {
-                                      return false;
-                                    }
-
-                                    // Check privacy rules
-                                    return _shouldShowPost(
-                                      postAuthorId: postAuthorId,
-                                      currentUserId: currentUser.uid,
-                                      authorData: authorData,
-                                      followingSet: followingSet,
-                                    );
-                                  }).toList();
-
-                              return ListView.builder(
-                                controller: _scrollController,
-                                itemCount: filteredPosts.length,
-                                itemBuilder: (context, index) {
-                                  final post =
-                                      filteredPosts[index].data()
-                                          as Map<String, dynamic>;
-                                  return PostItem(
-                                    postId: post['postId'],
-                                    fromComments: false,
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-  }
-}
-
-class FollowingSearchTab extends ConsumerStatefulWidget {
-  const FollowingSearchTab({super.key, this.searchQuery});
-  final String? searchQuery; // FIX: Added proper type annotation
-
-  @override
-  ConsumerState<FollowingSearchTab> createState() => _FollowingSearchTabState();
-}
-
-class _FollowingSearchTabState extends ConsumerState<FollowingSearchTab> {
-  @override
-  Widget build(BuildContext context) {
-    final authState = ref.watch(authStateProvider);
-    if (authState.isLoading) {
-      return const Center();
-    }
-    final currentUser = authState.value;
-    if (currentUser == null) {
-      return const Center(child: Text('Please sign in to continue'));
-    }
-    final searchQuery = widget.searchQuery ?? '';
-    if (searchQuery.trim().isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return StreamBuilder<DocumentSnapshot>(
-      stream: ref.read(feedControllerProvider).getUserStream(currentUser.uid),
-      builder: (context, currentUserSnapshot) {
-        if (!currentUserSnapshot.hasData) {
-          return const Center();
-        }
-        final currentUserData = currentUserSnapshot.data?.data() as Map<String, dynamic>?;
-        final myBlockedUsers = List<String>.from(currentUserData?['blocked'] ?? []);
-
-        return StreamBuilder<QuerySnapshot>(
-          stream: ref.read(feedControllerProvider).searchUsersStream(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center();
-            }
-            final docs = snapshot.data?.docs ?? [];
-
-            return ListView.builder(
-              itemCount: docs.length,
-              itemBuilder: (context, index) {
-                final doc = docs[index].data() as Map<String, dynamic>;
-                final user = MyUser.fromDocument(doc);
-
-                final currentUserId = currentUser.uid;
-                final userBlockedList = user.blocked ?? [];
-
-                // Hide if mutually blocked
-                if (myBlockedUsers.contains(user.userId) || userBlockedList.contains(currentUserId)) {
-                  return const SizedBox.shrink();
-                }
-
-                // FIX: Safe search query comparison
-                final searchQuery = widget.searchQuery ?? '';
-                if (user.userId == currentUserId ||
-                    (searchQuery.isNotEmpty &&
-                        !user.name.toLowerCase().contains(
-                          searchQuery.toLowerCase(),
-                        ))) {
-                  return const SizedBox.shrink();
-                }
-
-                return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.grey[300],
-                      radius: 25.sp,
-                      backgroundImage: NetworkImage(user.url),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user.name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                          ),
-                          if (user.bio != null && user.bio!.isNotEmpty) ...{
-                            const SizedBox(height: 2),
-                            Text(
-                              user.bio.toString(),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          },
-                        ],
-                      ),
-                    ),
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: ref.read(feedControllerProvider).getFollowingDocStream(currentUserId, user.userId),
-                      builder: (context, followingSnapshot) {
-                        final isFollowing =
-                            followingSnapshot.hasData &&
-                            followingSnapshot.data!.exists;
-
-                        // Check if user is private
-                        final isPrivate = user.isPrivate;
-
-                        if (isFollowing) {
-                          // Already following
-                          return ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[300],
-                              foregroundColor: Colors.black,
-                              minimumSize: Size(47.w, 33.h),
-                              textStyle: TextStyle(
-                                fontSize: 12.sp,
-                                fontFamily: 'NotoSans',
-                                fontWeight: FontWeight.w500,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                            onPressed: () async {
-                              FollowService().toggleFollow(user.userId);
-                            },
-                            child: Text(
-                              '구독 취소',
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                fontFamily: 'NotoSans',
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          );
-                        }
-
-                        // Not following - check if private
-                        if (isPrivate) {
-                          // Check for pending follow request
-                          return StreamBuilder<DocumentSnapshot>(
-                            stream: ref.read(feedControllerProvider).getFollowRequestDocStream(user.userId, currentUserId),
-                            builder: (context, requestSnapshot) {
-                              final hasRequest =
-                                  requestSnapshot.hasData &&
-                                  requestSnapshot.data!.exists;
-
-                              return ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      hasRequest
-                                          ? Colors.grey[300]
-                                          : ColorsManager.primary600,
-                                  foregroundColor:
-                                      hasRequest ? Colors.black : Colors.white,
-                                  minimumSize: Size(47.w, 33.h),
-                                  textStyle: TextStyle(
-                                    fontSize: 12.sp,
-                                    fontFamily: 'NotoSans',
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                ),
-                                onPressed: () async {
-                                  if (hasRequest) {
-                                    // Cancel request
-                                    await ref.read(feedControllerProvider).cancelFollowRequest(user.userId);
-                                  } else {
-                                    // Send request
-                                    await ref.read(feedControllerProvider).sendFollowRequest(user.userId);
-                                  }
-                                },
-                                child: Text(
-                                  hasRequest ? '요청 취소' : '요청',
-                                  style: TextStyle(
-                                    fontSize: 12.sp,
-                                    fontFamily: 'NotoSans',
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        }
-
-                        // Public profile - show follow button
-                        return ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ColorsManager.primary600,
-                            foregroundColor: Colors.white,
-                            minimumSize: Size(47.w, 33.h),
-                            textStyle: TextStyle(
-                              fontSize: 12.sp,
-                              fontFamily: 'NotoSans',
-                              fontWeight: FontWeight.w500,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                          onPressed: () async {
-                            FollowService().toggleFollow(user.userId);
-                          },
-                          child: Text(
-                            '구독',
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              fontFamily: 'NotoSans',
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searchState = ref.watch(searchNotifierProvider);
+    
+    return searchState.when(
+      data: (state) {
+        if (state.posts.isEmpty) return const SizedBox.shrink();
+        
+        return ListView.builder(
+          itemCount: state.posts.length,
+          itemBuilder: (context, index) {
+            final post = state.posts[index];
+            final postId = post['postId'] ?? post['id'];
+            if (postId == null) return const SizedBox.shrink();
+            
+            return useGuestPostItem 
+                ? GuestPostItem(post: post) 
+                : PostItem(postId: postId, fromComments: false);
           },
         );
       },
-    );
-      },
-    );
-  }
-}
-
-class ShopSearchScreen extends ConsumerStatefulWidget {
-  final String? searchQuery;
-  const ShopSearchScreen({super.key, this.searchQuery});
-
-  @override
-  ConsumerState<ShopSearchScreen> createState() => _ShopSearchScreenState();
-}
-
-class _ShopSearchScreenState extends ConsumerState<ShopSearchScreen> {
-  List<Product> _allProducts = [];
-  List<Product> _filteredProducts = [];
-  bool _isSub = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchProducts();
-    _checkSubscriptionStatus();
-  }
-
-  Future<void> _checkSubscriptionStatus() async {
-    bool isSub = await isUserSubscribed();
-    setState(() {
-      _isSub = isSub;
-    });
-  }
-
-  // Fetch all products from Firestore
-  void _fetchProducts() async {
-    final querySnapshot =
-        await ref.read(shopControllerProvider).getAllProducts();
-    setState(() {
-      _allProducts =
-          querySnapshot.docs.map((doc) {
-            return Product.fromMap(doc.data());
-          }).toList();
-
-      _filteredProducts =
-          _allProducts; // Initialize filtered list with all products
-    });
-  }
-
-  final formatCurrency = NumberFormat('#,###');
-
-  @override
-  Widget build(BuildContext context) {
-    final query = widget.searchQuery ?? '';
-    if (query.trim().isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return ListView.builder(
-      itemCount: _filteredProducts.length,
-      itemBuilder: (context, index) {
-        final product = _filteredProducts[index];
-        if (widget.searchQuery != null &&
-            !product.productName.toString().toLowerCase().contains(
-              widget.searchQuery!.toLowerCase(),
-            )) {
-          return const SizedBox.shrink(); // Skip non-matching products
-        }
-        return ListTile(
-          title: Text(product.productName),
-          subtitle:
-              _isSub
-                  ? Text('${formatCurrency.format(product.price)} 원')
-                  : Text('${formatCurrency.format(product.price / 0.8)} 원'),
-          leading: Image.network(
-            product.imgUrl!,
-            width: 50.w,
-            height: 50.h,
-            fit: BoxFit.cover,
-          ),
-          onTap: () async {
-            bool isSub = await isUserSubscribed();
-
-            String arrivalTime = await getArrivalDay(
-              product.meridiem,
-              product.baselineTime,
-            );
-            if (!context.mounted) return;
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => ItemDetails(
-                      product: product,
-                      arrivalDay: arrivalTime,
-                      isSub: isSub,
-                    ),
-              ),
-            );
-          },
-        );
-      },
+      loading: () => const Center(),
+      error: (e, st) => Center(child: Text('Error: $e')),
     );
   }
 }
