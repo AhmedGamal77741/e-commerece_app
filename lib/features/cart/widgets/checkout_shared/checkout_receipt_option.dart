@@ -2,28 +2,27 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class BuyNowPaymentSelector extends StatelessWidget {
-  final List<Map<String, dynamic>> bankAccounts;
-  final int selectedBankIndex;
+class CheckoutReceiptOption extends StatelessWidget {
+  final int selectedOption;
   final VoidCallback onShowBottomSheet;
 
-  const BuyNowPaymentSelector({
+  const CheckoutReceiptOption({
     super.key,
-    required this.bankAccounts,
-    required this.selectedBankIndex,
+    required this.selectedOption,
     required this.onShowBottomSheet,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '결제 계좌',
+                '현금영수증 · 세금계산서',
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 16.sp,
@@ -34,18 +33,14 @@ class BuyNowPaymentSelector extends StatelessWidget {
               ),
               verticalSpace(5),
               Text(
-                bankAccounts.isEmpty
-                    ? '등록된 계좌가 없습니다'
-                    : (selectedBankIndex >= 0 &&
-                            selectedBankIndex < bankAccounts.length)
-                        ? '${bankAccounts[selectedBankIndex]['bankName']} '
-                            '(${bankAccounts[selectedBankIndex]['bankNum']})'
-                        : '계좌를 선택해주세요',
+                selectedOption == 1
+                    ? '현금 영수증'
+                    : selectedOption == 2
+                        ? '세금 계산서'
+                        : '필요 없음',
                 style: TextStyle(
                   fontSize: 15.sp,
-                  color: bankAccounts.isEmpty
-                      ? Colors.red[300]
-                      : Colors.grey[800],
+                  color: Colors.grey[800],
                 ),
               ),
             ],

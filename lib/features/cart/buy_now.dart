@@ -19,13 +19,13 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/cart/domain/checkout_controller.dart';
 import 'package:ecommerece_app/features/cart/domain/bank_controller.dart';
-import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_section_card.dart';
-import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_item_summary.dart';
-import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_address_card.dart';
-import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_delivery_request.dart';
-import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_payment_selector.dart';
-import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_receipt_option.dart';
-import 'package:ecommerece_app/features/cart/widgets/buy_now/buy_now_bottom_bar.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_section_card.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_item_summary.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_address_card.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_delivery_request.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_payment_selector.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_receipt_option.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_bottom_bar.dart';
 
 class BuyNow extends ConsumerStatefulWidget {
   final String? paymentId;
@@ -758,8 +758,8 @@ class _BuyNowState extends ConsumerState<BuyNow> {
           child: ListView(
             children: [
               // ── Product summary ───────────────────────────────────────
-              BuyNowSectionCard(
-                child: BuyNowItemSummary(
+              CheckoutSectionCard(
+                child: CheckoutItemSummary(
                   displayImgUrl: displayImgUrl,
                   displayName: displayName,
                   pendingQuantity: pendingQuantity,
@@ -769,8 +769,8 @@ class _BuyNowState extends ConsumerState<BuyNow> {
               verticalSpace(10),
 
               // ── Address ───────────────────────────────────────────────
-              BuyNowSectionCard(
-                child: BuyNowAddressCard(
+              CheckoutSectionCard(
+                child: CheckoutAddressCard(
                   uid: uid,
                   address: address,
                   onSelectAddress: _selectAddress,
@@ -779,10 +779,10 @@ class _BuyNowState extends ConsumerState<BuyNow> {
               verticalSpace(10),
 
               // ── Delivery request ──────────────────────────────────────
-              BuyNowSectionCard(
+              CheckoutSectionCard(
                 child: StatefulBuilder(
                   builder: (context, setStateDropdown) {
-                    return BuyNowDeliveryRequest(
+                    return CheckoutDeliveryRequest(
                       selectedRequest: selectedRequest,
                       manualRequest: manualRequest,
                       onManualRequestChanged: (text) {
@@ -796,8 +796,8 @@ class _BuyNowState extends ConsumerState<BuyNow> {
               verticalSpace(10),
 
               // ── Bank account ──────────────────────────────────────────
-              BuyNowSectionCard(
-                child: BuyNowPaymentSelector(
+              CheckoutSectionCard(
+                child: CheckoutPaymentSelector(
                   bankAccounts: bankAccounts,
                   selectedBankIndex: selectedBankIndex,
                   onShowBottomSheet: () => _showBankAccountBottomSheet(uid),
@@ -806,8 +806,8 @@ class _BuyNowState extends ConsumerState<BuyNow> {
               verticalSpace(10),
 
               // ── Receipt / invoice ─────────────────────────────────────
-              BuyNowSectionCard(
-                child: BuyNowReceiptOption(
+              CheckoutSectionCard(
+                child: CheckoutReceiptOption(
                   selectedOption: selectedOption,
                   onShowBottomSheet: _showReceiptBottomSheet,
                 ),
@@ -818,7 +818,7 @@ class _BuyNowState extends ConsumerState<BuyNow> {
         ),
 
         // ── Bottom bar ────────────────────────────────────────────────────
-        bottomNavigationBar: BuyNowBottomBar(
+        bottomNavigationBar: CheckoutBottomBar(
           pendingPrice: pendingPrice,
           isProcessing: isProcessing,
           onValidate: () async {

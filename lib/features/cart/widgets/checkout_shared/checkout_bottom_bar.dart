@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
-class BuyNowBottomBar extends StatelessWidget {
+class CheckoutBottomBar extends StatelessWidget {
   final int pendingPrice;
   final bool isProcessing;
   final Future<bool> Function() onValidate;
   final VoidCallback onSlideComplete;
 
-  const BuyNowBottomBar({
+  const CheckoutBottomBar({
     super.key,
     required this.pendingPrice,
     required this.isProcessing,

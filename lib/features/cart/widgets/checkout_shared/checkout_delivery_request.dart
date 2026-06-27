@@ -3,13 +3,13 @@ import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class BuyNowDeliveryRequest extends StatelessWidget {
+class CheckoutDeliveryRequest extends StatelessWidget {
   final String selectedRequest;
   final String? manualRequest;
   final ValueChanged<String> onManualRequestChanged;
   final VoidCallback onShowSheet;
 
-  const BuyNowDeliveryRequest({
+  const CheckoutDeliveryRequest({
     super.key,
     required this.selectedRequest,
     this.manualRequest,

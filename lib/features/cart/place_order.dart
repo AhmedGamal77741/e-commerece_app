@@ -4,15 +4,12 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
 import 'package:ecommerece_app/features/address/domain/models/address.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/cart/data/cart_repository.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
-import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
-import 'package:ecommerece_app/features/cart/slide_button.dart';
 import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
 import 'package:ecommerece_app/features/address/ui/address_list_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -23,7 +20,13 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:ecommerece_app/features/cart/domain/checkout_controller.dart';
 import 'package:ecommerece_app/features/cart/domain/bank_controller.dart';
-
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_section_card.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_multi_item_summary.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_address_card.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_delivery_request.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_payment_selector.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_receipt_option.dart';
+import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_bottom_bar.dart';
 class PlaceOrder extends ConsumerStatefulWidget {
   const PlaceOrder({super.key});
 
@@ -679,359 +682,53 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
               child: ListView(
                 children: [
                   // ── Cart items ──────────────────────────────────────────
-                  _buildSectionCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '구매목록',
-                          style: TextStyles.abeezee16px400wPblack.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        verticalSpace(10.h),
-                        StreamBuilder(
-                          stream:
-                              ref.read(checkoutControllerProvider.notifier).getUserCartStream(uid),
-                          builder: (context, cartSnapshot) {
-                            if (cartSnapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const SizedBox.shrink();
-                            }
-                            final cartDocs = cartSnapshot.data!.docs;
-                            return ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              separatorBuilder:
-                                  (_, index) =>
-                                      index == cartDocs.length - 1
-                                          ? const SizedBox.shrink()
-                                          : verticalSpace(10),
-                              itemCount: cartDocs.length,
-                              itemBuilder: (ctx, index) {
-                                final cartData = cartDocs[index].data();
-                                final productId = cartData['product_id'];
-                                return FutureBuilder<DocumentSnapshot>(
-                                  future:
-                                      ref.read(checkoutControllerProvider.notifier)
-                                          .getProductFuture(productId as String),
-                                  builder: (context, productSnapshot) {
-                                    if (!productSnapshot.hasData) {
-                                      return const ListTile(
-                                        title: Text('로딩 중...'),
-                                      );
-                                    }
-                                    final productData =
-                                        productSnapshot.data!.data()
-                                            as Map<String, dynamic>;
-                                    return Row(
-                                      children: [
-                                        Image.network(
-                                          productData['imgUrl'] ?? '',
-                                          width: 80.w,
-                                          height: 80.h,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (_, __, ___) => SizedBox(
-                                                width: 80.w,
-                                                height: 80.h,
-                                                child: const Icon(
-                                                  Icons.image_not_supported,
-                                                ),
-                                              ),
-                                        ),
-                                        horizontalSpace(10),
-                                        Flexible(
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                '${productData['productName']}',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontSize: 16.sp,
-                                                  fontFamily: 'NotoSans',
-                                                  fontWeight: FontWeight.w400,
-                                                  height: 1.40.h,
-                                                ),
-                                              ),
-                                              verticalSpace(8),
-                                              Consumer(
-                                                builder: (context, ref, child) {
-                                                  final productAsync = ref.watch(productStreamProvider(cartData['product_id']));
-                                                  final quantity = productAsync.value?.pricePoints[cartData['pricePointIndex']].quantity ?? 0;
-                                                  return Text(
-                                                    '$quantity 개',
-                                                    style: TextStyle(
-                                                      color: Colors.black,
-                                                      fontSize: 16.sp,
-                                                      fontFamily: 'NotoSans',
-                                                      fontWeight:
-                                                          FontWeight.w400,
-                                                      height: 1.40.h,
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                              SizedBox(height: 8.h),
-                                              Consumer(
-                                                builder: (context, ref, child) {
-                                                  final productAsync = ref.watch(productStreamProvider(cartData['product_id']));
-                                                  final isUserSub = ref.watch(isSubscribedProvider).value ?? false;
-                                                  double price = productAsync.value?.pricePoints[cartData['pricePointIndex']].price.toDouble() ?? 0.0;
-                                                  if (!isUserSub) {
-                                                    price = price / 0.8;
-                                                  }
-                                                  return Text(
-                                                    '${formatCurrency.format(price)} 원',
-                                                    style: TextStyle(
-                                                      color: Colors.black,
-                                                      fontSize: 16.sp,
-                                                      fontFamily: 'NotoSans',
-                                                      fontWeight:
-                                                          FontWeight.w400,
-                                                      height: 1.40.h,
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                  CheckoutSectionCard(
+                    child: CheckoutMultiItemSummary(uid: uid),
                   ),
                   verticalSpace(10),
 
                   // ── Address ─────────────────────────────────────────────
-                  _buildSectionCard(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child:
-                              address.name.isEmpty
-                                  ? FutureBuilder<Map<String, dynamic>?>(
-                                    future:
-                                        ref.read(checkoutControllerProvider.notifier)
-                                            .getUserDefaultAddress(uid),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      if (!snapshot.hasData || snapshot.data == null) {
-                                        return _buildNoAddress();
-                                      }
-                                      final d = snapshot.data!;
-                                      final basic = (d['address'] ?? '') as String;
-                                      final detail = (d['detailAddress'] ?? '') as String;
-                                      final full = detail.isEmpty ? basic : '$basic $detail';
-                                      return _buildAddressText(
-                                        label: '배송지 정보 (기본 배송지)',
-                                        name: d['name'] ?? '',
-                                        phone: d['phone'] ?? '',
-                                        address: full,
-                                      );
-                                    },
-                                  )
-                                  : _buildAddressText(
-                                    label: '배송지 정보 (기본 배송지)',
-                                    name: address.name,
-                                    phone: address.phone,
-                                    address: address.detailAddress.isEmpty
-                                        ? address.address
-                                        : '${address.address} ${address.detailAddress}',
-                                  ),
-                        ),
-                        IconButton(
-                          onPressed: _selectAddress,
-                          icon: Icon(
-                            Icons.arrow_forward_ios_sharp,
-                            size: 30.r,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
+                  CheckoutSectionCard(
+                    child: CheckoutAddressCard(
+                      uid: uid,
+                      address: address,
+                      onSelectAddress: _selectAddress,
                     ),
                   ),
                   verticalSpace(10),
 
-                  // ── Delivery request ─────────────────────────────────────
-                  _buildSectionCard(
+                  // ── Delivery request ──────────────────────────────────────
+                  CheckoutSectionCard(
                     child: StatefulBuilder(
                       builder: (context, setStateLocal) {
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '배송 요청사항',
-                                    style: TextStyles.abeezee16px400wPblack
-                                        .copyWith(fontWeight: FontWeight.w800),
-                                  ),
-                                  verticalSpace(5),
-                                  Text(
-                                    selectedRequest == '직접입력' &&
-                                            manualRequest != null &&
-                                            manualRequest!.isNotEmpty
-                                        ? manualRequest!
-                                        : selectedRequest,
-                                    style: TextStyle(
-                                      color: Colors.grey[800],
-                                      fontSize: 16.sp,
-                                      fontFamily: 'NotoSans',
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                  if (selectedRequest == '직접입력') ...[
-                                    SizedBox(height: 12.h),
-                                    TextFormField(
-                                      initialValue: manualRequest,
-                                      onChanged: (text) {
-                                        setState(() => manualRequest = text);
-                                      },
-                                      decoration: InputDecoration(
-                                        labelText: '직접 입력',
-                                        hintText: '배송 요청을 입력하세요',
-                                        border: const OutlineInputBorder(),
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 12.w,
-                                          vertical: 14.h,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.arrow_forward_ios,
-                                size: 30.r,
-                                color: Colors.black,
-                              ),
-                              onPressed:
-                                  () =>
-                                      _showDeliveryRequestSheet(setStateLocal),
-                            ),
-                          ],
+                        return CheckoutDeliveryRequest(
+                          selectedRequest: selectedRequest,
+                          manualRequest: manualRequest,
+                          onManualRequestChanged: (text) {
+                            setState(() => manualRequest = text);
+                          },
+                          onShowSheet: () => _showDeliveryRequestSheet(setStateLocal),
                         );
                       },
                     ),
                   ),
                   verticalSpace(10),
 
-                  // ── Bank account ─────────────────────────────────────────
-                  _buildSectionCard(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '결제 계좌',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 16.sp,
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.40.h,
-                                ),
-                              ),
-                              verticalSpace(5),
-                              Text(
-                                bankAccounts.isEmpty
-                                    ? '등록된 계좌가 없습니다'
-                                    : (selectedBankIndex >= 0 &&
-                                        selectedBankIndex < bankAccounts.length)
-                                    ? '${bankAccounts[selectedBankIndex]['bankName']} '
-                                        '(${bankAccounts[selectedBankIndex]['bankNum']})'
-                                    : '계좌를 선택해주세요',
-                                style: TextStyle(
-                                  fontSize: 15.sp,
-                                  color:
-                                      bankAccounts.isEmpty
-                                          ? Colors.red[300]
-                                          : Colors.grey[800],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => _showBankAccountBottomSheet(uid),
-                          icon: Icon(
-                            Icons.arrow_forward_ios,
-                            size: 30.r,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
+                  // ── Bank account ──────────────────────────────────────────
+                  CheckoutSectionCard(
+                    child: CheckoutPaymentSelector(
+                      bankAccounts: bankAccounts,
+                      selectedBankIndex: selectedBankIndex,
+                      onShowBottomSheet: () => _showBankAccountBottomSheet(uid),
                     ),
                   ),
                   verticalSpace(10),
 
-                  // ── Receipt / invoice ────────────────────────────────────
-                  _buildSectionCard(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '현금영수증 · 세금계산서',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 16.sp,
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.40.h,
-                                ),
-                              ),
-                              verticalSpace(5),
-                              Text(
-                                selectedOption == 1
-                                    ? '현금 영수증'
-                                    : selectedOption == 2
-                                    ? '세금 계산서'
-                                    : '필요 없음',
-                                style: TextStyle(
-                                  fontSize: 15.sp,
-                                  color: Colors.grey[800],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: _showReceiptBottomSheet,
-                          icon: Icon(
-                            Icons.arrow_forward_ios,
-                            size: 30.r,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
+                  // ── Receipt / invoice ─────────────────────────────────────
+                  CheckoutSectionCard(
+                    child: CheckoutReceiptOption(
+                      selectedOption: selectedOption,
+                      onShowBottomSheet: _showReceiptBottomSheet,
                     ),
                   ),
                   verticalSpace(15.h),
@@ -1051,95 +748,59 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
                 return Consumer(
                   builder: (context, ref, child) {
                     final totalPrice = ref.watch(cartTotalProvider);
-                    return Container(
-                      padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 28.h),
-                      decoration: const BoxDecoration(color: Colors.white),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '총 결제 금액 ',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 18.sp,
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.40.h,
-                                ),
+                    return CheckoutBottomBar(
+                      pendingPrice: totalPrice,
+                      isProcessing: isProcessing,
+                      onValidate: () async {
+                        // Check receipt option
+                        if (selectedOption != 1 && selectedOption != 2) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('현금 영수증 또는 세금 계산서를 선택해주세요'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return false;
+                        }
+                        if (!_validateReceiptTypeFields()) return false;
+                        // ── Gate: address required before payment ────────────────────────
+                        if (address.id.isEmpty) {
+                          final result = await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => AddAddressScreen(),
+                            ),
+                          );
+                          if (result != true) {
+                            return false; // user didn't add one, block payment
+                          }
+                          // Address was added — re-fetch it into state so the UI reflects it
+                          await _ensureCachedAddressAndInstructions(uid);
+                          return false; // return false here so the slider resets; user slides again
+                        }
+                        // No bank account — open sheet and snap back
+                        if (bankAccounts.isEmpty ||
+                            selectedBankIndex < 0) {
+                          _showBankAccountBottomSheet(uid);
+                          return false;
+                        }
+                        final payerId =
+                            bankAccounts[selectedBankIndex]['payerId']
+                                as String? ??
+                            '';
+                        if (payerId.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                '계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.',
                               ),
-                              Text(
-                                '${formatCurrency.format(totalPrice)} 원',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 18.sp,
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.40.h,
-                                ),
-                              ),
-                            ],
-                          ),
-                          verticalSpace(8),
-                          SlideToPayButton(
-                            isProcessing: isProcessing,
-                            onValidate: () async {
-                              // Check receipt option
-                              if (selectedOption != 1 && selectedOption != 2) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('현금 영수증 또는 세금 계산서를 선택해주세요'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return false;
-                              }
-                              if (!_validateReceiptTypeFields()) return false;
-                              // ── Gate: address required before payment ────────────────────────
-                              if (address.id.isEmpty) {
-                                final result = await Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => AddAddressScreen(),
-                                  ),
-                                );
-                                if (result != true) {
-                                  return false; // user didn't add one, block payment
-                                }
-                                // Address was added — re-fetch it into state so the UI reflects it
-                                await _ensureCachedAddressAndInstructions(uid);
-                                return false; // return false here so the slider resets; user slides again
-                              }
-                              // No bank account — open sheet and snap back
-                              if (bankAccounts.isEmpty ||
-                                  selectedBankIndex < 0) {
-                                _showBankAccountBottomSheet(uid);
-                                return false;
-                              }
-                              final payerId =
-                                  bankAccounts[selectedBankIndex]['payerId']
-                                      as String? ??
-                                  '';
-                              if (payerId.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      '계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.',
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return false;
-                              }
-                              return true;
-                            },
-                            onSlideComplete:
-                                () => _handlePlaceOrder(totalPrice, uid),
-                          ),
-                        ],
-                      ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return false;
+                        }
+                        return true;
+                      },
+                      onSlideComplete: () => _handlePlaceOrder(totalPrice, uid),
                     );
                   },
                 );
@@ -1155,77 +816,7 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
   // UI HELPERS
   // ───────────────────────────────────────────────────────────────────────────
 
-  Widget _buildSectionCard({required Widget child}) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(15.w, 15.h, 0, 15.h),
-      decoration: ShapeDecoration(
-        color: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(width: 1.5, color: Colors.black),
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: child,
-    );
-  }
 
-  Widget _buildNoAddress() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '배송지 미설정',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 15.sp,
-            fontFamily: 'NotoSans',
-            fontWeight: FontWeight.w400,
-            height: 1.40.h,
-          ),
-        ),
-        SizedBox(height: 8.h),
-        Text(
-          '배송지를 설정해주세요',
-          style: TextStyle(
-            fontSize: 15.sp,
-            color: const Color(0xFF9E9E9E),
-            fontFamily: 'NotoSans',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAddressText({
-    required String label,
-    required String name,
-    required String phone,
-    required String address,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyles.abeezee16px400wPblack.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        verticalSpace(5),
-        Text(name, style: _greyStyle()),
-        Text(phone, style: _greyStyle()),
-        Text(address, style: _greyStyle()),
-      ],
-    );
-  }
-
-  TextStyle _greyStyle() => TextStyle(
-    fontSize: 15.sp,
-    color: Colors.grey[800],
-    fontFamily: 'NotoSans',
-    fontWeight: FontWeight.w400,
-    height: 1.40.h,
-  );
 
   void _showDeliveryRequestSheet(StateSetter setStateLocal) {
     showModalBottomSheet(

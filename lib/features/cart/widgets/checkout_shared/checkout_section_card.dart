@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class BuyNowSectionCard extends StatelessWidget {
+class CheckoutSectionCard extends StatelessWidget {
   final Widget child;
 
-  const BuyNowSectionCard({super.key, required this.child});
+  const CheckoutSectionCard({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {

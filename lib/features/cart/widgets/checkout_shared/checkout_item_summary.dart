@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
-class BuyNowItemSummary extends StatelessWidget {
+class CheckoutItemSummary extends StatelessWidget {
   final String displayImgUrl;
   final String displayName;
   final int pendingQuantity;
   final int pendingPrice;
 
-  const BuyNowItemSummary({
+  const CheckoutItemSummary({
     super.key,
     required this.displayImgUrl,
     required this.displayName,

@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class BuyNowAddressCard extends ConsumerWidget {
+class CheckoutAddressCard extends ConsumerWidget {
   final String uid;
   final Address address;
   final VoidCallback onSelectAddress;
 
-  const BuyNowAddressCard({
+  const CheckoutAddressCard({
     super.key,
     required this.uid,
     required this.address,
