@@ -5,7 +5,6 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/chat/services/chat_service.dart';
 import 'package:ecommerece_app/features/chat/services/friends_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -151,8 +150,9 @@ void showShareDialog(
   String id,
   String name,
   String imgUrl,
-  Map<String, dynamic> mapData,
-) {
+  Map<String, dynamic> mapData, {
+  bool isLoggedIn = false,
+}) {
   showDialog(
     context: context,
     builder: (context) {
@@ -161,7 +161,6 @@ void showShareDialog(
       }
       String searchQuery = '';
       final TextEditingController searchController = TextEditingController();
-      final isLoggedIn = FirebaseAuth.instance.currentUser != null;
       return StatefulBuilder(
         builder: (context, setState) {
           return Dialog(

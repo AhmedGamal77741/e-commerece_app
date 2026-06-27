@@ -1,5 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -11,56 +10,15 @@ import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 
 // ─── Multi-field user search ──────────────────────────────────────────────
 
-Future<List<MyUser>> searchUsersByAny(String query) async {
-  if (query.trim().isEmpty) return [];
-  final q = query.trim();
-  final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
-  final fs = FirebaseFirestore.instance;
-  final currentDoc = await fs.collection('users').doc(currentUid).get();
-  final currentUser = MyUser.fromDocument(currentDoc.data()!);
-  final friendIds = currentUser.friends;
-
-  Future<List<MyUser>> runQuery(String field, String value) async {
-    final snap = await fs
-        .collection('users')
-        .where(field, isGreaterThanOrEqualTo: value)
-        .where(field, isLessThan: '${value}z')
-        .limit(20)
-        .get();
-    return snap.docs
-        .map((d) => MyUser.fromDocument(d.data()))
-        .where((u) => u.userId != currentUid && !friendIds.contains(u.userId))
-        .toList();
-  }
-
-  final results = await Future.wait([
-    runQuery('name', q),
-    runQuery('email', q.toLowerCase()),
-    runQuery('phoneNumber', q),
-  ]);
-
-  final seen = <String>{};
-  final merged = <MyUser>[];
-  for (final list in results) {
-    for (final user in list) {
-      if (seen.add(user.userId)) merged.add(user);
-    }
-  }
-  return merged;
+Future<List<MyUser>> searchUsersByAny(String query, WidgetRef ref) async {
+  return ref.read(friendsControllerProvider.notifier).searchUsersByAny(query);
 }
 
 // ─── Hide friend ──────────────────────────────────────────────────────────
 
-Future<void> hideFriend(BuildContext context, MyUser friend) async {
-  final uid = FirebaseAuth.instance.currentUser?.uid;
-  if (uid == null) return;
+Future<void> hideFriend(BuildContext context, WidgetRef ref, MyUser friend) async {
   try {
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('hiddenFriends')
-        .doc(friend.userId)
-        .set({'hiddenAt': FieldValue.serverTimestamp()});
+    await ref.read(friendsControllerProvider.notifier).hideFriendById(friend.userId);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -79,14 +37,7 @@ Future<void> hideFriend(BuildContext context, MyUser friend) async {
 // ─── Delete friend ────────────────────────────────────────────────────────
 
 Future<void> deleteFriend(BuildContext context, WidgetRef ref, MyUser friend) async {
-  final displayName = (await FirebaseFirestore.instance
-              .collection('users')
-              .doc(FirebaseAuth.instance.currentUser?.uid)
-              .collection('aliases')
-              .doc(friend.userId)
-              .get())
-          .data()?['alias'] as String? ??
-      friend.name;
+  final displayName = await ref.read(friendsControllerProvider.notifier).getDisplayName(friend.userId, friend.name);
 
   if (!context.mounted) return;
   final confirm = await showDialog<bool>(
@@ -169,7 +120,7 @@ Future<void> deleteFriend(BuildContext context, WidgetRef ref, MyUser friend) as
 
   if (confirm != true) return;
   try {
-    final currentUid = FirebaseAuth.instance.currentUser!.uid;
+    final currentUid = ref.read(currentUserIdProvider);
     await ref.read(friendsControllerProvider.notifier).removeFriend(friend.userId);
     final chatRoomId = ([currentUid, friend.userId]..sort()).join('_');
     await ref.read(chatControllerProvider.notifier).softDeleteChatForCurrentUser(chatRoomId);
@@ -418,9 +369,9 @@ void showBioEditDialog(BuildContext context, WidgetRef ref, MyUser? currentUser,
 
 // ─── Change Name / Alias dialog ───────────────────────────────────────────
 
-void showChangeNameDialog(BuildContext context, MyUser friend, String? currentAlias) {
+void showChangeNameDialog(BuildContext context, WidgetRef ref, MyUser friend, String? currentAlias) {
   final aliasController = TextEditingController(text: currentAlias ?? '');
-  final uid = FirebaseAuth.instance.currentUser?.uid;
+  final uid = ref.read(currentUserIdProvider);
 
   showDialog(
     context: context,
@@ -500,14 +451,8 @@ void showChangeNameDialog(BuildContext context, MyUser friend, String? currentAl
               GestureDetector(
                 onTap: () async {
                   Navigator.pop(dialogContext);
-                  if (uid == null) return;
                   try {
-                    await FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(uid)
-                        .collection('aliases')
-                        .doc(friend.userId)
-                        .delete();
+                    await ref.read(friendsControllerProvider.notifier).deleteAlias(friend.userId);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -581,15 +526,9 @@ void showChangeNameDialog(BuildContext context, MyUser friend, String? currentAl
                     onPressed: () async {
                       final newAlias = aliasController.text.trim();
                       Navigator.pop(dialogContext);
-                      if (uid == null) return;
                       try {
                         if (newAlias.isEmpty) {
-                          await FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(uid)
-                              .collection('aliases')
-                              .doc(friend.userId)
-                              .delete();
+                          await ref.read(friendsControllerProvider.notifier).deleteAlias(friend.userId);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -599,12 +538,7 @@ void showChangeNameDialog(BuildContext context, MyUser friend, String? currentAl
                             );
                           }
                         } else {
-                          await FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(uid)
-                              .collection('aliases')
-                              .doc(friend.userId)
-                              .set({'alias': newAlias});
+                          await ref.read(friendsControllerProvider.notifier).setAlias(friend.userId, newAlias);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -662,7 +596,7 @@ void showAddFriendDialog(BuildContext context, WidgetRef ref) {
             return;
           }
           setDialogState(() => isSearching = true);
-          final found = await searchUsersByAny(query.trim());
+          final found = await searchUsersByAny(query.trim(), ref);
           setDialogState(() {
             results = found;
             isSearching = false;

@@ -2,27 +2,29 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/cart/slide_button.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/features/cart/domain/bank_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-class SubscriptionScreen extends StatefulWidget {
+class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
 
   @override
-  State<SubscriptionScreen> createState() => _SubscriptionScreenState();
+  ConsumerState<SubscriptionScreen> createState() => _SubscriptionScreenState();
 }
 
-class _SubscriptionScreenState extends State<SubscriptionScreen> {
+class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   final formatCurrency = NumberFormat('#,###');
 
   List<Map<String, dynamic>> bankAccounts = [];
   int selectedBankIndex = 0;
   bool _isLoading = true;
-  bool _isProcessing = false;
+  final bool _isProcessing = false;
 
   @override
   void initState() {
@@ -32,45 +34,29 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   // ── Load bank accounts from Firestore ─────────────────────────────────────
   Future<void> _loadBankAccounts() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    final uid = ref.read(currentUserIdProvider);
+    if (uid.isEmpty) return;
 
-    final snap =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    final data = snap.data();
-
-    if (mounted) {
-      setState(() {
-        bankAccounts =
-            data?['bankAccounts'] != null
-                ? List<Map<String, dynamic>>.from(data!['bankAccounts'])
-                : [];
-        selectedBankIndex = bankAccounts.isNotEmpty ? 0 : -1;
-        _isLoading = false;
-      });
+    try {
+      final accounts = await ref.read(bankAccountsStreamProvider.future);
+      if (mounted) {
+        setState(() {
+          bankAccounts = List<Map<String, dynamic>>.from(accounts);
+          selectedBankIndex = bankAccounts.isNotEmpty ? 0 : -1;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   // ── Delete a bank account ─────────────────────────────────────────────────
   Future<void> _deleteBankAccount(String payerId) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-    final snap = await userRef.get();
-    final data = snap.data();
-    if (data == null) return;
-
-    final accounts = List<Map<String, dynamic>>.from(
-      data['bankAccounts'] ?? [],
-    );
-    accounts.removeWhere((b) => b['payerId'] == payerId);
-    await userRef.update({'bankAccounts': accounts});
-
-    if (mounted) {
-      setState(() {
-        bankAccounts = accounts;
-        selectedBankIndex = accounts.isNotEmpty ? 0 : -1;
       });
     }
   }
@@ -218,8 +204,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       return;
     }
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    final uid = ref.read(currentUserIdProvider);
+    if (uid.isEmpty) return;
 
     setState(() => _isProcessing = true);
     _showLoadingModal();

@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
+import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
 import 'package:ecommerece_app/features/chat/domain/edit_screen_controller.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/widgets/edit/edit_bottom_bar.dart';
@@ -18,17 +18,7 @@ class EditGroupChatsTab extends ConsumerStatefulWidget {
 
 class _EditGroupChatsTabState extends ConsumerState<EditGroupChatsTab> {
   Stream<Map<String, int>> _groupOrderStream(String uid) {
-    if (uid.isEmpty) return Stream.value({});
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .map((snap) {
-          if (!snap.exists) return <String, int>{};
-          final raw = snap.data()?['groupChatsOrder'];
-          if (raw == null) return <String, int>{};
-          return Map<String, int>.from(raw as Map);
-        });
+    return ref.read(friendsControllerProvider.notifier).getGroupChatsOrderStream(uid);
   }
 
   Future<void> _reorderGroups(String uid, List<ChatRoomModel> newOrder) async {
@@ -36,9 +26,7 @@ class _EditGroupChatsTabState extends ConsumerState<EditGroupChatsTab> {
     for (int i = 0; i < newOrder.length; i++) {
       orderMap[newOrder[i].id] = i;
     }
-    await FirebaseFirestore.instance.collection('users').doc(uid).update({
-      'groupChatsOrder': orderMap,
-    });
+    await ref.read(friendsControllerProvider.notifier).reorderGroupChats(uid, orderMap);
   }
 
   Future<void> _leaveSelected(EditScreenController controller) async {

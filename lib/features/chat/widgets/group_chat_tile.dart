@@ -4,7 +4,7 @@ import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -14,12 +14,11 @@ class GroupChatTile extends ConsumerWidget {
 
   const GroupChatTile({super.key, required this.chat});
 
-  String get currentUserId => FirebaseAuth.instance.currentUser?.uid ?? '';
-
   void _showGroupMenu({
     required BuildContext tileContext,
     required WidgetRef ref,
   }) {
+    final currentUserId = ref.read(currentUserIdProvider);
     final RenderBox box = tileContext.findRenderObject() as RenderBox;
     final Offset offset = box.localToGlobal(Offset.zero);
     final Size tileSize = box.size;
@@ -171,6 +170,7 @@ class GroupChatTile extends ConsumerWidget {
   }
 
   Future<void> _confirmLeaveGroup(BuildContext context, WidgetRef ref) async {
+    final currentUserId = ref.read(currentUserIdProvider);
     final confirm = await showDialog<bool>(
       context: context,
       builder:
@@ -427,6 +427,7 @@ class GroupChatTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tileKey = GlobalKey();
+    final currentUserId = ref.watch(currentUserIdProvider);
     final int unread = chat.unreadCount[currentUserId] ?? 0;
 
     return Container(

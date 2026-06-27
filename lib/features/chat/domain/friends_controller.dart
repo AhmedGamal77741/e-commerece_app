@@ -107,4 +107,72 @@ class FriendsController extends AsyncNotifier<void> {
   Stream<List<MyUser>> getFriendsStream() {
     return _friendsRepository.getFriendsStream();
   }
+
+  // ─── Methods migrated from UI layer ──────────────────────────────────────
+
+  /// Stream the current user's following IDs.
+  Stream<Set<String>> getFollowingIdsStream() =>
+      _friendsRepository.getFollowingIdsStream();
+
+  /// Hide a friend.
+  Future<void> hideFriendById(String friendId) =>
+      _friendsRepository.hideFriendById(friendId);
+
+  /// Unhide a friend.
+  Future<void> unhideFriendById(String friendId) =>
+      _friendsRepository.unhideFriendById(friendId);
+
+  /// Get display name (alias or actual name).
+  Future<String> getDisplayName(String friendId, String fallbackName) async {
+    final alias = await _friendsRepository.getAlias(friendId);
+    return (alias != null && alias.isNotEmpty) ? alias : fallbackName;
+  }
+
+  /// Get alias for a friend.
+  Future<String?> getAlias(String friendId) =>
+      _friendsRepository.getAlias(friendId);
+
+  /// Set an alias for a friend.
+  Future<void> setAlias(String friendId, String alias) =>
+      _friendsRepository.setAlias(friendId, alias);
+
+  /// Delete an alias for a friend.
+  Future<void> deleteAlias(String friendId) =>
+      _friendsRepository.deleteAlias(friendId);
+
+  /// Multi-field user search.
+  Future<List<MyUser>> searchUsersByAny(String query) =>
+      _friendsRepository.searchUsersByAny(query);
+
+  // ─── Edit screen proxy methods ───────────────────────────────────────────
+
+  Stream<Set<String>> getHiddenIdsStreamForUser(String uid) =>
+      _friendsRepository.getHiddenIdsStream(uid);
+
+  Stream<List<String>> getBlockedIdsStream(String uid) =>
+      _friendsRepository.getBlockedIdsStream(uid);
+
+  Stream<Map<String, int>> getFavoriteOrderStream(String uid) =>
+      _friendsRepository.getFavoriteOrderStream(uid);
+
+  Stream<Map<String, int>> getGroupChatsOrderStream(String uid) =>
+      _friendsRepository.getGroupChatsOrderStream(uid);
+
+  Future<void> removeFavoriteAndOrder(String uid, String userId) =>
+      _friendsRepository.removeFavoriteAndOrder(uid, userId);
+
+  Future<void> reorderFavorites(String uid, Map<String, int> orderMap) =>
+      _friendsRepository.reorderFavorites(uid, orderMap);
+
+  Future<void> reorderGroupChats(String uid, Map<String, int> orderMap) =>
+      _friendsRepository.reorderGroupChats(uid, orderMap);
+
+  Future<List<MyUser>> fetchBlockedUsers(List<String> ids) =>
+      _friendsRepository.fetchBlockedUsers(ids);
+
+  Future<void> hideUserFriend(String uid, String friendId) =>
+      _friendsRepository.hideFriendById(friendId);
+
+  Future<void> unhideUserFriend(String uid, String friendId) =>
+      _friendsRepository.unhideFriendById(friendId);
 }

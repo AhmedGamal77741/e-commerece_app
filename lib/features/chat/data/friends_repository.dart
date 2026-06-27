@@ -375,4 +375,207 @@ class FriendsRepository {
     }
     return results;
   }
+
+  // ─── Methods migrated from UI layer ──────────────────────────────────────
+
+  /// Stream the current user's following IDs.
+  Stream<Set<String>> getFollowingIdsStream() {
+    final uid = currentUserId;
+    if (uid.isEmpty) return Stream.value({});
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('following')
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.id).toSet());
+  }
+
+  /// Hide a friend by adding to hiddenFriends subcollection.
+  Future<void> hideFriendById(String friendId) async {
+    final uid = currentUserId;
+    if (uid.isEmpty) return;
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('hiddenFriends')
+        .doc(friendId)
+        .set({'hiddenAt': FieldValue.serverTimestamp()});
+  }
+
+  /// Unhide a friend.
+  Future<void> unhideFriendById(String friendId) async {
+    final uid = currentUserId;
+    if (uid.isEmpty) return;
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('hiddenFriends')
+        .doc(friendId)
+        .delete();
+  }
+
+  /// Get the alias for a friend, or null if none exists.
+  Future<String?> getAlias(String friendId) async {
+    final uid = currentUserId;
+    if (uid.isEmpty) return null;
+    final doc = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('aliases')
+        .doc(friendId)
+        .get();
+    return doc.data()?['alias'] as String?;
+  }
+
+  /// Set an alias for a friend.
+  Future<void> setAlias(String friendId, String alias) async {
+    final uid = currentUserId;
+    if (uid.isEmpty) return;
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('aliases')
+        .doc(friendId)
+        .set({'alias': alias});
+  }
+
+  /// Delete an alias for a friend.
+  Future<void> deleteAlias(String friendId) async {
+    final uid = currentUserId;
+    if (uid.isEmpty) return;
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('aliases')
+        .doc(friendId)
+        .delete();
+  }
+
+  /// Multi-field user search (name, email, phoneNumber).
+  Future<List<MyUser>> searchUsersByAny(String query) async {
+    if (query.trim().isEmpty) return [];
+    final q = query.trim();
+    final uid = currentUserId;
+    if (uid.isEmpty) return [];
+    final currentDoc = await _firestore.collection('users').doc(uid).get();
+    final currentUser = MyUser.fromDocument(currentDoc.data()!);
+    final friendIds = currentUser.friends;
+
+    Future<List<MyUser>> runQuery(String field, String value) async {
+      final snap = await _firestore
+          .collection('users')
+          .where(field, isGreaterThanOrEqualTo: value)
+          .where(field, isLessThan: '${value}z')
+          .limit(20)
+          .get();
+      return snap.docs
+          .map((d) => MyUser.fromDocument(d.data()))
+          .where((u) => u.userId != uid && !friendIds.contains(u.userId))
+          .toList();
+    }
+
+    final results = await Future.wait([
+      runQuery('name', q),
+      runQuery('email', q.toLowerCase()),
+      runQuery('phoneNumber', q),
+    ]);
+
+    final seen = <String>{};
+    final merged = <MyUser>[];
+    for (final list in results) {
+      for (final user in list) {
+        if (seen.add(user.userId)) merged.add(user);
+      }
+    }
+    return merged;
+  }
+
+  // ─── Edit screen helper methods ──────────────────────────────────────────
+
+  /// Stream hidden friend IDs.
+  Stream<Set<String>> getHiddenIdsStream(String uid) {
+    if (uid.isEmpty) return Stream.value({});
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('hiddenFriends')
+        .snapshots()
+        .map((s) => s.docs.map((d) => d.id).toSet());
+  }
+
+  /// Stream blocked user IDs.
+  Stream<List<String>> getBlockedIdsStream(String uid) {
+    if (uid.isEmpty) return Stream.value([]);
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .map((d) => List<String>.from(d.data()?['blocked'] ?? []));
+  }
+
+  /// Stream favorite order map.
+  Stream<Map<String, int>> getFavoriteOrderStream(String uid) {
+    if (uid.isEmpty) return Stream.value({});
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .map((snap) {
+          if (!snap.exists) return <String, int>{};
+          final raw = snap.data()?['favoritesOrder'];
+          if (raw == null) return <String, int>{};
+          return Map<String, int>.from(raw as Map);
+        });
+  }
+
+  /// Stream group chats order map.
+  Stream<Map<String, int>> getGroupChatsOrderStream(String uid) {
+    if (uid.isEmpty) return Stream.value({});
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .map((snap) {
+          if (!snap.exists) return <String, int>{};
+          final raw = snap.data()?['groupChatsOrder'];
+          if (raw == null) return <String, int>{};
+          return Map<String, int>.from(raw as Map);
+        });
+  }
+
+  /// Remove a favorite and delete order entry.
+  Future<void> removeFavoriteAndOrder(String uid, String userId) async {
+    await _firestore.collection('users').doc(uid).update({
+      'favoritesOrder.$userId': FieldValue.delete(),
+    });
+  }
+
+  /// Reorder favorites.
+  Future<void> reorderFavorites(String uid, Map<String, int> orderMap) async {
+    await _firestore.collection('users').doc(uid).update({
+      'favoritesOrder': orderMap,
+    });
+  }
+
+  /// Reorder group chats.
+  Future<void> reorderGroupChats(String uid, Map<String, int> orderMap) async {
+    await _firestore.collection('users').doc(uid).update({
+      'groupChatsOrder': orderMap,
+    });
+  }
+
+  /// Fetch blocked user documents.
+  Future<List<MyUser>> fetchBlockedUsers(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final results = await Future.wait(
+      ids.map((id) async {
+        try {
+          final doc = await _firestore.collection('users').doc(id).get();
+          if (doc.exists) return MyUser.fromDocument(doc.data()!);
+        } catch (_) {}
+        return null;
+      }),
+    );
+    return results.whereType<MyUser>().toList();
+  }
 }

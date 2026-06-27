@@ -1,5 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/cache/user_cache.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/models/message_model.dart';
 
@@ -7,7 +7,6 @@ import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -80,7 +79,7 @@ class MessageBubble extends ConsumerWidget {
                         _LoveIndicator(
                           count: message.lovedBy.length,
                           lovedByMe: message.lovedBy.contains(
-                            FirebaseAuth.instance.currentUser!.uid,
+                            ref.watch(currentUserIdProvider),
                           ),
                           onTap:
                               interactable ? () => _toggleLove(context, ref) : null,
@@ -95,7 +94,7 @@ class MessageBubble extends ConsumerWidget {
                         _LoveIndicator(
                           count: message.lovedBy.length,
                           lovedByMe: message.lovedBy.contains(
-                            FirebaseAuth.instance.currentUser!.uid,
+                            ref.watch(currentUserIdProvider),
                           ),
                           onTap:
                               interactable ? () => _toggleLove(context, ref) : null,
@@ -338,19 +337,13 @@ class _ReplyPreview extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder<DocumentSnapshot>(
-      future:
-          FirebaseFirestore.instance
-              .collection('chatRooms')
-              .doc(chatRoomId)
-              .collection('messages')
-              .doc(messageId)
-              .get(),
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: ref.read(chatControllerProvider.notifier).getReplyMessage(chatRoomId, messageId),
       builder: (_, snap) {
-        if (!snap.hasData || !snap.data!.exists) {
+        if (!snap.hasData || snap.data == null) {
           return const SizedBox.shrink();
         }
-        final data = snap.data!.data() as Map<String, dynamic>;
+        final data = snap.data!;
         final senderId = data['senderId'] as String? ?? '';
         final realSenderName = data['senderName'] as String? ?? '';
         final displayName = aliases[senderId] ?? realSenderName;

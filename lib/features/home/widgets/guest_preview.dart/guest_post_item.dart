@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_comments.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
@@ -11,7 +10,7 @@ import 'package:ecommerece_app/features/home/widgets/post_item_components/natura
 import 'package:ecommerece_app/features/home/widgets/post_item_components/post_menus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 class GuestPostItem extends ConsumerWidget {
@@ -35,7 +34,7 @@ class GuestPostItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool isGuest = FirebaseAuth.instance.currentUser == null;
+    final bool isGuest = ref.watch(currentUserIdProvider).isEmpty;
     final postsProvider = ref.read(feedControllerProvider.notifier);
 
     Future<void> runWithLoading(
@@ -180,30 +179,24 @@ class GuestPostItem extends ConsumerWidget {
                                               fontWeight: FontWeight.bold,
                                             ),
                                       ),
-                                  if (!userMissing && myuser!.userId.isNotEmpty)
-                                    StreamBuilder<QuerySnapshot>(
-                                      stream:
-                                          FirebaseFirestore.instance
-                                              .collection('users')
-                                              .doc(myuser.userId)
-                                              .collection('followers')
-                                              .snapshots(),
-                                      builder: (context, subSnap) {
-                                        if (subSnap.connectionState ==
-                                            ConnectionState.waiting) {
-                                          return SizedBox(height: 16.sp);
-                                        }
-                                        if (subSnap.hasError) {
-                                          return Text(
-                                            '구독자 오류',
-                                            style: TextStyle(
-                                              color: Colors.red,
-                                              fontSize: 16.sp,
-                                            ),
-                                          );
-                                        }
-                                        final count =
-                                            subSnap.data?.docs.length ?? 0;
+                                    if (!userMissing && myuser!.userId.isNotEmpty)
+                                      StreamBuilder<int>(
+                                        stream: ref.watch(followerCountProvider(myuser.userId).future).asStream(),
+                                        builder: (context, subSnap) {
+                                          if (subSnap.connectionState ==
+                                              ConnectionState.waiting) {
+                                            return SizedBox(height: 16.sp);
+                                          }
+                                          if (subSnap.hasError) {
+                                            return Text(
+                                              '구독자 오류',
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                                fontSize: 16.sp,
+                                              ),
+                                            );
+                                          }
+                                          final count = subSnap.data ?? 0;
                                         final formatted = count
                                             .toString()
                                             .replaceAllMapped(

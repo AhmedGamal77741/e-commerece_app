@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/domain/edit_screen_controller.dart';
@@ -23,61 +22,27 @@ class _EditContactsTabState extends ConsumerState<EditContactsTab> {
       _favoritesService.getFavoriteIdsStream();
 
   Stream<Set<String>> _hiddenIdsStream(String uid) {
-    if (uid.isEmpty) return Stream.value({});
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('hiddenFriends')
-        .snapshots()
-        .map((s) => s.docs.map((d) => d.id).toSet());
+    return ref.read(friendsControllerProvider.notifier).getHiddenIdsStreamForUser(uid);
   }
 
   Stream<List<String>> _blockedIdsStream(String uid) {
-    if (uid.isEmpty) return Stream.value([]);
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .map((d) => List<String>.from(d.data()?['blocked'] ?? []));
+    return ref.read(friendsControllerProvider.notifier).getBlockedIdsStream(uid);
   }
 
   Stream<Map<String, int>> _favoriteOrderStream(String uid) {
-    if (uid.isEmpty) return Stream.value({});
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .map((snap) {
-          if (!snap.exists) return <String, int>{};
-          final raw = snap.data()?['favoritesOrder'];
-          if (raw == null) return <String, int>{};
-          return Map<String, int>.from(raw as Map);
-        });
+    return ref.read(friendsControllerProvider.notifier).getFavoriteOrderStream(uid);
   }
 
   Future<void> _removeFavorite(String uid, String userId) async {
-    await _favoritesService.removeFavorite(userId);
-    await FirebaseFirestore.instance.collection('users').doc(uid).update({
-      'favoritesOrder.$userId': FieldValue.delete(),
-    });
+    await ref.read(friendsControllerProvider.notifier).removeFavoriteAndOrder(uid, userId);
   }
 
   Future<void> _unhide(String uid, String userId) async {
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('hiddenFriends')
-        .doc(userId)
-        .delete();
+    await ref.read(friendsControllerProvider.notifier).unhideUserFriend(uid, userId);
   }
 
   Future<void> _hide(String uid, MyUser friend) async {
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('hiddenFriends')
-        .doc(friend.userId)
-        .set({'hiddenAt': FieldValue.serverTimestamp()});
+    await ref.read(friendsControllerProvider.notifier).hideUserFriend(uid, friend.userId);
   }
 
   Future<void> _unblock(String blockedUserId) async {
@@ -89,9 +54,7 @@ class _EditContactsTabState extends ConsumerState<EditContactsTab> {
     for (int i = 0; i < newOrder.length; i++) {
       orderMap[newOrder[i].userId] = i;
     }
-    await FirebaseFirestore.instance.collection('users').doc(uid).update({
-      'favoritesOrder': orderMap,
-    });
+    await ref.read(friendsControllerProvider.notifier).reorderFavorites(uid, orderMap);
   }
 
   Widget _sectionHeader(String title) {
@@ -420,12 +383,10 @@ class _EditContactsTabState extends ConsumerState<EditContactsTab> {
     final results = await Future.wait(
       ids.map((id) async {
         try {
-          final doc =
-              await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(id)
-                  .get();
-          if (doc.exists) return MyUser.fromDocument(doc.data()!);
+          final doc = await ref.read(userProfileDocProvider(id).future);
+          if (doc != null && doc.exists) {
+            return MyUser.fromDocument(doc.data() as Map<String, dynamic>);
+          }
         } catch (_) {}
         return null;
       }),

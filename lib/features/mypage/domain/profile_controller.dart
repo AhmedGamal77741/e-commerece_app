@@ -47,6 +47,12 @@ class ProfileController extends AsyncNotifier<void> {
     await ref.read(profileRepositoryProvider).signOut();
   }
 
+  Future<void> recoverUserAccount() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return;
+    await ref.read(profileRepositoryProvider).recoverUserAccount(user.uid);
+  }
+
   Future<void> reauthenticateUser(String password) async {
     final user = ref.read(authStateProvider).value;
     if (user == null || user.email == null) {
@@ -266,5 +272,38 @@ class ProfileController extends AsyncNotifier<void> {
         await doc.reference.delete();
       }
     }
+  }
+
+  /// Check if user has a bank account registered.
+  Future<bool> checkBankAccount() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return false;
+    return ref.read(profileRepositoryProvider).checkBankAccount(user.uid);
+  }
+
+  /// Re-check bank account after returning from NoBankAccountScreen.
+  Future<bool> refreshBankAccount() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return false;
+    return ref.read(profileRepositoryProvider).refreshBankAccount(user.uid);
+  }
+
+  /// Check if user has valid receipt data.
+  Future<bool> checkReceiptData() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return false;
+    return ref.read(profileRepositoryProvider).checkReceiptData(user.uid);
+  }
+
+  Future<Map<String, dynamic>?> getReceiptData() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return null;
+    return ref.read(profileRepositoryProvider).getReceiptData(user.uid);
+  }
+
+  Future<void> saveReceiptData(Map<String, dynamic> data) async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return;
+    return ref.read(profileRepositoryProvider).saveReceiptData(user.uid, data);
   }
 }

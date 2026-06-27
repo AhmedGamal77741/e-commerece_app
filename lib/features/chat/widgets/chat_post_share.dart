@@ -1,7 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ChatPostShareWidget extends StatelessWidget {
+class ChatPostShareWidget extends ConsumerWidget {
   final String imageUrl;
   final String postTitle;
   final String authorName;
@@ -17,27 +18,8 @@ class ChatPostShareWidget extends StatelessWidget {
     required this.type,
   });
 
-  Future<String> fetchUserName(String userId) async {
-    try {
-      DocumentSnapshot userDoc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(userId)
-              .get();
-
-      if (userDoc.exists && userDoc.data() != null) {
-        Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
-        return data['name'] ?? 'Unknown User';
-      }
-      return 'User not found';
-    } catch (e) {
-      debugPrint("Error fetching user name: $e");
-      return 'Error';
-    }
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -80,22 +62,18 @@ class ChatPostShareWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   type == 'post'
-                      ? FutureBuilder<String>(
-                        future: fetchUserName(authorName),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Text("Loading...");
-                          }
-
-                          final name = snapshot.data ?? 'Unknown';
-
-                          return Text(
-                            name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          );
-                        },
-                      )
+                      ? ref.watch(userProfileDocProvider(authorName)).when(
+                            data: (doc) {
+                              final data = doc?.data() as Map<String, dynamic>?;
+                              final name = data?['name'] ?? 'Unknown';
+                              return Text(
+                                name as String,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              );
+                            },
+                            loading: () => const Text("Loading..."),
+                            error: (_, __) => const Text('Error'),
+                          )
                       : Text(
                         authorName,
                         style: const TextStyle(

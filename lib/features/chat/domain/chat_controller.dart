@@ -142,4 +142,20 @@ class ChatController extends AsyncNotifier<void> {
   Future<void> updateGroupChatName(String chatRoomId, String newName) {
     return _chatRepository.updateGroupChatName(chatRoomId, newName);
   }
+
+  /// Get a reply-to message document.
+  Future<Map<String, dynamic>?> getReplyMessage(String chatRoomId, String messageId) =>
+      _chatRepository.getReplyMessage(chatRoomId, messageId);
+
+  /// Get the other user's ID from a chat room.
+  Future<String> getChatRoomOtherUserId(String chatRoomId, String currentUserId) =>
+      _chatRepository.getChatRoomOtherUserId(chatRoomId, currentUserId);
+
+  /// Get a post document by ID.
+  Future<Map<String, dynamic>?> getPostById(String postId) =>
+      _chatRepository.getPostById(postId);
+
+  /// Fetch a user's display name.
+  Future<String> fetchUserName(String userId) =>
+      _chatRepository.fetchUserName(userId);
 }

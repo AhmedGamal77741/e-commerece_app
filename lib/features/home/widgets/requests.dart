@@ -1,10 +1,10 @@
-import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,22 +37,14 @@ class _RequestsState extends ConsumerState<Requests> {
 
   Future<void> _initializeRecommendations() async {
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return;
+      final currentUserId = ref.read(currentUserIdProvider);
+      if (currentUserId.isEmpty) return;
 
-      // Get initial following list
-      final followingSnapshot =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(currentUser.uid)
-              .collection('following')
-              .get();
-
-      final followingIds = followingSnapshot.docs.map((doc) => doc.id).toList();
+      final followingIds = await ref.read(feedControllerProvider.notifier).getFollowingIds(currentUserId);
 
       // Compute recommendations ONCE and cache the Future (includes both recommendations and contacts)
       _recommendationsFuture = _buildFriendRecommendationsWithContacts(
-        currentUser.uid,
+        currentUserId,
         followingIds,
       );
       _recommendationsInitialized = true;
@@ -74,9 +66,9 @@ class _RequestsState extends ConsumerState<Requests> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUserId = ref.watch(currentUserIdProvider);
 
-    if (currentUser == null) {
+    if (currentUserId.isEmpty) {
       return const Center(child: Text('Please sign in'));
     }
 
@@ -112,12 +104,8 @@ class _RequestsState extends ConsumerState<Requests> {
         // Scrollable content
         Expanded(
           child: SingleChildScrollView(
-            child: StreamBuilder<DocumentSnapshot>(
-              stream:
-                  FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(currentUser.uid)
-                      .snapshots(),
+            child: StreamBuilder<DocumentSnapshot?>(
+              stream: ref.watch(userProfileDocProvider(currentUserId).future).asStream(),
               builder: (context, userSnapshot) {
                 if (!userSnapshot.hasData) {
                   return const SizedBox.shrink();
@@ -149,13 +137,7 @@ class _RequestsState extends ConsumerState<Requests> {
                       ConstrainedBox(
                         constraints: BoxConstraints(maxHeight: 220.h),
                         child: StreamBuilder<QuerySnapshot>(
-                          stream:
-                              FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(currentUser.uid)
-                                  .collection('followRequests')
-                                  .orderBy('createdAt', descending: true)
-                                  .snapshots(),
+                          stream: ref.watch(feedControllerProvider.notifier).getFollowRequestsStream(currentUserId),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                     ConnectionState.waiting &&
@@ -191,14 +173,7 @@ class _RequestsState extends ConsumerState<Requests> {
 
                             // Stream all requesting users at once
                             return StreamBuilder<QuerySnapshot>(
-                              stream:
-                                  FirebaseFirestore.instance
-                                      .collection('users')
-                                      .where(
-                                        FieldPath.documentId,
-                                        whereIn: requestingUserIds,
-                                      )
-                                      .snapshots(),
+                              stream: ref.read(feedControllerProvider.notifier).getUsersByIdsStream(requestingUserIds),
                               builder: (context, usersSnapshot) {
                                 if (!usersSnapshot.hasData) {
                                   return const SizedBox.shrink();
@@ -315,10 +290,9 @@ class _RequestsState extends ConsumerState<Requests> {
                                                 // Accept button
                                                 GestureDetector(
                                                   onTap: () async {
-                                                    await _acceptFollowRequest(
-                                                      context,
+                                                    await ref.read(followControllerProvider).acceptFollowRequest(
+                                                      currentUserId,
                                                       requestingUserId,
-                                                      currentUser.uid,
                                                     );
                                                   },
                                                   child: Container(
@@ -351,10 +325,9 @@ class _RequestsState extends ConsumerState<Requests> {
                                                 // Decline button
                                                 GestureDetector(
                                                   onTap: () async {
-                                                    await _declineFollowRequest(
-                                                      context,
+                                                    await ref.read(followControllerProvider).declineFollowRequest(
+                                                      currentUserId,
                                                       requestingUserId,
-                                                      currentUser.uid,
                                                     );
                                                   },
                                                   child: Container(
@@ -528,18 +501,10 @@ class _RequestsState extends ConsumerState<Requests> {
                                               ),
                                               SizedBox(width: 8.w),
                                               // Follow button
-                                              StreamBuilder<DocumentSnapshot>(
-                                                stream:
-                                                    FirebaseFirestore.instance
-                                                        .collection('users')
-                                                        .doc(currentUser.uid)
-                                                        .collection('following')
-                                                        .doc(userId)
-                                                        .snapshots(),
+                                              StreamBuilder<bool>(
+                                                stream: ref.watch(isFollowingProvider(userId).future).asStream(),
                                                 builder: (context, snapshot) {
-                                                  final isFollowing =
-                                                      snapshot.hasData &&
-                                                      snapshot.data!.exists;
+                                                  final isFollowing = snapshot.data ?? false;
 
                                                   if (isFollowing) {
                                                     return ElevatedButton(
@@ -565,9 +530,12 @@ class _RequestsState extends ConsumerState<Requests> {
                                                         ),
                                                       ),
                                                       onPressed: () async {
-                                                        ref.read(followControllerProvider)
-                                                            .toggleFollow(
-                                                              userId,
+                                                          ref.read(followControllerProvider).handleFollowAction(
+                                                              targetUserId: user.userId,
+                                                              currentUserId: currentUserId,
+                                                              isPrivate: user.isPrivate,
+                                                              isFollowing: isFollowing,
+                                                              hasRequest: false,
                                                             );
                                                       },
                                                       child: Text('구독 취소'),
@@ -578,32 +546,13 @@ class _RequestsState extends ConsumerState<Requests> {
                                                       user.isPrivate;
 
                                                   if (isPrivate) {
-                                                    return StreamBuilder<
-                                                      DocumentSnapshot
-                                                    >(
-                                                      stream:
-                                                          FirebaseFirestore
-                                                              .instance
-                                                              .collection(
-                                                                'users',
-                                                              )
-                                                              .doc(userId)
-                                                              .collection(
-                                                                'followRequests',
-                                                              )
-                                                              .doc(
-                                                                currentUser.uid,
-                                                              )
-                                                              .snapshots(),
+                                                    return StreamBuilder<bool>(
+                                                      stream: ref.watch(hasFollowRequestProvider(userId).future).asStream(),
                                                       builder: (
                                                         context,
                                                         snapshot,
                                                       ) {
-                                                        final hasRequest =
-                                                            snapshot.hasData &&
-                                                            snapshot
-                                                                .data!
-                                                                .exists;
+                                                        final hasRequest = snapshot.data ?? false;
 
                                                         return ElevatedButton(
                                                           style: ElevatedButton.styleFrom(
@@ -639,17 +588,13 @@ class _RequestsState extends ConsumerState<Requests> {
                                                             ),
                                                           ),
                                                           onPressed: () async {
-                                                            if (hasRequest) {
-                                                              await _cancelFollowRequest(
-                                                                userId,
-                                                                currentUser.uid,
-                                                              );
-                                                            } else {
-                                                              await _sendFollowRequest(
-                                                                userId,
-                                                                currentUser.uid,
-                                                              );
-                                                            }
+                                                            ref.read(followControllerProvider).handleFollowAction(
+                                                              targetUserId: userId,
+                                                              currentUserId: currentUserId,
+                                                              isPrivate: user.isPrivate,
+                                                              isFollowing: isFollowing,
+                                                              hasRequest: hasRequest,
+                                                            );
                                                           },
                                                           child: Text(
                                                             hasRequest
@@ -718,12 +663,8 @@ class _RequestsState extends ConsumerState<Requests> {
                     // Blocked friends list
                     ConstrainedBox(
                       constraints: BoxConstraints(maxHeight: 220.h),
-                      child: StreamBuilder<DocumentSnapshot>(
-                        stream:
-                            FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(currentUser.uid)
-                                .snapshots(),
+                      child: StreamBuilder<DocumentSnapshot?>(
+                        stream: ref.watch(userProfileDocProvider(currentUserId).future).asStream(),
                         builder: (context, userSnapshot) {
                           if (!userSnapshot.hasData) {
                             return const SizedBox.shrink();
@@ -745,16 +686,8 @@ class _RequestsState extends ConsumerState<Requests> {
                             );
                           }
 
-                          // Stream blocked user data
                           return StreamBuilder<QuerySnapshot>(
-                            stream:
-                                FirebaseFirestore.instance
-                                    .collection('users')
-                                    .where(
-                                      FieldPath.documentId,
-                                      whereIn: blockedList,
-                                    )
-                                    .snapshots(),
+                            stream: ref.read(feedControllerProvider.notifier).getUsersByIdsStream(blockedList),
                             builder: (context, blockedSnapshot) {
                               if (!blockedSnapshot.hasData) {
                                 return const SizedBox.shrink();
@@ -868,7 +801,7 @@ class _RequestsState extends ConsumerState<Requests> {
                                             onPressed: () async {
                                               await _unblockUser(
                                                 blockedUser.userId,
-                                                currentUser.uid,
+                                                currentUserId,
                                               );
                                             },
                                             child: Text('차단해제'),
@@ -1026,15 +959,7 @@ class _RequestsState extends ConsumerState<Requests> {
         phoneNumbers,
       );
 
-      // Get current user's followers to exclude them
-      final currentFollowersSnapshot =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(currentUserId)
-              .collection('followers')
-              .get();
-      final currentFollowers =
-          currentFollowersSnapshot.docs.map((doc) => doc.id).toSet();
+      final currentFollowers = await ref.read(feedControllerProvider.notifier).getFollowersIds(currentUserId);
 
       // Filter and build result
       final result = <String, Map<String, dynamic>>{};

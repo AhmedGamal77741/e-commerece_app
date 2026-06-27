@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
@@ -11,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class UserOptionsContainer extends ConsumerStatefulWidget {
@@ -24,7 +23,6 @@ class UserOptionsContainer extends ConsumerStatefulWidget {
 
 class _UserOptionsContainerState extends ConsumerState<UserOptionsContainer>
     with RouteAware {
-  final user = FirebaseAuth.instance.currentUser;
   final String supportUserId = 'JuxEfED9YSc2XyHRFgkPcNCFUSJ3';
   bool _isLoading = false;
 
@@ -99,11 +97,13 @@ class _UserOptionsContainerState extends ConsumerState<UserOptionsContainer>
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authStateProvider).value;
+    
     if (user == null) {
       return const Center(child: Text('로그인이 필요합니다.'));
     }
 
-    final isSupport = user?.uid == supportUserId;
+    final isSupport = user.uid == supportUserId;
     final subAsyncValue = ref.watch(subscriptionStreamProvider);
 
     return subAsyncValue.when(
@@ -194,7 +194,7 @@ class _UserOptionsContainerState extends ConsumerState<UserOptionsContainer>
                 else
                   InkWell(
                     child: Text('프리미엄 멤버십 가입', style: TextStyles.abeezee17px800wPblack),
-                    onTap: () => _navigateToSubscription(context),
+                    onTap: () => _navigateToSubscription(context, ref),
                   ),
                 if (isSub == true && nextBillingDate != null)
                   Padding(
@@ -273,34 +273,21 @@ void _launchPartnerPage() async {
   }
 }
 
-Future<void> _navigateToSubscription(BuildContext context) async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return;
-
-  final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-  final data = userDoc.data();
-
-  final accounts = data?['bankAccounts'];
-  final hasBankAccount = accounts != null && accounts is List && accounts.isNotEmpty;
+Future<void> _navigateToSubscription(BuildContext context, WidgetRef ref) async {
+  final controller = ref.read(profileControllerProvider.notifier);
+  
+  final hasBankAccount = await controller.checkBankAccount();
 
   if (!hasBankAccount) {
     if (!context.mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const NoBankAccountScreen(source: 'sub')),
     );
-    final refreshed = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    final refreshedAccounts = refreshed.data()?['bankAccounts'];
-    final nowHasAccount = refreshedAccounts != null && refreshedAccounts is List && refreshedAccounts.isNotEmpty;
+    final nowHasAccount = await controller.refreshBankAccount();
     if (!nowHasAccount) return;
   }
 
-  final cacheDoc = await FirebaseFirestore.instance.collection('usercached_values').doc(user.uid).get();
-  final cacheData = cacheDoc.data();
-  final hasReceiptData = cacheData != null &&
-      (cacheData['selectedOption'] == 1 || cacheData['selectedOption'] == 2) &&
-      (cacheData['name'] as String? ?? '').isNotEmpty &&
-      (cacheData['email'] as String? ?? '').isNotEmpty &&
-      (cacheData['phone'] as String? ?? '').isNotEmpty;
+  final hasReceiptData = await controller.checkReceiptData();
 
   if (!hasReceiptData) {
     if (!context.mounted) return;

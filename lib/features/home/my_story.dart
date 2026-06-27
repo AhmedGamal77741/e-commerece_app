@@ -276,19 +276,6 @@ class _PostsPageState extends ConsumerState<_PostsPage>
   }
 }
 
-/* /// 🔥 REAL-TIME QUERY WITH CATEGORY FILTER
-Stream<QuerySnapshot> _userPostsStream(String userId) {
-  Query query = FirebaseFirestore.instance
-      .collection('posts')
-      .where('userId', isEqualTo: userId);
-
-  if (selectedCategoryId != null) {
-    query = query.where('categoryId', isEqualTo: selectedCategoryId);
-  }
-
-  return query.orderBy('createdAt', descending: true).snapshots();
-} */
-
 class UserCategoriesBar extends ConsumerWidget {
   final List<QueryDocumentSnapshot> categories;
   final String? selectedCategoryId;

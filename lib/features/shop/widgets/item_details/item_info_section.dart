@@ -98,6 +98,7 @@ class _ItemInfoSectionState extends ConsumerState<ItemInfoSection> {
                     widget.product.productName,
                     widget.product.imgUrl.toString(),
                     widget.product.toMap(),
+                    isLoggedIn: ref.read(currentUserIdProvider).isNotEmpty,
                   );
                 },
                 icon: ImageIcon(

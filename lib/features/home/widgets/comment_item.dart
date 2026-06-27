@@ -11,7 +11,8 @@ import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/models/comment_model.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -25,13 +26,13 @@ class CommentItem extends ConsumerStatefulWidget {
 }
 
 class _CommentItemState extends ConsumerState<CommentItem> {
-  final currentUser = FirebaseAuth.instance.currentUser;
+  String get currentUserId => ref.watch(currentUserIdProvider);
   final GlobalKey _commentKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
     List<String> likedBy = List<String>.from(widget.comment.likedBy);
-    bool isLiked = likedBy.contains(currentUser!.uid);
+    bool isLiked = likedBy.contains(currentUserId);
 
     return Padding(
       key: _commentKey,
@@ -291,8 +292,10 @@ class _CommentItemState extends ConsumerState<CommentItem> {
   void _showCommentMenu(String commentUserId) {
     debugPrint('Showing menu for user: $commentUserId'); // Debug
 
+    final currentUserId = ref.watch(currentUserIdProvider);
+
     // Don't show menu if it's the current user's own comment
-    if (commentUserId == currentUser!.uid) {
+    if (commentUserId == currentUserId) {
       debugPrint('Cannot show menu for own comment');
       return;
     }
@@ -330,14 +333,10 @@ class _CommentItemState extends ConsumerState<CommentItem> {
         PopupMenuItem<String>(
           enabled: false,
           padding: EdgeInsets.zero,
-          child: StreamBuilder<DocumentSnapshot>(
-            stream:
-                FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(commentUserId)
-                    .snapshots(),
+          child: StreamBuilder<DocumentSnapshot?>(
+            stream: ref.watch(userProfileDocProvider(commentUserId).future).asStream(),
             builder: (context, userSnapshot) {
-              if (!userSnapshot.hasData) {
+              if (!userSnapshot.hasData || userSnapshot.data == null) {
                 return SizedBox(height: 50.h, child: const SizedBox.shrink());
               }
 
@@ -349,33 +348,17 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               }
 
               final isPrivate = commentUserData['isPrivate'] ?? false;
-              final currentUserId = currentUser!.uid;
+              final currentUserId = ref.read(currentUserIdProvider);
 
-              return StreamBuilder<DocumentSnapshot>(
-                stream:
-                    FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(currentUserId)
-                        .collection('following')
-                        .doc(commentUserId)
-                        .snapshots(),
+              return StreamBuilder<bool>(
+                stream: ref.watch(isFollowingProvider(commentUserId).future).asStream(),
                 builder: (context, followingSnapshot) {
-                  final isFollowing =
-                      followingSnapshot.hasData &&
-                      followingSnapshot.data!.exists;
+                  final isFollowing = followingSnapshot.data ?? false;
 
-                  return StreamBuilder<DocumentSnapshot>(
-                    stream:
-                        FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(commentUserId)
-                            .collection('followRequests')
-                            .doc(currentUserId)
-                            .snapshots(),
+                  return StreamBuilder<bool>(
+                    stream: ref.watch(hasFollowRequestProvider(commentUserId).future).asStream(),
                     builder: (context, requestSnapshot) {
-                      final hasRequest =
-                          requestSnapshot.hasData &&
-                          requestSnapshot.data!.exists;
+                      final hasRequest = requestSnapshot.data ?? false;
 
                       String buttonText = '구독';
 
@@ -390,14 +373,18 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                       return InkWell(
                         onTap: () async {
                           Navigator.pop(context);
-                          await _handleFollowAction(
-                            context,
-                            commentUserId,
-                            currentUserId,
-                            isPrivate,
-                            isFollowing,
-                            hasRequest,
-                          );
+                          if (isFollowing) {
+                            await ref.read(followControllerProvider).toggleFollow(commentUserId);
+                          } else if (isPrivate && !hasRequest) {
+                            await ref.read(followControllerProvider).sendFollowRequest(commentUserId, currentUserId);
+                          } else if (isPrivate && hasRequest) {
+                            await ref.read(followControllerProvider).cancelFollowRequest(commentUserId, currentUserId);
+                          } else {
+                            await ref.read(followControllerProvider).toggleFollow(commentUserId);
+                          }
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('작업이 완료되었습니다')));
+                          }
                         },
                         child: Container(
                           width: double.infinity,
@@ -458,176 +445,17 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     ).then((value) async {
       if (!mounted) return;
       if (value == 'block') {
-        await _blockUser(context, commentUserId);
+        await ref.read(feedControllerProvider.notifier).blockUser(userIdToBlock: commentUserId);
       } else if (value == 'report') {
-        await _reportAndBlockUser(context, commentUserId);
+        await ref.read(feedControllerProvider.notifier).reportComment(
+          reportedUserId: commentUserId,
+          postId: widget.postId,
+          commentId: widget.comment.id,
+        );
+        await ref.read(feedControllerProvider.notifier).blockUser(userIdToBlock: commentUserId);
       }
     });
   }
 
-  Future<void> _handleFollowAction(
-    BuildContext context,
-    String targetUserId,
-    String currentUserId,
-    bool isPrivate,
-    bool isFollowing,
-    bool hasRequest,
-  ) async {
-    try {
-      if (isFollowing) {
-        // Unfollow
-        final batch = FirebaseFirestore.instance.batch();
 
-        final followerRef = FirebaseFirestore.instance
-            .collection('users')
-            .doc(targetUserId)
-            .collection('followers')
-            .doc(currentUserId);
-
-        final followingRef = FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUserId)
-            .collection('following')
-            .doc(targetUserId);
-
-        batch.delete(followerRef);
-        batch.delete(followingRef);
-
-        await batch.commit();
-      } else if (isPrivate && !hasRequest) {
-        // Send follow request
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(targetUserId)
-            .collection('followRequests')
-            .doc(currentUserId)
-            .set({'createdAt': FieldValue.serverTimestamp()});
-      } else if (isPrivate && hasRequest) {
-        // Cancel follow request
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(targetUserId)
-            .collection('followRequests')
-            .doc(currentUserId)
-            .delete();
-      } else {
-        // Direct follow (public user)
-        final batch = FirebaseFirestore.instance.batch();
-
-        final followerRef = FirebaseFirestore.instance
-            .collection('users')
-            .doc(targetUserId)
-            .collection('followers')
-            .doc(currentUserId);
-
-        final followingRef = FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUserId)
-            .collection('following')
-            .doc(targetUserId);
-
-        batch.set(followerRef, {
-          'userId': currentUserId,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-        batch.set(followingRef, {
-          'userId': targetUserId,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-        await batch.commit();
-      }
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('작업이 완료되었습니다')));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('오류: $e')));
-      }
-    }
-  }
-
-  Future<void> _blockUser(BuildContext context, String userToBlockId) async {
-    try {
-      final currentUserId = currentUser!.uid;
-      final userDoc = FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId);
-
-      // Get current blocked list
-      final currentUserData = await userDoc.get();
-      List<String> blockedList = List<String>.from(
-        currentUserData.data()?['blocked'] ?? [],
-      );
-
-      // Add to blocked list if not already blocked
-      if (!blockedList.contains(userToBlockId)) {
-        blockedList.add(userToBlockId);
-        await userDoc.update({'blocked': blockedList});
-      }
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('사용자가 차단되었습니다')));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('오류: $e')));
-      }
-    }
-  }
-
-  Future<void> _reportAndBlockUser(
-    BuildContext context,
-    String userToReportId,
-  ) async {
-    try {
-      final currentUserId = currentUser!.uid;
-
-      // Report the user
-      await FirebaseFirestore.instance.collection('reports').add({
-        'reportedUserId': userToReportId,
-        'reportingUserId': currentUserId,
-        'postId': widget.postId,
-        'commentId': widget.comment.id,
-        'reason': 'Reported from comment',
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      // Block the user
-      final userDoc = FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId);
-
-      final currentUserData = await userDoc.get();
-      List<String> blockedList = List<String>.from(
-        currentUserData.data()?['blocked'] ?? [],
-      );
-
-      if (!blockedList.contains(userToReportId)) {
-        blockedList.add(userToReportId);
-        await userDoc.update({'blocked': blockedList});
-      }
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('사용자가 신고되고 차단되었습니다')));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('오류: $e')));
-      }
-    }
-  }
 }

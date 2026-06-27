@@ -30,6 +30,16 @@ class ProfileRepository {
     await _auth.signOut();
   }
 
+  Future<void> recoverUserAccount(String userId) async {
+    try {
+      await _firestore.collection('deleted').doc(userId).delete();
+      final query = await _firestore.collection('deletes').where('userId', isEqualTo: userId).get();
+      for (final doc in query.docs) {
+        await doc.reference.delete();
+      }
+    } catch (_) {}
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
   }
@@ -72,5 +82,54 @@ class ProfileRepository {
         'status': 'canceled',
       });
     }
+  }
+
+  /// Check if user has a bank account registered.
+  Future<bool> checkBankAccount(String userId) async {
+    final userDoc = await _firestore.collection('users').doc(userId).get();
+    final data = userDoc.data();
+    final accounts = data?['bankAccounts'];
+    return accounts != null && accounts is List && accounts.isNotEmpty;
+  }
+
+  /// Re-check bank account after returning from NoBankAccountScreen.
+  Future<bool> refreshBankAccount(String userId) async {
+    final refreshed = await _firestore.collection('users').doc(userId).get();
+    final refreshedAccounts = refreshed.data()?['bankAccounts'];
+    return refreshedAccounts != null && refreshedAccounts is List && refreshedAccounts.isNotEmpty;
+  }
+
+  /// Check if user has valid receipt data in usercached_values.
+  Future<bool> checkReceiptData(String userId) async {
+    try {
+      final doc = await _firestore.collection('usercached_values').doc(userId).get();
+      if (!doc.exists) return false;
+      final data = doc.data();
+      if (data == null) return false;
+
+      final name = data['name'] as String?;
+      final phone = data['phone'] as String?;
+      if (name != null && name.trim().isNotEmpty &&
+          phone != null && phone.trim().isNotEmpty) {
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getReceiptData(String userId) async {
+    try {
+      final doc = await _firestore.collection('usercached_values').doc(userId).get();
+      if (doc.exists) {
+        return doc.data();
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> saveReceiptData(String userId, Map<String, dynamic> data) async {
+    await _firestore.collection('usercached_values').doc(userId).set(data, SetOptions(merge: true));
   }
 }

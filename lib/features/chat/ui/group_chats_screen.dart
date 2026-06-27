@@ -1,5 +1,5 @@
 import 'package:ecommerece_app/features/chat/widgets/group_chat_tile.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/chat_room_model.dart';
@@ -17,7 +17,7 @@ class _GroupChatsScreenState extends ConsumerState<GroupChatsScreen>
   @override
   bool get wantKeepAlive => true;
 
-  String get currentUserId => FirebaseAuth.instance.currentUser!.uid;
+  String get currentUserId => ref.watch(currentUserIdProvider);
 
   // ─── Build ────────────────────────────────────────────────────────────────
   @override

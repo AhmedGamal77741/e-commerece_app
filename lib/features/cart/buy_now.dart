@@ -1,8 +1,8 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/address/ui/address_list_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -51,8 +51,8 @@ class BuyNowContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return const Scaffold(body: Center(child: Text('로그인이 필요합니다.')));
+    final uid = ref.watch(currentUserIdProvider);
+    if (uid.isEmpty) return const Scaffold(body: Center(child: Text('로그인이 필요합니다.')));
 
     final asyncState = ref.watch(checkoutFormControllerProvider);
 

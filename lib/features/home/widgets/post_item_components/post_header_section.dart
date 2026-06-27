@@ -10,7 +10,7 @@ import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/home/widgets/share_dialog.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 
 class PostHeaderSection extends ConsumerWidget {
   final MyUser? myuser;
@@ -186,6 +186,7 @@ class PostHeaderSection extends ConsumerWidget {
               myuser!.name,
               myuser!.url,
               postData,
+              isLoggedIn: ref.read(currentUserIdProvider).isNotEmpty,
             );
           } else if (value == 'unfollow') {
             ref.read(followControllerProvider).toggleFollow(myuser!.userId);
@@ -221,8 +222,7 @@ class PostHeaderSection extends ConsumerWidget {
           ),
         ),
         onPressed: () async {
-          final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-          if (currentUserId == null) return;
+          final currentUserId = ref.watch(currentUserIdProvider);
           if (hasRequest) {
             await ref.read(followControllerProvider).cancelFollowRequest(myuser!.userId, currentUserId);
           } else {

@@ -7,8 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 
 class EditPostDialogResult {
   final String text;
@@ -58,26 +57,11 @@ class _EditPostDialogState extends ConsumerState<EditPostDialog> {
   }
 
   Future<void> _loadCategories() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) return;
-    try {
-      final snapshot =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(currentUser.uid)
-              .collection('categories')
-              .orderBy('order', descending: false)
-              .get();
-      if (mounted) {
-        setState(() {
-          _categories =
-              snapshot.docs
-                  .map((doc) => {'id': doc.id, 'name': doc['name']})
-                  .toList();
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading categories in EditPostDialog: $e');
+    final categories = await ref.read(feedControllerProvider.notifier).getUserCategories();
+    if (mounted) {
+      setState(() {
+        _categories = categories;
+      });
     }
   }
 

@@ -1,12 +1,12 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/home/widgets/edit_post_dialog.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -193,10 +193,11 @@ class _PostItemState extends ConsumerState<PostItem> {
                         : '삭제된 사용자');
             final String profileUrl =
                 !userMissing && !isWaiting ? (myuser?.url ?? '') : '';
+            final currentUid = ref.watch(currentUserIdProvider);
             final bool isMyPost =
                 !userMissing &&
                 !isWaiting &&
-                myuser!.userId == FirebaseAuth.instance.currentUser?.uid;
+                myuser!.userId == currentUid;
 
             final List imgUrls =
                 (postData['imgUrls'] != null &&

@@ -1,12 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/mypage/domain/profile_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class DeletedAccount extends StatelessWidget {
+class DeletedAccount extends ConsumerWidget {
   final String deletedAt;
   final VoidCallback onRecover;
   final VoidCallback onSignOut;
@@ -18,7 +18,7 @@ class DeletedAccount extends StatelessWidget {
     required this.onSignOut,
   });
 
-  Future<void> _showRecoverDialog(BuildContext context) async {
+  Future<void> _showRecoverDialog(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -51,27 +51,7 @@ class DeletedAccount extends StatelessWidget {
     );
     if (confirmed == true) {
       onRecover();
-      // Also delete the user's doc from the 'deleted' collection
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        try {
-          await FirebaseFirestore.instance
-              .collection('deleted')
-              .doc(uid)
-              .delete();
-        } catch (_) {}
-        // Also delete the user's reason doc from the 'deletes' collection
-        try {
-          final query =
-              await FirebaseFirestore.instance
-                  .collection('deletes')
-                  .where('userId', isEqualTo: uid)
-                  .get();
-          for (final doc in query.docs) {
-            await doc.reference.delete();
-          }
-        } catch (_) {}
-      }
+      await ref.read(profileControllerProvider.notifier).recoverUserAccount();
     }
   }
 
@@ -101,7 +81,7 @@ class DeletedAccount extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final formattedDate = _formatPermanentDeleteDate(deletedAt);
     return Scaffold(
       backgroundColor: ColorsManager.white,
@@ -136,7 +116,7 @@ class DeletedAccount extends StatelessWidget {
                 width: double.infinity,
                 height: 48.h,
                 child: ElevatedButton(
-                  onPressed: () => _showRecoverDialog(context),
+                  onPressed: () => _showRecoverDialog(context, ref),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ColorsManager.primaryblack,
                     foregroundColor: ColorsManager.white,

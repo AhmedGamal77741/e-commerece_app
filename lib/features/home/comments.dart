@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/domain/comments_notifier.dart';
 import 'package:ecommerece_app/features/home/widgets/comment_input_box.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/home/widgets/comment_bubble.dart';
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 
@@ -25,7 +25,7 @@ class Comments extends ConsumerStatefulWidget {
 }
 
 class _CommentsState extends ConsumerState<Comments> {
-  final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  String get currentUserId => ref.watch(currentUserIdProvider);
   bool _hasScrolledToComment = false;
   final Map<String, GlobalKey> _bubbleKeys = {};
 

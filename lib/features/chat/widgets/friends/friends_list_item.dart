@@ -127,6 +127,7 @@ class FriendsListItem extends ConsumerWidget {
                               Navigator.pop(context);
                               showChangeNameDialog(
                                 context,
+                                ref,
                                 friend,
                                 aliases[friend.userId],
                               );
@@ -136,7 +137,7 @@ class FriendsListItem extends ConsumerWidget {
                             label: '거리두기',
                             onTap: () {
                               Navigator.pop(context);
-                              hideFriend(context, friend);
+                              hideFriend(context, ref, friend);
                             },
                           ),
                           _buildMenuOption(

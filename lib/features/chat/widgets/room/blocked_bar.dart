@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -48,14 +48,7 @@ class BlockedBar extends ConsumerWidget {
                   ),
                 ),
                 onPressed: () async {
-                  final doc =
-                      await FirebaseFirestore.instance
-                          .collection('chatRooms')
-                          .doc(chatRoomId)
-                          .get();
-                  final other = List<String>.from(
-                    doc['participants'],
-                  ).firstWhere((id) => id != currentUserId);
+                  final other = await ref.read(chatControllerProvider.notifier).getChatRoomOtherUserId(chatRoomId, currentUserId);
                   await onUnblock(other);
                 },
                 child: const Text('차단 해제'),

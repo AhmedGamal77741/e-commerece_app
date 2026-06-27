@@ -582,4 +582,66 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       }
     }
   }
+
+  /// Submit a report (used by comment_item menu).
+  Future<void> reportComment({
+    required String reportedUserId,
+    required String postId,
+    String? commentId,
+    String reason = 'Reported from comment',
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+    await _repository.submitReport(
+      reportedUserId: reportedUserId,
+      reportingUserId: currentUser.uid,
+      postId: postId,
+      commentId: commentId,
+      reason: reason,
+    );
+  }
+
+  /// Load user categories for edit post dialog.
+  Future<List<Map<String, String>>> loadUserCategories(String userId) =>
+      _repository.getUserCategoriesList(userId);
+
+  /// Stream comments for a post (used by guest_comments).
+  Stream<QuerySnapshot> getCommentsStreamForPost(String postId) =>
+      _repository.getCommentsStream(postId);
+
+  /// Get a single post by ID (used by guest_comments post share tap).
+  Future<List<Map<String, dynamic>>> getUserCategories() async {
+    final currentUserId = ref.read(currentUserIdProvider);
+    if (currentUserId.isEmpty) return [];
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('categories')
+          .orderBy('order', descending: false)
+          .get();
+      return snapshot.docs
+          .map((doc) => {'id': doc.id, 'name': doc['name']})
+          .toList();
+    } catch (e) {
+      debugPrint('Error loading categories: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> getPostById(String postId) =>
+      _repository.getPostById(postId);
+
+  /// Stream multiple users by a list of their IDs (used by requests.dart).
+  Stream<QuerySnapshot> getUsersByIdsStream(List<String> userIds) =>
+      _repository.getUsersByIdsStream(userIds);
+  Future<List<String>> getFollowingIds(String userId) async {
+    final snapshot = await _firestore.collection('users').doc(userId).collection('following').get();
+    return snapshot.docs.map((doc) => doc.id).toList();
+  }
+
+  Future<Set<String>> getFollowersIds(String userId) async {
+    final snapshot = await _firestore.collection('users').doc(userId).collection('followers').get();
+    return snapshot.docs.map((doc) => doc.id).toSet();
+  }
 }

@@ -255,4 +255,80 @@ class FollowController {
       return {};
     }
   }
+
+  /// Consolidated follow action handler used by comment_item popup menu.
+  /// Mirrors the exact logic that was previously inline in the UI.
+  Future<void> handleFollowAction({
+    required String targetUserId,
+    required String currentUserId,
+    required bool isPrivate,
+    required bool isFollowing,
+    required bool hasRequest,
+  }) async {
+    if (isFollowing) {
+      await directUnfollow(targetUserId: targetUserId, currentUserId: currentUserId);
+    } else if (isPrivate && !hasRequest) {
+      await sendFollowRequest(targetUserId, currentUserId);
+    } else if (isPrivate && hasRequest) {
+      await cancelFollowRequest(targetUserId, currentUserId);
+    } else {
+      await directFollow(targetUserId: targetUserId, currentUserId: currentUserId);
+    }
+  }
+
+  /// Directly follow a public user (batch write follower + following docs).
+  Future<void> directFollow({
+    required String targetUserId,
+    required String currentUserId,
+  }) async {
+    final batch = _firestore.batch();
+
+    final followerRef = _firestore
+        .collection('users')
+        .doc(targetUserId)
+        .collection('followers')
+        .doc(currentUserId);
+
+    final followingRef = _firestore
+        .collection('users')
+        .doc(currentUserId)
+        .collection('following')
+        .doc(targetUserId);
+
+    batch.set(followerRef, {
+      'userId': currentUserId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    batch.set(followingRef, {
+      'userId': targetUserId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
+  }
+
+  /// Directly unfollow a user (batch delete follower + following docs).
+  Future<void> directUnfollow({
+    required String targetUserId,
+    required String currentUserId,
+  }) async {
+    final batch = _firestore.batch();
+
+    final followerRef = _firestore
+        .collection('users')
+        .doc(targetUserId)
+        .collection('followers')
+        .doc(currentUserId);
+
+    final followingRef = _firestore
+        .collection('users')
+        .doc(currentUserId)
+        .collection('following')
+        .doc(targetUserId);
+
+    batch.delete(followerRef);
+    batch.delete(followingRef);
+
+    await batch.commit();
+  }
 }

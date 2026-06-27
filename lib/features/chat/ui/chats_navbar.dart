@@ -5,7 +5,7 @@ import 'package:ecommerece_app/features/chat/ui/direct_chats_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/edit_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/friends_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/group_chats_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -314,7 +314,7 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final user = FirebaseAuth.instance.currentUser;
+    final user = ref.watch(authStateProvider).value;
 
     // ✅ No user signed in — show Korean sign-in prompt
     if (user == null) {

@@ -1,19 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/mypage/domain/profile_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class ReceiptSetupScreen extends StatefulWidget {
+import 'package:ecommerece_app/core/theming/colors.dart';
+import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
+
+class ReceiptSetupScreen extends ConsumerStatefulWidget {
   final String source; // 'shop' or 'sub'
   const ReceiptSetupScreen({super.key, this.source = 'shop'});
 
   @override
-  State<ReceiptSetupScreen> createState() => _ReceiptSetupScreenState();
+  ConsumerState<ReceiptSetupScreen> createState() => _ReceiptSetupScreenState();
 }
 
-class _ReceiptSetupScreenState extends State<ReceiptSetupScreen> {
+class _ReceiptSetupScreenState extends ConsumerState<ReceiptSetupScreen> {
   // ── Receipt / invoice fields ──────────────────────────────────────────────
   String invoiceeType = '사업자';
   final invoiceeCorpNumController = TextEditingController();
@@ -47,16 +48,8 @@ class _ReceiptSetupScreenState extends State<ReceiptSetupScreen> {
 
   // ── Pre-fill from cache if anything exists ────────────────────────────────
   Future<void> _loadCachedValues() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    final doc =
-        await FirebaseFirestore.instance
-            .collection('usercached_values')
-            .doc(uid)
-            .get();
-    if (!doc.exists || !mounted) return;
-    final data = doc.data();
-    if (data == null) return;
+    final data = await ref.read(profileControllerProvider.notifier).getReceiptData();
+    if (data == null || !mounted) return;
     setState(() {
       nameController.text = data['name'] ?? '';
       emailController.text = data['email'] ?? '';
@@ -73,15 +66,9 @@ class _ReceiptSetupScreenState extends State<ReceiptSetupScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
     setState(() => _isSaving = true);
     try {
-      await FirebaseFirestore.instance
-          .collection('usercached_values')
-          .doc(uid)
-          .set({
+      await ref.read(profileControllerProvider.notifier).saveReceiptData({
             'name': nameController.text.trim(),
             'email': emailController.text.trim(),
             'phone': phoneController.text.trim(),
@@ -90,7 +77,7 @@ class _ReceiptSetupScreenState extends State<ReceiptSetupScreen> {
             'invoiceeCorpName': invoiceeCorpNameController.text.trim(),
             'invoiceeCEOName': invoiceeCEONameController.text.trim(),
             'selectedOption': selectedOption,
-          }, SetOptions(merge: true));
+          });
 
       if (mounted) {
         // Return true so the caller knows setup is complete

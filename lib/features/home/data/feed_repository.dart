@@ -756,4 +756,68 @@ class FeedRepository {
       rethrow;
     }
   }
+
+  /// Submit a report to the 'reports' collection.
+  Future<void> submitReport({
+    required String reportedUserId,
+    required String reportingUserId,
+    required String postId,
+    String? commentId,
+    String reason = 'Reported from comment',
+  }) async {
+    await _firestore.collection('reports').add({
+      'reportedUserId': reportedUserId,
+      'reportingUserId': reportingUserId,
+      'postId': postId,
+      if (commentId != null) 'commentId': commentId,
+      'reason': reason,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Get a user's categories as a simple list.
+  Future<List<Map<String, String>>> getUserCategoriesList(String userId) async {
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('categories')
+        .orderBy('order', descending: false)
+        .get();
+    return snapshot.docs
+        .map((doc) => <String, String>{'id': doc.id, 'name': doc['name'] as String})
+        .toList();
+  }
+
+  /// Stream a single user document.
+  Stream<DocumentSnapshot> getUserDocStream(String userId) {
+    return _firestore.collection('users').doc(userId).snapshots();
+  }
+
+  /// Stream users by a list of IDs (Firestore whereIn limit: 30).
+  Stream<QuerySnapshot> getUsersByIdsStream(List<String> userIds) {
+    if (userIds.isEmpty) return Stream.value(_firestore.collection('__empty__').snapshots() as QuerySnapshot);
+    return _firestore
+        .collection('users')
+        .where(FieldPath.documentId, whereIn: userIds)
+        .snapshots();
+  }
+
+  /// Stream comments for a post.
+  Stream<QuerySnapshot> getCommentsStream(String postId) {
+    return _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  /// Get a single post document by ID.
+  Future<Map<String, dynamic>?> getPostById(String postId) async {
+    final doc = await _firestore.collection('posts').doc(postId).get();
+    if (!doc.exists) return null;
+    final data = doc.data() as Map<String, dynamic>;
+    data['postId'] = doc.id;
+    return data;
+  }
 }

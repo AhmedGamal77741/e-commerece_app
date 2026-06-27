@@ -1,9 +1,9 @@
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -180,7 +180,7 @@ class DirectChatTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final currentUserUid = ref.watch(currentUserIdProvider);
     final int unread = chat.unreadCount[currentUserUid] ?? 0;
     final tileKey = GlobalKey();
 

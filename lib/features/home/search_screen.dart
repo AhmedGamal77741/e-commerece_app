@@ -8,7 +8,7 @@ import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 
 class HomeSearch extends ConsumerStatefulWidget {
   final bool useGuestPostItem;
@@ -171,7 +171,7 @@ class _FollowingSearchTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final searchState = ref.watch(searchNotifierProvider);
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final currentUserId = ref.watch(currentUserIdProvider);
 
     return searchState.when(
       data: (state) {

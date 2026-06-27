@@ -540,4 +540,45 @@ class ChatRepository {
         .doc(chatRoomId)
         .update({'name': newName});
   }
+
+  /// Get a reply-to message document.
+  Future<Map<String, dynamic>?> getReplyMessage(String chatRoomId, String messageId) async {
+    final doc = await _firestore
+        .collection('chatRooms')
+        .doc(chatRoomId)
+        .collection('messages')
+        .doc(messageId)
+        .get();
+    if (!doc.exists) return null;
+    return doc.data() as Map<String, dynamic>;
+  }
+
+  /// Get the other user's ID from a chat room.
+  Future<String> getChatRoomOtherUserId(String chatRoomId, String currentUserId) async {
+    final doc = await _firestore.collection('chatRooms').doc(chatRoomId).get();
+    final participants = List<String>.from(doc['participants']);
+    return participants.firstWhere((id) => id != currentUserId);
+  }
+
+  /// Get a post document by ID.
+  Future<Map<String, dynamic>?> getPostById(String postId) async {
+    final doc = await _firestore.collection('posts').doc(postId).get();
+    if (!doc.exists) return null;
+    final data = doc.data() as Map<String, dynamic>;
+    data['postId'] = doc.id;
+    return data;
+  }
+
+  /// Fetch a user's display name.
+  Future<String> fetchUserName(String userId) async {
+    try {
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (doc.exists && doc.data() != null) {
+        return doc.data()!['name'] ?? 'Unknown User';
+      }
+      return 'User not found';
+    } catch (e) {
+      return 'Error';
+    }
+  }
 }

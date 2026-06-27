@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/share_dialog.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 
 // ── Own-post popup menu ───────────────────────────────────────────────────────
 
@@ -175,6 +176,7 @@ class OtherPostMenu extends ConsumerWidget {
               displayName,
               profileUrl,
               postData,
+              isLoggedIn: ref.read(currentUserIdProvider).isNotEmpty,
             );
             break;
           case 'follow_unfollow':

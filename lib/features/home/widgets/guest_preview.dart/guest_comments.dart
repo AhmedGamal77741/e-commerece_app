@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
@@ -57,10 +58,7 @@ class _GuestCommentsState extends ConsumerState<GuestComments> {
   }
 
   Future<MyUser> _loadUser(String userId) async {
-    final userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    final userData = userDoc.data() ?? {};
-    return MyUser.fromDocument(userData);
+    return ref.read(feedControllerProvider.notifier).loadUser(userId);
   }
 
   bool _isSameDay(DateTime a, DateTime b) =>
@@ -97,13 +95,7 @@ class _GuestCommentsState extends ConsumerState<GuestComments> {
                 SizedBox(height: 10.h),
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
-                    stream:
-                        FirebaseFirestore.instance
-                            .collection('posts')
-                            .doc(post['postId'])
-                            .collection('comments')
-                            .orderBy('createdAt', descending: true)
-                            .snapshots(),
+                    stream: ref.read(feedControllerProvider.notifier).getCommentsStreamForPost(post['postId']),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const SizedBox.shrink();
@@ -385,16 +377,10 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
                                 authorName: item.postData!['userId'] ?? '',
                                 postTitle: item.postData!['text'] ?? '',
                                 onTap: () async {
-                                  final doc =
-                                      await FirebaseFirestore.instance
-                                          .collection('posts')
-                                          .doc(item.postData!['postId'])
-                                          .get();
+                                  final doc = await ref.read(feedControllerProvider.notifier).getPostById(item.postData!['postId']);
                                   if (!context.mounted) return;
-                                  if (doc.exists) {
-                                    final postMap =
-                                        doc.data() as Map<String, dynamic>;
-                                    postMap['postId'] = doc.id;
+                                  if (doc != null) {
+                                    final postMap = doc;
                                     showModalBottomSheet(
                                       context: context,
                                       isScrollControlled: true,

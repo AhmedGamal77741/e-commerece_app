@@ -23,6 +23,48 @@ class AddressRepository {
         .toList();
   }
 
+  Future<void> addAddress({
+    required String name,
+    required String phone,
+    required String address,
+    required String detailAddress,
+    required bool isDefaultAddress,
+    required Map<String, dynamic> addressMap,
+  }) async {
+    final addressesSnapshot = await _addressesCollection.limit(1).get();
+    final bool isFirstAddress = addressesSnapshot.docs.isEmpty;
+    final bool shouldBeDefault = isDefaultAddress || isFirstAddress;
+
+    final batch = _firestore.batch();
+
+    if (shouldBeDefault && !isFirstAddress) {
+      final defaultAddresses = await _addressesCollection.where('isDefault', isEqualTo: true).get();
+      for (var doc in defaultAddresses.docs) {
+        batch.update(doc.reference, {'isDefault': false});
+      }
+    }
+
+    final docRef = _addressesCollection.doc();
+    final addressData = {
+      'id': docRef.id,
+      'name': name,
+      'phone': phone,
+      'address': address,
+      'detailAddress': detailAddress,
+      'isDefault': shouldBeDefault,
+      'addressMap': addressMap,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    batch.set(docRef, addressData);
+
+    if (shouldBeDefault) {
+      batch.update(_userDocument, {'defaultAddressId': docRef.id});
+    }
+
+    await batch.commit();
+  }
+
   Future<bool> deleteAddress(String addressId) async {
     try {
       DocumentSnapshot userDoc = await _userDocument.get();

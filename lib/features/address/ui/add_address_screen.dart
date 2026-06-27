@@ -1,12 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/cart/services/kakao_service.dart';
 import 'package:ecommerece_app/features/address/ui/address_search_dialog.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/address/domain/address_controller.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class AddAddressScreen extends StatefulWidget {
+class AddAddressScreen extends ConsumerStatefulWidget {
   /// When true, a "나중에 추가하기" skip action appears in the AppBar.
   /// The NavBar passes true; the address-list screen passes false (or omits it).
   final bool showSkip;
@@ -14,10 +15,10 @@ class AddAddressScreen extends StatefulWidget {
   const AddAddressScreen({super.key, this.showSkip = false});
 
   @override
-  State<AddAddressScreen> createState() => _AddAddressScreenState();
+  ConsumerState<AddAddressScreen> createState() => _AddAddressScreenState();
 }
 
-class _AddAddressScreenState extends State<AddAddressScreen> {
+class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
@@ -118,65 +119,26 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
+      final userUid = ref.read(currentUserIdProvider);
+      if (userUid.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다')));
           setState(() => _isLoading = false);
         }
         return;
       }
 
-      final addressesRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('addresses');
-
-      // Check if this is the first address
-      final addressesSnapshot = await addressesRef.limit(1).get();
-      final bool isFirstAddress = addressesSnapshot.docs.isEmpty;
-      final bool shouldBeDefault = _isDefaultAddress || isFirstAddress;
-
-      final batch = FirebaseFirestore.instance.batch();
-
-      if (shouldBeDefault && !isFirstAddress) {
-        // Reset existing defaults
-        final defaultAddresses =
-            await addressesRef.where('isDefault', isEqualTo: true).get();
-        for (var doc in defaultAddresses.docs) {
-          batch.update(doc.reference, {'isDefault': false});
-        }
-      }
-
-      final docRef = addressesRef.doc();
-      final addressData = {
-        'id': docRef.id,
-        'name': _nameController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'address': _addressController.text.trim(),
-        'detailAddress': _detailAddressController.text.trim(),
-        'isDefault': shouldBeDefault,
-        'addressMap': _address,
-        'createdAt': FieldValue.serverTimestamp(),
-      };
-
-      batch.set(docRef, addressData);
-
-      if (shouldBeDefault) {
-        batch.update(
-          FirebaseFirestore.instance.collection('users').doc(user.uid),
-          {'defaultAddressId': docRef.id},
-        );
-      }
-
-      await batch.commit();
+      await ref.read(addressControllerProvider.notifier).addAddress(
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        address: _addressController.text.trim(),
+        detailAddress: _detailAddressController.text.trim(),
+        isDefaultAddress: _isDefaultAddress,
+        addressMap: _address,
+      );
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('배송지가 저장되었습니다')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('배송지가 저장되었습니다')));
         Navigator.of(context).pop(true);
       }
     } catch (e) {

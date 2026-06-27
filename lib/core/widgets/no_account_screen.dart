@@ -1,33 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/features/mypage/domain/profile_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class NoBankAccountScreen extends StatefulWidget {
+class NoBankAccountScreen extends ConsumerStatefulWidget {
   final String source; // 'shop', 'sub', or 'signup'
   // Skip button only appears for 'shop' — other sources use the back arrow
   const NoBankAccountScreen({super.key, this.source = 'shop'});
 
   @override
-  State<NoBankAccountScreen> createState() => _NoBankAccountScreenState();
+  ConsumerState<NoBankAccountScreen> createState() => _NoBankAccountScreenState();
 }
 
-class _NoBankAccountScreenState extends State<NoBankAccountScreen> {
+class _NoBankAccountScreenState extends ConsumerState<NoBankAccountScreen> {
   bool _isLaunching = false;
 
   Future<void> _launchBankRegistration() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    final uid = ref.read(currentUserIdProvider);
+    if (uid.isEmpty) return;
 
     String phoneNo = '';
     try {
-      final cache =
-          await FirebaseFirestore.instance
-              .collection('usercached_values')
-              .doc(uid)
-              .get();
-      phoneNo = (cache.data()?['phone'] as String?) ?? '';
+      final cache = await ref.read(profileControllerProvider.notifier).getReceiptData();
+      phoneNo = (cache?['phone'] as String?) ?? '';
     } catch (_) {}
 
     final uri = Uri.parse(

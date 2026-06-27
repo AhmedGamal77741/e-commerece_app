@@ -1,6 +1,6 @@
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/chat_room_model.dart';
@@ -19,7 +19,7 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
   @override
   bool get wantKeepAlive => true;
 
-  String get currentUserId => FirebaseAuth.instance.currentUser!.uid;
+  String get currentUserId => ref.watch(currentUserIdProvider);
 
   final Map<String, MyUser?> _usersCache = {};
   final Set<String> _fetchingIds = {};
