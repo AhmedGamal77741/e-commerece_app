@@ -18,7 +18,7 @@ class _NotificationsState extends ConsumerState<Notifications> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(feedControllerProvider).markAllNotificationsAsRead();
+      ref.read(feedControllerProvider.notifier).markAllNotificationsAsRead();
     });
   }
 
@@ -34,7 +34,7 @@ class _NotificationsState extends ConsumerState<Notifications> {
             return const Center(child: Text('로그인이 필요합니다'));
           }
           return StreamBuilder<QuerySnapshot>(
-            stream: ref.read(feedControllerProvider).getNotificationsStream(user.userId),
+            stream: ref.watch(feedControllerProvider.notifier).getNotificationsStream(user.userId),
             builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const SizedBox.shrink();

@@ -29,7 +29,7 @@ class SearchState {
   }
 }
 
-class SearchNotifier extends AutoDisposeAsyncNotifier<SearchState> {
+class SearchNotifier extends AsyncNotifier<SearchState> {
   String _query = '';
   StreamSubscription? _postsSub;
   StreamSubscription? _usersSub;
@@ -161,4 +161,4 @@ class SearchNotifier extends AutoDisposeAsyncNotifier<SearchState> {
   }
 }
 
-final searchNotifierProvider = AutoDisposeAsyncNotifierProvider<SearchNotifier, SearchState>(SearchNotifier.new);
+final searchNotifierProvider = AsyncNotifierProvider<SearchNotifier, SearchState>(SearchNotifier.new);

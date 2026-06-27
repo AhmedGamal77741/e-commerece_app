@@ -34,7 +34,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
   Stream<QuerySnapshot> _getCategoriesStream(String userId) {
     if (_categoriesStream == null || _cachedCategoriesUserId != userId) {
       _cachedCategoriesUserId = userId;
-      _categoriesStream = ref.read(feedControllerProvider).getUserCategoriesStream(userId);
+      _categoriesStream = ref.read(feedControllerProvider.notifier).getUserCategoriesStream(userId);
     }
     return _categoriesStream!;
   }
@@ -43,7 +43,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    _userStream = ref.read(feedControllerProvider).getUserStream(widget.userId);
+    _userStream = ref.read(feedControllerProvider.notifier).getUserStream(widget.userId);
   }
 
   @override
@@ -222,7 +222,7 @@ class _PostsPageState extends ConsumerState<_PostsPage>
   @override
   void initState() {
     super.initState();
-    _stream = ref.read(feedControllerProvider).getUserPostsStream(
+    _stream = ref.read(feedControllerProvider.notifier).getUserPostsStream(
       widget.userId,
       categoryId: widget.categoryId,
     );

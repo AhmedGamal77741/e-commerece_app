@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/shop/shop_search.dart';
 import 'package:ecommerece_app/features/home/domain/search_notifier.dart';
 import 'package:ecommerece_app/features/home/widgets/user_search_tile.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
@@ -137,7 +138,7 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
                 children: [
                   const _FollowingSearchTab(),
                   _HomeFeedSearchTab(useGuestPostItem: widget.useGuestPostItem),
-                  ShopSearchScreen(searchQuery: _searchController.text),
+                  ShopSearch(),
                 ],
               ),
             ),

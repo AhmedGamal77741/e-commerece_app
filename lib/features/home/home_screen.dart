@@ -90,7 +90,6 @@ class HomeScreenState extends ConsumerState<HomeScreen>
                 children: [
                   HomeFeedTab(scrollController: _feedTabController),
                   FollowingTab(
-                    firebaseUser: firebaseUser,
                     scrollController: _followingTabController,
                   ),
                   MyStory(scrollController: _myStoryTabController),

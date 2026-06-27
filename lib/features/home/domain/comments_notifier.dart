@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
@@ -19,11 +20,12 @@ class CommentsState {
   });
 }
 
-class CommentsNotifier extends AutoDisposeFamilyAsyncNotifier<CommentsState, String> {
-  String get postId => arg;
+class CommentsNotifier extends AsyncNotifier<CommentsState> {
+  final String postId;
+  CommentsNotifier(this.postId);
 
   @override
-  FutureOr<CommentsState> build(String arg) async {
+  FutureOr<CommentsState> build() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     bool isNormalUser = true;
 
@@ -37,7 +39,7 @@ class CommentsNotifier extends AutoDisposeFamilyAsyncNotifier<CommentsState, Str
     final feedState = ref.read(feedControllerProvider).value;
     if (feedState != null) {
       for (var p in feedState) {
-        if (p['postId'] == arg || p['id'] == arg) {
+        if (p['postId'] == postId || p['id'] == postId) {
           postData = p;
           break;
         }
@@ -46,11 +48,11 @@ class CommentsNotifier extends AutoDisposeFamilyAsyncNotifier<CommentsState, Str
 
     if (postData == null) {
       try {
-        final doc = await FirebaseFirestore.instance.collection('posts').doc(arg).get();
+        final doc = await FirebaseFirestore.instance.collection('posts').doc(postId).get();
         if (doc.exists) {
           postData = doc.data();
           if (postData != null) {
-            postData['postId'] = arg;
+            postData['postId'] = postId;
           }
         }
       } catch (e) {
@@ -65,7 +67,7 @@ class CommentsNotifier extends AutoDisposeFamilyAsyncNotifier<CommentsState, Str
       }
     }
 
-    ref.read(feedControllerProvider.notifier).listenToComments(arg);
+    ref.read(feedControllerProvider.notifier).listenToComments(postId);
 
     return CommentsState(
       postData: postData,
@@ -104,4 +106,4 @@ class CommentsNotifier extends AutoDisposeFamilyAsyncNotifier<CommentsState, Str
   }
 }
 
-final commentsNotifierProvider = AutoDisposeAsyncNotifierProviderFamily<CommentsNotifier, CommentsState, String>(CommentsNotifier.new);
+final commentsNotifierProvider = AsyncNotifierProvider.family<CommentsNotifier, CommentsState, String>(CommentsNotifier.new);

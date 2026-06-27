@@ -10,36 +10,62 @@ import 'package:ecommerece_app/features/home/data/feed_repository.dart';
 import 'package:image_picker/image_picker.dart';
 
 // Stream Providers for reactive feed data
-final userProfileDocProvider = StreamProvider.family<DocumentSnapshot?, String>((ref, userId) {
-  return ref.watch(feedRepositoryProvider).getUserStream(userId);
+final userProfileDocProvider = StreamProvider.family<DocumentSnapshot?, String>(
+  (ref, userId) {
+    return ref.watch(feedRepositoryProvider).getUserStream(userId);
+  },
+);
+
+final hiddenFriendsListProvider = StreamProvider.family<List<String>, String>((
+  ref,
+  userId,
+) {
+  return ref
+      .watch(feedRepositoryProvider)
+      .getHiddenFriendsStream(userId)
+      .map((snapshot) => snapshot.docs.map((doc) => doc.id).toList());
 });
 
-final hiddenFriendsListProvider = StreamProvider.family<List<String>, String>((ref, userId) {
-  return ref.watch(feedRepositoryProvider).getHiddenFriendsStream(userId)
-    .map((snapshot) => snapshot.docs.map((doc) => doc.id).toList());
+final followingSetProvider = StreamProvider.family<Set<String>, String>((
+  ref,
+  userId,
+) {
+  return ref
+      .watch(feedRepositoryProvider)
+      .getFollowingStreamForUser(userId)
+      .map((snapshot) {
+        final set = <String>{};
+        for (var doc in snapshot.docs) {
+          final uid = doc.get('userId') as String?;
+          if (uid != null) set.add(uid);
+        }
+        return set;
+      });
 });
 
-final followingSetProvider = StreamProvider.family<Set<String>, String>((ref, userId) {
-  return ref.watch(feedRepositoryProvider).getFollowingStreamForUser(userId)
-    .map((snapshot) {
-      final set = <String>{};
-      for (var doc in snapshot.docs) {
-        final uid = doc.get('userId') as String?;
-        if (uid != null) set.add(uid);
-      }
-      return set;
+final allPostsStreamProvider = StreamProvider<List<QueryDocumentSnapshot>>((
+  ref,
+) {
+  return ref
+      .watch(feedRepositoryProvider)
+      .searchPostsStream()
+      .map((snapshot) => snapshot.docs);
+});
+
+final authorsDataMapProvider =
+    StreamProvider.family<Map<String, Map<String, dynamic>>, List<String>>((
+      ref,
+      authorIds,
+    ) {
+      return ref
+          .watch(feedRepositoryProvider)
+          .getAuthorsDataStreamRealtime(authorIds);
     });
-});
 
-final allPostsStreamProvider = StreamProvider<List<QueryDocumentSnapshot>>((ref) {
-  return ref.watch(feedRepositoryProvider).searchPostsStream().map((snapshot) => snapshot.docs);
-});
-
-final authorsDataMapProvider = StreamProvider.family<Map<String, Map<String, dynamic>>, List<String>>((ref, authorIds) {
-  return ref.watch(feedRepositoryProvider).getAuthorsDataStreamRealtime(authorIds);
-});
-
-final feedControllerProvider = AsyncNotifierProvider<FeedController, List<Map<String, dynamic>>>(FeedController.new);
+final feedControllerProvider =
+    AsyncNotifierProvider<FeedController, List<Map<String, dynamic>>>(
+      FeedController.new,
+    );
 
 class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
   final Map<String, List<Comment>> _comments = {};
@@ -62,22 +88,27 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       final data = doc.data() as Map<String, dynamic>;
       authorIds.add(data['userId'] as String);
     }
-    
+
     // Sort author IDs so the parameter remains consistent for caching
     final sortedAuthorIds = authorIds.toList()..sort();
-    final authorsMap = await ref.watch(authorsDataMapProvider(sortedAuthorIds).future);
+    final authorsMap = await ref.watch(
+      authorsDataMapProvider(sortedAuthorIds).future,
+    );
 
     if (user == null) {
       // Guest feed
-      return postsDocs.where((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        final authorData = authorsMap[data['userId'] as String] ?? {};
-        return (authorData['isPrivate'] ?? false) == false;
-      }).map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['postId'] = data['postId'] ?? doc.id;
-        return data;
-      }).toList();
+      return postsDocs
+          .where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final authorData = authorsMap[data['userId'] as String] ?? {};
+            return (authorData['isPrivate'] ?? false) == false;
+          })
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            data['postId'] = data['postId'] ?? doc.id;
+            return data;
+          })
+          .toList();
     }
 
     // Authenticated user feed
@@ -87,41 +118,50 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
 
     final blockedUsers = List<String>.from(userData['blocked'] ?? []);
     final isSub = userData['isSub'] ?? false;
-    
-    final hiddenFriends = await ref.watch(hiddenFriendsListProvider(user.uid).future);
-    
+
+    final hiddenFriends = await ref.watch(
+      hiddenFriendsListProvider(user.uid).future,
+    );
+
     Set<String> followingSet = {};
     if (isSub) {
       followingSet = await ref.watch(followingSetProvider(user.uid).future);
     }
 
-    return postsDocs.where((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      final postAuthorId = data['userId'] as String;
-      
-      if (postAuthorId == user.uid) return false;
-      if (blockedUsers.contains(postAuthorId)) return false;
-      if (hiddenFriends.contains(postAuthorId)) return false;
+    return postsDocs
+        .where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final postAuthorId = data['userId'] as String;
 
-      final authorData = authorsMap[postAuthorId] ?? {};
-      final authorBlockedUsers = List<dynamic>.from(authorData['blocked'] ?? []);
-      if (authorBlockedUsers.contains(user.uid)) return false;
+          if (postAuthorId == user.uid) return false;
+          if (blockedUsers.contains(postAuthorId)) return false;
+          if (hiddenFriends.contains(postAuthorId)) return false;
 
-      final notInterestedBy = List<dynamic>.from(data['notInterestedBy'] ?? []);
-      if (notInterestedBy.contains(user.uid)) return false;
+          final authorData = authorsMap[postAuthorId] ?? {};
+          final authorBlockedUsers = List<dynamic>.from(
+            authorData['blocked'] ?? [],
+          );
+          if (authorBlockedUsers.contains(user.uid)) return false;
 
-      final bool isPrivate = authorData['isPrivate'] ?? false;
-      if (!isPrivate) return true;
+          final notInterestedBy = List<dynamic>.from(
+            data['notInterestedBy'] ?? [],
+          );
+          if (notInterestedBy.contains(user.uid)) return false;
 
-      if (isSub) {
-        return followingSet.contains(postAuthorId);
-      }
-      return false;
-    }).map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      data['postId'] = data['postId'] ?? doc.id;
-      return data;
-    }).toList();
+          final bool isPrivate = authorData['isPrivate'] ?? false;
+          if (!isPrivate) return true;
+
+          if (isSub) {
+            return followingSet.contains(postAuthorId);
+          }
+          return false;
+        })
+        .map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          data['postId'] = data['postId'] ?? doc.id;
+          return data;
+        })
+        .toList();
   }
 
   // Getters for comments and users (kept for compatibility with other files)
@@ -136,9 +176,10 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     }).toList();
   }
 
-  bool isLoadingComments(String postId) => _loadingCommentPosts.contains(postId);
+  bool isLoadingComments(String postId) =>
+      _loadingCommentPosts.contains(postId);
   MyUser? getUser(String userId) => _users[userId];
-  
+
   // Dummy implementations to prevent other files from crashing during sub-phase
   bool hasPostChanged(String postId) => false;
   void resetListening() {}
@@ -147,22 +188,43 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
   // ---------------------------------------------------------------------------
   // Proxy methods delegating to FeedRepository
   // ---------------------------------------------------------------------------
-  Stream<QuerySnapshot> getNotificationsStream(String userId) => _repository.getNotificationsStream(userId);
-  Stream<QuerySnapshot> getUnreadNotificationsStream(String userId) => _repository.getUnreadNotificationsStream(userId);
-  Stream<QuerySnapshot> getHiddenFriendsStream(String userId) => _repository.getHiddenFriendsStream(userId);
-  Future<void> markAllNotificationsAsRead() => _repository.markAllNotificationsAsRead();
-  Stream<DocumentSnapshot> getUserStream(String userId) => _repository.getUserStream(userId);
+  Stream<QuerySnapshot> getNotificationsStream(String userId) =>
+      _repository.getNotificationsStream(userId);
+  Stream<QuerySnapshot> getUnreadNotificationsStream(String userId) =>
+      _repository.getUnreadNotificationsStream(userId);
+  Stream<QuerySnapshot> getHiddenFriendsStream(String userId) =>
+      _repository.getHiddenFriendsStream(userId);
+  Future<void> markAllNotificationsAsRead() =>
+      _repository.markAllNotificationsAsRead();
+  Stream<DocumentSnapshot> getUserStream(String userId) =>
+      _repository.getUserStream(userId);
   Stream<QuerySnapshot> searchUsersStream() => _repository.searchUsersStream();
   Stream<QuerySnapshot> searchPostsStream() => _repository.searchPostsStream();
-  Stream<Map<String, Map<String, dynamic>>> getAuthorsDataStreamRealtime(List<String> authorIds) => _repository.getAuthorsDataStreamRealtime(authorIds);
-  Future<void> sendFollowRequest(String targetUserId) => _repository.sendFollowRequest(targetUserId);
-  Future<void> cancelFollowRequest(String targetUserId) => _repository.cancelFollowRequest(targetUserId);
-  Stream<QuerySnapshot> getFollowRequestsStream(String targetUserId) => _repository.getFollowRequestsStream(targetUserId);
-  Stream<QuerySnapshot> getFollowingStreamForUser(String userId) => _repository.getFollowingStreamForUser(userId);
-  Stream<DocumentSnapshot> getFollowingDocStream(String currentUserId, String targetUserId) => _repository.getFollowingDocStream(currentUserId, targetUserId);
-  Stream<DocumentSnapshot> getFollowRequestDocStream(String targetUserId, String currentUserId) => _repository.getFollowRequestDocStream(targetUserId, currentUserId);
-  Stream<QuerySnapshot> getUserCategoriesStream(String userId) => _repository.getUserCategoriesStream(userId);
-  Stream<QuerySnapshot> getUserPostsStream(String userId, {String? categoryId}) => _repository.getUserPostsStream(userId, categoryId: categoryId);
+  Stream<Map<String, Map<String, dynamic>>> getAuthorsDataStreamRealtime(
+    List<String> authorIds,
+  ) => _repository.getAuthorsDataStreamRealtime(authorIds);
+  Future<void> sendFollowRequest(String targetUserId) =>
+      _repository.sendFollowRequest(targetUserId);
+  Future<void> cancelFollowRequest(String targetUserId) =>
+      _repository.cancelFollowRequest(targetUserId);
+  Stream<QuerySnapshot> getFollowRequestsStream(String targetUserId) =>
+      _repository.getFollowRequestsStream(targetUserId);
+  Stream<QuerySnapshot> getFollowingStreamForUser(String userId) =>
+      _repository.getFollowingStreamForUser(userId);
+  Stream<DocumentSnapshot> getFollowingDocStream(
+    String currentUserId,
+    String targetUserId,
+  ) => _repository.getFollowingDocStream(currentUserId, targetUserId);
+  Stream<DocumentSnapshot> getFollowRequestDocStream(
+    String targetUserId,
+    String currentUserId,
+  ) => _repository.getFollowRequestDocStream(targetUserId, currentUserId);
+  Stream<QuerySnapshot> getUserCategoriesStream(String userId) =>
+      _repository.getUserCategoriesStream(userId);
+  Stream<QuerySnapshot> getUserPostsStream(
+    String userId, {
+    String? categoryId,
+  }) => _repository.getUserPostsStream(userId, categoryId: categoryId);
   Future<MyUser> getUserProfile(String userId) => _repository.getUser(userId);
 
   Future<void> markPostNotInterested({required String postId}) async {
@@ -173,14 +235,49 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     await _repository.blockUser(userIdToBlock: userIdToBlock);
   }
 
-  Future<void> unblockUser({required String userIdToUnblock}) => _repository.unblockUser(userIdToUnblock: userIdToUnblock);
-  Future<void> reportUser({required String reportedUserId, required String postId}) => _repository.reportUser(reportedUserId: reportedUserId, postId: postId);
-  Future<void> uploadPost({required String text, required List<String> imgUrls, String? categoryId}) => _repository.uploadPost(text: text, imgUrls: imgUrls, categoryId: categoryId);
-  Future<void> updatePost({required String postId, required String text, required List<String> networkImgUrls, required List<XFile> newImages, String? categoryId}) => _repository.updatePost(postId: postId, text: text, networkImgUrls: networkImgUrls, newImages: newImages, categoryId: categoryId);
-  Future<String> uploadImageToFirebaseStorageHome() => _repository.uploadImageToFirebaseStorageHome();
-  Future<List<String>> uploadMultipleImagesToFirebaseHome() => _repository.uploadMultipleImagesToFirebaseHome();
-  Future<String> uploadSingleImageToFirebase(XFile image, int index, {Function(double)? onProgress}) => _repository.uploadSingleImageToFirebase(image, index, onProgress: onProgress);
-  Future<void> migrateLastPostCreatedAt() => _repository.migrateLastPostCreatedAt();
+  Future<void> unblockUser({required String userIdToUnblock}) =>
+      _repository.unblockUser(userIdToUnblock: userIdToUnblock);
+  Future<void> reportUser({
+    required String reportedUserId,
+    required String postId,
+  }) => _repository.reportUser(reportedUserId: reportedUserId, postId: postId);
+  Future<void> uploadPost({
+    required String text,
+    required List<String> imgUrls,
+    String? categoryId,
+  }) => _repository.uploadPost(
+    text: text,
+    imgUrls: imgUrls,
+    categoryId: categoryId,
+  );
+  Future<void> updatePost({
+    required String postId,
+    required String text,
+    required List<String> networkImgUrls,
+    required List<XFile> newImages,
+    String? categoryId,
+  }) => _repository.updatePost(
+    postId: postId,
+    text: text,
+    networkImgUrls: networkImgUrls,
+    newImages: newImages,
+    categoryId: categoryId,
+  );
+  Future<String> uploadImageToFirebaseStorageHome() =>
+      _repository.uploadImageToFirebaseStorageHome();
+  Future<List<String>> uploadMultipleImagesToFirebaseHome() =>
+      _repository.uploadMultipleImagesToFirebaseHome();
+  Future<String> uploadSingleImageToFirebase(
+    XFile image,
+    int index, {
+    Function(double)? onProgress,
+  }) => _repository.uploadSingleImageToFirebase(
+    image,
+    index,
+    onProgress: onProgress,
+  );
+  Future<void> migrateLastPostCreatedAt() =>
+      _repository.migrateLastPostCreatedAt();
 
   Future<void> loadComments(String postId) async {
     if (_loadingCommentPosts.contains(postId)) return;
@@ -190,26 +287,30 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     // However, for compatibility with comments.dart in this phase, we keep it simple.
 
     try {
-      final commentsSnapshot = await _firestore
-          .collection('posts')
-          .doc(postId)
-          .collection('comments')
-          .orderBy('createdAt', descending: true)
-          .get();
+      final commentsSnapshot =
+          await _firestore
+              .collection('posts')
+              .doc(postId)
+              .collection('comments')
+              .orderBy('createdAt', descending: true)
+              .get();
 
-      final comments = commentsSnapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
+      final comments =
+          commentsSnapshot.docs
+              .map((doc) => Comment.fromFirestore(doc))
+              .toList();
       _comments[postId] = comments;
 
-      final userIds = comments.map((comment) => comment.userId).toSet().toList();
+      final userIds =
+          comments.map((comment) => comment.userId).toSet().toList();
       for (final userId in userIds) {
         if (!_users.containsKey(userId)) {
           try {
             await loadUser(userId);
-          } catch (e) {
-          }
+            // ignore: empty_catches
+          } catch (e) {}
         }
       }
-    } catch (e) {
     } finally {
       _loadingCommentPosts.remove(postId);
     }
@@ -223,7 +324,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         'notInterestedBy': FieldValue.arrayUnion([currentUser!.uid]),
       });
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -235,18 +336,23 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .listen((snapshot) {
-      final comments = snapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
-      _comments[postId] = comments;
+          final comments =
+              snapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
+          _comments[postId] = comments;
 
-      for (final comment in comments) {
-        if (!_users.containsKey(comment.userId)) {
-          loadUser(comment.userId);
-        }
-      }
-    });
+          for (final comment in comments) {
+            if (!_users.containsKey(comment.userId)) {
+              loadUser(comment.userId);
+            }
+          }
+        });
   }
 
-  Future<void> addComment(String postId, String text, {String? imageUrl}) async {
+  Future<void> addComment(
+    String postId,
+    String text, {
+    String? imageUrl,
+  }) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
@@ -255,6 +361,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       try {
         userData = await loadUser(currentUser.uid);
       } catch (e) {
+        rethrow;
       }
     }
 
@@ -273,7 +380,8 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     }
 
     final batch = _firestore.batch();
-    final commentRef = _firestore.collection('posts').doc(postId).collection('comments').doc();
+    final commentRef =
+        _firestore.collection('posts').doc(postId).collection('comments').doc();
 
     batch.set(
       commentRef,
@@ -284,8 +392,8 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         createdAt: FieldValue.serverTimestamp(),
         imageUrl: imageUrl,
         likes: 0,
-        userImage: userData?.url ?? currentUser.photoURL,
-        userName: userData?.name ?? currentUser.displayName,
+        userImage: userData.url,
+        userName: userData.name,
         likedBy: [],
         postData: postData,
         productData: productData != null ? Product.fromMap(productData) : null,
@@ -298,7 +406,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     try {
       await batch.commit();
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -308,7 +416,8 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       if (uri.pathSegments.length < 2) return null;
 
       String productId = uri.pathSegments[1];
-      DocumentSnapshot doc = await _firestore.collection('products').doc(productId).get();
+      DocumentSnapshot doc =
+          await _firestore.collection('products').doc(productId).get();
 
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
@@ -316,6 +425,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         return data;
       }
     } catch (e) {
+      rethrow;
     }
     return null;
   }
@@ -331,7 +441,8 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
 
       if (linkedPostId == null) return null;
 
-      DocumentSnapshot doc = await _firestore.collection('posts').doc(linkedPostId).get();
+      DocumentSnapshot doc =
+          await _firestore.collection('posts').doc(linkedPostId).get();
 
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
@@ -339,6 +450,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         return data;
       }
     } catch (e) {
+      rethrow;
     }
     return null;
   }
@@ -346,26 +458,28 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
   Future<void> togglePostLike(String postId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
-    
+
     // We get the post from the current state (if loaded)
     final currentState = state.value;
     if (currentState == null) return;
-    
+
     final postIndex = currentState.indexWhere((p) => p['postId'] == postId);
     if (postIndex == -1) return;
-    
+
     final post = currentState[postIndex];
     List<String> likedBy = List<String>.from(post['likedBy'] ?? []);
     bool isLiked = likedBy.contains(currentUser.uid);
 
     try {
       await _firestore.collection('posts').doc(postId).update({
-        'likedBy': isLiked
-            ? FieldValue.arrayRemove([currentUser.uid])
-            : FieldValue.arrayUnion([currentUser.uid]),
+        'likedBy':
+            isLiked
+                ? FieldValue.arrayRemove([currentUser.uid])
+                : FieldValue.arrayUnion([currentUser.uid]),
         'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
       });
     } catch (e) {
+      rethrow;
     }
   }
 
@@ -375,11 +489,13 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
 
     if (!_comments.containsKey(postId)) return;
 
-    final commentIndex = _comments[postId]!.indexWhere((c) => c.id == commentId);
+    final commentIndex = _comments[postId]!.indexWhere(
+      (c) => c.id == commentId,
+    );
     if (commentIndex == -1) return;
 
     final comment = _comments[postId]![commentIndex];
-    List<String> likedBy = List<String>.from(comment.likedBy ?? []);
+    List<String> likedBy = List<String>.from(comment.likedBy);
     bool isLiked = likedBy.contains(currentUser.uid);
 
     try {
@@ -389,12 +505,15 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
           .collection('comments')
           .doc(commentId)
           .update({
-            'likedBy': isLiked
-                ? FieldValue.arrayRemove([currentUser.uid])
-                : FieldValue.arrayUnion([currentUser.uid]),
-            'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
+            'likedBy':
+                isLiked
+                    ? FieldValue.arrayRemove([currentUser.uid])
+                    : FieldValue.arrayUnion([currentUser.uid]),
+            'likes':
+                isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
           });
     } catch (e) {
+      rethrow;
     }
   }
 
@@ -414,13 +533,15 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
   Future<void> preloadUsers() async {
     final currentState = state.value;
     if (currentState == null) return;
-    
-    final userIds = currentState.map((post) => post['userId'] as String).toSet().toList();
+
+    final userIds =
+        currentState.map((post) => post['userId'] as String).toSet().toList();
     for (final userId in userIds) {
       if (!_users.containsKey(userId)) {
         try {
           await loadUser(userId);
         } catch (e) {
+          rethrow;
         }
       }
     }

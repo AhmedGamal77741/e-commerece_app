@@ -7,12 +7,12 @@ import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/auth/data/auth_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
-import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 
 class MyStory extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
@@ -33,7 +33,7 @@ class _MyStoryState extends ConsumerState<MyStory> {
   Stream<QuerySnapshot> _getCategoriesStream(String userId) {
     if (_categoriesStream == null || _cachedCategoriesUserId != userId) {
       _cachedCategoriesUserId = userId;
-      _categoriesStream = ref.read(feedControllerProvider).getUserCategoriesStream(userId);
+      _categoriesStream = ref.read(feedControllerProvider.notifier).getUserCategoriesStream(userId);
     }
     return _categoriesStream!;
   }
@@ -138,7 +138,7 @@ class _MyStoryState extends ConsumerState<MyStory> {
                                 phoneNumber: currentUser.phoneNumber,
                               );
                               
-                              await ref.read(authControllerProvider).updateUser(updatedUser, '');
+                              await ref.read(authNotifierProvider.notifier).updateUser(updatedUser, '');
                             }
                             LoadingService().hideLoading();
                           },
@@ -224,7 +224,7 @@ class _PostsPageState extends ConsumerState<_PostsPage>
   @override
   void initState() {
     super.initState();
-    _stream = ref.read(feedControllerProvider).getUserPostsStream(
+    _stream = ref.read(feedControllerProvider.notifier).getUserPostsStream(
       widget.userId,
       categoryId: widget.categoryId,
     );

@@ -36,7 +36,7 @@ class FollowFeedState {
   }
 }
 
-class FollowFeedNotifier extends AutoDisposeAsyncNotifier<FollowFeedState> {
+class FollowFeedNotifier extends AsyncNotifier<FollowFeedState> {
   StreamSubscription? _userSub;
   StreamSubscription? _followingSub;
   StreamSubscription? _hiddenFriendsSub;
@@ -46,6 +46,12 @@ class FollowFeedNotifier extends AutoDisposeAsyncNotifier<FollowFeedState> {
   @override
   FutureOr<FollowFeedState> build() {
     _initData();
+    ref.onDispose(() {
+      _userSub?.cancel();
+      _followingSub?.cancel();
+      _hiddenFriendsSub?.cancel();
+      _categoriesSub?.cancel();
+    });
     return FollowFeedState(isLoading: true);
   }
 
@@ -155,4 +161,4 @@ class FollowFeedNotifier extends AutoDisposeAsyncNotifier<FollowFeedState> {
   }
 }
 
-final followFeedNotifierProvider = AutoDisposeAsyncNotifierProvider<FollowFeedNotifier, FollowFeedState>(FollowFeedNotifier.new);
+final followFeedNotifierProvider = AsyncNotifierProvider<FollowFeedNotifier, FollowFeedState>(FollowFeedNotifier.new);

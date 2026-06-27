@@ -93,7 +93,7 @@ class AddPostState {
   }
 }
 
-class AddPostNotifier extends AutoDisposeNotifier<AddPostState> {
+class AddPostNotifier extends Notifier<AddPostState> {
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
 
@@ -277,7 +277,7 @@ class AddPostNotifier extends AutoDisposeNotifier<AddPostState> {
   Future<void> _uploadImage(XFile file, int index) async {
      try {
          final imageItem = state.images[index];
-         final url = await ref.read(feedControllerProvider).uploadSingleImageToFirebase(
+         final url = await ref.read(feedControllerProvider.notifier).uploadSingleImageToFirebase(
               file,
               index,
               onProgress: (progress) {
@@ -309,7 +309,7 @@ class AddPostNotifier extends AutoDisposeNotifier<AddPostState> {
           .cast<String>()
           .toList();
           
-      await ref.read(feedControllerProvider).uploadPost(
+      await ref.read(feedControllerProvider.notifier).uploadPost(
         text: text,
         imgUrls: finalUrls,
         categoryId: state.selectedCategoryId,
@@ -320,6 +320,6 @@ class AddPostNotifier extends AutoDisposeNotifier<AddPostState> {
   }
 }
 
-final addPostNotifierProvider = AutoDisposeNotifierProvider<AddPostNotifier, AddPostState>(() {
+final addPostNotifierProvider = NotifierProvider<AddPostNotifier, AddPostState>(() {
   return AddPostNotifier();
 });
