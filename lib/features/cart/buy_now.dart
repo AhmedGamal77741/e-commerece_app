@@ -16,9 +16,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/cart/domain/checkout_controller.dart';
+import 'package:ecommerece_app/features/cart/domain/bank_controller.dart';
 
-class BuyNow extends StatefulWidget {
+class BuyNow extends ConsumerStatefulWidget {
   final String? paymentId;
   final String? productName;
   final String? productImgUrl;
@@ -27,10 +29,10 @@ class BuyNow extends StatefulWidget {
     : super(key: key);
 
   @override
-  State<BuyNow> createState() => _BuyNowState();
+  ConsumerState<BuyNow> createState() => _BuyNowState();
 }
 
-class _BuyNowState extends State<BuyNow> {
+class _BuyNowState extends ConsumerState<BuyNow> {
   // ── Receipt / invoice fields ──────────────────────────────────────────────
   String invoiceeType = '사업자';
   final invoiceeCorpNumController = TextEditingController();
@@ -71,7 +73,7 @@ class _BuyNowState extends State<BuyNow> {
   int selectedOption = 1;
 
   // ── Bank accounts ─────────────────────────────────────────────────────────
-  List<Map<String, dynamic>> bankAccounts = [];
+  List<Map<String, dynamic>> get bankAccounts => ref.watch(bankAccountsStreamProvider).value ?? [];
   int selectedBankIndex = -1;
 
   // ── pending_buynow data ───────────────────────────────────────────────────
@@ -84,7 +86,6 @@ class _BuyNowState extends State<BuyNow> {
   String? currentPaymentId;
 
   // ── Guards ────────────────────────────────────────────────────────────────
-  bool _bankAccountsFetched = false;
 
   final formatCurrency = NumberFormat('#,###');
 
@@ -117,49 +118,16 @@ class _BuyNowState extends State<BuyNow> {
     // Load pending_buynow first — needed by _ensureCachedAddressAndInstructions
     await _loadPendingBuynowData();
 
-    // Load bank accounts and cached user values in parallel
-    await Future.wait([_fetchBankAccounts(), _loadCachedUserValues()]);
+    // Load cached user values
+    await _loadCachedUserValues();
 
     // After cache loaded, fill address from default if missing
     await _ensureCachedAddressAndInstructions(uid);
   }
 
-  // ── Guard: only re-fetch on return from bank registration ────────────────
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_bankAccountsFetched) {
-      _bankAccountsFetched = true;
-    } else {
-      _fetchBankAccounts();
-    }
-  }
-
   // ───────────────────────────────────────────────────────────────────────────
   // DATA FETCHING
   // ───────────────────────────────────────────────────────────────────────────
-
-  Future<void> _fetchBankAccounts() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    final snap =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    final data = snap.data();
-    if (data != null && data['bankAccounts'] != null) {
-      final accounts = List<Map<String, dynamic>>.from(data['bankAccounts']);
-      if (mounted)
-        setState(() {
-          bankAccounts = accounts;
-          selectedBankIndex = accounts.isNotEmpty ? 0 : -1;
-        });
-    } else {
-      if (mounted)
-        setState(() {
-          bankAccounts = [];
-          selectedBankIndex = -1;
-        });
-    }
-  }
 
   Future<void> _loadPendingBuynowData() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -187,14 +155,9 @@ class _BuyNowState extends State<BuyNow> {
   Future<void> _loadCachedUserValues() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    final doc =
-        await FirebaseFirestore.instance
-            .collection('usercached_values')
-            .doc(uid)
-            .get();
-    if (!doc.exists || !mounted) return;
-    final data = doc.data();
-    if (data == null) return;
+    
+    final data = await ref.read(checkoutControllerProvider.notifier).loadCachedValues(uid);
+    if (data == null || !mounted) return;
 
     setState(() {
       nameController.text = data['name'] ?? '';
@@ -315,22 +278,7 @@ class _BuyNowState extends State<BuyNow> {
   // ───────────────────────────────────────────────────────────────────────────
 
   Future<void> _deleteBankAccount(String uid, String payerId) async {
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-    final snap = await userRef.get();
-    final data = snap.data();
-    if (data == null) return;
-
-    final accounts = List<Map<String, dynamic>>.from(
-      data['bankAccounts'] ?? [],
-    );
-    accounts.removeWhere((b) => b['payerId'] == payerId);
-    await userRef.update({'bankAccounts': accounts});
-
-    if (mounted)
-      setState(() {
-        bankAccounts = accounts;
-        selectedBankIndex = accounts.isNotEmpty ? 0 : -1;
-      });
+    await ref.read(bankControllerProvider.notifier).deleteBankAccount(payerId);
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -380,51 +328,44 @@ class _BuyNowState extends State<BuyNow> {
   Future<bool> _saveCachedUserValues({bool showFeedback = false}) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return false;
-    try {
-      await FirebaseFirestore.instance
-          .collection('usercached_values')
-          .doc(uid)
-          .set({
-            'userId': uid,
-            'name': nameController.text.trim(),
-            'email': emailController.text.trim(),
-            'phone': phoneController.text.trim(),
-            'invoiceeType': invoiceeType,
-            'invoiceeCorpNum': invoiceeCorpNumController.text.trim(),
-            'invoiceeCorpName': invoiceeCorpNameController.text.trim(),
-            'invoiceeCEOName': invoiceeCEONameController.text.trim(),
-            'selectedOption': selectedOption,
-            'deliveryAddressId': address.id,
-            'deliveryAddress': address.address,
-            'deliveryAddressDetail': address.detailAddress,
-            'deliveryInstructions':
-                selectedRequest == '직접입력'
-                    ? (manualRequest?.trim() ?? '')
-                    : selectedRequest,
-            'recipientName': address.name,
-            'recipientPhone': address.phone,
-          }, SetOptions(merge: true));
+    
+    final fields = {
+      'name': nameController.text.trim(),
+      'email': emailController.text.trim(),
+      'phone': phoneController.text.trim(),
+      'invoiceeType': invoiceeType,
+      'invoiceeCorpNum': invoiceeCorpNumController.text.trim(),
+      'invoiceeCorpName': invoiceeCorpNameController.text.trim(),
+      'invoiceeCEOName': invoiceeCEONameController.text.trim(),
+      'selectedOption': selectedOption,
+      'deliveryAddressId': address.id,
+      'deliveryAddress': address.address,
+      'deliveryAddressDetail': address.detailAddress,
+      'deliveryInstructions': selectedRequest == '직접입력'
+          ? (manualRequest?.trim() ?? '')
+          : selectedRequest,
+      'recipientName': address.name,
+      'recipientPhone': address.phone,
+    };
 
-      if (showFeedback && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('정보가 저장되었습니다'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-      return true;
-    } catch (e) {
-      if (showFeedback && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('저장 실패: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return false;
+    final success = await ref.read(checkoutControllerProvider.notifier).saveCachedUserValues(fields);
+    
+    if (success && showFeedback && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('정보가 저장되었습니다'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else if (!success && showFeedback && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('저장 실패'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
+    return success;
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -463,17 +404,9 @@ class _BuyNowState extends State<BuyNow> {
   // ───────────────────────────────────────────────────────────────────────────
 
   void _launchBankRegistration(String uid) {
-    final regPaymentId = FirebaseFirestore.instance.collection('_tmp').doc().id;
-
-    launchUrl(
-      Uri.parse(
-        'https://pay.pang2chocolate.com/bank-register.html'
-        '?userId=${Uri.encodeComponent(uid)}'
-        '&paymentId=${Uri.encodeComponent(regPaymentId)}'
-        '&phoneNo=${Uri.encodeComponent(phoneController.text.trim())}'
-        '&option=${Uri.encodeComponent(selectedOption.toString())}',
-      ),
-      mode: LaunchMode.externalApplication,
+    ref.read(bankControllerProvider.notifier).launchBankRegistration(
+      phoneNo: phoneController.text.trim(),
+      option: selectedOption.toString(),
     );
   }
 
