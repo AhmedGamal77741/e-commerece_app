@@ -206,12 +206,10 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
           try {
             await loadUser(userId);
           } catch (e) {
-            print('Error loading user $userId: $e');
           }
         }
       }
     } catch (e) {
-      print('Error loading comments for post $postId: $e');
     } finally {
       _loadingCommentPosts.remove(postId);
     }
@@ -225,7 +223,6 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         'notInterestedBy': FieldValue.arrayUnion([currentUser!.uid]),
       });
     } catch (e) {
-      print('Error adding to notInterestedBy: $e');
       throw e;
     }
   }
@@ -258,7 +255,6 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       try {
         userData = await loadUser(currentUser.uid);
       } catch (e) {
-        print('Error loading user data: $e');
       }
     }
 
@@ -302,7 +298,6 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     try {
       await batch.commit();
     } catch (e) {
-      print('Error adding comment: $e');
       throw e;
     }
   }
@@ -321,7 +316,6 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         return data;
       }
     } catch (e) {
-      print("Error fetching linked product: $e");
     }
     return null;
   }
@@ -345,7 +339,6 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         return data;
       }
     } catch (e) {
-      print("Error fetching linked post: $e");
     }
     return null;
   }
@@ -373,7 +366,6 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
       });
     } catch (e) {
-      print('Error updating like: $e');
     }
   }
 
@@ -403,7 +395,6 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
             'likes': isLiked ? FieldValue.increment(-1) : FieldValue.increment(1),
           });
     } catch (e) {
-      print('Error updating comment like: $e');
     }
   }
 
@@ -430,7 +421,6 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         try {
           await loadUser(userId);
         } catch (e) {
-          print('Error loading user $userId: $e');
         }
       }
     }

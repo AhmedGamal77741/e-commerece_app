@@ -54,7 +54,6 @@ class CommentsNotifier extends AutoDisposeFamilyAsyncNotifier<CommentsState, Str
           }
         }
       } catch (e) {
-        debugPrint('CommentsNotifier: Failed to fetch post: $e');
       }
     }
 
@@ -63,7 +62,6 @@ class CommentsNotifier extends AutoDisposeFamilyAsyncNotifier<CommentsState, Str
       try {
         postAuthor = await ref.read(feedControllerProvider.notifier).loadUser(postData['userId']);
       } catch (e) {
-        debugPrint('CommentsNotifier: Failed to load author: $e');
       }
     }
 
@@ -95,14 +93,12 @@ class CommentsNotifier extends AutoDisposeFamilyAsyncNotifier<CommentsState, Str
         }
         imageUrl = await (await task).ref.getDownloadURL();
       } catch (e) {
-        debugPrint('CommentsNotifier: Image upload failed: $e');
       }
     }
 
     try {
       await ref.read(feedControllerProvider.notifier).addComment(postId, text, imageUrl: imageUrl);
     } catch (e) {
-      debugPrint('CommentsNotifier: Failed to add comment: $e');
       throw e;
     }
   }

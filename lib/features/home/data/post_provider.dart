@@ -74,7 +74,6 @@ class PostsProvider extends ChangeNotifier {
 
     // Don't start listening if no user is logged in
     if (currentUser == null) {
-      print("No user logged in, not loading posts yet");
       return;
     }
 
@@ -89,7 +88,6 @@ class PostsProvider extends ChangeNotifier {
         .then(
           (userDoc) async {
             if (!userDoc.exists) {
-              print("User document doesn't exist for ID: $currentUserId");
               return;
             }
 
@@ -142,18 +140,15 @@ class PostsProvider extends ChangeNotifier {
                     _changedPostIds.clear();
                   },
                   onError: (e) {
-                    print("Error listening to posts: $e");
                     _isListening = false; // Reset listening state on error
                   },
                   onDone: () {
-                    print("Posts stream closed");
                     _isListening =
                         false; // Reset listening state when stream closes
                   },
                 );
           },
           onError: (e) {
-            print("Error getting user document: $e");
             _isListening = false; // Reset listening state on error
           },
         );
@@ -191,12 +186,10 @@ class PostsProvider extends ChangeNotifier {
           try {
             await loadUser(userId);
           } catch (e) {
-            print('Error loading user $userId: $e');
           }
         }
       }
     } catch (e) {
-      print('Error loading comments for post $postId: $e');
     } finally {
       _loadingCommentPosts.remove(postId);
       notifyListeners();
@@ -216,11 +209,8 @@ class PostsProvider extends ChangeNotifier {
       await postRef.update({
         'notInterestedBy': FieldValue.arrayUnion([currentUser!.uid]),
       });
-
-      print('Added ${currentUser.uid} to notInterestedBy for post $postId');
       notifyListeners();
     } catch (e) {
-      print('Error adding to notInterestedBy: $e');
       throw e; // Re-throw if you want to handle the error in the calling code
     }
   }
@@ -267,7 +257,6 @@ class PostsProvider extends ChangeNotifier {
       try {
         userData = await loadUser(currentUser.uid);
       } catch (e) {
-        print('Error loading user data: $e');
       }
     }
 
@@ -319,7 +308,6 @@ class PostsProvider extends ChangeNotifier {
       await batch.commit();
       // Let the Firestore listeners handle the UI updates automatically
     } catch (e) {
-      print('Error adding comment: $e');
       throw e;
     }
   }
@@ -339,7 +327,6 @@ class PostsProvider extends ChangeNotifier {
         return data;
       }
     } catch (e) {
-      print("Error fetching linked product: $e");
     }
     return null;
   }
@@ -367,7 +354,6 @@ class PostsProvider extends ChangeNotifier {
         return data;
       }
     } catch (e) {
-      print("Error fetching linked post: $e");
     }
     return null;
   }
@@ -413,7 +399,6 @@ class PostsProvider extends ChangeNotifier {
       });
     } catch (e) {
       // If update fails, revert the local change
-      print('Error updating like: $e');
       if (isLiked) {
         likedBy.add(currentUser.uid);
         post['likes'] = (post['likes'] ?? 0) + 1;
@@ -487,8 +472,6 @@ class PostsProvider extends ChangeNotifier {
           });
     } catch (e) {
       // If update fails, revert the local change
-      print('Error updating comment like: $e');
-
       // Revert to the original comment
       final revertedComments = List<Comment>.from(_comments[postId]!);
       revertedComments[commentIndex] = comment;
@@ -524,7 +507,6 @@ class PostsProvider extends ChangeNotifier {
         try {
           await loadUser(userId);
         } catch (e) {
-          print('Error loading user $userId: $e');
         }
       }
     }

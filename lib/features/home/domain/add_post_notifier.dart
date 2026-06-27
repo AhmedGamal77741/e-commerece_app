@@ -111,7 +111,6 @@ class AddPostNotifier extends AutoDisposeNotifier<AddPostState> {
          state = state.copyWith(innerPlaceholderText: snapshot.data()?['innerPlaceholderText'] ?? '');
       }
     } catch (e) {
-      debugPrint('Error loading placeholder text: $e');
     }
   }
 
@@ -134,7 +133,6 @@ class AddPostNotifier extends AutoDisposeNotifier<AddPostState> {
       
       state = state.copyWith(categories: categories);
     } catch (e) {
-      debugPrint('Error loading categories: $e');
     }
   }
 
@@ -156,7 +154,6 @@ class AddPostNotifier extends AutoDisposeNotifier<AddPostState> {
       });
       await _loadCategories();
     } catch (e) {
-      debugPrint('Error adding category: $e');
     }
   }
 
@@ -176,7 +173,6 @@ class AddPostNotifier extends AutoDisposeNotifier<AddPostState> {
       }
       await _loadCategories();
     } catch (e) {
-      debugPrint('Error deleting category: $e');
     }
   }
 
@@ -192,7 +188,6 @@ class AddPostNotifier extends AutoDisposeNotifier<AddPostState> {
           .update({'name': newName.trim()});
       await _loadCategories();
     } catch (e) {
-      debugPrint('Error updating category name: $e');
     }
   }
 
@@ -212,7 +207,6 @@ class AddPostNotifier extends AutoDisposeNotifier<AddPostState> {
       await batch.commit();
       await _loadCategories();
     } catch (e) {
-      debugPrint('Error updating category order: $e');
     }
   }
 

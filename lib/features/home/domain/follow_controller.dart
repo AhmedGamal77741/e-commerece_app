@@ -146,7 +146,6 @@ class FollowController {
 
       return recommendations;
     } catch (e) {
-      print('Error building recommendations with contacts: $e');
       return {};
     }
   }
@@ -213,7 +212,6 @@ class FollowController {
 
       return result;
     } catch (e) {
-      print('Error building recommendations: $e');
       return {};
     }
   }
@@ -254,7 +252,6 @@ class FollowController {
 
       return result;
     } catch (e) {
-      print('Error getting contact matches: $e');
       return {};
     }
   }

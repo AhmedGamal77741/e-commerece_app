@@ -19,7 +19,6 @@ Future<MyUser> getUser(String userId) async {
     }
     return MyUser.empty;
   } catch (e) {
-    print('Error fetching user: $e');
     throw e;
   }
 }
@@ -77,10 +76,7 @@ Future<void> markPostNotInterested({required String postId}) async {
     await postRef.update({
       'notInterestedBy': FieldValue.arrayUnion([currentUser.uid]),
     });
-
-    print('Post marked as not interested successfully!');
   } catch (e) {
-    print('Error marking post as not interested: $e');
     throw e; // Re-throw to handle in UI
   }
 }
@@ -185,10 +181,7 @@ Future<void> blockUser({required String userIdToBlock}) async {
     }
 
     await batch.commit();
-
-    print('User blocked successfully!');
   } catch (e) {
-    print('Error blocking user: $e');
     throw e; // Re-throw to handle in UI
   }
 }
@@ -220,9 +213,7 @@ Future<void> unblockUser({required String userIdToUnblock}) async {
     }
 
     await batch.commit();
-    print('User unblocked successfully!');
   } catch (e) {
-    print('Error unblocking user: $e');
     throw e;
   }
 }
@@ -248,10 +239,7 @@ Future<void> reportUser({
       'status': 'pending',
       'resolved': false,  */
     });
-
-    print('User reported successfully!');
   } catch (e) {
-    print('Error reporting user: $e');
     throw e; // Re-throw to handle in UI
   }
 }
@@ -289,10 +277,7 @@ Future<void> uploadPost({
     );
 
     await batch.commit();
-
-    print('Post uploaded successfully!');
   } catch (e) {
-    print('Error uploading post: $e');
     throw e; // Re-throw to handle in UI
   }
 }
@@ -327,7 +312,6 @@ Future<List<String>> _uploadNewImages(List<XFile> files) async {
                 );
             uploadBytes = compressed ?? rawBytes;
           } catch (e) {
-            print('Compression failed, uploading raw bytes: $e');
             uploadBytes = rawBytes;
           }
 
@@ -339,7 +323,6 @@ Future<List<String>> _uploadNewImages(List<XFile> files) async {
           final TaskSnapshot snapshot = await uploadTask;
           return await snapshot.ref.getDownloadURL();
         } catch (e) {
-          print('Error uploading image: $e');
           throw Exception('Failed to upload image during edit: $e');
         }
       }).toList();
@@ -375,10 +358,7 @@ Future<void> updatePost({
               : null, // Keep for backward compatibility
       'categoryId': categoryId,
     });
-
-    print('Post updated successfully!');
   } catch (e) {
-    print('Error updating post: $e');
     throw e;
   }
 }
@@ -412,7 +392,6 @@ Future<String> uploadImageToFirebaseStorageHome() async {
 
     return downloadUrl;
   } catch (e) {
-    print('Error uploading image: $e');
     throw Exception('Failed to upload image: $e');
   }
 }
@@ -447,7 +426,6 @@ Future<List<String>> uploadMultipleImagesToFirebaseHome() async {
           // Fall back to raw bytes if compression somehow returns null
           uploadBytes = compressed ?? rawBytes;
         } catch (e) {
-          print('Compression failed, uploading raw bytes: $e');
           uploadBytes = rawBytes;
         }
 
@@ -468,7 +446,6 @@ Future<List<String>> uploadMultipleImagesToFirebaseHome() async {
 
     return downloadUrls;
   } catch (e) {
-    print('Error uploading multiple images: $e');
     throw Exception('Failed to upload images: $e');
   }
 }
@@ -498,7 +475,6 @@ Future<String> uploadSingleImageToFirebase(
       // Fall back to raw bytes if compression somehow returns null
       uploadBytes = compressed ?? rawBytes;
     } catch (e) {
-      print('Compression failed, uploading raw bytes: $e');
       uploadBytes = rawBytes;
     }
 
@@ -525,14 +501,12 @@ Future<String> uploadSingleImageToFirebase(
     final TaskSnapshot snapshot = await uploadTask;
     return await snapshot.ref.getDownloadURL();
   } catch (e) {
-    print('Error uploading single image: $e');
     throw Exception('Failed to upload single image: $e');
   }
 }
 
 Future<void> migrateLastPostCreatedAt() async {
   try {
-    print('Starting migration: lastPostCreatedAt...');
     final postsSnapshot =
         await FirebaseFirestore.instance.collection('posts').get();
 
@@ -601,10 +575,7 @@ Future<void> migrateLastPostCreatedAt() async {
         }
       }
     }
-
-    print('Migration complete! Updated $updatedCount users.');
   } catch (e) {
-    print('Error during lastPostCreatedAt migration: $e');
     rethrow;
   }
 }

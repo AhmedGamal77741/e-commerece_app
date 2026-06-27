@@ -223,7 +223,6 @@ class FeedRepository {
       }
       return MyUser.empty;
     } catch (e) {
-      print('Error fetching user: $e');
       throw e;
     }
   }
@@ -240,10 +239,7 @@ class FeedRepository {
       await postRef.update({
         'notInterestedBy': FieldValue.arrayUnion([currentUser.uid]),
       });
-
-      print('Post marked as not interested successfully!');
     } catch (e) {
-      print('Error marking post as not interested: $e');
       throw e; // Re-throw to handle in UI
     }
   }
@@ -348,10 +344,7 @@ class FeedRepository {
       }
 
       await batch.commit();
-
-      print('User blocked successfully!');
     } catch (e) {
-      print('Error blocking user: $e');
       throw e; // Re-throw to handle in UI
     }
   }
@@ -383,9 +376,7 @@ class FeedRepository {
       }
 
       await batch.commit();
-      print('User unblocked successfully!');
     } catch (e) {
-      print('Error unblocking user: $e');
       throw e;
     }
   }
@@ -411,10 +402,7 @@ class FeedRepository {
         'status': 'pending',
         'resolved': false,  */
       });
-
-      print('User reported successfully!');
     } catch (e) {
-      print('Error reporting user: $e');
       throw e; // Re-throw to handle in UI
     }
   }
@@ -452,10 +440,7 @@ class FeedRepository {
       );
 
       await batch.commit();
-
-      print('Post uploaded successfully!');
     } catch (e) {
-      print('Error uploading post: $e');
       throw e; // Re-throw to handle in UI
     }
   }
@@ -490,7 +475,6 @@ class FeedRepository {
                   );
               uploadBytes = compressed ?? rawBytes;
             } catch (e) {
-              print('Compression failed, uploading raw bytes: $e');
               uploadBytes = rawBytes;
             }
 
@@ -502,7 +486,6 @@ class FeedRepository {
             final TaskSnapshot snapshot = await uploadTask;
             return await snapshot.ref.getDownloadURL();
           } catch (e) {
-            print('Error uploading image: $e');
             throw Exception('Failed to upload image during edit: $e');
           }
         }).toList();
@@ -538,10 +521,7 @@ class FeedRepository {
                 : null, // Keep for backward compatibility
         'categoryId': categoryId,
       });
-
-      print('Post updated successfully!');
     } catch (e) {
-      print('Error updating post: $e');
       throw e;
     }
   }
@@ -575,7 +555,6 @@ class FeedRepository {
 
       return downloadUrl;
     } catch (e) {
-      print('Error uploading image: $e');
       throw Exception('Failed to upload image: $e');
     }
   }
@@ -610,7 +589,6 @@ class FeedRepository {
             // Fall back to raw bytes if compression somehow returns null
             uploadBytes = compressed ?? rawBytes;
           } catch (e) {
-            print('Compression failed, uploading raw bytes: $e');
             uploadBytes = rawBytes;
           }
 
@@ -631,7 +609,6 @@ class FeedRepository {
 
       return downloadUrls;
     } catch (e) {
-      print('Error uploading multiple images: $e');
       throw Exception('Failed to upload images: $e');
     }
   }
@@ -661,7 +638,6 @@ class FeedRepository {
         // Fall back to raw bytes if compression somehow returns null
         uploadBytes = compressed ?? rawBytes;
       } catch (e) {
-        print('Compression failed, uploading raw bytes: $e');
         uploadBytes = rawBytes;
       }
 
@@ -688,14 +664,12 @@ class FeedRepository {
       final TaskSnapshot snapshot = await uploadTask;
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
-      print('Error uploading single image: $e');
       throw Exception('Failed to upload single image: $e');
     }
   }
 
   Future<void> migrateLastPostCreatedAt() async {
     try {
-      print('Starting migration: lastPostCreatedAt...');
       final postsSnapshot =
           await _firestore.collection('posts').get();
 
@@ -764,10 +738,7 @@ class FeedRepository {
           }
         }
       }
-
-      print('Migration complete! Updated $updatedCount users.');
     } catch (e) {
-      print('Error during lastPostCreatedAt migration: $e');
       rethrow;
     }
   }

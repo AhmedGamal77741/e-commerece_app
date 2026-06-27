@@ -156,7 +156,6 @@ class FollowService {
       await batch.commit();
       return true;
     } catch (e) {
-      print('Error toggling follow: $e');
       return false;
     }
   }
