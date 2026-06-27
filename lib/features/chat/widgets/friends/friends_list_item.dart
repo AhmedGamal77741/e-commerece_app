@@ -35,11 +35,14 @@ class FriendsListItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final GlobalKey itemKey = GlobalKey();
     final String displayName = aliases[friend.userId] ?? friend.name;
-    final bool hasAlias = aliases.containsKey(friend.userId) && aliases[friend.userId]!.isNotEmpty;
+    final bool hasAlias =
+        aliases.containsKey(friend.userId) &&
+        aliases[friend.userId]!.isNotEmpty;
 
     void showFriendMenu() {
       if (isBrand) return;
-      final RenderBox box = itemKey.currentContext!.findRenderObject() as RenderBox;
+      final RenderBox box =
+          itemKey.currentContext!.findRenderObject() as RenderBox;
       final Offset offset = box.localToGlobal(Offset.zero);
       final screenWidth = MediaQuery.of(context).size.width;
       const double popupWidth = 220;
@@ -61,101 +64,106 @@ class FriendsListItem extends ConsumerWidget {
         context: context,
         barrierColor: Colors.transparent,
         barrierDismissible: false,
-        builder: (_) => Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(color: Colors.transparent),
-              ),
-            ),
-            Positioned(
-              left: left,
-              top: top,
-              width: popupWidth,
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(height: 20.h),
-                      Text(
-                        displayName,
-                        style: TextStyle(
-                          fontSize: 22.sp,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black,
-                        ),
-                      ),
-                      if (hasAlias) ...[
-                        SizedBox(height: 2.h),
-                        Text(
-                          friend.name,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: Colors.grey[400],
-                          ),
-                        ),
-                      ],
-                      SizedBox(height: 4.h),
-                      Divider(
-                        color: Colors.grey[200],
-                        thickness: 1,
-                        height: 1,
-                      ),
-
-                      _buildMenuOption(
-                        label: '이름 변경',
-                        onTap: () {
-                          Navigator.pop(context);
-                          showChangeNameDialog(context, friend, aliases[friend.userId]);
-                        },
-                      ),
-                      _buildMenuOption(
-                        label: '거리두기',
-                        onTap: () {
-                          Navigator.pop(context);
-                          hideFriend(context, friend);
-                        },
-                      ),
-                      _buildMenuOption(
-                        label: '삭제',
-                        labelColor: Colors.red[600],
-                        onTap: () {
-                          Navigator.pop(context);
-                          deleteFriend(context, ref, friend);
-                        },
-                      ),
-                      _buildMenuOption(
-                        label: '차단',
-                        labelColor: Colors.red[800],
-                        onTap: () {
-                          Navigator.pop(context);
-                          blockFriend(context, ref, friend);
-                        },
-                        isLast: true,
-                      ),
-                      SizedBox(height: 12.h),
-                    ],
+        builder:
+            (_) => Stack(
+              children: [
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(color: Colors.transparent),
                   ),
                 ),
-              ),
+                Positioned(
+                  left: left,
+                  top: top,
+                  width: popupWidth,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 20,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(height: 20.h),
+                          Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: 22.sp,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black,
+                            ),
+                          ),
+                          if (hasAlias) ...[
+                            SizedBox(height: 2.h),
+                            Text(
+                              friend.name,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: Colors.grey[400],
+                              ),
+                            ),
+                          ],
+                          SizedBox(height: 4.h),
+                          Divider(
+                            color: Colors.grey[200],
+                            thickness: 1,
+                            height: 1,
+                          ),
+
+                          _buildMenuOption(
+                            label: '이름 변경',
+                            onTap: () {
+                              Navigator.pop(context);
+                              showChangeNameDialog(
+                                context,
+                                friend,
+                                aliases[friend.userId],
+                              );
+                            },
+                          ),
+                          _buildMenuOption(
+                            label: '거리두기',
+                            onTap: () {
+                              Navigator.pop(context);
+                              hideFriend(context, friend);
+                            },
+                          ),
+                          _buildMenuOption(
+                            label: '삭제',
+                            labelColor: Colors.red[600],
+                            onTap: () {
+                              Navigator.pop(context);
+                              deleteFriend(context, ref, friend);
+                            },
+                          ),
+                          _buildMenuOption(
+                            label: '차단',
+                            labelColor: Colors.red[800],
+                            onTap: () {
+                              Navigator.pop(context);
+                              blockFriend(context, ref, friend);
+                            },
+                            isLast: true,
+                          ),
+                          SizedBox(height: 12.h),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
       );
     }
 
@@ -172,7 +180,9 @@ class FriendsListItem extends ConsumerWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => Scaffold(body: ProfileTab(userId: friend.userId)),
+                      builder:
+                          (context) =>
+                              Scaffold(body: ProfileTab(userId: friend.userId)),
                     ),
                   );
                 },
@@ -192,111 +202,121 @@ class FriendsListItem extends ConsumerWidget {
               children: [
                 isSearchActive
                     ? InkWell(
-                        onTap: () async {
-                          try {
-                            final chatRoomId = await ref.read(chatControllerProvider.notifier).createDirectChatRoom(friend.userId, isBrand);
-                            if (chatRoomId != null) {
-                              if (context.mounted) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ChatScreen(
+                      onTap: () async {
+                        try {
+                          final chatRoomId = await ref
+                              .read(chatControllerProvider.notifier)
+                              .createDirectChatRoom(friend.userId, isBrand);
+                          if (context.mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => ChatScreen(
                                       chatRoomId: chatRoomId,
                                       chatRoomName: displayName,
                                     ),
-                                  ),
-                                );
-                              }
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                            }
-                          }
-                        },
-                        onLongPress: showFriendMenu,
-                        child: Row(
-                          children: [
-                            _buildHighlightedName(displayName, effectiveQuery),
-                            if (contactName != null && contactName!.isNotEmpty) ...[
-                              SizedBox(width: 6.w),
-                              Text(
-                                '@$contactName',
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.normal,
-                                ),
                               ),
-                            ],
-                          ],
-                        ),
-                      )
-                    : InkWell(
-                        onTap: () async {
-                          try {
-                            final chatRoomId = await ref.read(chatControllerProvider.notifier).createDirectChatRoom(friend.userId, isBrand);
-                            if (chatRoomId != null) {
-                              if (context.mounted) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ChatScreen(
-                                      chatRoomId: chatRoomId,
-                                      chatRoomName: displayName,
-                                    ),
-                                  ),
-                                );
-                              }
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                            }
+                            );
                           }
-                        },
-                        onLongPress: showFriendMenu,
-                        child: Row(
-                          children: [
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e')),
+                            );
+                          }
+                        }
+                      },
+                      onLongPress: showFriendMenu,
+                      child: Row(
+                        children: [
+                          _buildHighlightedName(displayName, effectiveQuery),
+                          if (contactName != null &&
+                              contactName!.isNotEmpty) ...[
+                            SizedBox(width: 6.w),
                             Text(
-                              displayName,
+                              '@$contactName',
                               style: TextStyle(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black,
+                                fontSize: 12.sp,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.normal,
                               ),
                             ),
-                            if (hasAlias) ...[
-                              SizedBox(width: 4.w),
-                              Text(
-                                '(${friend.name})',
-                                style: TextStyle(
-                                  fontSize: 11.sp,
-                                  color: Colors.grey[400],
-                                ),
-                              ),
-                            ],
-                            if (contactName != null && contactName!.isNotEmpty) ...[
-                              SizedBox(width: 6.w),
-                              Text(
-                                '@$contactName',
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
-                            ],
                           ],
-                        ),
+                        ],
                       ),
+                    )
+                    : InkWell(
+                      onTap: () async {
+                        try {
+                          final chatRoomId = await ref
+                              .read(chatControllerProvider.notifier)
+                              .createDirectChatRoom(friend.userId, isBrand);
+                          if (context.mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => ChatScreen(
+                                      chatRoomId: chatRoomId,
+                                      chatRoomName: displayName,
+                                    ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e')),
+                            );
+                          }
+                        }
+                      },
+                      onLongPress: showFriendMenu,
+                      child: Row(
+                        children: [
+                          Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
+                            ),
+                          ),
+                          if (hasAlias) ...[
+                            SizedBox(width: 4.w),
+                            Text(
+                              '(${friend.name})',
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                color: Colors.grey[400],
+                              ),
+                            ),
+                          ],
+                          if (contactName != null &&
+                              contactName!.isNotEmpty) ...[
+                            SizedBox(width: 6.w),
+                            Text(
+                              '@$contactName',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
               ],
             ),
           ),
           if (showCheckbox)
             Checkbox(
               value: selectedChatIds.contains(friend.userId),
-              onChanged: (checked) => onCheckboxChanged(friend.userId, checked ?? false),
+              onChanged:
+                  (checked) =>
+                      onCheckboxChanged(friend.userId, checked ?? false),
             ),
         ],
       ),

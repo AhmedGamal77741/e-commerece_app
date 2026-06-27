@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
 
 const _kBgColor = Color(0xFFF2F2F2);
-const _kBubbleColor = Color(0xFFEEEEEE);
 const _kInputBg = Color(0xFFE8E8E8);
 const _kSendActive = Color(0xFF1A1A1A);
 
@@ -25,8 +23,6 @@ class InputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasContent = controller.text.isNotEmpty || pickedImage != null;
-
     return SafeArea(
       top: false,
       child: Container(

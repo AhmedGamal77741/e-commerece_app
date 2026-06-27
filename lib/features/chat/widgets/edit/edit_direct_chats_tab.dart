@@ -33,7 +33,9 @@ class _EditDirectChatsTabState extends ConsumerState<EditDirectChatsTab> {
     _fetchingIds.add(otherId);
 
     try {
-      MyUser? user = await ref.read(chatControllerProvider.notifier).getOtherUserDoc(otherId, chat.type ?? 'direct');
+      MyUser? user = await ref
+          .read(chatControllerProvider.notifier)
+          .getOtherUserDoc(otherId, chat.type);
       if (mounted) {
         setState(() {
           _usersCache[otherId] = user;
@@ -118,13 +120,12 @@ class _EditDirectChatsTabState extends ConsumerState<EditDirectChatsTab> {
   }
 
   Future<void> _leaveSelected(EditScreenController controller) async {
-    final selectedCount = ref.read(editScreenControllerProvider(0)).directChatsSelected.length;
+    final selectedCount =
+        ref.read(editScreenControllerProvider(0)).directChatsSelected.length;
     if (selectedCount == 0) return;
-    
-    final confirm = await _showConfirmDialog(
-      '$selectedCount개의 채팅방을 나가시겠습니까?',
-    );
-    
+
+    final confirm = await _showConfirmDialog('$selectedCount개의 채팅방을 나가시겠습니까?');
+
     if (confirm == true) {
       await controller.leaveSelectedDirectChats();
     }
@@ -143,7 +144,8 @@ class _EditDirectChatsTabState extends ConsumerState<EditDirectChatsTab> {
       children: [
         Expanded(
           child: StreamBuilder<List<ChatRoomModel>>(
-            stream: ref.read(chatControllerProvider.notifier).getChatRoomsStream(),
+            stream:
+                ref.read(chatControllerProvider.notifier).getChatRoomsStream(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const SizedBox.shrink();
@@ -156,8 +158,7 @@ class _EditDirectChatsTabState extends ConsumerState<EditDirectChatsTab> {
                             (c.type == 'direct' ||
                                 c.type == 'seller' ||
                                 c.type == 'admin' ||
-                                c.type == '' ||
-                                c.type == null) &&
+                                c.type == '') &&
                             !c.deletedBy.contains(uid) &&
                             c.lastMessage != null &&
                             c.lastMessage!.isNotEmpty,
@@ -190,7 +191,7 @@ class _EditDirectChatsTabState extends ConsumerState<EditDirectChatsTab> {
                   }
 
                   final friend = _usersCache[otherId];
-                  final realName = friend?.name ?? chat.name ?? '알 수 없음';
+                  final realName = friend?.name ?? chat.name;
                   final avatarUrl = friend?.url ?? '';
 
                   final displayName = aliases[otherId] ?? realName;

@@ -515,4 +515,33 @@ class ChatRepository {
       'chatRooms': FieldValue.arrayRemove([chatRoomId]),
     });
   }
+
+  Stream<Map<String, int>> getGroupChatsOrderStream() {
+    if (currentUserId.isEmpty) return Stream.value({});
+    return _firestore
+        .collection('users')
+        .doc(currentUserId)
+        .snapshots()
+        .map((snap) {
+      if (!snap.exists) return <String, int>{};
+      final data = snap.data();
+      final raw = data?['groupChatsOrder'];
+      if (raw == null) return <String, int>{};
+      return Map<String, int>.from(raw as Map);
+    });
+  }
+
+  Future<void> updateGroupChatImage(String chatRoomId, String imageUrl) async {
+    await _firestore
+        .collection('chatRooms')
+        .doc(chatRoomId)
+        .update({'groupImage': imageUrl});
+  }
+
+  Future<void> updateGroupChatName(String chatRoomId, String newName) async {
+    await _firestore
+        .collection('chatRooms')
+        .doc(chatRoomId)
+        .update({'name': newName});
+  }
 }

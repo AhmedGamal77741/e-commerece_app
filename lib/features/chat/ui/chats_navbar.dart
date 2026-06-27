@@ -5,7 +5,6 @@ import 'package:ecommerece_app/features/chat/ui/direct_chats_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/edit_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/friends_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/group_chats_screen.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -85,7 +84,10 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
 
   Future<void> _contactAdmin() async {
     try {
-      final chatRoomId = await ref.read(chatControllerProvider.notifier).createDirectChatRoomWithAdmin();
+      final chatRoomId =
+          await ref
+              .read(chatControllerProvider.notifier)
+              .createDirectChatRoomWithAdmin();
       if (!mounted) return;
       Navigator.push(
         context,
@@ -330,17 +332,13 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
           children: [
             Container(
               color: ColorsManager.primary,
-              padding: EdgeInsets.symmetric(
-                horizontal: 16.w,
-                vertical: 10.h,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 220),
                 transitionBuilder:
                     (child, animation) =>
                         FadeTransition(opacity: animation, child: child),
-                child:
-                    _searchMode ? _buildSearchBar() : _buildNormalPillRow(),
+                child: _searchMode ? _buildSearchBar() : _buildNormalPillRow(),
               ),
             ),
             Expanded(

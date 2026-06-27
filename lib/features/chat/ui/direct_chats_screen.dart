@@ -1,17 +1,15 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
-import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
-import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../models/chat_room_model.dart';
 import '../domain/chat_controller.dart';
+import '../widgets/direct_chat_tile.dart';
 
 class DirectChatsScreen extends ConsumerStatefulWidget {
+  const DirectChatsScreen({super.key});
+
   @override
   ConsumerState<DirectChatsScreen> createState() => _DirectChatsScreenState();
 }
@@ -19,9 +17,9 @@ class DirectChatsScreen extends ConsumerStatefulWidget {
 class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
     with AutomaticKeepAliveClientMixin {
   bool get wantKeepAlive => true;
-  
+
   String get currentUserId => FirebaseAuth.instance.currentUser!.uid;
-  
+
   final Map<String, MyUser?> _usersCache = {};
   final Set<String> _fetchingIds = {};
 
@@ -50,14 +48,16 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
     _fetchingIds.add(otherId);
 
     try {
-      MyUser? user = await ref.read(chatControllerProvider.notifier).getOtherUserDoc(otherId, chat.type ?? 'direct');
+      MyUser? user = await ref
+          .read(chatControllerProvider.notifier)
+          .getOtherUserDoc(otherId, chat.type);
       if (mounted) {
         setState(() {
           _usersCache[otherId] = user;
         });
       }
     } catch (e) {
-      print('Error fetching other user ($otherId): $e');
+      rethrow;
     } finally {
       _fetchingIds.remove(otherId);
     }
@@ -70,173 +70,11 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
     );
   }
 
-  // ─── KakaoTalk-style long-press context menu ──────────────────────────────
-  void _showChatMenu({
-    required BuildContext tileContext,
-    required ChatRoomModel chat,
-    required String displayName,
-    required String userId,
-  }) {
-    final RenderBox box = tileContext.findRenderObject() as RenderBox;
-    final Offset offset = box.localToGlobal(Offset.zero);
-    final Size tileSize = box.size;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    const double popupWidth = 200;
-    // title (≈52) + divider + 2 options (≈48 each) + padding
-    const double popupHeight = 160;
-
-    // Default: right-aligned to the tile, vertically centred
-    double left = offset.dx + tileSize.width - popupWidth - 8;
-    double top = offset.dy + (tileSize.height / 2) - (popupHeight / 2);
-
-    // Clamp to screen edges
-    if (left < 8) left = 8;
-    if (left + popupWidth > screenWidth - 8)
-      left = screenWidth - popupWidth - 8;
-    if (top < 8) top = 8;
-    if (top + popupHeight > screenHeight - 20)
-      top = screenHeight - popupHeight - 20;
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.transparent,
-      barrierDismissible: false,
-      builder:
-          (_) => Stack(
-            children: [
-              // Full-screen transparent barrier — tap outside to dismiss
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(color: Colors.transparent),
-                ),
-              ),
-              Positioned(
-                left: left,
-                top: top,
-                width: popupWidth,
-                child: Material(
-                  color: Colors.transparent,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(height: 16.h),
-                        // ── Name title ──────────────────────────────────────
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12.w),
-                          child: Text(
-                            displayName,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 18.sp,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10.h),
-                        Divider(
-                          color: Colors.grey[200],
-                          thickness: 1,
-                          height: 1,
-                        ),
-
-                        // ── 차단하기 (Block) ────────────────────────────────
-                        _buildMenuOption(
-                          label: '차단하기',
-                          onTap: () async {
-                            Navigator.pop(context);
-                            if (userId.isEmpty) return;
-                            showLoadingDialog(context);
-                            await ref.read(feedControllerProvider.notifier).blockUser(userIdToBlock: userId);
-                            if (mounted) Navigator.pop(context);
-                          },
-                        ),
-
-                        Divider(
-                          color: Colors.grey[100],
-                          thickness: 1,
-                          height: 1,
-                          indent: 16.w,
-                          endIndent: 16.w,
-                        ),
-
-                        // ── 나가기 (Leave) ──────────────────────────────────
-                        _buildMenuOption(
-                          label: '나가기',
-                          isLast: true,
-                          onTap: () async {
-                            Navigator.pop(context);
-                            showLoadingDialog(context);
-                            await ref.read(chatControllerProvider.notifier).softDeleteChatForCurrentUser(
-                              chat.id,
-                            );
-                            if (mounted) Navigator.pop(context);
-                          },
-                        ),
-                        SizedBox(height: 8.h),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-    );
-  }
-
-  Widget _buildMenuOption({
-    required String label,
-    required VoidCallback onTap,
-    Color? labelColor,
-    bool isLast = false,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius:
-          isLast
-              ? BorderRadius.only(
-                bottomLeft: Radius.circular(16.r),
-                bottomRight: Radius.circular(16.r),
-              )
-              : BorderRadius.zero,
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 14.h),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 15.sp,
-            fontWeight: FontWeight.w500,
-            color: labelColor ?? Colors.black87,
-          ),
-        ),
-      ),
-    );
-  }
-
   // ─── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return StreamBuilder<Set<String>>(
       stream: _getHiddenIdsStream(),
       builder: (context, hiddenSnapshot) {
@@ -248,7 +86,10 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
             final aliases = aliasSnapshot.data ?? {};
 
             return StreamBuilder<List<ChatRoomModel>>(
-              stream: ref.read(chatControllerProvider.notifier).getChatRoomsStream(),
+              stream:
+                  ref
+                      .read(chatControllerProvider.notifier)
+                      .getChatRoomsStream(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const SizedBox.shrink();
@@ -261,8 +102,7 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
                               (chat.type == 'direct' ||
                                   chat.type == 'seller' ||
                                   chat.type == 'admin' ||
-                                  chat.type == '' ||
-                                  chat.type == null) &&
+                                  chat.type == '') &&
                               !chat.deletedBy.contains(currentUserId) &&
                               chat.lastMessage != null &&
                               chat.lastMessage!.isNotEmpty,
@@ -298,7 +138,7 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
 
                     final friend = _usersCache[otherId];
                     if (friend == null) {
-                      return _buildChatTile(
+                      return DirectChatTile(
                         chat: chat,
                         displayName: '삭제된 사용자',
                         realName: null,
@@ -312,7 +152,7 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
                         aliases[friend.userId] ?? friend.name;
                     final bool hasAlias = displayName != friend.name;
 
-                    return _buildChatTile(
+                    return DirectChatTile(
                       chat: chat,
                       displayName: displayName,
                       realName: hasAlias ? friend.name : null,
@@ -326,129 +166,6 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
           },
         );
       },
-    );
-  }
-
-  // ─── Chat tile ────────────────────────────────────────────────────────────
-
-  Widget _buildChatTile({
-    required ChatRoomModel chat,
-    required String displayName,
-    required String? realName,
-    required String? avatarUrl,
-    required String userId,
-    bool isDeleted = false,
-  }) {
-    final int unread =
-        chat.unreadCount[FirebaseAuth.instance.currentUser!.uid] ?? 0;
-
-    // Each tile needs its own GlobalKey to locate its position on screen
-    final tileKey = GlobalKey();
-
-    return Container(
-      key: tileKey,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) => ChatScreen(
-                    chatRoomId: chat.id,
-                    chatRoomName: displayName,
-                    isDeleted: isDeleted,
-                  ),
-            ),
-          );
-        },
-        onLongPress: () {
-          final tileCtx = tileKey.currentContext;
-          if (tileCtx == null) return;
-          _showChatMenu(
-            tileContext: tileCtx,
-            chat: chat,
-            displayName: displayName,
-            userId: userId,
-          );
-        },
-        child: Row(
-          children: [
-            // ── Avatar ──
-            CircleAvatar(
-              radius: 25,
-              backgroundImage:
-                  avatarUrl != null
-                      ? NetworkImage(avatarUrl) as ImageProvider
-                      : isDeleted
-                      ? const AssetImage('assets/avatar.png') as ImageProvider
-                      : null,
-              backgroundColor: Colors.grey[200],
-              child:
-                  avatarUrl == null && !isDeleted
-                      ? Text(
-                        displayName.isNotEmpty ? displayName[0] : '?',
-                        style: const TextStyle(color: Colors.black),
-                      )
-                      : null,
-            ),
-            const SizedBox(width: 12),
-
-            // ── Name + last message ──
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          displayName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (realName != null) ...[
-                        const SizedBox(width: 4),
-                        Text(
-                          '($realName)',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey[400],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (chat.lastMessage != null &&
-                      chat.lastMessage!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      chat.lastMessage!,
-                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            // ── Unread badge ──
-            if (unread > 0)
-              Image.asset(
-                'assets/notification_dot.png',
-                width: 25.w,
-                height: 25.h,
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

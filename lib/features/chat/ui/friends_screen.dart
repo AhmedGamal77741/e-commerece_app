@@ -4,13 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
-import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
-
 import '../widgets/friends/friends_my_profile.dart';
 import '../widgets/friends/friends_section_header.dart';
 import '../widgets/friends/friends_search_results.dart';
@@ -27,9 +24,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
-  
+
   final ContactService _contactService = ContactService();
-  
+
   bool _isSyncing = false;
   bool editMode = false;
   Set<String> selectedChatIds = {};
@@ -143,20 +140,29 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   _latestAliases = aliases;
 
                   return StreamBuilder<List<MyUser>>(
-                    stream: ref.read(friendsControllerProvider.notifier).getFriendsStream(),
+                    stream:
+                        ref
+                            .read(friendsControllerProvider.notifier)
+                            .getFriendsStream(),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData || _isSyncing) {
                         return const SizedBox.shrink();
                       }
 
                       final allUsers = snapshot.data ?? [];
-                      final allFriends = allUsers
-                          .where((u) => u.type == 'user' && !hiddenIds.contains(u.userId))
-                          .toList();
+                      final allFriends =
+                          allUsers
+                              .where(
+                                (u) =>
+                                    u.type == 'user' &&
+                                    !hiddenIds.contains(u.userId),
+                              )
+                              .toList();
 
-                      final subscribed = allFriends
-                          .where((u) => followingIds.contains(u.userId))
-                          .toList();
+                      final subscribed =
+                          allFriends
+                              .where((u) => followingIds.contains(u.userId))
+                              .toList();
 
                       final friends = allFriends;
 
@@ -180,47 +186,70 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                               if (mounted) setState(() => _currentUser = u);
                             },
                           ),
-                          
+
                           // ── 내가 구독한 친구 ──────────────────
                           FriendsSectionHeader(
                             label: '서로 구독 친구',
                             count: subscribed.length,
                             expanded: _subscribedExpanded,
-                            onTap: () => setState(() => _subscribedExpanded = !_subscribedExpanded),
+                            onTap:
+                                () => setState(
+                                  () =>
+                                      _subscribedExpanded =
+                                          !_subscribedExpanded,
+                                ),
                           ),
                           AnimatedCrossFade(
                             duration: const Duration(milliseconds: 200),
-                            crossFadeState: _subscribedExpanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-                            firstChild: subscribed.isEmpty
-                                ? Padding(
-                                    padding: EdgeInsets.only(bottom: 12.h, left: 4.w),
-                                    child: Text(
-                                      '구독한 친구가 없습니다',
-                                      style: TextStyle(
-                                        fontSize: 12.sp,
-                                        color: Colors.grey[400],
+                            crossFadeState:
+                                _subscribedExpanded
+                                    ? CrossFadeState.showFirst
+                                    : CrossFadeState.showSecond,
+                            firstChild:
+                                subscribed.isEmpty
+                                    ? Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: 12.h,
+                                        left: 4.w,
                                       ),
+                                      child: Text(
+                                        '구독한 친구가 없습니다',
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          color: Colors.grey[400],
+                                        ),
+                                      ),
+                                    )
+                                    : Column(
+                                      children:
+                                          subscribed
+                                              .map(
+                                                (f) => FriendsListItem(
+                                                  friend: f,
+                                                  aliases: aliases,
+                                                  contactName:
+                                                      _contactNicknameMap[f
+                                                          .userId],
+                                                  selectedChatIds:
+                                                      selectedChatIds,
+                                                  onCheckboxChanged: (
+                                                    id,
+                                                    checked,
+                                                  ) {
+                                                    setState(() {
+                                                      if (checked) {
+                                                        selectedChatIds.add(id);
+                                                      } else {
+                                                        selectedChatIds.remove(
+                                                          id,
+                                                        );
+                                                      }
+                                                    });
+                                                  },
+                                                ),
+                                              )
+                                              .toList(),
                                     ),
-                                  )
-                                : Column(
-                                    children: subscribed
-                                        .map((f) => FriendsListItem(
-                                              friend: f,
-                                              aliases: aliases,
-                                              contactName: _contactNicknameMap[f.userId],
-                                              selectedChatIds: selectedChatIds,
-                                              onCheckboxChanged: (id, checked) {
-                                                setState(() {
-                                                  if (checked) {
-                                                    selectedChatIds.add(id);
-                                                  } else {
-                                                    selectedChatIds.remove(id);
-                                                  }
-                                                });
-                                              },
-                                            ))
-                                        .toList(),
-                                  ),
                             secondChild: const SizedBox.shrink(),
                           ),
 
@@ -229,30 +258,41 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                             label: '친구',
                             count: friends.length,
                             expanded: _friendsExpanded,
-                            onTap: () => setState(() => _friendsExpanded = !_friendsExpanded),
+                            onTap:
+                                () => setState(
+                                  () => _friendsExpanded = !_friendsExpanded,
+                                ),
                           ),
                           AnimatedCrossFade(
                             duration: const Duration(milliseconds: 200),
-                            crossFadeState: _friendsExpanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+                            crossFadeState:
+                                _friendsExpanded
+                                    ? CrossFadeState.showFirst
+                                    : CrossFadeState.showSecond,
                             firstChild: Column(
-                              children: friends
-                                  .map((friend) => FriendsListItem(
-                                        friend: friend,
-                                        showCheckbox: editMode,
-                                        aliases: aliases,
-                                        contactName: _contactNicknameMap[friend.userId],
-                                        selectedChatIds: selectedChatIds,
-                                        onCheckboxChanged: (id, checked) {
-                                          setState(() {
-                                            if (checked) {
-                                              selectedChatIds.add(id);
-                                            } else {
-                                              selectedChatIds.remove(id);
-                                            }
-                                          });
-                                        },
-                                      ))
-                                  .toList(),
+                              children:
+                                  friends
+                                      .map(
+                                        (friend) => FriendsListItem(
+                                          friend: friend,
+                                          showCheckbox: editMode,
+                                          aliases: aliases,
+                                          contactName:
+                                              _contactNicknameMap[friend
+                                                  .userId],
+                                          selectedChatIds: selectedChatIds,
+                                          onCheckboxChanged: (id, checked) {
+                                            setState(() {
+                                              if (checked) {
+                                                selectedChatIds.add(id);
+                                              } else {
+                                                selectedChatIds.remove(id);
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      )
+                                      .toList(),
                             ),
                             secondChild: const SizedBox.shrink(),
                           ),

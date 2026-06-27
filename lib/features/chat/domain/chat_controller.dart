@@ -133,4 +133,16 @@ class ChatController extends AsyncNotifier<void> {
   Future<void> removeParticipantFromGroup(String chatRoomId, String userId) {
     return _chatRepository.removeParticipantFromGroup(chatRoomId, userId);
   }
+
+  Stream<Map<String, int>> getGroupChatsOrderStream() {
+    return _chatRepository.getGroupChatsOrderStream();
+  }
+
+  Future<void> updateGroupChatImage(String chatRoomId, String imageUrl) {
+    return _chatRepository.updateGroupChatImage(chatRoomId, imageUrl);
+  }
+
+  Future<void> updateGroupChatName(String chatRoomId, String newName) {
+    return _chatRepository.updateGroupChatName(chatRoomId, newName);
+  }
 }
