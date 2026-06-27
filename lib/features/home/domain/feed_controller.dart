@@ -362,8 +362,8 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       try {
         userData = await loadUser(currentUser.uid);
       } catch (e) {
-      debugPrint('Error: $e');
-    }
+        debugPrint('Error: $e');
+      }
     }
 
     Map<String, dynamic>? productData;
@@ -393,8 +393,8 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         createdAt: FieldValue.serverTimestamp(),
         imageUrl: imageUrl,
         likes: 0,
-        userImage: userData.url,
-        userName: userData.name,
+        userImage: userData?.url,
+        userName: userData?.name,
         likedBy: [],
         postData: postData,
         productData: productData != null ? Product.fromMap(productData) : null,
@@ -542,8 +542,8 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
         try {
           await loadUser(userId);
         } catch (e) {
-      debugPrint('Error: $e');
-    }
+          debugPrint('Error: $e');
+        }
       }
     }
   }

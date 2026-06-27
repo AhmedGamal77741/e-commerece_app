@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 // services/chat_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
@@ -172,7 +173,7 @@ class ChatService {
 
       return true;
     } catch (e) {
-      print('Error toggling love reaction: $e');
+      debugPrint('Error toggling love reaction: $e');
       return false;
     }
   }
@@ -240,7 +241,7 @@ class ChatService {
         return data;
       }
     } catch (e) {
-      print("Error fetching linked product: $e");
+      debugPrint("Error fetching linked product: $e");
     }
     return null;
   }
@@ -268,7 +269,7 @@ class ChatService {
         return data;
       }
     } catch (e) {
-      print("Error fetching linked post: $e");
+      debugPrint("Error fetching linked post: $e");
     }
     return null;
   }
@@ -463,12 +464,12 @@ class ChatService {
     try {
       await batch.commit();
     } catch (e) {
-      print('Error committing read status batch: $e');
+      debugPrint('Error committing read status batch: $e');
     }
     try {
       await resetUnreadCount(chatRoomId);
     } catch (e) {
-      print('Error resetting unread count: $e');
+      debugPrint('Error resetting unread count: $e');
     }
   }
 

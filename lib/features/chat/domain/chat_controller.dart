@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
@@ -47,7 +48,7 @@ class ChatController extends AsyncNotifier<void> {
         if (doc.exists) return MyUser.fromSellerDocument(doc.data()!);
       }
     } catch (e) {
-      print('Error fetching other user doc: $e');
+      debugPrint('Error fetching other user doc: $e');
     }
     return null;
   }

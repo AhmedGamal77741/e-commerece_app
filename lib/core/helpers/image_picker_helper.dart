@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ImagePickerHelper {
@@ -18,7 +19,7 @@ class ImagePickerHelper {
         maxHeight: maxHeight,
       );
     } catch (e) {
-      print('Error picking image in ImagePickerHelper: $e');
+      debugPrint('Error picking image in ImagePickerHelper: $e');
       return null;
     }
   }
@@ -36,7 +37,7 @@ class ImagePickerHelper {
         maxHeight: maxHeight,
       );
     } catch (e) {
-      print('Error picking multiple images in ImagePickerHelper: $e');
+      debugPrint('Error picking multiple images in ImagePickerHelper: $e');
       return [];
     }
   }

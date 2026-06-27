@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 
@@ -60,6 +61,6 @@ Future<void> removeProductFromFavorites({
       'favBy': FieldValue.arrayRemove([userId]),
     });
   } else {
-    print("Product not found in favorites.");
+    debugPrint("Product not found in favorites.");
   }
 }

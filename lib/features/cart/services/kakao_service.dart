@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -25,7 +26,7 @@ class KakaoApiService {
         throw Exception('Failed to get address data: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error during API call: $e');
+      debugPrint('Error during API call: $e');
       rethrow;
     }
   }

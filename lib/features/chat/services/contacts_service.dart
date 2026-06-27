@@ -226,7 +226,7 @@ class ContactService {
 
       return await _autoAddFriends(newFriends.map((u) => u.userId).toList());
     } catch (e) {
-      print('Error syncing contacts: $e');
+      debugPrint('Error syncing contacts: $e');
       return 0;
     }
   }
@@ -251,7 +251,7 @@ class ContactService {
       await batch.commit();
       return userIds.length;
     } catch (e) {
-      print('Error auto-adding friends: $e');
+      debugPrint('Error auto-adding friends: $e');
       return 0;
     }
   }

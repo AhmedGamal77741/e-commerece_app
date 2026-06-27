@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 // services/friends_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
@@ -29,7 +30,7 @@ class FriendsService {
           )
           .toList();
     } catch (e) {
-      print('Error fetching blocked friends: $e');
+      debugPrint('Error fetching blocked friends: $e');
       return [];
     }
   }
@@ -51,10 +52,10 @@ class FriendsService {
       for (final doc in blocksQuery.docs) {
         await doc.reference.delete();
       }
-      print('User unblocked successfully!');
+      debugPrint('User unblocked successfully!');
       return true;
     } catch (e) {
-      print('Error unblocking user: $e');
+      debugPrint('Error unblocking user: $e');
       return false;
     }
   }
@@ -111,7 +112,7 @@ class FriendsService {
       await batch.commit();
       return true;
     } catch (e) {
-      print('Error adding friend: $e');
+      debugPrint('Error adding friend: $e');
       return false;
     }
   }
@@ -202,10 +203,10 @@ class FriendsService {
 
       await batch.commit();
 
-      print('User blocked successfully!');
+      debugPrint('User blocked successfully!');
       return true;
     } catch (e) {
-      print('Error blocking user: $e');
+      debugPrint('Error blocking user: $e');
       return false;
     }
   }
@@ -240,7 +241,7 @@ class FriendsService {
       await batch.commit();
       return true;
     } catch (e) {
-      print('Error removing friend: $e');
+      debugPrint('Error removing friend: $e');
       return false;
     }
   }
@@ -376,7 +377,7 @@ class FriendsService {
           )
           .toList();
     } catch (e) {
-      print('Error searching users: $e');
+      debugPrint('Error searching users: $e');
       return [];
     }
   }
@@ -389,7 +390,7 @@ class FriendsService {
       final user = MyUser.fromDocument(userDoc.data()!);
       return user.friends.contains(userId);
     } catch (e) {
-      print('Error checking friendship: $e');
+      debugPrint('Error checking friendship: $e');
       return false;
     }
   }
@@ -426,7 +427,7 @@ class FriendsService {
           .map((doc) => MyUser.fromDocument(doc.data()))
           .toList();
     } catch (e) {
-      print('Error getting mutual friends: $e');
+      debugPrint('Error getting mutual friends: $e');
       return [];
     }
   }
