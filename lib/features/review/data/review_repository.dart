@@ -29,6 +29,15 @@ class ReviewRepository {
     return doc.exists ? doc.data() : null;
   }
 
+  /// Returns a real-time stream of a single order document's data.
+  Stream<Map<String, dynamic>?> getOrderStream(String orderId) {
+    return _firestore
+        .collection('orders')
+        .doc(orderId)
+        .snapshots()
+        .map((doc) => doc.exists ? doc.data() : null);
+  }
+
   Future<void> submitExchangeRequest(String userId, String orderId, String reason) async {
     final docRef = _firestore.collection('exchanges').doc();
     final exchangeData = {

@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/review/ui/widgets/delivery_status.dart';
@@ -7,26 +6,10 @@ import 'package:ecommerece_app/features/review/ui/widgets/table_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class TrackOrder extends ConsumerStatefulWidget {
+class TrackOrder extends StatelessWidget {
   final Map<String, dynamic> order;
   final String arrivalDate;
   const TrackOrder({super.key, required this.order, required this.arrivalDate});
-
-  @override
-  ConsumerState<TrackOrder> createState() => _TrackOrderState();
-}
-
-class _TrackOrderState extends ConsumerState<TrackOrder> {
-  late Map<String, dynamic> order;
-  late String arrivalDate;
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    order = widget.order;
-    arrivalDate = widget.arrivalDate;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +20,6 @@ class _TrackOrderState extends ConsumerState<TrackOrder> {
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-
         child: SingleChildScrollView(
           child: Column(
             children: [

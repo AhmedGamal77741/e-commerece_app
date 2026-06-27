@@ -1,14 +1,13 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class DeliveryStatus extends ConsumerWidget {
+class DeliveryStatus extends StatelessWidget {
   final String orderStatus;
   const DeliveryStatus({super.key, required this.orderStatus});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return orderStatus == 'OUT_FOR_DELIVERY'
         ? Row(
           mainAxisAlignment: MainAxisAlignment.center,

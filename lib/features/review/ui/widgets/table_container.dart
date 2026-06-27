@@ -1,31 +1,19 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/table_text_row.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/review/domain/review_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-class TableContainer extends ConsumerStatefulWidget {
+class TableContainer extends ConsumerWidget {
   final String orderId;
 
-  TableContainer({super.key, required this.orderId});
+  const TableContainer({super.key, required this.orderId});
 
   @override
-  ConsumerState<TableContainer> createState() => _TableContainerState();
-}
-
-class _TableContainerState extends ConsumerState<TableContainer> {
-  final user = FirebaseAuth.instance.currentUser;
-
-  @override
-  Widget build(BuildContext context) {
-    final orderStream =
-        FirebaseFirestore.instance
-            .collection('orders')
-            .doc(widget.orderId)
-            .snapshots();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final orderAsync = ref.watch(orderDocStreamProvider(orderId));
 
     return Container(
       decoration: ShapeDecoration(
@@ -44,46 +32,35 @@ class _TableContainerState extends ConsumerState<TableContainer> {
             style: TextStyles.abeezee16px400wPblack,
           ),
           Divider(color: ColorsManager.primary100),
-          StreamBuilder(
-            stream: orderStream,
-
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox.shrink();
+          orderAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const Center(child: Text('Order not found.')),
+            data: (data) {
+              if (data == null) {
+                return const Center(child: Text('Order not found.'));
               }
 
-              if (!snapshot.hasData || !snapshot.data!.exists) {
-                return Center(child: Text('Order not found.'));
-              }
-
-              final data = snapshot.data!.data() as Map<String, dynamic>;
               final trackOrder =
-                  data['trackingEvents']['edges'] as List<dynamic>?;
-              print('${trackOrder} 5555');
+                  data['trackingEvents']?['edges'] as List<dynamic>?;
               if (trackOrder == null || trackOrder.isEmpty) {
-                return Center(child: Text('No tracking updates yet.'));
+                return const Center(child: Text('No tracking updates yet.'));
               }
 
               return ListView.builder(
                 shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
+                physics: const NeverScrollableScrollPhysics(),
                 itemCount: trackOrder.length,
                 itemBuilder: (context, index) {
                   final event = trackOrder[index];
 
-                  return index % 2 == 0
-                      ? TbaleTextRow(
-                        firstElment: formatIsoDateTime(event['node']['time']),
-                        secondElment: event['node']['status']['name'],
-                        thirdElment: event['node']['description'],
-                        style: TextStyles.abeezee16px400wP600,
-                      )
-                      : TbaleTextRow(
-                        firstElment: formatIsoDateTime(event['node']['time']),
-                        secondElment: event['node']['status']['name'],
-                        thirdElment: event['node']['description'],
-                        style: TextStyles.abeezee16px400wPblack,
-                      );
+                  return TbaleTextRow(
+                    firstElment: formatIsoDateTime(event['node']['time']),
+                    secondElment: event['node']['status']['name'],
+                    thirdElment: event['node']['description'],
+                    style: index % 2 == 0
+                        ? TextStyles.abeezee16px400wP600
+                        : TextStyles.abeezee16px400wPblack,
+                  );
                 },
               );
             },

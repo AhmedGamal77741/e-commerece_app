@@ -146,8 +146,10 @@ class RefundBody extends ConsumerWidget {
             if (!_formKey.currentState!.validate()) return;
             try {
               await ref.read(reviewControllerProvider.notifier).submitRefundRequest(orderId, reasonController.text);
+              if (!context.mounted) return;
               context.pop();
             } catch (e) {
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
             }
           },

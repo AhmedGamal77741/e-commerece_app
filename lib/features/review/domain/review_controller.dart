@@ -26,6 +26,13 @@ final orderProductProvider = FutureProvider.family
       return repo.getProduct(productId);
     });
 
+/// Stream provider for a single order document (used by tracking table).
+final orderDocStreamProvider = StreamProvider.family
+    .autoDispose<Map<String, dynamic>?, String>((ref, orderId) {
+      final repo = ref.watch(reviewRepositoryProvider);
+      return repo.getOrderStream(orderId);
+    });
+
 class ReviewController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {
