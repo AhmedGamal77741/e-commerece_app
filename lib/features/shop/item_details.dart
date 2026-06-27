@@ -1,4 +1,3 @@
-import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
@@ -7,11 +6,10 @@ import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/no_account_screen.dart';
 import 'package:ecommerece_app/core/widgets/receipt_setup_screen.dart';
 // import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
-import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/shop/widgets/item_image_carousel.dart';
-import 'package:ecommerece_app/features/chat/domain/chat_controller.dart'; // NEW UI
+import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart'; // NEW UI
 import 'package:ecommerece_app/features/home/widgets/share_dialog.dart'; // NEW UI
 import 'package:flutter/material.dart';
@@ -47,7 +45,6 @@ class ItemDetails extends ConsumerStatefulWidget {
 
 class _ItemDetailsState extends ConsumerState<ItemDetails> {
   // NEW UI: chat service for floating seller chat button
-  
 
   late bool liked = false;
 
@@ -91,12 +88,14 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
     required PricePoint pricePoint,
     required int currentStock,
   }) async {
-    final paymentId = await ref.read(cartControllerProvider).processBuyNow(
-      product: widget.product,
-      pricePoint: pricePoint,
-      pricePointIndex: int.parse(_selectedOption!),
-      isSub: isSub,
-    );
+    final paymentId = await ref
+        .read(shopControllerProvider.notifier)
+        .processBuyNow(
+          product: widget.product,
+          pricePoint: pricePoint,
+          pricePointIndex: int.parse(_selectedOption!),
+          isSub: isSub,
+        );
 
     if (paymentId != null && mounted) {
       Navigator.pop(context); // Dismiss loading dialog
@@ -106,10 +105,9 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
 
   // ── Shared stock + cart check used by both buttons ─────────────────────────
   Future<int?> _getValidatedStock(PricePoint pricePoint) async {
-    final currentStock = await ref.read(cartControllerProvider).getValidatedStock(
-      widget.product.product_id,
-      pricePoint.quantity,
-    );
+    final currentStock = await ref
+        .read(shopControllerProvider.notifier)
+        .getValidatedStock(widget.product.product_id, pricePoint.quantity);
     if (currentStock == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -248,202 +246,204 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
     final isSub = ref.watch(isSubscribedProvider).value ?? widget.isSub;
 
     return Scaffold(
-          body: Stack(
+      body: Stack(
+        children: [
+          // NEW UI: ListView inside Stack to allow floating chat button
+          ListView(
             children: [
-              // NEW UI: ListView inside Stack to allow floating chat button
-              ListView(
-                children: [
-                  ItemImageCarousel(product: widget.product),
-                  if (!isSub)
-                    Container(
-                      width: double.infinity,
-                      height: 500.h,
-                      color: Colors.black,
-                      child: Center(child: ShiningPremiumBanner()),
+              ItemImageCarousel(product: widget.product),
+              if (!isSub)
+                Container(
+                  width: double.infinity,
+                  height: 500.h,
+                  color: Colors.black,
+                  child: Center(child: ShiningPremiumBanner()),
+                ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 14.h),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      flex: 5,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.product.sellerName,
+                            style: TextStyle(
+                              color: const Color(0xFF121212),
+                              fontSize: 14.sp,
+                              fontFamily: 'NotoSans',
+                              fontWeight: FontWeight.w400,
+                              height: 1.40,
+                            ),
+                          ),
+                          SizedBox(height: 10.h),
+                          Text(
+                            widget.product.productName,
+                            style: TextStyle(
+                              color: const Color(0xFF121212),
+                              fontSize: 16.sp,
+                              fontFamily: 'NotoSans',
+                              fontWeight: FontWeight.w400,
+                              height: 1.40,
+                            ),
+                          ),
+                          SizedBox(height: 10.h),
+                          Text(
+                            widget.product.stock == 0
+                                ? '품절'
+                                : widget.product.arrivalDate ?? '',
+                            style: TextStyle(
+                              color: const Color(0xFF747474),
+                              fontSize: 14.sp,
+                              fontFamily: 'NotoSans',
+                              fontWeight: FontWeight.w400,
+                              height: 1.40,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 14.h),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const Spacer(),
+                    Row(
                       children: [
-                        Flexible(
-                          flex: 5,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.product.sellerName,
-                                style: TextStyle(
-                                  color: const Color(0xFF121212),
-                                  fontSize: 14.sp,
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.40,
-                                ),
-                              ),
-                              SizedBox(height: 10.h),
-                              Text(
-                                widget.product.productName,
-                                style: TextStyle(
-                                  color: const Color(0xFF121212),
-                                  fontSize: 16.sp,
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.40,
-                                ),
-                              ),
-                              SizedBox(height: 10.h),
-                              Text(
-                                widget.product.stock == 0
-                                    ? '품절'
-                                    : widget.product.arrivalDate ?? '',
-                                style: TextStyle(
-                                  color: const Color(0xFF747474),
-                                  fontSize: 14.sp,
-                                  fontFamily: 'NotoSans',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.40,
-                                ),
-                              ),
-                            ],
+                        // NEW UI: showShareDialog instead of ShareService
+                        IconButton(
+                          onPressed: () {
+                            final url =
+                                'https://www.pang2chocolate.com/product/${widget.product.product_id}';
+                            showShareDialog(
+                              context,
+                              'product',
+                              url,
+                              widget.product.product_id,
+                              widget.product.productName,
+                              widget.product.imgUrl.toString(),
+                              widget.product.toMap(),
+                            );
+                          },
+                          icon: ImageIcon(
+                            const AssetImage('assets/grey_006m.png'),
+                            size: 32.sp,
+                            color: liked ? Colors.black : Colors.grey,
                           ),
                         ),
-                        const Spacer(),
-                        Row(
-                          children: [
-                            // NEW UI: showShareDialog instead of ShareService
-                            IconButton(
-                              onPressed: () {
-                                final url =
-                                    'https://www.pang2chocolate.com/product/${widget.product.product_id}';
-                                showShareDialog(
-                                  context,
-                                  'product',
-                                  url,
-                                  widget.product.product_id,
-                                  widget.product.productName,
-                                  widget.product.imgUrl.toString(),
-                                  widget.product.toMap(),
-                                );
-                              },
-                              icon: ImageIcon(
-                                const AssetImage('assets/grey_006m.png'),
-                                size: 32.sp,
-                                color: liked ? Colors.black : Colors.grey,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () async {
-                                final wasLiked = liked;
-                                setState(() => liked = !liked);
+                        IconButton(
+                          onPressed: () async {
+                            final wasLiked = liked;
+                            setState(() => liked = !liked);
 
-                                try {
-                                  if (wasLiked) {
-                                    await ref.read(cartControllerProvider).removeFavItemByProductId(
+                            try {
+                              if (wasLiked) {
+                                await ref
+                                    .read(shopControllerProvider.notifier)
+                                    .removeFavItemByProductId(
                                       widget.product.product_id,
                                     );
-                                  } else {
-                                    await ref.read(cartControllerProvider).addFavItem(
-                                      widget.product.product_id,
-                                    );
-                                  }
-                                } catch (e) {
-                                  setState(() => liked = wasLiked);
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          '요청을 처리하는 동안 오류가 발생했습니다. 다시 시도해주세요.',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              icon: ImageIcon(
-                                liked
-                                    ? AssetImage('assets/black_007m.png')
-                                    : const AssetImage('assets/grey_007m.png'),
-                                size: 32.sp,
-                                color: liked ? Colors.black : Colors.grey,
-                              ),
-                            ),
-                          ],
+                              } else {
+                                await ref
+                                    .read(shopControllerProvider.notifier)
+                                    .addFavItem(widget.product.product_id);
+                              }
+                            } catch (e) {
+                              setState(() => liked = wasLiked);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      '요청을 처리하는 동안 오류가 발생했습니다. 다시 시도해주세요.',
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: ImageIcon(
+                            liked
+                                ? AssetImage('assets/black_007m.png')
+                                : const AssetImage('assets/grey_007m.png'),
+                            size: 32.sp,
+                            color: liked ? Colors.black : Colors.grey,
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                  _buildPricePointsCard(
-                    formatCurrency: formatCurrency,
-                    isSub: isSub,
-                  ),
-                  _buildInfoCard(),
-                ],
+                  ],
+                ),
               ),
+              _buildPricePointsCard(
+                formatCurrency: formatCurrency,
+                isSub: isSub,
+              ),
+              _buildInfoCard(),
+            ],
+          ),
 
-              // NEW UI: floating chat with seller button
-              Positioned(
-                right: 0.w,
-                bottom: -10.h,
-                child: IconButton(
-                  onPressed: () async {
-                    try {
-                      final returnList = await ref.read(chatControllerProvider)
-                          .createDirectChatRoomWithSeller(
-                            widget.product.deliveryManagerId.toString(),
-                          );
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => ChatScreen(
-                                chatRoomId: returnList[0],
-                                chatRoomName: returnList[1],
-                              ),
-                        ),
+          // NEW UI: floating chat with seller button
+          Positioned(
+            right: 0.w,
+            bottom: -10.h,
+            child: IconButton(
+              onPressed: () async {
+                try {
+                  final returnList = await ref
+                      .read(shopControllerProvider.notifier)
+                      .createDirectChatRoomWithSeller(
+                        widget.product.deliveryManagerId.toString(),
                       );
-                    } catch (e) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                    }
-                  },
-                  icon: Image.asset(
-                    'assets/chat_with_seller.png',
-                    width: 50.w,
-                    height: 50.h,
-                  ),
+                  if (!context.mounted) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => ChatScreen(
+                            chatRoomId: returnList[0],
+                            chatRoomName: returnList[1],
+                          ),
+                    ),
+                  );
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
+              },
+              icon: Image.asset(
+                'assets/chat_with_seller.png',
+                width: 50.w,
+                height: 50.h,
+              ),
+            ),
+          ),
+        ],
+      ),
+
+      // NEW LOGIC: SafeArea protects against system nav bar overlap (Android + iOS)
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(16.r),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildCartButton(isLoggedIn: true, uid: currentUser.uid),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: _buildBuyNowButton(
+                  isLoggedIn: true,
+                  isSub: isSub,
+                  uid: currentUser.uid,
                 ),
               ),
             ],
           ),
-
-          // NEW LOGIC: SafeArea protects against system nav bar overlap (Android + iOS)
-          bottomNavigationBar: SafeArea(
-            child: Padding(
-              padding: EdgeInsets.all(16.r),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildCartButton(
-                      isLoggedIn: true,
-                      uid: currentUser.uid,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Expanded(
-                    child: _buildBuyNowButton(
-                      isLoggedIn: true,
-                      isSub: isSub,
-                      uid: currentUser.uid,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+        ),
+      ),
+    );
   }
 
   // ── Bottom button builders ─────────────────────────────────────────────────
@@ -466,9 +466,12 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
         final currentStock = await _getValidatedStock(pricePoint);
         if (currentStock == null) return;
 
-        final cartTotalQuantity = await ref.read(cartControllerProvider).getCartItemQuantity(widget.product.product_id);
+        final cartTotalQuantity = await ref
+            .read(shopControllerProvider.notifier)
+            .getCartItemQuantity(widget.product.product_id);
 
         if (cartTotalQuantity + pricePoint.quantity > currentStock) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -480,13 +483,15 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
           return;
         }
 
-        await ref.read(cartControllerProvider).addToCart(
-          productId: widget.product.product_id,
-          pricePointIndex: int.parse(_selectedOption!),
-          deliveryManagerId: widget.product.deliveryManagerId ?? '',
-          productName: widget.product.productName,
-        );
-        if (mounted) Navigation(context).pop();
+        await ref
+            .read(shopControllerProvider.notifier)
+            .addToCart(
+              productId: widget.product.product_id,
+              pricePointIndex: int.parse(_selectedOption!),
+              deliveryManagerId: widget.product.deliveryManagerId ?? '',
+              productName: widget.product.productName,
+            );
+        if (mounted) Navigator.pop(context);
       },
       style: TextButton.styleFrom(
         backgroundColor: ColorsManager.white,
@@ -595,8 +600,11 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: Column(
-          children: [
+        child: RadioGroup<String>(
+          groupValue: _selectedOption,
+          onChanged: (value) => setState(() => _selectedOption = value),
+          child: Column(
+            children: [
             ...widget.product.pricePoints.asMap().entries.map((entry) {
               final index = entry.key;
               final pricePoint = entry.value;
@@ -688,9 +696,6 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
                               ],
                             ),
                     value: index.toString(),
-                    groupValue: _selectedOption,
-                    onChanged:
-                        (value) => setState(() => _selectedOption = value),
                     activeColor: ColorsManager.primaryblack,
                   ),
                   if (index < widget.product.pricePoints.length - 1)
@@ -703,6 +708,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
               );
             }),
           ],
+        ),
         ),
       ),
     );
@@ -785,7 +791,8 @@ class ShiningPremiumBanner extends ConsumerStatefulWidget {
   const ShiningPremiumBanner({super.key});
 
   @override
-  ConsumerState<ShiningPremiumBanner> createState() => _ShiningPremiumBannerState();
+  ConsumerState<ShiningPremiumBanner> createState() =>
+      _ShiningPremiumBannerState();
 }
 
 class _ShiningPremiumBannerState extends ConsumerState<ShiningPremiumBanner>
@@ -921,10 +928,7 @@ Future<void> _navigateToSubscriptionFromBanner(
 
   // ── Gate 2: receipt / invoice data ──────────────────────────────────
   final cacheDoc =
-      await firestore
-          .collection('usercached_values')
-          .doc(uid)
-          .get();
+      await firestore.collection('usercached_values').doc(uid).get();
   final cacheData = cacheDoc.data();
   final hasReceiptData =
       cacheData != null &&

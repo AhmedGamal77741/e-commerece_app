@@ -1,9 +1,8 @@
 import 'package:ecommerece_app/core/helpers/basetime.dart';
-import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
-import 'package:ecommerece_app/core/providers/firebase_providers.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -38,14 +37,7 @@ class _ShopSearchState extends ConsumerState<ShopSearch> {
   @override
   Widget build(BuildContext context) {
     final productsAsync = ref.watch(categoryProductsStreamProvider('all'));
-    final userProfileAsync = ref.watch(userProfileStreamProvider);
-
-    bool isSub = false;
-    userProfileAsync.whenData((profile) {
-      if (profile != null && profile.containsKey('isSub')) {
-        isSub = profile['isSub'] == true;
-      }
-    });
+    final isSub = ref.watch(isSubscribedProvider).value ?? false;
 
     return Scaffold(
       appBar: AppBar(

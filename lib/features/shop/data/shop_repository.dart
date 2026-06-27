@@ -30,4 +30,17 @@ class ShopRepository {
   Future<QuerySnapshot<Map<String, dynamic>>> getAllProducts() {
     return _firestore.collection('products').get();
   }
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> userStream(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots();
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> getAddress(String uid, String addressId) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('addresses')
+        .doc(addressId)
+        .get();
+  }
 }
