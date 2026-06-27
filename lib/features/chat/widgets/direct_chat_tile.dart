@@ -17,14 +17,14 @@ class DirectChatTile extends ConsumerWidget {
   final bool isDeleted;
 
   const DirectChatTile({
-    Key? key,
+    super.key,
     required this.chat,
     required this.displayName,
     required this.realName,
     required this.avatarUrl,
     required this.userId,
     this.isDeleted = false,
-  }) : super(key: key);
+  });
 
   void _showChatMenu({
     required BuildContext tileContext,

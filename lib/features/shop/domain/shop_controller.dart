@@ -122,6 +122,6 @@ class ShopController extends AsyncNotifier<void> {
   }
 
   Future<List<dynamic>> createDirectChatRoomWithSeller(String sellerId) async {
-    return ref.read(chatControllerProvider).createDirectChatRoomWithSeller(sellerId);
+    return ref.read(chatControllerProvider.notifier).createDirectChatRoomWithSeller(sellerId);
   }
 }

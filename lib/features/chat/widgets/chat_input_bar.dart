@@ -7,13 +7,14 @@ const _kInputBg = Color(0xFFE8E8E8);
 const _kSendActive = Color(0xFF1A1A1A);
 
 class InputBar extends StatelessWidget {
-  late final TextEditingController controller;
-  late final XFile? pickedImage;
-  late final VoidCallback onPickImage;
-  late final VoidCallback onSend;
-  late final bool autofocus;
+  final TextEditingController controller;
+  final XFile? pickedImage;
+  final VoidCallback onPickImage;
+  final VoidCallback onSend;
+  final bool autofocus;
 
-  InputBar({
+  const InputBar({
+    super.key,
     required this.controller,
     required this.pickedImage,
     required this.onPickImage,

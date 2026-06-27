@@ -16,6 +16,7 @@ class DirectChatsScreen extends ConsumerStatefulWidget {
 
 class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
     with AutomaticKeepAliveClientMixin {
+  @override
   bool get wantKeepAlive => true;
 
   String get currentUserId => FirebaseAuth.instance.currentUser!.uid;

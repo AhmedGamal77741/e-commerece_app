@@ -33,11 +33,13 @@ class GroupChatTile extends ConsumerWidget {
     double top = offset.dy + (tileSize.height / 2) - (popupHeight / 2);
 
     if (left < 8.w) left = 8.w;
-    if (left + popupWidth > screenWidth - 8.w)
+    if (left + popupWidth > screenWidth - 8.w) {
       left = screenWidth - popupWidth - 8.w;
+    }
     if (top < 8.h) top = 8.h;
-    if (top + popupHeight > screenHeight - 20.h)
+    if (top + popupHeight > screenHeight - 20.h) {
       top = screenHeight - popupHeight - 20.h;
+    }
 
     showDialog(
       context: tileContext,
@@ -580,7 +582,7 @@ class FadingText extends ConsumerWidget {
             colors: [
               Colors.grey.shade400,
               Colors.grey.shade400,
-              Colors.grey.shade400.withOpacity(0.0),
+              Colors.grey.shade400.withValues(alpha: 0.0),
             ],
           ).createShader(bounds),
       blendMode: BlendMode.srcIn,

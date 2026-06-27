@@ -19,11 +19,11 @@ class ChatScreen extends ConsumerWidget {
   final String chatRoomName;
   final bool isDeleted;
   const ChatScreen({
-    Key? key,
+    super.key,
     required this.chatRoomId,
     required this.chatRoomName,
     this.isDeleted = false,
-  }) : super(key: key);
+  });
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
@@ -31,7 +31,9 @@ class ChatScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(chatRoomStateControllerProvider(chatRoomId));
-    final controller = ref.read(chatRoomStateControllerProvider(chatRoomId).notifier);
+    final controller = ref.read(
+      chatRoomStateControllerProvider(chatRoomId).notifier,
+    );
 
     return Scaffold(
       backgroundColor: _kBgColor,
@@ -104,16 +106,20 @@ class ChatScreen extends ConsumerWidget {
                           itemCount: messages.length,
                           itemBuilder: (context, index) {
                             final message = messages[index];
-                            if (message.deletedBy.contains(controller.currentUserId)) {
+                            if (message.deletedBy.contains(
+                              controller.currentUserId,
+                            )) {
                               return const SizedBox.shrink();
                             }
-                            final isMe = message.senderId == controller.currentUserId;
+                            final isMe =
+                                message.senderId == controller.currentUserId;
 
                             // Resolve sender display name using alias
                             final resolvedSenderName =
                                 isMe
                                     ? message.senderName
-                                    : (state.aliases[message.senderId] ?? message.senderName);
+                                    : (state.aliases[message.senderId] ??
+                                        message.senderName);
 
                             final showDate =
                                 index == messages.length - 1 ||
@@ -131,7 +137,9 @@ class ChatScreen extends ConsumerWidget {
                                   isMe: isMe,
                                   resolvedSenderName: resolvedSenderName,
                                   aliases: state.aliases,
-                                  onReply: () => controller.setReplyToMessage(message),
+                                  onReply:
+                                      () =>
+                                          controller.setReplyToMessage(message),
                                   interactable:
                                       !(state.blocked || state.isBlocked) &&
                                       !isDeleted,
@@ -170,7 +178,10 @@ class ChatScreen extends ConsumerWidget {
                               children: [
                                 Text(
                                   // Show alias for replied-to sender too
-                                  state.aliases[state.replyToMessage!.senderId] ?? state.replyToMessage!.senderName,
+                                  state.aliases[state
+                                          .replyToMessage!
+                                          .senderId] ??
+                                      state.replyToMessage!.senderName,
                                   style: TextStyle(
                                     fontSize: 11.sp,
                                     fontWeight: FontWeight.w600,

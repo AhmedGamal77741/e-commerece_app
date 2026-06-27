@@ -1,13 +1,10 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
-import 'package:ecommerece_app/features/chat/services/favorites_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
-import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 
 class EditScreenState {
   final int selectedTab;
@@ -47,7 +44,8 @@ class EditScreenController extends StateNotifier<EditScreenState> {
   StreamSubscription? _aliasesSubscription;
   final Ref ref;
 
-  EditScreenController(this.ref, int initialTab) : super(EditScreenState(selectedTab: initialTab)) {
+  EditScreenController(this.ref, int initialTab)
+    : super(EditScreenState(selectedTab: initialTab)) {
     searchController = TextEditingController();
     uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     _subscribeAliases();
@@ -81,13 +79,13 @@ class EditScreenController extends StateNotifier<EditScreenState> {
         .collection('aliases')
         .snapshots()
         .listen((snap) {
-      final map = <String, String>{};
-      for (final doc in snap.docs) {
-        final alias = doc.data()['alias'] as String?;
-        if (alias != null && alias.isNotEmpty) map[doc.id] = alias;
-      }
-      state = state.copyWith(aliases: map);
-    });
+          final map = <String, String>{};
+          for (final doc in snap.docs) {
+            final alias = doc.data()['alias'] as String?;
+            if (alias != null && alias.isNotEmpty) map[doc.id] = alias;
+          }
+          state = state.copyWith(aliases: map);
+        });
   }
 
   void toggleDirectChatSelection(String id) {
@@ -121,7 +119,9 @@ class EditScreenController extends StateNotifier<EditScreenState> {
   Future<void> leaveSelectedDirectChats() async {
     if (state.directChatsSelected.isEmpty) return;
     for (final id in state.directChatsSelected) {
-      await ref.read(chatControllerProvider.notifier).softDeleteChatForCurrentUser(id);
+      await ref
+          .read(chatControllerProvider.notifier)
+          .softDeleteChatForCurrentUser(id);
     }
     state = state.copyWith(directChatsSelected: {});
   }
@@ -129,12 +129,15 @@ class EditScreenController extends StateNotifier<EditScreenState> {
   Future<void> leaveSelectedGroupChats() async {
     if (state.groupChatsSelected.isEmpty) return;
     for (final id in state.groupChatsSelected) {
-      await ref.read(chatControllerProvider.notifier).removeParticipantFromGroup(id, uid);
+      await ref
+          .read(chatControllerProvider.notifier)
+          .removeParticipantFromGroup(id, uid);
     }
     state = state.copyWith(groupChatsSelected: {});
   }
 }
 
-final editScreenControllerProvider = StateNotifierProvider.autoDispose.family<EditScreenController, EditScreenState, int>((ref, initialTab) {
-  return EditScreenController(ref, initialTab);
-});
+final editScreenControllerProvider = StateNotifierProvider.autoDispose
+    .family<EditScreenController, EditScreenState, int>((ref, initialTab) {
+      return EditScreenController(ref, initialTab);
+    });

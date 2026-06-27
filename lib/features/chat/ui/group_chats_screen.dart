@@ -14,6 +14,7 @@ class GroupChatsScreen extends ConsumerStatefulWidget {
 
 class _GroupChatsScreenState extends ConsumerState<GroupChatsScreen>
     with AutomaticKeepAliveClientMixin {
+  @override
   bool get wantKeepAlive => true;
 
   String get currentUserId => FirebaseAuth.instance.currentUser!.uid;

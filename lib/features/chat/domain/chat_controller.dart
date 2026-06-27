@@ -81,8 +81,6 @@ class ChatController extends AsyncNotifier<void> {
     required String content,
     String? imageUrl,
     String? replyToMessageId,
-    bool isStory = false,
-    String? storyId = '',
     Map<String, dynamic>? postData,
     Product? productData,
   }) {
@@ -91,8 +89,6 @@ class ChatController extends AsyncNotifier<void> {
       content: content,
       imageUrl: imageUrl,
       replyToMessageId: replyToMessageId,
-      isStory: isStory,
-      storyId: storyId,
       postData: postData,
       productData: productData,
     );

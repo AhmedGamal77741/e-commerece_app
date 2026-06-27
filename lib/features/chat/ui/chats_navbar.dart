@@ -19,6 +19,7 @@ class ChatsNavbar extends ConsumerStatefulWidget {
 
 class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
     with AutomaticKeepAliveClientMixin {
+  @override
   bool get wantKeepAlive => true;
   int _selectedIndex = 1;
   bool _searchMode = false;

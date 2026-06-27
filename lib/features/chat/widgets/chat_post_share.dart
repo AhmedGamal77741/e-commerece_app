@@ -31,7 +31,7 @@ class ChatPostShareWidget extends StatelessWidget {
       }
       return 'User not found';
     } catch (e) {
-      print("Error fetching user name: $e");
+      debugPrint("Error fetching user name: $e");
       return 'Error';
     }
   }

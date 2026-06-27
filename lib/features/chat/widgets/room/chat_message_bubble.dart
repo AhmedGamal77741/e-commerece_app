@@ -2,9 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/cache/user_cache.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/models/message_model.dart';
-import 'package:ecommerece_app/features/chat/models/story_model.dart';
-import 'package:ecommerece_app/features/chat/services/story_service.dart';
-import 'package:ecommerece_app/features/chat/ui/story_player_screen.dart';
+
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
@@ -282,31 +280,7 @@ class _BubbleContent extends ConsumerWidget {
             if (message.content.isNotEmpty) SizedBox(height: 6.h),
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: InkWell(
-                onTap: () async {
-                  if (!message.isStory) return;
-                  final story = await StoryService().getStoryById(
-                    message.storyId!,
-                  );
-                  if (story == null) return;
-                  if (!context.mounted) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (_) => StoryPlayerScreen(
-                            group: UserStoryGroup(
-                              authorId: story.authorId,
-                              authorName: story.authorName,
-                              authorImage: story.authorImage,
-                              stories: [story],
-                            ),
-                          ),
-                    ),
-                  );
-                },
-                child: Image.network(message.imageUrl!, fit: BoxFit.cover),
-              ),
+              child: Image.network(message.imageUrl!, fit: BoxFit.cover),
             ),
           ],
         ],

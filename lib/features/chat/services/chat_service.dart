@@ -279,8 +279,6 @@ class ChatService {
     required String content,
     String? imageUrl,
     String? replyToMessageId,
-    bool isStory = false,
-    String? storyId = '',
     Map<String, dynamic>? postData,
     Product? productData,
   }) async {
@@ -351,8 +349,6 @@ class ChatService {
       timestamp: DateTime.now(),
       readBy: [currentUserId],
       replyToMessageId: replyToMessageId,
-      isStory: isStory,
-      storyId: storyId,
       postData: postData,
       productData: productData,
     );

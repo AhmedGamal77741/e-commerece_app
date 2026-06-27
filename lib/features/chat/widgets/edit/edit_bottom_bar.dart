@@ -8,11 +8,11 @@ class EditBottomBar extends ConsumerWidget {
   final bool hasSelection;
 
   const EditBottomBar({
-    Key? key,
+    super.key,
     required this.onDeselectAll,
     required this.onLeave,
     required this.hasSelection,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
