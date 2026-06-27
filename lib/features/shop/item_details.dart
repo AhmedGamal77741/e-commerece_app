@@ -1,4 +1,4 @@
-import 'package:ecommerece_app/core/helpers/spacing.dart';
+﻿import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
@@ -18,14 +18,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // MERGE NOTES:
-//   UI     → Branch Y  (Stack body with floating chat button, showShareDialog,
+//   UI     â†’ Branch Y  (Stack body with floating chat button, showShareDialog,
 //                       responsive banner padding, bare Padding on bottomNav)
-//   Logic  → Branch X  (pending_buynow write, paymentId generation, SafeArea
+//   Logic  â†’ Branch X  (pending_buynow write, paymentId generation, SafeArea
 //                       on bottomNavigationBar for system nav bar protection)
-//   Added  → imgUrl field in pending_buynow write (requested)
-// ─────────────────────────────────────────────────────────────────────────────
+//   Added  â†’ imgUrl field in pending_buynow write (requested)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ItemDetails extends ConsumerStatefulWidget {
   final Product product;
@@ -77,11 +77,11 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
 
   void _showQuantityRequiredMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('수량을 선택해주세요!'), backgroundColor: Colors.red),
+      const SnackBar(content: Text('ìˆ˜ëŸ‰ì„ ì„ íƒí•´ì£¼ì„¸ìš”!'), backgroundColor: Colors.red),
     );
   }
 
-  // ── NEW LOGIC: write pending_buynow to Firestore then navigate ─────────────
+  // â”€â”€ NEW LOGIC: write pending_buynow to Firestore then navigate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _handleBuyNow({
     required String uid,
     required bool isSub,
@@ -103,7 +103,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
     }
   }
 
-  // ── Shared stock + cart check used by both buttons ─────────────────────────
+  // â”€â”€ Shared stock + cart check used by both buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<int?> _getValidatedStock(PricePoint pricePoint) async {
     final currentStock = await ref
         .read(shopControllerProvider.notifier)
@@ -111,7 +111,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
     if (currentStock == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('수량 부족'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('ìˆ˜ëŸ‰ ë¶€ì¡±'), backgroundColor: Colors.red),
         );
       }
       return null;
@@ -124,7 +124,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
     final formatCurrency = NumberFormat('#,###');
     final currentUser = ref.watch(authStateProvider).value;
 
-    // ── Not logged in scaffold ─────────────────────────────────────────────
+    // â”€â”€ Not logged in scaffold â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (currentUser == null) {
       return Scaffold(
         body: ListView(
@@ -171,7 +171,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
                         const SizedBox(height: 10),
                         Text(
                           widget.product.stock == 0
-                              ? '품절'
+                              ? 'í’ˆì ˆ'
                               : widget.product.arrivalDate ?? '',
                           style: const TextStyle(
                             color: Color(0xFF747474),
@@ -242,7 +242,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
       );
     }
 
-    // ── Logged-in scaffold ─────────────────────────────────────────────────
+    // â”€â”€ Logged-in scaffold â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     final isSub = ref.watch(isSubscribedProvider).value ?? widget.isSub;
 
     return Scaffold(
@@ -294,7 +294,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
                           SizedBox(height: 10.h),
                           Text(
                             widget.product.stock == 0
-                                ? '품절'
+                                ? 'í’ˆì ˆ'
                                 : widget.product.arrivalDate ?? '',
                             style: TextStyle(
                               color: const Color(0xFF747474),
@@ -354,7 +354,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                      '요청을 처리하는 동안 오류가 발생했습니다. 다시 시도해주세요.',
+                                      'ìš”ì²­ì„ ì²˜ë¦¬í•˜ëŠ” ë™ì•ˆ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤. ë‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.',
                                     ),
                                   ),
                                 );
@@ -446,14 +446,14 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
     );
   }
 
-  // ── Bottom button builders ─────────────────────────────────────────────────
+  // â”€â”€ Bottom button builders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildCartButton({required bool isLoggedIn, String? uid}) {
     return TextButton(
       onPressed: () async {
         if (!isLoggedIn || uid == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
+            const SnackBar(content: Text("ë‚´ íŽ˜ì´ì§€ íƒ­ì—ì„œ íšŒì›ê°€ìž… í›„ ì´ìš©ê°€ëŠ¥í•©ë‹ˆë‹¤")),
           );
           return;
         }
@@ -475,7 +475,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '해당 상품의 남은 수량은 ${currentStock - cartTotalQuantity}개 입니다.',
+                'í•´ë‹¹ ìƒí’ˆì˜ ë‚¨ì€ ìˆ˜ëŸ‰ì€ ${currentStock - cartTotalQuantity}ê°œ ìž…ë‹ˆë‹¤.',
               ),
               backgroundColor: Colors.red,
             ),
@@ -504,7 +504,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
         ),
       ),
       child: Text(
-        '장바구니 담기',
+        'ìž¥ë°”êµ¬ë‹ˆ ë‹´ê¸°',
         style: TextStyle(
           color: Colors.black,
           fontFamily: 'NotoSans',
@@ -523,7 +523,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
       onPressed: () async {
         if (!isLoggedIn || uid == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
+            const SnackBar(content: Text("ë‚´ íŽ˜ì´ì§€ íƒ­ì—ì„œ íšŒì›ê°€ìž… í›„ ì´ìš©ê°€ëŠ¥í•©ë‹ˆë‹¤")),
           );
           return;
         }
@@ -562,7 +562,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
             Navigator.pop(context); // Dismiss loading
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
+            ).showSnackBar(SnackBar(content: Text('ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤: $e')));
           }
         }
       },
@@ -574,7 +574,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: Text(
-        '바로 구매',
+        'ë°”ë¡œ êµ¬ë§¤',
         style: TextStyle(
           color: Colors.white,
           fontFamily: 'NotoSans',
@@ -584,7 +584,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
     );
   }
 
-  // ── Reusable card builders ─────────────────────────────────────────────────
+  // â”€â”€ Reusable card builders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildPricePointsCard({
     required NumberFormat formatCurrency,
@@ -619,7 +619,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
                             ? Row(
                               children: [
                                 Text(
-                                  '${pricePoint.quantity}개 ${formatCurrency.format(pricePoint.price)}원',
+                                  '${pricePoint.quantity}ê°œ ${formatCurrency.format(pricePoint.price)}ì›',
                                   style: TextStyle(
                                     fontFamily: 'NotoSans',
                                     fontWeight: FontWeight.w400,
@@ -629,7 +629,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
                                 ),
                                 SizedBox(width: 5.w),
                                 Text(
-                                  '(1개 ${formatCurrency.format(perUnit.round())}원)',
+                                  '(1ê°œ ${formatCurrency.format(perUnit.round())}ì›)',
                                   style: TextStyles.abeezee14px400wP600,
                                 ),
                               ],
@@ -637,7 +637,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
                             : Row(
                               children: [
                                 Text(
-                                  '${pricePoint.quantity}개 ',
+                                  '${pricePoint.quantity}ê°œ ',
                                   style: TextStyle(
                                     fontFamily: 'NotoSans',
                                     fontWeight: FontWeight.w400,
@@ -652,7 +652,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
                                     Row(
                                       children: [
                                         Text(
-                                          '일반가 ${formatCurrency.format((pricePoint.price / 0.8).round())} 원',
+                                          'ì¼ë°˜ê°€ ${formatCurrency.format((pricePoint.price / 0.8).round())} ì›',
                                           style: TextStyle(
                                             fontFamily: 'NotoSans',
                                             fontWeight: FontWeight.w400,
@@ -662,7 +662,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
                                         ),
                                         SizedBox(width: 5.w),
                                         Text(
-                                          '(1개 ${formatCurrency.format(perUnitN.round())}원)',
+                                          '(1ê°œ ${formatCurrency.format(perUnitN.round())}ì›)',
                                           style: TextStyles.abeezee14px400wP600,
                                         ),
                                       ],
@@ -672,7 +672,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
                                       child: Row(
                                         children: [
                                           Text(
-                                            '멤버십 ${formatCurrency.format(pricePoint.price)} 원',
+                                            'ë©¤ë²„ì‹­ ${formatCurrency.format(pricePoint.price)} ì›',
                                             style: TextStyle(
                                               fontFamily: 'NotoSans',
                                               fontWeight: FontWeight.w400,
@@ -683,7 +683,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
                                           ),
                                           SizedBox(width: 5.w),
                                           Text(
-                                            '(1개 ${formatCurrency.format(perUnit.round())}원)',
+                                            '(1ê°œ ${formatCurrency.format(perUnit.round())}ì›)',
                                             style: TextStyles
                                                 .abeezee14px400wP600
                                                 .copyWith(color: Colors.white),
@@ -735,19 +735,19 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInfoRow('배송', widget.product.arrivalDate ?? ''),
+            _buildInfoRow('ë°°ì†¡', widget.product.arrivalDate ?? ''),
             SizedBox(height: 10.h),
             const Divider(height: 1, thickness: 0.40, color: Color(0xFF747474)),
             SizedBox(height: 10.h),
-            _buildInfoRow('보관법 및 소비기한', widget.product.instructions),
+            _buildInfoRow('ë³´ê´€ë²• ë° ì†Œë¹„ê¸°í•œ', widget.product.instructions),
             SizedBox(height: 10.h),
             const Divider(height: 1, thickness: 0.40, color: Color(0xFF747474)),
             SizedBox(height: 10.h),
-            _buildInfoRow('남은 수량', '${widget.product.stock.toString()} 개'),
+            _buildInfoRow('ë‚¨ì€ ìˆ˜ëŸ‰', '${widget.product.stock.toString()} ê°œ'),
             SizedBox(height: 10.h),
             const Divider(height: 1, thickness: 0.40, color: Color(0xFF747474)),
             SizedBox(height: 10.h),
-            _buildInfoRow('제품안내', widget.product.description ?? ''),
+            _buildInfoRow('ì œí’ˆì•ˆë‚´', widget.product.description ?? ''),
           ],
         ),
       ),
@@ -785,7 +785,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ShiningPremiumBanner extends ConsumerStatefulWidget {
   const ShiningPremiumBanner({super.key});
@@ -837,14 +837,14 @@ class _ShiningPremiumBannerState extends ConsumerState<ShiningPremiumBanner>
                 children: [
                   verticalSpace(15),
                   Text(
-                    '멤버십 혜택',
+                    'ë©¤ë²„ì‹­ í˜œíƒ',
                     style: TextStyles.abeezee30px800wW.copyWith(
                       fontFamily: 'ABeeZee',
                     ),
                   ),
                   verticalSpace(50),
                   Text(
-                    '월회비 8,000원\n모든 제품 20% 할인',
+                    'ì›”íšŒë¹„ 8,000ì›\nëª¨ë“  ì œí’ˆ 20% í• ì¸',
                     textAlign: TextAlign.center,
                     style: TextStyles.abeezee18px400wPblack.copyWith(
                       color: Colors.white,
@@ -852,7 +852,7 @@ class _ShiningPremiumBannerState extends ConsumerState<ShiningPremiumBanner>
                   ),
                   verticalSpace(50),
                   Text(
-                    '매월 5만원 이상 구매하시는 분은 멤버십 가입을 권합니다.',
+                    'ë§¤ì›” 5ë§Œì› ì´ìƒ êµ¬ë§¤í•˜ì‹œëŠ” ë¶„ì€ ë©¤ë²„ì‹­ ê°€ìž…ì„ ê¶Œí•©ë‹ˆë‹¤.',
                     textAlign: TextAlign.center,
                     style: TextStyles.abeezee18px400wPblack.copyWith(
                       color: Colors.white,
@@ -868,7 +868,7 @@ class _ShiningPremiumBannerState extends ConsumerState<ShiningPremiumBanner>
               final currentUser = ref.read(authStateProvider).value;
               if (currentUser == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("내 페이지 탭에서 회원가입 후 이용가능합니다")),
+                  const SnackBar(content: Text("ë‚´ íŽ˜ì´ì§€ íƒ­ì—ì„œ íšŒì›ê°€ìž… í›„ ì´ìš©ê°€ëŠ¥í•©ë‹ˆë‹¤")),
                 );
                 return;
               }
@@ -886,7 +886,7 @@ class _ShiningPremiumBannerState extends ConsumerState<ShiningPremiumBanner>
               ),
             ),
             child: Text(
-              '멤버십 가입하기',
+              'ë©¤ë²„ì‹­ ê°€ìž…í•˜ê¸°',
               style: TextStyles.abeezee23px800wW.copyWith(color: Colors.black),
             ),
           ),
@@ -901,15 +901,10 @@ Future<void> _navigateToSubscriptionFromBanner(
   WidgetRef ref,
   String uid,
 ) async {
-  // ── Gate 1: bank account ────────────────────────────────────────────
-  final firestore = ref.read(firestoreProvider);
-  final userDoc = await firestore.collection('users').doc(uid).get();
-  final data = userDoc.data();
+  final shopNotifier = ref.read(shopControllerProvider.notifier);
 
-  final accounts = data?['bankAccounts'];
-  final hasBankAccount =
-      accounts != null && accounts is List && accounts.isNotEmpty;
-
+  // -- Gate 1: bank account
+  bool hasBankAccount = await shopNotifier.checkUserHasBankAccount(uid);
   if (!hasBankAccount) {
     if (!context.mounted) return;
     await Navigator.of(context).push(
@@ -917,26 +912,12 @@ Future<void> _navigateToSubscriptionFromBanner(
         builder: (_) => const NoBankAccountScreen(source: 'sub'),
       ),
     );
-    final refreshed = await firestore.collection('users').doc(uid).get();
-    final refreshedAccounts = refreshed.data()?['bankAccounts'];
-    final nowHasAccount =
-        refreshedAccounts != null &&
-        refreshedAccounts is List &&
-        refreshedAccounts.isNotEmpty;
-    if (!nowHasAccount) return;
+    hasBankAccount = await shopNotifier.checkUserHasBankAccount(uid);
+    if (!hasBankAccount) return;
   }
 
-  // ── Gate 2: receipt / invoice data ──────────────────────────────────
-  final cacheDoc =
-      await firestore.collection('usercached_values').doc(uid).get();
-  final cacheData = cacheDoc.data();
-  final hasReceiptData =
-      cacheData != null &&
-      (cacheData['selectedOption'] == 1 || cacheData['selectedOption'] == 2) &&
-      (cacheData['name'] as String? ?? '').isNotEmpty &&
-      (cacheData['email'] as String? ?? '').isNotEmpty &&
-      (cacheData['phone'] as String? ?? '').isNotEmpty;
-
+  // -- Gate 2: receipt / invoice data
+  bool hasReceiptData = await shopNotifier.checkUserHasReceiptData(uid);
   if (!hasReceiptData) {
     if (!context.mounted) return;
     final result = await Navigator.of(context).push<bool>(
@@ -947,8 +928,10 @@ Future<void> _navigateToSubscriptionFromBanner(
     if (result != true) return;
   }
 
-  // ── All gates passed ─────────────────────────────────────────────────
+  // -- All gates passed
   if (context.mounted) {
     context.push(Routes.subscriptionScreen);
   }
 }
+
+

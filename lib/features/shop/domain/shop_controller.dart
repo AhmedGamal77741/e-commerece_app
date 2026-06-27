@@ -98,6 +98,25 @@ class ShopController extends AsyncNotifier<void> {
     return ref.read(cartControllerProvider).removeFavItemByProductId(productId);
   }
 
+  Future<bool> checkUserHasBankAccount(String uid) async {
+    final firestore = ref.read(firestoreProvider);
+    final userDoc = await firestore.collection('users').doc(uid).get();
+    final data = userDoc.data();
+    final accounts = data?['bankAccounts'];
+    return accounts != null && accounts is List && accounts.isNotEmpty;
+  }
+
+  Future<bool> checkUserHasReceiptData(String uid) async {
+    final firestore = ref.read(firestoreProvider);
+    final cacheDoc = await firestore.collection('usercached_values').doc(uid).get();
+    final cacheData = cacheDoc.data();
+    return cacheData != null &&
+        (cacheData['selectedOption'] == 1 || cacheData['selectedOption'] == 2) &&
+        (cacheData['name'] as String? ?? '').isNotEmpty &&
+        (cacheData['email'] as String? ?? '').isNotEmpty &&
+        (cacheData['phone'] as String? ?? '').isNotEmpty;
+  }
+
   Future<void> addFavItem(String productId) async {
     return ref.read(cartControllerProvider).addFavItem(productId);
   }
