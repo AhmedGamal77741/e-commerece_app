@@ -6,7 +6,6 @@ import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
-import 'package:ecommerece_app/features/chat/legacy_home_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
@@ -50,35 +49,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
 
   // ─── Hidden user IDs stream ───────────────────────────────────────────────
   Stream<Set<String>> _getHiddenIdsStream() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return Stream.value({});
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('hiddenFriends')
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => d.id).toSet());
+    return ref.read(friendsControllerProvider.notifier).getHiddenIdsStream();
   }
 
   // ─── Alias map stream ─────────────────────────────────────────────────────
   Stream<Map<String, String>> _getAliasesStream() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return Stream.value({});
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('aliases')
-        .snapshots()
-        .map((snap) {
-          final map = <String, String>{};
-          for (final doc in snap.docs) {
-            final alias = doc.data()['alias'] as String?;
-            if (alias != null && alias.isNotEmpty) {
-              map[doc.id] = alias;
-            }
-          }
-          return map;
-        });
+    return ref.read(friendsControllerProvider.notifier).getAliasesStream();
   }
 
   // ─── Following IDs stream ─────────────────────────────────────────────────
@@ -676,9 +652,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
     if (confirm != true) return;
     try {
       final currentUid = FirebaseAuth.instance.currentUser!.uid;
-      await ref.read(friendsControllerProvider).removeFriend(friend.userId);
+      await ref.read(friendsControllerProvider.notifier).removeFriend(friend.userId);
       final chatRoomId = ([currentUid, friend.userId]..sort()).join('_');
-      await ref.read(chatControllerProvider).softDeleteChatForCurrentUser(chatRoomId);
+      await ref.read(chatControllerProvider.notifier).softDeleteChatForCurrentUser(chatRoomId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -781,7 +757,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
 
     if (confirm != true) return;
     try {
-      await ref.read(friendsControllerProvider).blockFriend(friend.name);
+      await ref.read(friendsControllerProvider.notifier).blockFriend(friend.name);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

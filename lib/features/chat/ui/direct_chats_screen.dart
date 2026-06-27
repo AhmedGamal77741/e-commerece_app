@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
-import 'package:ecommerece_app/features/chat/legacy_home_functions.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,35 +27,12 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
 
   // ─── Hidden IDs stream ────────────────────────────────────────────────────
   Stream<Set<String>> _getHiddenIdsStream() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return Stream.value({});
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('hiddenFriends')
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => d.id).toSet());
+    return ref.read(friendsControllerProvider.notifier).getHiddenIdsStream();
   }
 
   // ─── Alias map stream ─────────────────────────────────────────────────────
   Stream<Map<String, String>> _getAliasesStream() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return Stream.value({});
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('aliases')
-        .snapshots()
-        .map((snap) {
-          final map = <String, String>{};
-          for (final doc in snap.docs) {
-            final alias = doc.data()['alias'] as String?;
-            if (alias != null && alias.isNotEmpty) {
-              map[doc.id] = alias;
-            }
-          }
-          return map;
-        });
+    return ref.read(friendsControllerProvider.notifier).getAliasesStream();
   }
 
   // ─── Resolve other participant ────────────────────────────────────────────
@@ -73,35 +50,7 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
     _fetchingIds.add(otherId);
 
     try {
-      MyUser? user;
-      if (chat.type == 'direct') {
-        final doc =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(otherId)
-                .get();
-        if (doc.exists) {
-          user = MyUser.fromDocument(doc.data()!);
-        }
-      } else if (chat.type == 'seller') {
-        final doc =
-            await FirebaseFirestore.instance
-                .collection('deliveryManagers')
-                .doc(otherId)
-                .get();
-        if (doc.exists) {
-          user = MyUser.fromSellerDocument(doc.data()!);
-        }
-      } else if (chat.type == 'admin') {
-        final doc =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(otherId)
-                .get();
-        if (doc.exists) {
-          user = MyUser.fromSellerDocument(doc.data()!);
-        }
-      }
+      MyUser? user = await ref.read(chatControllerProvider.notifier).getOtherUserDoc(otherId, chat.type ?? 'direct');
       if (mounted) {
         setState(() {
           _usersCache[otherId] = user;
@@ -216,7 +165,7 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
                             Navigator.pop(context);
                             if (userId.isEmpty) return;
                             showLoadingDialog(context);
-                            await blockUser(userIdToBlock: userId);
+                            await ref.read(feedControllerProvider.notifier).blockUser(userIdToBlock: userId);
                             if (mounted) Navigator.pop(context);
                           },
                         ),
@@ -236,7 +185,7 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
                           onTap: () async {
                             Navigator.pop(context);
                             showLoadingDialog(context);
-                            await ref.read(chatControllerProvider).softDeleteChatForCurrentUser(
+                            await ref.read(chatControllerProvider.notifier).softDeleteChatForCurrentUser(
                               chat.id,
                             );
                             if (mounted) Navigator.pop(context);
@@ -299,7 +248,7 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
             final aliases = aliasSnapshot.data ?? {};
 
             return StreamBuilder<List<ChatRoomModel>>(
-              stream: ref.read(chatControllerProvider).getChatRoomsStream(),
+              stream: ref.read(chatControllerProvider.notifier).getChatRoomsStream(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const SizedBox.shrink();

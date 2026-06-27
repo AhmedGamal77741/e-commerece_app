@@ -1,5 +1,7 @@
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../data/chat_repository.dart';
 import '../models/chat_room_model.dart';
@@ -15,15 +17,39 @@ final messagesProvider = StreamProvider.family<List<MessageModel>, String>((ref,
   return chatRepository.getMessagesStream(chatRoomId);
 });
 
-final chatControllerProvider = Provider<ChatController>((ref) {
-  return ChatController(chatRepository: ref.watch(chatRepositoryProvider));
+final chatControllerProvider = AsyncNotifierProvider<ChatController, void>(() {
+  return ChatController();
 });
 
-class ChatController {
-  final ChatRepository _chatRepository;
+class ChatController extends AsyncNotifier<void> {
+  late final ChatRepository _chatRepository;
 
-  ChatController({required ChatRepository chatRepository})
-      : _chatRepository = chatRepository;
+  @override
+  FutureOr<void> build() {
+    _chatRepository = ref.watch(chatRepositoryProvider);
+  }
+
+  Future<MyUser?> getOtherUserDoc(String otherId, String chatType) async {
+    try {
+      if (chatType == 'direct') {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(otherId)
+            .get();
+        if (doc.exists) return MyUser.fromDocument(doc.data()!);
+      } else if (chatType == 'seller' || chatType == 'admin') {
+        final collectionName = chatType == 'seller' ? 'deliveryManagers' : 'users';
+        final doc = await FirebaseFirestore.instance
+            .collection(collectionName)
+            .doc(otherId)
+            .get();
+        if (doc.exists) return MyUser.fromSellerDocument(doc.data()!);
+      }
+    } catch (e) {
+      print('Error fetching other user doc: $e');
+    }
+    return null;
+  }
 
   Future<String> createDirectChatRoom(String otherUserId, bool isBrand) {
     return _chatRepository.createDirectChatRoom(otherUserId, isBrand);

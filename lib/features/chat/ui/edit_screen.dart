@@ -7,7 +7,7 @@ import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/services/favorites_service.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
-import 'package:ecommerece_app/features/chat/legacy_home_functions.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -296,7 +296,7 @@ class _ContactsEditTabState extends ConsumerState<_ContactsEditTab> {
   }
 
   Future<void> _unblock(String blockedUserId) async {
-    await unblockUser(userIdToUnblock: blockedUserId);
+    await ref.read(feedControllerProvider.notifier).unblockUser(userIdToUnblock: blockedUserId);
   }
 
   Future<void> _reorderFavorites(List<MyUser> newOrder) async {
@@ -751,19 +751,7 @@ class _DirectChatsEditTabState extends ConsumerState<_DirectChatsEditTab> {
     _fetchingIds.add(otherId);
 
     try {
-      MyUser? user;
-      final collection = chat.type == 'seller' ? 'deliveryManagers' : 'users';
-      final doc =
-          await FirebaseFirestore.instance
-              .collection(collection)
-              .doc(otherId)
-              .get();
-      if (doc.exists) {
-        user =
-            chat.type == 'seller'
-                ? MyUser.fromSellerDocument(doc.data()!)
-                : MyUser.fromDocument(doc.data()!);
-      }
+      MyUser? user = await ref.read(chatControllerProvider.notifier).getOtherUserDoc(otherId, chat.type ?? 'direct');
       if (mounted) {
         setState(() {
           _usersCache[otherId] = user;
@@ -782,7 +770,7 @@ class _DirectChatsEditTabState extends ConsumerState<_DirectChatsEditTab> {
     );
     if (confirm != true) return;
     for (final id in _selected) {
-      await ref.read(chatControllerProvider).softDeleteChatForCurrentUser(id);
+      await ref.read(chatControllerProvider.notifier).softDeleteChatForCurrentUser(id);
     }
     setState(() => _selected.clear());
   }
@@ -867,7 +855,7 @@ class _DirectChatsEditTabState extends ConsumerState<_DirectChatsEditTab> {
       children: [
         Expanded(
           child: StreamBuilder<List<ChatRoomModel>>(
-            stream: ref.read(chatControllerProvider).getChatRoomsStream(),
+            stream: ref.read(chatControllerProvider.notifier).getChatRoomsStream(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const SizedBox.shrink();
@@ -1185,7 +1173,7 @@ class _GroupChatsEditTabState extends ConsumerState<_GroupChatsEditTab> {
 
     if (confirm != true) return;
     for (final id in _selected) {
-      await ref.read(chatControllerProvider).removeParticipantFromGroup(id, uid);
+      await ref.read(chatControllerProvider.notifier).removeParticipantFromGroup(id, uid);
     }
     setState(() => _selected.clear());
   }
@@ -1202,7 +1190,7 @@ class _GroupChatsEditTabState extends ConsumerState<_GroupChatsEditTab> {
             builder: (ctx, orderSnap) {
               final orderMap = orderSnap.data ?? {};
               return StreamBuilder<List<ChatRoomModel>>(
-                stream: ref.read(chatControllerProvider).getChatRoomsStream(),
+                stream: ref.read(chatControllerProvider.notifier).getChatRoomsStream(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const SizedBox.shrink();

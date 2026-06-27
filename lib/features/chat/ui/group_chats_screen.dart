@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
-import 'package:ecommerece_app/features/chat/legacy_home_functions.dart';
 import 'package:ecommerece_app/core/cache/user_cache.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -273,13 +273,13 @@ class _GroupChatsScreenState extends ConsumerState<GroupChatsScreen>
     );
 
     if (confirm != true) return;
-    await ref.read(chatControllerProvider).removeParticipantFromGroup(chat.id, currentUserId);
+    await ref.read(chatControllerProvider.notifier).removeParticipantFromGroup(chat.id, currentUserId);
   }
 
   // ─── Change group image ───────────────────────────────────────────────────
   Future<void> _changeGroupImage(ChatRoomModel chat) async {
     try {
-      final newImageUrl = await uploadImageToFirebaseStorageHome();
+      final newImageUrl = await ref.read(feedControllerProvider.notifier).uploadImageToFirebaseStorageHome();
       if (newImageUrl == null || newImageUrl.isEmpty) return;
 
       await FirebaseFirestore.instance
@@ -454,7 +454,7 @@ class _GroupChatsScreenState extends ConsumerState<GroupChatsScreen>
         final orderMap = orderSnapshot.data ?? {};
 
         return StreamBuilder<List<ChatRoomModel>>(
-          stream: ref.read(chatControllerProvider).getChatRoomsStream(),
+          stream: ref.read(chatControllerProvider.notifier).getChatRoomsStream(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return const SizedBox.shrink();
