@@ -63,6 +63,39 @@ final authorsDataMapProvider =
           .getAuthorsDataStreamRealtime(authorIds);
     });
 
+final followerCountProvider = StreamProvider.family<int, String>((ref, userId) {
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
+      .collection('followers')
+      .snapshots()
+      .map((snapshot) => snapshot.docs.length);
+});
+
+final isFollowingProvider = StreamProvider.family<bool, String>((ref, targetUserId) {
+  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  if (currentUserId == null) return Stream.value(false);
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUserId)
+      .collection('following')
+      .doc(targetUserId)
+      .snapshots()
+      .map((snapshot) => snapshot.exists);
+});
+
+final hasFollowRequestProvider = StreamProvider.family<bool, String>((ref, targetUserId) {
+  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  if (currentUserId == null) return Stream.value(false);
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(targetUserId)
+      .collection('followRequests')
+      .doc(currentUserId)
+      .snapshots()
+      .map((snapshot) => snapshot.exists);
+});
+
 final feedControllerProvider =
     AsyncNotifierProvider<FeedController, List<Map<String, dynamic>>>(
       FeedController.new,
@@ -264,6 +297,8 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     newImages: newImages,
     categoryId: categoryId,
   );
+  Future<void> deletePost({required String postId}) => 
+      _repository.deletePost(postId: postId);
   Future<String> uploadImageToFirebaseStorageHome() =>
       _repository.uploadImageToFirebaseStorageHome();
   Future<List<String>> uploadMultipleImagesToFirebaseHome() =>

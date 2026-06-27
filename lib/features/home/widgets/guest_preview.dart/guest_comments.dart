@@ -6,7 +6,7 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
-import 'package:ecommerece_app/features/home/widgets/post_item.dart';
+import 'package:ecommerece_app/features/home/widgets/post_item_components/natural_aspect_page_view.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

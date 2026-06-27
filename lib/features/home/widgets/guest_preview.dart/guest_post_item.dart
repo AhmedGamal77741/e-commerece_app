@@ -7,7 +7,8 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_actions.dart';
-import 'package:ecommerece_app/features/home/widgets/post_item.dart'; // imports NaturalAspectPageView
+import 'package:ecommerece_app/features/home/widgets/post_item_components/natural_aspect_page_view.dart';
+import 'package:ecommerece_app/features/home/widgets/post_item_components/post_menus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';

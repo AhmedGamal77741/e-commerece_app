@@ -455,6 +455,24 @@ class FeedRepository {
     }
   }
 
+  Future<void> deletePost({required String postId}) async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) throw Exception("User not logged in");
+      
+      final postDoc = await _firestore.collection('posts').doc(postId).get();
+      if (!postDoc.exists) return;
+      
+      if (postDoc.data()?['userId'] != currentUser.uid) {
+        throw Exception("You don't have permission to delete this post.");
+      }
+
+      await _firestore.collection('posts').doc(postId).delete();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Upload new images to Firebase Storage concurrently
   Future<List<String>> _uploadNewImages(List<XFile> files) async {
     if (files.isEmpty) return [];
