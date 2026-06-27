@@ -307,7 +307,7 @@ class FriendsRepository {
       final usersQuery = await _firestore
           .collection('users')
           .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThan: query + 'z')
+          .where('name', isLessThan: '${query}z')
           .limit(20)
           .get();
 

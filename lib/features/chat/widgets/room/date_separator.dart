@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class DateSeparator extends ConsumerWidget {
   final DateTime date;
-  const DateSeparator({Key? key, required this.date}) : super(key: key);
+  const DateSeparator({super.key, required this.date});
 
   String _label() {
     final now = DateTime.now();
@@ -23,7 +23,7 @@ class DateSeparator extends ConsumerWidget {
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(

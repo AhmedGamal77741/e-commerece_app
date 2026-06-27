@@ -5,7 +5,7 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FriendsService {
-  /// Returns a list of blocked friends for the current user as a List<Map<String, String>>
+  /// Returns a list of blocked friends for the current user as a List&lt;Map&lt;String, String&gt;&gt;
   Future<List<Map<String, String>>> getBlockedFriends() async {
     try {
       final userDoc =
@@ -356,7 +356,7 @@ class FriendsService {
           await _firestore
               .collection('users')
               .where('name', isGreaterThanOrEqualTo: query)
-              .where('name', isLessThan: query + 'z')
+              .where('name', isLessThan: '${query}z')
               .limit(20)
               .get();
 

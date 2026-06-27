@@ -177,7 +177,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                 bank['payerId'] as String,
                               );
                               setStateSheet(() {});
-                              if (mounted) Navigator.of(context).pop();
+                              if (!context.mounted) return;
+                              Navigator.of(context).pop();
                             },
                           ),
                         ),

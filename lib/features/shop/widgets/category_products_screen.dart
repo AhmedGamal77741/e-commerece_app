@@ -112,14 +112,14 @@ class _CategoryProductsScreenState extends ConsumerState<CategoryProductsScreen>
 
           final random = Random();
           sameRegion.sort((a, b) {
-            final weightA = _productRandomWeight.putIfAbsent(a.product_id, () => random.nextDouble());
-            final weightB = _productRandomWeight.putIfAbsent(b.product_id, () => random.nextDouble());
+            final weightA = _productRandomWeight.putIfAbsent(a.productId, () => random.nextDouble());
+            final weightB = _productRandomWeight.putIfAbsent(b.productId, () => random.nextDouble());
             return weightA.compareTo(weightB);
           });
 
           otherRegion.sort((a, b) {
-            final weightA = _productRandomWeight.putIfAbsent(a.product_id, () => random.nextDouble());
-            final weightB = _productRandomWeight.putIfAbsent(b.product_id, () => random.nextDouble());
+            final weightA = _productRandomWeight.putIfAbsent(a.productId, () => random.nextDouble());
+            final weightB = _productRandomWeight.putIfAbsent(b.productId, () => random.nextDouble());
             return weightA.compareTo(weightB);
           });
 

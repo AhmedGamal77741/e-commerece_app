@@ -171,7 +171,7 @@ class CartRepository {
     }
 
     batch.set(pendingColl.doc(paymentId), {
-      'product_id': product.product_id,
+      'product_id': product.productId,
       'product_name': product.productName,
       'imgUrl': product.imgUrl ?? '',
       'deliveryManagerId': product.deliveryManagerId,

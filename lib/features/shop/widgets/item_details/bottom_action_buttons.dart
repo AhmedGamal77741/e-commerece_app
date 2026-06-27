@@ -36,7 +36,7 @@ class _BottomActionButtonsState extends ConsumerState<BottomActionButtons> {
   Future<int?> _getValidatedStock(PricePoint pricePoint) async {
     final currentStock = await ref
         .read(shopControllerProvider.notifier)
-        .getValidatedStock(widget.product.product_id, pricePoint.quantity);
+        .getValidatedStock(widget.product.productId, pricePoint.quantity);
     if (currentStock == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -98,7 +98,7 @@ class _BottomActionButtonsState extends ConsumerState<BottomActionButtons> {
 
                   final cartTotalQuantity = await ref
                       .read(shopControllerProvider.notifier)
-                      .getCartItemQuantity(widget.product.product_id);
+                      .getCartItemQuantity(widget.product.productId);
 
                   if (cartTotalQuantity + pricePoint.quantity > currentStock) {
                     if (!context.mounted) return;
@@ -114,7 +114,7 @@ class _BottomActionButtonsState extends ConsumerState<BottomActionButtons> {
                   }
 
                   await ref.read(shopControllerProvider.notifier).addToCart(
-                        productId: widget.product.product_id,
+                        productId: widget.product.productId,
                         pricePointIndex: int.parse(widget.selectedOption!),
                         deliveryManagerId:
                             widget.product.deliveryManagerId ?? '',

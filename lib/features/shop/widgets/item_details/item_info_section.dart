@@ -89,12 +89,12 @@ class _ItemInfoSectionState extends ConsumerState<ItemInfoSection> {
               IconButton(
                 onPressed: () {
                   final url =
-                      'https://www.pang2chocolate.com/product/${widget.product.product_id}';
+                      'https://www.pang2chocolate.com/product/${widget.product.productId}';
                   showShareDialog(
                     context,
                     'product',
                     url,
-                    widget.product.product_id,
+                    widget.product.productId,
                     widget.product.productName,
                     widget.product.imgUrl.toString(),
                     widget.product.toMap(),
@@ -118,12 +118,12 @@ class _ItemInfoSectionState extends ConsumerState<ItemInfoSection> {
                             await ref
                                 .read(shopControllerProvider.notifier)
                                 .removeFavItemByProductId(
-                                  widget.product.product_id,
+                                  widget.product.productId,
                                 );
                           } else {
                             await ref
                                 .read(shopControllerProvider.notifier)
-                                .addFavItem(widget.product.product_id);
+                                .addFavItem(widget.product.productId);
                           }
                         } catch (e) {
                           setState(() => liked = wasLiked);

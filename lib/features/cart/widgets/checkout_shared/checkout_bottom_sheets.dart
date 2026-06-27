@@ -257,30 +257,25 @@ class CheckoutBottomSheets {
     required int currentValue,
     required Function(int) onChanged,
   }) {
-    return Row(
-      children: [
-        Transform.scale(
-          scale: 20.sp / 15,
-          child: Radio<int>(
-            value: value,
-            groupValue: currentValue,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
-            onChanged: (v) {
-              if (v != null) onChanged(v);
-            },
-          ),
+    return RadioMenuButton<int>(
+      value: value,
+      groupValue: currentValue,
+      onChanged: (v) {
+        if (v != null) onChanged(v);
+      },
+      style: const ButtonStyle(
+        visualDensity: VisualDensity(horizontal: -2, vertical: -2),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 20.sp,
+          fontFamily: 'NotoSans',
+          fontWeight: FontWeight.w800,
+          color: ColorsManager.primaryblack,
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 20.sp,
-            fontFamily: 'NotoSans',
-            fontWeight: FontWeight.w800,
-            color: ColorsManager.primaryblack,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -330,7 +325,7 @@ class CheckoutBottomSheets {
   static List<Widget> _buildTaxInvoiceFields(CheckoutFormController controller, String invoiceeType) => [
         DropdownButtonFormField<String>(
           dropdownColor: Colors.white,
-          value: invoiceeType,
+          initialValue: invoiceeType,
           items: ['사업자', '개인', '외국인']
               .map((t) => DropdownMenuItem(value: t, child: Text(t)))
               .toList(),

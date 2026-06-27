@@ -11,13 +11,13 @@ class BlockedBar extends ConsumerWidget {
   final Future<void> Function(String) onUnblock;
 
   const BlockedBar({
-    Key? key,
+    super.key,
     required this.blocked,
     required this.isBlocked,
     required this.chatRoomId,
     required this.currentUserId,
     required this.onUnblock,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

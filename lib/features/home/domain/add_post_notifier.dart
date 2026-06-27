@@ -111,6 +111,7 @@ class AddPostNotifier extends Notifier<AddPostState> {
          state = state.copyWith(innerPlaceholderText: snapshot.data()?['innerPlaceholderText'] ?? '');
       }
     } catch (e) {
+      debugPrint('Error: $e');
     }
   }
 
@@ -133,6 +134,7 @@ class AddPostNotifier extends Notifier<AddPostState> {
       
       state = state.copyWith(categories: categories);
     } catch (e) {
+      debugPrint('Error: $e');
     }
   }
 
@@ -154,6 +156,7 @@ class AddPostNotifier extends Notifier<AddPostState> {
       });
       await _loadCategories();
     } catch (e) {
+      debugPrint('Error: $e');
     }
   }
 
@@ -173,6 +176,7 @@ class AddPostNotifier extends Notifier<AddPostState> {
       }
       await _loadCategories();
     } catch (e) {
+      debugPrint('Error: $e');
     }
   }
 
@@ -188,6 +192,7 @@ class AddPostNotifier extends Notifier<AddPostState> {
           .update({'name': newName.trim()});
       await _loadCategories();
     } catch (e) {
+      debugPrint('Error: $e');
     }
   }
 
@@ -207,6 +212,7 @@ class AddPostNotifier extends Notifier<AddPostState> {
       await batch.commit();
       await _loadCategories();
     } catch (e) {
+      debugPrint('Error: $e');
     }
   }
 

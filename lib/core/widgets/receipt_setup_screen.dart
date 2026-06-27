@@ -245,28 +245,23 @@ class _ReceiptSetupScreenState extends State<ReceiptSetupScreen> {
 
   // ── Radio option builder ──────────────────────────────────────────────────
   Widget _buildRadioOption({required int value, required String label}) {
-    return Row(
-      children: [
-        Transform.scale(
-          scale: 20.sp / 15,
-          child: Radio<int>(
-            value: value,
-            groupValue: selectedOption,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
-            onChanged: (v) => setState(() => selectedOption = v!),
-          ),
+    return RadioMenuButton<int>(
+      value: value,
+      groupValue: selectedOption,
+      onChanged: (v) => setState(() => selectedOption = v!),
+      style: const ButtonStyle(
+        visualDensity: VisualDensity(horizontal: -2, vertical: -2),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 18.sp,
+          fontFamily: 'NotoSans',
+          fontWeight: FontWeight.w700,
+          color: ColorsManager.primaryblack,
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 18.sp,
-            fontFamily: 'NotoSans',
-            fontWeight: FontWeight.w700,
-            color: ColorsManager.primaryblack,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -319,7 +314,7 @@ class _ReceiptSetupScreenState extends State<ReceiptSetupScreen> {
   List<Widget> _buildTaxInvoiceFields() => [
     DropdownButtonFormField<String>(
       dropdownColor: Colors.white,
-      value: invoiceeType,
+      initialValue: invoiceeType,
       items:
           [
             '사업자',

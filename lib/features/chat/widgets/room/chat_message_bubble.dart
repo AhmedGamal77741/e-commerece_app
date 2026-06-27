@@ -24,7 +24,7 @@ class MessageBubble extends ConsumerWidget {
   final bool isDeleted;
 
   const MessageBubble({
-    Key? key,
+    super.key,
     required this.message,
     required this.isMe,
     required this.resolvedSenderName,
@@ -32,7 +32,7 @@ class MessageBubble extends ConsumerWidget {
     required this.onReply,
     required this.interactable,
     required this.isDeleted,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -358,7 +358,7 @@ class _ReplyPreview extends ConsumerWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(

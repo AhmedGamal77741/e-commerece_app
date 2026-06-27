@@ -26,7 +26,7 @@ class ShopProductCard extends StatelessWidget {
         GoRouter.of(context).pushNamed(
           'productDetails',
           pathParameters: {
-            'productId': product.product_id.toString(),
+            'productId': product.productId.toString(),
           },
         );
       },

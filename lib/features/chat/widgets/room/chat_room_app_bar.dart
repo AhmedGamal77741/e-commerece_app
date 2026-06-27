@@ -9,10 +9,10 @@ class ChatRoomAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String chatRoomId;
 
   const ChatRoomAppBar({
-    Key? key,
+    super.key,
     required this.chatRoomName,
     required this.chatRoomId,
-  }) : super(key: key);
+  });
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -128,7 +128,7 @@ class ChatRoomAppBar extends ConsumerWidget implements PreferredSizeWidget {
                             final realName = m['name'] as String? ?? '알 수 없음';
                             final displayName =
                                 isMe
-                                    ? '${realName} (나)'
+                                    ? '$realName (나)'
                                     : resolveDisplayName(
                                       m['id'] as String,
                                       realName,

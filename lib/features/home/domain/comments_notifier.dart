@@ -56,6 +56,7 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
           }
         }
       } catch (e) {
+        debugPrint('Error: $e');
       }
     }
 
@@ -64,6 +65,7 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
       try {
         postAuthor = await ref.read(feedControllerProvider.notifier).loadUser(postData['userId']);
       } catch (e) {
+        debugPrint('Error: $e');
       }
     }
 
@@ -95,13 +97,14 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
         }
         imageUrl = await (await task).ref.getDownloadURL();
       } catch (e) {
+        debugPrint('Error: $e');
       }
     }
 
     try {
       await ref.read(feedControllerProvider.notifier).addComment(postId, text, imageUrl: imageUrl);
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 }

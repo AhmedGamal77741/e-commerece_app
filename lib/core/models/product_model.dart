@@ -21,7 +21,7 @@ class PricePoint {
 }
 
 class Product {
-  final String product_id;
+  final String productId;
   final String productName;
   final String sellerName;
   final String instructions;
@@ -45,7 +45,7 @@ class Product {
   final String? description;
 
   Product({
-    required this.product_id,
+    required this.productId,
     required this.productName,
     required this.sellerName,
     required this.category,
@@ -71,7 +71,7 @@ class Product {
 
   factory Product.fromMap(Map<String, dynamic> map) {
     return Product(
-      product_id: map['product_id'],
+      productId: map['product_id'],
       productName: map['productName'] ?? '',
       instructions: map['instructions'] ?? '',
       stock: map['stock'] ?? 0,
@@ -111,7 +111,7 @@ class Product {
 
   Map<String, dynamic> toMap() {
     return {
-      'product_id': product_id,
+      'product_id': productId,
       'productName': productName,
       'instructions': instructions,
       'stock': stock,
