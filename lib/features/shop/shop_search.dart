@@ -1,4 +1,5 @@
 import 'package:ecommerece_app/core/helpers/basetime.dart';
+import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
@@ -19,6 +20,7 @@ class ShopSearch extends ConsumerStatefulWidget {
 class _ShopSearchState extends ConsumerState<ShopSearch> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  static final _formatCurrency = NumberFormat('#,###');
 
   @override
   void dispose() {
@@ -31,8 +33,6 @@ class _ShopSearchState extends ConsumerState<ShopSearch> {
       _searchQuery = query.toLowerCase();
     });
   }
-
-  final formatCurrency = NumberFormat('#,###');
 
   @override
   Widget build(BuildContext context) {
@@ -50,12 +50,10 @@ class _ShopSearchState extends ConsumerState<ShopSearch> {
         title: TextField(
           controller: _searchController,
           onChanged: _onSearchChanged,
+          textInputAction: TextInputAction.search,
           decoration: InputDecoration(
             hintText: '검색...',
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 12.w,
-              vertical: 5.h,
-            ),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
             border: const OutlineInputBorder(
               borderSide: BorderSide(color: Colors.grey),
               borderRadius: BorderRadius.zero,
@@ -78,100 +76,103 @@ class _ShopSearchState extends ConsumerState<ShopSearch> {
           ),
         ],
       ),
-      body: productsAsync.when(
-        data: (allProducts) {
-          final filteredProducts = _searchQuery.isEmpty
-              ? allProducts
-              : allProducts
-                  .where((p) =>
-                      p.productName.toLowerCase().contains(_searchQuery))
-                  .toList();
+      body: switch (productsAsync) {
+        AsyncData(:final value) => _buildSearchResults(value, isSub),
+        AsyncError(:final error) => Center(child: Text('Error: $error')),
+        _ => const Center(child: CircularProgressIndicator(color: Colors.black)),
+      },
+    );
+  }
 
-          if (filteredProducts.isEmpty && _searchQuery.isNotEmpty) {
-            return const Center(child: Text('결과가 없습니다'));
-          }
+  Widget _buildSearchResults(List<Product> allProducts, bool isSub) {
+    final filteredProducts = _searchQuery.isEmpty
+        ? allProducts
+        : allProducts
+            .where((p) => p.productName.toLowerCase().contains(_searchQuery))
+            .toList();
 
-          if (filteredProducts.isEmpty) {
-            return const SizedBox.shrink();
-          }
+    if (filteredProducts.isEmpty && _searchQuery.isNotEmpty) {
+      return const Center(child: Text('결과가 없습니다'));
+    }
 
-          return ListView.builder(
-            itemCount: filteredProducts.length,
-            itemBuilder: (context, index) {
-              final product = filteredProducts[index];
-              return ListTile(
-                title: Text(product.productName),
-                subtitle: isSub
-                    ? Text('${formatCurrency.format(product.price)} 원')
-                    : Text('${formatCurrency.format(product.price / 0.8)} 원'),
-                leading: Stack(
-                  children: [
-                    CachedNetworkImage(
-                      imageUrl: product.imgUrl ?? '',
-                      width: 50.w,
-                      height: 50.h,
-                      fit: BoxFit.cover,
-                      fadeInDuration: Duration.zero,
-                      fadeOutDuration: Duration.zero,
-                      placeholder: (context, url) => Container(
-                        width: 50.w,
-                        height: 50.h,
-                        color: Colors.grey[200],
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        width: 50.w,
-                        height: 50.h,
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: Icon(
-                            Icons.broken_image,
-                            color: Colors.grey,
-                            size: 24,
-                          ),
-                        ),
+    if (filteredProducts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return ListView.builder(
+      itemCount: filteredProducts.length,
+      itemBuilder: (context, index) {
+        final product = filteredProducts[index];
+        final displayPrice = isSub ? product.price : (product.price / 0.8);
+        
+        return ListTile(
+          title: Text(product.productName),
+          subtitle: Text('${_formatCurrency.format(displayPrice)} 원'),
+          leading: Stack(
+            children: [
+              CachedNetworkImage(
+                imageUrl: product.imgUrl ?? '',
+                width: 50.w,
+                height: 50.h,
+                fit: BoxFit.cover,
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+                placeholder: (context, url) => Container(
+                  width: 50.w,
+                  height: 50.h,
+                  color: Colors.grey[200],
+                ),
+                errorWidget: (context, url, error) => Container(
+                  width: 50.w,
+                  height: 50.h,
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      color: Colors.grey,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+              if (product.stock == 0)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.transparent,
+                    child: Center(
+                      child: Image.asset(
+                        'assets/sold_out.png',
+                        fit: BoxFit.contain,
+                        cacheWidth: 100,
+                        cacheHeight: 100,
                       ),
                     ),
-                    if (product.stock == 0)
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.transparent,
-                          child: Center(
-                            child: Image.asset(
-                              'assets/sold_out.png',
-                              fit: BoxFit.contain,
-                              cacheWidth: 100,
-                              cacheHeight: 100,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                  ),
                 ),
-                onTap: () async {
-                  String arrivalTime = await getArrivalDay(
-                    product.meridiem,
-                    product.baselineTime,
-                  );
-                  if (context.mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ItemDetails(
-                          product: product,
-                          arrivalDay: arrivalTime,
-                          isSub: isSub,
-                        ),
-                      ),
-                    );
-                  }
-                },
+            ],
+          ),
+          onTap: () async {
+            FocusScope.of(context).unfocus();
+            
+            String arrivalTime = await getArrivalDay(
+              product.meridiem,
+              product.baselineTime,
+            );
+            if (context.mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ItemDetails(
+                    product: product,
+                    arrivalDay: arrivalTime,
+                    isSub: isSub,
+                  ),
+                ),
               );
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator(color: Colors.black)),
-        error: (error, stack) => Center(child: Text('Error: $error')),
-      ),
+            }
+          },
+        );
+      },
     );
   }
 }
