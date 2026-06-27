@@ -6,7 +6,7 @@ import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
-import 'package:ecommerece_app/features/home/data/home_functions.dart';
+import 'package:ecommerece_app/features/chat/legacy_home_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';

@@ -1,12 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -25,10 +23,8 @@ class FeedRepository {
   FeedRepository({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
-  })  : _firestore = firestore,
-        _auth = auth;
-
-
+  }) : _firestore = firestore,
+       _auth = auth;
 
   Stream<QuerySnapshot> getUserCategoriesStream(String userId) {
     return _firestore
@@ -39,7 +35,10 @@ class FeedRepository {
         .snapshots();
   }
 
-  Stream<QuerySnapshot> getUserPostsStream(String userId, {String? categoryId}) {
+  Stream<QuerySnapshot> getUserPostsStream(
+    String userId, {
+    String? categoryId,
+  }) {
     Query query = _firestore
         .collection('posts')
         .where('userId', isEqualTo: userId);
@@ -90,45 +89,59 @@ class FeedRepository {
     return _firestore.collection('posts').snapshots();
   }
 
-  Stream<Map<String, Map<String, dynamic>>> getAuthorsDataStreamRealtime(List<String> authorIds) {
+  Stream<Map<String, Map<String, dynamic>>> getAuthorsDataStreamRealtime(
+    List<String> authorIds,
+  ) {
     if (authorIds.isEmpty) return Stream.value({});
 
     final chunks = <List<String>>[];
     for (var i = 0; i < authorIds.length; i += 10) {
-      chunks.add(authorIds.sublist(i, i + 10 > authorIds.length ? authorIds.length : i + 10));
+      chunks.add(
+        authorIds.sublist(
+          i,
+          i + 10 > authorIds.length ? authorIds.length : i + 10,
+        ),
+      );
     }
 
-    final streams = chunks.map((chunk) {
-      return _firestore
-          .collection('users')
-          .where(FieldPath.documentId, whereIn: chunk)
-          .snapshots()
-          .map((snapshot) {
-            final map = <String, Map<String, dynamic>>{};
-            for (var doc in snapshot.docs) {
-              map[doc.id] = doc.data();
-            }
-            return map;
-          });
-    }).toList();
+    final streams =
+        chunks.map((chunk) {
+          return _firestore
+              .collection('users')
+              .where(FieldPath.documentId, whereIn: chunk)
+              .snapshots()
+              .map((snapshot) {
+                final map = <String, Map<String, dynamic>>{};
+                for (var doc in snapshot.docs) {
+                  map[doc.id] = doc.data();
+                }
+                return map;
+              });
+        }).toList();
 
     if (streams.length == 1) return streams[0];
 
     return Stream.multi((controller) {
-      final dataMaps = List<Map<String, Map<String, dynamic>>>.filled(streams.length, {});
+      final dataMaps = List<Map<String, Map<String, dynamic>>>.filled(
+        streams.length,
+        {},
+      );
       final subscriptions = <StreamSubscription>[];
 
       for (var i = 0; i < streams.length; i++) {
-        final sub = streams[i].listen((dataMap) {
-          dataMaps[i] = dataMap;
-          final combinedMap = <String, Map<String, dynamic>>{};
-          for (var map in dataMaps) {
-            combinedMap.addAll(map);
-          }
-          controller.add(combinedMap);
-        }, onError: (e) {
-          controller.addError(e);
-        });
+        final sub = streams[i].listen(
+          (dataMap) {
+            dataMaps[i] = dataMap;
+            final combinedMap = <String, Map<String, dynamic>>{};
+            for (var map in dataMaps) {
+              combinedMap.addAll(map);
+            }
+            controller.add(combinedMap);
+          },
+          onError: (e) {
+            controller.addError(e);
+          },
+        );
         subscriptions.add(sub);
       }
 
@@ -181,7 +194,10 @@ class FeedRepository {
         .snapshots();
   }
 
-  Stream<DocumentSnapshot> getFollowingDocStream(String currentUserId, String targetUserId) {
+  Stream<DocumentSnapshot> getFollowingDocStream(
+    String currentUserId,
+    String targetUserId,
+  ) {
     return _firestore
         .collection('users')
         .doc(currentUserId)
@@ -190,7 +206,10 @@ class FeedRepository {
         .snapshots();
   }
 
-  Stream<DocumentSnapshot> getFollowRequestDocStream(String targetUserId, String currentUserId) {
+  Stream<DocumentSnapshot> getFollowRequestDocStream(
+    String targetUserId,
+    String currentUserId,
+  ) {
     return _firestore
         .collection('users')
         .doc(targetUserId)
@@ -206,8 +225,9 @@ class FeedRepository {
         .collection('users')
         .doc(currentUser.uid)
         .collection('notifications');
-    final unread = await notificationsRef.where('isRead', isEqualTo: false).get();
-    
+    final unread =
+        await notificationsRef.where('isRead', isEqualTo: false).get();
+
     final batch = _firestore.batch();
     for (final doc in unread.docs) {
       batch.update(doc.reference, {'isRead': true});
@@ -223,7 +243,7 @@ class FeedRepository {
       }
       return MyUser.empty;
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -240,7 +260,7 @@ class FeedRepository {
         'notInterestedBy': FieldValue.arrayUnion([currentUser.uid]),
       });
     } catch (e) {
-      throw e; // Re-throw to handle in UI
+      rethrow; // Re-throw to handle in UI
     }
   }
 
@@ -250,9 +270,7 @@ class FeedRepository {
       if (currentUser == null) throw Exception("User not logged in");
 
       // Reference to the current user's document
-      final userRef = _firestore
-          .collection('users')
-          .doc(currentUser.uid);
+      final userRef = _firestore.collection('users').doc(currentUser.uid);
 
       final blocksCollection = _firestore.collection('blocks');
       final newBlockRef = blocksCollection.doc();
@@ -270,9 +288,7 @@ class FeedRepository {
       });
 
       // Check if the user to block actually exists (prevents not-found errors if they deleted their account)
-      final blockedUserRef = _firestore
-          .collection('users')
-          .doc(userIdToBlock);
+      final blockedUserRef = _firestore.collection('users').doc(userIdToBlock);
       final blockedUserDoc = await blockedUserRef.get();
       final bool blockedUserExists = blockedUserDoc.exists;
 
@@ -325,10 +341,7 @@ class FeedRepository {
       final participants = [currentUser.uid, userIdToBlock]..sort();
       final chatRoomId = participants.join('_');
       final chatDoc =
-          await _firestore
-              .collection('chatRooms')
-              .doc(chatRoomId)
-              .get();
+          await _firestore.collection('chatRooms').doc(chatRoomId).get();
       if (chatDoc.exists) {
         batch.delete(chatDoc.reference);
       }
@@ -345,7 +358,7 @@ class FeedRepository {
 
       await batch.commit();
     } catch (e) {
-      throw e; // Re-throw to handle in UI
+      rethrow; // Re-throw to handle in UI
     }
   }
 
@@ -354,9 +367,7 @@ class FeedRepository {
       final currentUser = _auth.currentUser;
       if (currentUser == null) throw Exception("User not logged in");
 
-      final userRef = _firestore
-          .collection('users')
-          .doc(currentUser.uid);
+      final userRef = _firestore.collection('users').doc(currentUser.uid);
 
       final batch = _firestore.batch();
 
@@ -377,7 +388,7 @@ class FeedRepository {
 
       await batch.commit();
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -403,7 +414,7 @@ class FeedRepository {
         'resolved': false,  */
       });
     } catch (e) {
-      throw e; // Re-throw to handle in UI
+      rethrow; // Re-throw to handle in UI
     }
   }
 
@@ -434,14 +445,13 @@ class FeedRepository {
         'notInterestedBy': [],
       });
 
-      batch.update(
-        _firestore.collection('users').doc(currentUser.uid),
-        {'lastPostCreatedAt': FieldValue.serverTimestamp()},
-      );
+      batch.update(_firestore.collection('users').doc(currentUser.uid), {
+        'lastPostCreatedAt': FieldValue.serverTimestamp(),
+      });
 
       await batch.commit();
     } catch (e) {
-      throw e; // Re-throw to handle in UI
+      rethrow; // Re-throw to handle in UI
     }
   }
 
@@ -465,7 +475,7 @@ class FeedRepository {
             // Compress on both mobile and web using flutter_image_compress (WASM on web)
             Uint8List uploadBytes;
             try {
-              final Uint8List? compressed =
+              final Uint8List compressed =
                   await FlutterImageCompress.compressWithList(
                     rawBytes,
                     minWidth: 1080,
@@ -473,7 +483,7 @@ class FeedRepository {
                     quality: 82,
                     format: CompressFormat.jpeg,
                   );
-              uploadBytes = compressed ?? rawBytes;
+              uploadBytes = compressed;
             } catch (e) {
               uploadBytes = rawBytes;
             }
@@ -522,7 +532,7 @@ class FeedRepository {
         'categoryId': categoryId,
       });
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -568,8 +578,7 @@ class FeedRepository {
         images.map((image) async {
           final String timestamp =
               DateTime.now().millisecondsSinceEpoch.toString();
-          final String uid =
-              _auth.currentUser?.uid ?? 'anonymous';
+          final String uid = _auth.currentUser?.uid ?? 'anonymous';
           final int index = images.indexOf(image);
           final String fileName = '${timestamp}_${index}_$uid.jpg';
 
@@ -578,7 +587,7 @@ class FeedRepository {
           // Compress on both mobile and web using flutter_image_compress (WASM on web)
           Uint8List uploadBytes;
           try {
-            final Uint8List? compressed =
+            final Uint8List compressed =
                 await FlutterImageCompress.compressWithList(
                   rawBytes,
                   minWidth: 1080,
@@ -587,7 +596,7 @@ class FeedRepository {
                   format: CompressFormat.jpeg,
                 );
             // Fall back to raw bytes if compression somehow returns null
-            uploadBytes = compressed ?? rawBytes;
+            uploadBytes = compressed;
           } catch (e) {
             uploadBytes = rawBytes;
           }
@@ -628,15 +637,16 @@ class FeedRepository {
       // Compress on both mobile and web using flutter_image_compress (WASM on web)
       Uint8List uploadBytes;
       try {
-        final Uint8List? compressed = await FlutterImageCompress.compressWithList(
-          rawBytes,
-          minWidth: 1080,
-          minHeight: 1080,
-          quality: 82,
-          format: CompressFormat.jpeg,
-        );
+        final Uint8List compressed =
+            await FlutterImageCompress.compressWithList(
+              rawBytes,
+              minWidth: 1080,
+              minHeight: 1080,
+              quality: 82,
+              format: CompressFormat.jpeg,
+            );
         // Fall back to raw bytes if compression somehow returns null
-        uploadBytes = compressed ?? rawBytes;
+        uploadBytes = compressed;
       } catch (e) {
         uploadBytes = rawBytes;
       }
@@ -670,8 +680,7 @@ class FeedRepository {
 
   Future<void> migrateLastPostCreatedAt() async {
     try {
-      final postsSnapshot =
-          await _firestore.collection('posts').get();
+      final postsSnapshot = await _firestore.collection('posts').get();
 
       // Map to keep track of the latest post timestamp for each user
       final Map<String, DateTime> latestPosts = {};
@@ -698,21 +707,12 @@ class FeedRepository {
         }
       }
 
-      print(
-        'Found latest posts for ${latestPosts.length} users. Updating profiles...',
-      );
-
       // Update each user's profile if their post timestamp is newer than their current one
-      int updatedCount = 0;
       for (var entry in latestPosts.entries) {
         final userId = entry.key;
         final latestPostDate = entry.value;
 
-        final userDoc =
-            await _firestore
-                .collection('users')
-                .doc(userId)
-                .get();
+        final userDoc = await _firestore.collection('users').doc(userId).get();
         if (userDoc.exists) {
           final userData = userDoc.data();
           final currentLastPostRaw = userData?['lastPostCreatedAt'];
@@ -728,13 +728,9 @@ class FeedRepository {
 
           if (currentLastPost == null ||
               latestPostDate.isAfter(currentLastPost)) {
-            await _firestore
-                .collection('users')
-                .doc(userId)
-                .update({
-                  'lastPostCreatedAt': Timestamp.fromDate(latestPostDate),
-                });
-            updatedCount++;
+            await _firestore.collection('users').doc(userId).update({
+              'lastPostCreatedAt': Timestamp.fromDate(latestPostDate),
+            });
           }
         }
       }
@@ -742,5 +738,4 @@ class FeedRepository {
       rethrow;
     }
   }
-
 }

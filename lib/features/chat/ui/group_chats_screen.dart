@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
-import 'package:ecommerece_app/features/home/data/home_functions.dart';
+import 'package:ecommerece_app/features/chat/legacy_home_functions.dart';
 import 'package:ecommerece_app/core/cache/user_cache.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';

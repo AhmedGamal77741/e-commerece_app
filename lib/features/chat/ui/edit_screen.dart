@@ -7,7 +7,7 @@ import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/services/favorites_service.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
-import 'package:ecommerece_app/features/home/data/home_functions.dart';
+import 'package:ecommerece_app/features/chat/legacy_home_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
