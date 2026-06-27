@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:ecommerece_app/features/address/domain/models/address.dart';
 import 'package:ecommerece_app/features/cart/domain/checkout_controller.dart';
 import 'package:ecommerece_app/features/cart/domain/bank_controller.dart';
+import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
+import 'package:ecommerece_app/features/cart/data/cart_repository.dart';
 
 class CheckoutFormState {
   final String invoiceeType;
@@ -414,6 +416,7 @@ class CheckoutFormController
     required BuildContext context,
     required String uid,
     required List<Map<String, dynamic>> bankAccounts,
+    bool isCartCheckout = false,
     required VoidCallback onSuccess,
     required Function(String) onError,
   }) async {
@@ -442,7 +445,21 @@ class CheckoutFormController
       return;
     }
 
-    final paymentId = stateValue.currentPaymentId;
+    if (isCartCheckout) {
+      try {
+        await ref.read(cartControllerProvider.notifier).validateStockAvailability();
+        await ref.read(cartControllerProvider.notifier).detectPriceChanges();
+      } catch (e) {
+        onError(e.toString().replaceAll('Exception: ', ''));
+        return;
+      }
+    }
+
+    // Generate a new paymentId if it's cart checkout, otherwise use the existing one from BuyNow
+    final paymentId = isCartCheckout
+        ? ref.read(checkoutControllerProvider.notifier).generateOrderId()
+        : stateValue.currentPaymentId;
+
     if (paymentId == null || paymentId.isEmpty) {
       onError('주문 처리 중 오류가 발생했습니다. 다시 시도해 주세요.');
       return;
@@ -453,14 +470,16 @@ class CheckoutFormController
 
     await saveCachedUserValues();
 
-    _patchPendingBuynow(paymentId, {
-      'deliveryInstructions':
-          stateValue.selectedRequest == '직접입력'
-              ? (stateValue.manualRequest?.trim() ?? '')
-              : stateValue.selectedRequest,
-    });
+    if (!isCartCheckout) {
+      _patchPendingBuynow(paymentId, {
+        'deliveryInstructions':
+            stateValue.selectedRequest == '직접입력'
+                ? (stateValue.manualRequest?.trim() ?? '')
+                : stateValue.selectedRequest,
+      });
+    }
 
-    state = AsyncData(stateValue.copyWith(isProcessing: true));
+    state = AsyncData(stateValue.copyWith(isProcessing: true, currentPaymentId: paymentId));
 
     try {
       final response = await http.post(
@@ -471,7 +490,7 @@ class CheckoutFormController
           'paymentId': paymentId,
           'payerId': payerId,
           'option': stateValue.selectedOption.toString(),
-          if (dm.isNotEmpty) 'dm': dm,
+          if (dm.isNotEmpty && !isCartCheckout) 'dm': dm,
         }),
       );
 
@@ -479,20 +498,31 @@ class CheckoutFormController
 
       if (result['success'] == true) {
         try {
-          final items = [
-            {
-              'product_id': stateValue.pendingBuynowData?['product_id'],
-              'productName': stateValue.pendingBuynowData?['product_name'],
-              'quantity': stateValue.pendingBuynowData?['quantity'],
-              'pricePointIndex':
-                  stateValue.pendingBuynowData?['pricePointIndex'],
-              'price': stateValue.pendingBuynowData?['price'],
-              'imgUrl': stateValue.pendingBuynowData?['imgUrl'],
-            },
-          ];
+          List<Map<String, dynamic>> items;
+          if (isCartCheckout) {
+            final cartSnap = await ref.read(cartRepositoryProvider).userCartStream(uid).first;
+            items = cartSnap.docs.map((d) => {'docId': d.id, ...d.data()}).toList();
+          } else {
+            items = [
+              {
+                'product_id': stateValue.pendingBuynowData?['product_id'],
+                'productName': stateValue.pendingBuynowData?['product_name'],
+                'quantity': stateValue.pendingBuynowData?['quantity'],
+                'pricePointIndex': stateValue.pendingBuynowData?['pricePointIndex'],
+                'price': stateValue.pendingBuynowData?['price'],
+                'imgUrl': stateValue.pendingBuynowData?['imgUrl'],
+              },
+            ];
+          }
+
+          // For cart checkout, we need the total price from the cart, not the pendingBuynowData price
+          final totalPrice = isCartCheckout
+              ? ref.read(cartTotalProvider)
+              : stateValue.pendingPrice;
+
           final orderData = {
             'address': stateValue.address.toFirestore(),
-            'totalPrice': stateValue.pendingPrice,
+            'totalPrice': totalPrice,
             'buyerName': nameController.text.trim(),
             'buyerEmail': emailController.text.trim(),
             'buyerPhone': phoneController.text.trim(),
@@ -501,6 +531,7 @@ class CheckoutFormController
                     ? stateValue.manualRequest
                     : stateValue.selectedRequest,
           };
+          
           await ref
               .read(checkoutControllerProvider.notifier)
               .processCheckoutTransaction(
@@ -508,7 +539,7 @@ class CheckoutFormController
                 paymentId: paymentId,
                 items: items,
                 orderData: orderData,
-                isCartCheckout: false,
+                isCartCheckout: isCartCheckout,
               );
           onSuccess();
         } catch (e) {
