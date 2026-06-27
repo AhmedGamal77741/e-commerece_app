@@ -3,7 +3,7 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/cart/cart.dart';
-import 'package:ecommerece_app/features/cart/sub_screens/address_list_screen.dart';
+import 'package:ecommerece_app/features/address/ui/address_list_screen.dart';
 import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
 import 'package:ecommerece_app/features/shop/widgets/category_products_screen.dart';
 import 'package:flutter/gestures.dart';

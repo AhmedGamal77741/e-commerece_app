@@ -92,7 +92,7 @@ class _UserInfoContainerState extends ConsumerState<UserInfoContainer> {
         final reauth = await _reauthenticateUser(context);
         if (!reauth) return;
       }
-      await ref.read(authControllerProvider).updateUser(
+      await ref.read(authNotifierProvider.notifier).updateUser(
         updatedUser,
         isUpdatingPassword ? passwordController.text : "",
       );

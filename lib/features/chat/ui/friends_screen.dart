@@ -287,7 +287,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                             phoneNumber: _currentUser!.phoneNumber,
                           );
                           try {
-                            await ref.read(authControllerProvider).updateUser(updatedUser, '');
+                            await ref.read(authNotifierProvider.notifier).updateUser(updatedUser, '');
                             if (mounted)
                               setState(() => _currentUser = updatedUser);
                           } catch (e) {

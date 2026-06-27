@@ -36,8 +36,7 @@ bool likelyIsland(String regionName) {
 class AddressSearchDialog extends StatefulWidget {
   final KakaoApiService kakaoService;
 
-  const AddressSearchDialog({Key? key, required this.kakaoService})
-    : super(key: key);
+  const AddressSearchDialog({super.key, required this.kakaoService});
 
   @override
   State<AddressSearchDialog> createState() => _AddressSearchDialogState();
@@ -75,7 +74,6 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
         _errorMessage = '주소를 검색하는 중 오류가 발생했습니다.';
         _isLoading = false;
       });
-      print('Error searching address: $e');
     }
   }
 
@@ -166,7 +164,7 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
             if (_isLoading)
               Padding(
                 padding: const EdgeInsets.all(24.0),
-                child:const SizedBox.shrink(),
+                child: const SizedBox.shrink(),
               )
             // Error message
             else if (_errorMessage != null)

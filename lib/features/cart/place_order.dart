@@ -1,17 +1,17 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/models/product_model.dart';
+
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/underline_text_filed.dart';
 import 'package:ecommerece_app/core/widgets/wide_text_button.dart';
-import 'package:ecommerece_app/features/cart/models/address.dart';
+import 'package:ecommerece_app/features/address/domain/models/address.dart';
 import 'package:ecommerece_app/features/cart/services/cart_service.dart';
 import 'package:ecommerece_app/features/cart/slide_button.dart';
-import 'package:ecommerece_app/features/cart/sub_screens/add_address_screen.dart';
-import 'package:ecommerece_app/features/cart/sub_screens/address_list_screen.dart';
+import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
+import 'package:ecommerece_app/features/address/ui/address_list_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

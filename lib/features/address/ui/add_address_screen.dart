@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/cart/services/kakao_service.dart';
-import 'package:ecommerece_app/features/cart/sub_screens/address_search_dialog.dart';
+import 'package:ecommerece_app/features/address/ui/address_search_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +11,7 @@ class AddAddressScreen extends StatefulWidget {
   /// The NavBar passes true; the address-list screen passes false (or omits it).
   final bool showSkip;
 
-  const AddAddressScreen({Key? key, this.showSkip = false}) : super(key: key);
+  const AddAddressScreen({super.key, this.showSkip = false});
 
   @override
   State<AddAddressScreen> createState() => _AddAddressScreenState();
@@ -143,7 +143,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
 
       if (shouldBeDefault && !isFirstAddress) {
         // Reset existing defaults
-        final defaultAddresses = await addressesRef.where('isDefault', isEqualTo: true).get();
+        final defaultAddresses =
+            await addressesRef.where('isDefault', isEqualTo: true).get();
         for (var doc in defaultAddresses.docs) {
           batch.update(doc.reference, {'isDefault': false});
         }
@@ -164,9 +165,10 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
       batch.set(docRef, addressData);
 
       if (shouldBeDefault) {
-        batch.update(FirebaseFirestore.instance.collection('users').doc(user.uid), {
-          'defaultAddressId': docRef.id,
-        });
+        batch.update(
+          FirebaseFirestore.instance.collection('users').doc(user.uid),
+          {'defaultAddressId': docRef.id},
+        );
       }
 
       await batch.commit();

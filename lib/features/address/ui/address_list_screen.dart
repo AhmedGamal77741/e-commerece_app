@@ -1,36 +1,25 @@
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/features/cart/models/address.dart';
-import 'package:ecommerece_app/features/cart/services/address_service.dart';
-import 'package:ecommerece_app/features/cart/sub_screens/add_address_screen.dart';
+import 'package:ecommerece_app/features/address/domain/models/address.dart';
+import 'package:ecommerece_app/features/address/domain/address_controller.dart';
+import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AddressListScreen extends StatefulWidget {
-  const AddressListScreen({Key? key}) : super(key: key);
+class AddressListScreen extends ConsumerStatefulWidget {
+  const AddressListScreen({super.key});
 
   @override
-  State<AddressListScreen> createState() => _AddressListScreenState();
+  ConsumerState<AddressListScreen> createState() => _AddressListScreenState();
 }
 
-class _AddressListScreenState extends State<AddressListScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+class _AddressListScreenState extends ConsumerState<AddressListScreen> {
   String? _processingId;
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = _auth.currentUser;
+    final addressesAsync = ref.watch(addressControllerProvider);
 
-    if (currentUser == null) {
-      return Scaffold(
-        appBar: AppBar(),
-        body: Center(child: Text('로그인이 필요합니다')),
-      );
-    }
-
-    final addressService = AddressService(userId: currentUser.uid);
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -72,27 +61,13 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
           // Address List
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream:
-                  _firestore
-                      .collection('users')
-                      .doc(currentUser.uid)
-                      .collection('addresses')
-                      .orderBy('isDefault', descending: true)
-                      .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
+            child: addressesAsync.when(
+              loading:
+                  () => const Center(
                     child: CircularProgressIndicator(color: Colors.black),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return Center(child: Text('오류가 발생했습니다: ${snapshot.error}'));
-                }
-
-                final addresses = snapshot.data?.docs ?? [];
-
+                  ),
+              error: (err, stack) => Center(child: Text('오류가 발생했습니다: $err')),
+              data: (addresses) {
                 if (addresses.isEmpty) {
                   return const Center(child: Text('등록된 배송지가 없습니다'));
                 }
@@ -102,10 +77,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
                   separatorBuilder:
                       (context, index) => const Divider(height: 1),
                   itemBuilder: (context, index) {
-                    final addressId = addresses[index].id;
-                    final address = Address.fromMap(
-                      addresses[index].data() as Map<String, dynamic>,
-                    );
+                    final address = addresses[index];
+                    final addressId = address.id;
 
                     return InkWell(
                       onTap: () => _selectAddress(address),
@@ -175,15 +148,19 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                                 setState(() {
                                                   _processingId = addressId;
                                                 });
-                                                await addressService
-                                                    .deleteAddress(
-                                                      context,
-                                                      addressId,
-                                                    );
-                                                if (mounted) {
-                                                  setState(() {
-                                                    _processingId = null;
-                                                  });
+                                                try {
+                                                  await ref
+                                                      .read(
+                                                        addressControllerProvider
+                                                            .notifier,
+                                                      )
+                                                      .deleteAddress(addressId);
+                                                } finally {
+                                                  if (mounted) {
+                                                    setState(() {
+                                                      _processingId = null;
+                                                    });
+                                                  }
                                                 }
                                               },
                                       style: TextButton.styleFrom(
@@ -228,7 +205,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                 ],
                               ),
                             ),
-
                             (address.isDefault)
                                 ? Container(
                                   margin: const EdgeInsets.only(left: 8),
@@ -252,26 +228,17 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                   onPressed:
                                       _processingId != null
                                           ? null
-                                          : () {
-                                            // Fire and forget for optimistic UI updates! 0ms visual latency!
-                                            addressService
-                                                .setAsDefaultAddress(
-                                                  context,
-                                                  addressId,
-                                                )
-                                                .then((success) {
-                                                  if (!success && mounted) {
-                                                    ScaffoldMessenger.of(
-                                                      context,
-                                                    ).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text(
-                                                          '오류가 발생했습니다',
-                                                        ),
-                                                      ),
-                                                    );
-                                                  }
-                                                });
+                                          : () async {
+                                            try {
+                                              await ref.read(addressControllerProvider.notifier).setAsDefaultAddress(addressId);
+                                            } catch (error) {
+                                              if (!context.mounted) return;
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('오류가 발생했습니다'),
+                                                ),
+                                              );
+                                            }
                                           },
                                   style: TextButton.styleFrom(
                                     fixedSize: Size(48.w, 30.h),
@@ -311,10 +278,13 @@ class _AddressListScreenState extends State<AddressListScreen> {
   void _navigateToAddressForm(BuildContext context) async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AddAddressScreen()),
+      MaterialPageRoute(builder: (context) => const AddAddressScreen()),
     );
 
+    if (!context.mounted) return;
+
     if (result == true) {
+      ref.read(addressControllerProvider.notifier).refreshAddresses();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('배송지 정보가 저장되었습니다')));
@@ -322,7 +292,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   void _selectAddress(Address address) {
-    // Handle selection logic - for example, navigate back with the selected address
     Navigator.pop(context, address);
   }
 }
