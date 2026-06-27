@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
@@ -25,8 +25,7 @@ class BuyNow extends ConsumerStatefulWidget {
   final String? productName;
   final String? productImgUrl;
 
-  const BuyNow({Key? key, this.paymentId, this.productName, this.productImgUrl})
-    : super(key: key);
+  const BuyNow({super.key, this.paymentId, this.productName, this.productImgUrl});
 
   @override
   ConsumerState<BuyNow> createState() => _BuyNowState();
@@ -133,16 +132,10 @@ class _BuyNowState extends ConsumerState<BuyNow> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || widget.paymentId == null) return;
     try {
-      final doc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('pending_buynow')
-              .doc(widget.paymentId)
-              .get();
-      if (doc.exists && mounted) {
+      final data = await ref.read(checkoutControllerProvider.notifier).getPendingBuynow(uid, widget.paymentId!);
+      if (data != null && mounted) {
         setState(() {
-          pendingBuynowData = doc.data();
+          pendingBuynowData = data;
           pendingPrice = pendingBuynowData?['price'] ?? 0;
           pendingQuantity = pendingBuynowData?['quantity'] ?? 0;
         });
@@ -206,49 +199,36 @@ class _BuyNowState extends ConsumerState<BuyNow> {
 
     if (hasAddress && hasInstr) return;
 
-    final cacheRef = FirebaseFirestore.instance
-        .collection('usercached_values')
-        .doc(uid);
-
     if (!hasAddress) {
-      final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-      final userSnap = await userRef.get();
-      if (!userSnap.exists) return;
+      final resolvedData = await ref.read(checkoutControllerProvider.notifier).getUserDefaultAddress(uid);
+      if (resolvedData != null) {
+        final resolved = Address(
+          id: resolvedData['id'] ?? '',
+          name: resolvedData['name'] ?? '',
+          phone: resolvedData['phone'] ?? '',
+          address: resolvedData['address'] ?? '',
+          detailAddress: resolvedData['detailAddress'] ?? '',
+          isDefault: resolvedData['isDefault'] ?? false,
+          addressMap: resolvedData['addressMap'] ?? {},
+        );
 
-      final userData = userSnap.data() as Map<String, dynamic>;
-      final defaultAddressId = userData['defaultAddressId'] as String?;
-      if (defaultAddressId == null || defaultAddressId.isEmpty) return;
+        if (mounted) {
+          setState(() {
+            address = resolved;
+            deliveryAddressController.text = resolved.address;
+          });
+        }
 
-      final addrSnap =
-          await userRef.collection('addresses').doc(defaultAddressId).get();
-      if (!addrSnap.exists) return;
-
-      final addr = addrSnap.data() as Map<String, dynamic>;
-      final resolved = Address(
-        id: addr['id'] ?? defaultAddressId,
-        name: addr['name'] ?? '',
-        phone: addr['phone'] ?? '',
-        address: addr['address'] ?? '',
-        detailAddress: addr['detailAddress'] ?? '',
-        isDefault: addr['isDefault'] ?? false,
-        addressMap: addr['addressMap'] ?? {},
-      );
-
-      if (mounted)
-        setState(() {
-          address = resolved;
-          deliveryAddressController.text = resolved.address;
-        });
-
-      final addressPatch = {
-        'deliveryAddressId': resolved.id,
-        'deliveryAddress': resolved.address,
-        'deliveryAddressDetail': resolved.detailAddress,
-        'recipientName': resolved.name,
-        'recipientPhone': resolved.phone,
-      };
-      await cacheRef.set(addressPatch, SetOptions(merge: true));
-      _patchPendingBuynow(addressPatch);
+        final addressPatch = {
+          'deliveryAddressId': resolved.id,
+          'deliveryAddress': resolved.address,
+          'deliveryAddressDetail': resolved.detailAddress,
+          'recipientName': resolved.name,
+          'recipientPhone': resolved.phone,
+        };
+        await ref.read(checkoutControllerProvider.notifier).saveCachedUserValues(addressPatch);
+        _patchPendingBuynow(addressPatch);
+      }
     }
 
     // Persist delivery instructions from pending_buynow if cache is empty
@@ -266,9 +246,9 @@ class _BuyNowState extends ConsumerState<BuyNow> {
             });
           }
         }
-        await cacheRef.set({
+        await ref.read(checkoutControllerProvider.notifier).saveCachedUserValues({
           'deliveryInstructions': instrFromOrder,
-        }, SetOptions(merge: true));
+        });
       }
     }
   }
@@ -288,12 +268,8 @@ class _BuyNowState extends ConsumerState<BuyNow> {
   void _patchPendingBuynow(Map<String, dynamic> fields) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || widget.paymentId == null) return;
-    FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('pending_buynow')
-        .doc(widget.paymentId)
-        .set(fields, SetOptions(merge: true))
+    ref.read(checkoutControllerProvider.notifier)
+        .patchPendingBuynow(uid, widget.paymentId!, fields)
         .catchError((e) => debugPrint('Failed to patch pending_buynow: $e'));
   }
 
@@ -490,11 +466,52 @@ class _BuyNowState extends ConsumerState<BuyNow> {
       );
 
       final result = jsonDecode(response.body) as Map<String, dynamic>;
-      if (mounted) Navigator.of(context, rootNavigator: true).pop();
-
+      
       if (result['success'] == true) {
+        try {
+          final items = [
+            {
+              'product_id': pendingBuynowData?['product_id'],
+              'productName': pendingBuynowData?['product_name'],
+              'quantity': pendingBuynowData?['quantity'],
+              'pricePointIndex': pendingBuynowData?['pricePointIndex'],
+              'price': pendingBuynowData?['price'],
+              'imgUrl': pendingBuynowData?['imgUrl'],
+            }
+          ];
+          final orderData = {
+            'address': address.toFirestore(),
+            'totalPrice': pendingPrice,
+            'buyerName': nameController.text.trim(),
+            'buyerEmail': emailController.text.trim(),
+            'buyerPhone': phoneController.text.trim(),
+            'deliveryInstructions': selectedRequest == '직접입력' ? manualRequest : selectedRequest,
+          };
+          await ref.read(checkoutControllerProvider.notifier).processCheckoutTransaction(
+            uid: uid,
+            paymentId: paymentId,
+            items: items,
+            orderData: orderData,
+            isCartCheckout: false,
+          );
+        } catch (e) {
+          if (mounted) Navigator.of(context, rootNavigator: true).pop();
+          if (mounted) {
+            setState(() => isProcessing = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString().replaceAll('Exception: ', '')),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+
+        if (mounted) Navigator.of(context, rootNavigator: true).pop();
         if (mounted) context.go(Routes.orderCompleteScreen);
       } else {
+        if (mounted) Navigator.of(context, rootNavigator: true).pop();
         final msg = result['message'] as String? ?? '결제에 실패했습니다. 다시 시도해 주세요.';
         if (mounted) {
           setState(() => isProcessing = false);
@@ -535,7 +552,7 @@ class _BuyNowState extends ConsumerState<BuyNow> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox.shrink(),
+                      const SizedBox.shrink(),
                       SizedBox(height: 16),
                       Text(
                         '결제 처리 중입니다...',
@@ -808,57 +825,24 @@ class _BuyNowState extends ConsumerState<BuyNow> {
                     Expanded(
                       child:
                           address.name.isEmpty
-                              ? FutureBuilder(
+                              ? FutureBuilder<Map<String, dynamic>?>(
                                 future:
-                                    FirebaseFirestore.instance
-                                        .collection('users')
-                                        .doc(uid)
-                                        .get(),
+                                    ref.read(checkoutControllerProvider.notifier)
+                                        .getUserDefaultAddress(uid),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState ==
                                       ConnectionState.waiting) {
                                     return const SizedBox.shrink();
                                   }
-                                  if (snapshot.hasError ||
-                                      !snapshot.hasData ||
-                                      !snapshot.data!.exists) {
-                                    return const Center(
-                                      child: Text('User data not found'),
-                                    );
-                                  }
-                                  final userData = snapshot.data?.data();
-                                  if (userData == null ||
-                                      (userData['defaultAddressId'] ?? '')
-                                          .isEmpty) {
+                                  if (!snapshot.hasData || snapshot.data == null) {
                                     return _buildNoAddress();
                                   }
-                                  return FutureBuilder(
-                                    future:
-                                        FirebaseFirestore.instance
-                                            .collection('users')
-                                            .doc(uid)
-                                            .collection('addresses')
-                                            .doc(userData['defaultAddressId'])
-                                            .get(),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      if (!snapshot.hasData ||
-                                          !snapshot.data!.exists) {
-                                        return const Center(
-                                          child: Text('User data not found'),
-                                        );
-                                      }
-                                      final d = snapshot.data!.data()!;
-                                      return _buildAddressText(
-                                        label: '배송지 정보 (기본 배송지)',
-                                        name: d['name'] ?? '',
-                                        phone: d['phone'] ?? '',
-                                        address: d['address'] ?? '',
-                                      );
-                                    },
+                                  final d = snapshot.data!;
+                                  return _buildAddressText(
+                                    label: '배송지 정보 (기본 배송지)',
+                                    name: d['name'] ?? '',
+                                    phone: d['phone'] ?? '',
+                                    address: d['address'] ?? '',
                                   );
                                 },
                               )

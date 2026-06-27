@@ -111,7 +111,7 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
     if (uid.isEmpty) return;
 
     // Run refreshCartPrices independently — don't block UI init on it
-    CartRepository(FirebaseFirestore.instance).refreshCartPrices(uid);
+    ref.read(cartRepositoryProvider).refreshCartPrices(uid);
 
     // Load cached user values
     await _loadCachedUserValues();
@@ -175,46 +175,34 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
     // Only run if address wasn't restored from cache
     if (address.id.isNotEmpty) return;
 
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-    final userSnap = await userRef.get();
-    if (!userSnap.exists) return;
+    final resolvedData = await ref.read(checkoutControllerProvider.notifier).getUserDefaultAddress(uid);
+    if (resolvedData != null) {
+      final resolved = Address(
+        id: resolvedData['id'] ?? '',
+        name: resolvedData['name'] ?? '',
+        phone: resolvedData['phone'] ?? '',
+        address: resolvedData['address'] ?? '',
+        detailAddress: resolvedData['detailAddress'] ?? '',
+        isDefault: resolvedData['isDefault'] ?? false,
+        addressMap: resolvedData['addressMap'] ?? {},
+      );
 
-    final userData = userSnap.data() as Map<String, dynamic>;
-    final defaultAddressId = userData['defaultAddressId'] as String?;
-    if (defaultAddressId == null || defaultAddressId.isEmpty) return;
+      if (mounted) {
+        setState(() {
+          address = resolved;
+          deliveryAddressController.text = resolved.address;
+        });
+      }
 
-    final addrSnap =
-        await userRef.collection('addresses').doc(defaultAddressId).get();
-    if (!addrSnap.exists) return;
-
-    final addr = addrSnap.data() as Map<String, dynamic>;
-    final resolved = Address(
-      id: addr['id'] ?? defaultAddressId,
-      name: addr['name'] ?? '',
-      phone: addr['phone'] ?? '',
-      address: addr['address'] ?? '',
-      detailAddress: addr['detailAddress'] ?? '',
-      isDefault: addr['isDefault'] ?? false,
-      addressMap: addr['addressMap'] ?? {},
-    );
-
-    if (mounted)
-      setState(() {
-        address = resolved;
-        deliveryAddressController.text = resolved.address;
+      // Persist into cache so it's available next time
+      await ref.read(checkoutControllerProvider.notifier).saveCachedUserValues({
+        'deliveryAddressId': resolved.id,
+        'deliveryAddress': resolved.address,
+        'deliveryAddressDetail': resolved.detailAddress,
+        'recipientName': resolved.name,
+        'recipientPhone': resolved.phone,
       });
-
-    // Persist into cache so it's available next time
-    await FirebaseFirestore.instance
-        .collection('usercached_values')
-        .doc(uid)
-        .set({
-          'deliveryAddressId': resolved.id,
-          'deliveryAddress': resolved.address,
-          'deliveryAddressDetail': resolved.detailAddress,
-          'recipientName': resolved.name,
-          'recipientPhone': resolved.phone,
-        }, SetOptions(merge: true));
+    }
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -399,8 +387,7 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
     // Auto-save latest state before payment so CF has up-to-date cached values
     await _saveCachedUserValues();
 
-    final docRef = FirebaseFirestore.instance.collection('orders').doc();
-    final paymentId = docRef.id;
+    final paymentId = ref.read(checkoutControllerProvider.notifier).generateOrderId();
     currentPaymentId = paymentId;
 
     try {
@@ -416,11 +403,45 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
       );
 
       final result = jsonDecode(response.body) as Map<String, dynamic>;
-      if (mounted) Navigator.of(context, rootNavigator: true).pop();
 
       if (result['success'] == true) {
+        try {
+          final cartSnap = await ref.read(cartRepositoryProvider).userCartStream(uid).first;
+          final items = cartSnap.docs.map((d) => {'docId': d.id, ...d.data()}).toList();
+          final orderData = {
+            'address': address.toFirestore(),
+            'totalPrice': totalPrice,
+            'buyerName': nameController.text.trim(),
+            'buyerEmail': emailController.text.trim(),
+            'buyerPhone': phoneController.text.trim(),
+            'deliveryInstructions': selectedRequest == '직접입력' ? manualRequest : selectedRequest,
+          };
+          
+          await ref.read(checkoutControllerProvider.notifier).processCheckoutTransaction(
+            uid: uid,
+            paymentId: paymentId,
+            items: items,
+            orderData: orderData,
+            isCartCheckout: true,
+          );
+        } catch (e) {
+          if (mounted) Navigator.of(context, rootNavigator: true).pop();
+          if (mounted) {
+            setState(() => isProcessing = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString().replaceAll('Exception: ', '')),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+
+        if (mounted) Navigator.of(context, rootNavigator: true).pop();
         if (mounted) context.go(Routes.orderCompleteScreen);
       } else {
+        if (mounted) Navigator.of(context, rootNavigator: true).pop();
         final msg = result['message'] as String? ?? '결제에 실패했습니다. 다시 시도해 주세요.';
         if (mounted) {
           setState(() => isProcessing = false);
@@ -461,7 +482,7 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox.shrink(),
+                      const SizedBox.shrink(),
                       SizedBox(height: 16),
                       Text(
                         '결제 처리 중입니다...',
@@ -634,7 +655,7 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
     return SafeArea(
       child: StreamBuilder(
         stream:
-            FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+            ref.read(checkoutControllerProvider.notifier).getUserStream(uid),
         builder: (context, userSnapshot) {
 
           return Scaffold(
@@ -671,11 +692,7 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
                         verticalSpace(10.h),
                         StreamBuilder(
                           stream:
-                              FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(uid)
-                                  .collection('cart')
-                                  .snapshots(),
+                              ref.read(checkoutControllerProvider.notifier).getUserCartStream(uid),
                           builder: (context, cartSnapshot) {
                             if (cartSnapshot.connectionState ==
                                 ConnectionState.waiting) {
@@ -696,10 +713,8 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
                                 final productId = cartData['product_id'];
                                 return FutureBuilder<DocumentSnapshot>(
                                   future:
-                                      FirebaseFirestore.instance
-                                          .collection('products')
-                                          .doc(productId)
-                                          .get(),
+                                      ref.read(checkoutControllerProvider.notifier)
+                                          .getProductFuture(productId as String),
                                   builder: (context, productSnapshot) {
                                     if (!productSnapshot.hasData) {
                                       return const ListTile(
@@ -808,63 +823,27 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
                         Expanded(
                           child:
                               address.name.isEmpty
-                                  ? FutureBuilder(
+                                  ? FutureBuilder<Map<String, dynamic>?>(
                                     future:
-                                        FirebaseFirestore.instance
-                                            .collection('users')
-                                            .doc(uid)
-                                            .get(),
+                                        ref.read(checkoutControllerProvider.notifier)
+                                            .getUserDefaultAddress(uid),
                                     builder: (context, snapshot) {
                                       if (snapshot.connectionState ==
                                           ConnectionState.waiting) {
                                         return const SizedBox.shrink();
                                       }
-                                      if (snapshot.hasError ||
-                                          !snapshot.hasData ||
-                                          !snapshot.data!.exists) {
-                                        return const Center(
-                                          child: Text('User data not found'),
-                                        );
-                                      }
-                                      final userData = snapshot.data!.data()!;
-                                      if ((userData['defaultAddressId'] ?? '')
-                                          .isEmpty) {
+                                      if (!snapshot.hasData || snapshot.data == null) {
                                         return _buildNoAddress();
                                       }
-                                      return FutureBuilder(
-                                        future:
-                                            FirebaseFirestore.instance
-                                                .collection('users')
-                                                .doc(uid)
-                                                .collection('addresses')
-                                                .doc(
-                                                  userData['defaultAddressId'],
-                                                )
-                                                .get(),
-                                        builder: (context, snapshot) {
-                                          if (snapshot.connectionState ==
-                                              ConnectionState.waiting) {
-                                            return const SizedBox.shrink();
-                                          }
-                                          if (!snapshot.hasData ||
-                                              !snapshot.data!.exists) {
-                                            return const Center(
-                                              child: Text(
-                                                'User data not found',
-                                              ),
-                                            );
-                                          }
-                                          final d = snapshot.data!.data()!;
-                                          final basic = (d['address'] ?? '') as String;
-                                          final detail = (d['detailAddress'] ?? '') as String;
-                                          final full = detail.isEmpty ? basic : '$basic $detail';
-                                          return _buildAddressText(
-                                            label: '배송지 정보 (기본 배송지)',
-                                            name: d['name'] ?? '',
-                                            phone: d['phone'] ?? '',
-                                            address: full,
-                                          );
-                                        },
+                                      final d = snapshot.data!;
+                                      final basic = (d['address'] ?? '') as String;
+                                      final detail = (d['detailAddress'] ?? '') as String;
+                                      final full = detail.isEmpty ? basic : '$basic $detail';
+                                      return _buildAddressText(
+                                        label: '배송지 정보 (기본 배송지)',
+                                        name: d['name'] ?? '',
+                                        phone: d['phone'] ?? '',
+                                        address: full,
                                       );
                                     },
                                   )
@@ -1061,13 +1040,10 @@ class _PlaceOrderState extends ConsumerState<PlaceOrder> {
             ),
 
             // ── Bottom bar ──────────────────────────────────────────────
-            bottomNavigationBar: StreamBuilder<QuerySnapshot>(
+            bottomNavigationBar: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream:
-                  FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(uid)
-                      .collection('cart')
-                      .snapshots(),
+                  ref.read(checkoutControllerProvider.notifier)
+                      .getUserCartStream(uid),
               builder: (context, cartSnapshot) {
                 if (!cartSnapshot.hasData || cartSnapshot.data!.docs.isEmpty) {
                   return const SizedBox.shrink();
