@@ -194,7 +194,7 @@ class FriendsListItem extends ConsumerWidget {
                     ? InkWell(
                         onTap: () async {
                           try {
-                            final chatRoomId = await ref.read(chatControllerProvider).createDirectChatRoom(friend.userId, isBrand);
+                            final chatRoomId = await ref.read(chatControllerProvider.notifier).createDirectChatRoom(friend.userId, isBrand);
                             if (chatRoomId != null) {
                               if (context.mounted) {
                                 Navigator.push(
@@ -235,7 +235,7 @@ class FriendsListItem extends ConsumerWidget {
                     : InkWell(
                         onTap: () async {
                           try {
-                            final chatRoomId = await ref.read(chatControllerProvider).createDirectChatRoom(friend.userId, isBrand);
+                            final chatRoomId = await ref.read(chatControllerProvider.notifier).createDirectChatRoom(friend.userId, isBrand);
                             if (chatRoomId != null) {
                               if (context.mounted) {
                                 Navigator.push(

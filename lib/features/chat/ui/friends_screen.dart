@@ -143,7 +143,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   _latestAliases = aliases;
 
                   return StreamBuilder<List<MyUser>>(
-                    stream: ref.read(friendsControllerProvider).getFriendsStream(),
+                    stream: ref.read(friendsControllerProvider.notifier).getFriendsStream(),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData || _isSyncing) {
                         return const SizedBox.shrink();

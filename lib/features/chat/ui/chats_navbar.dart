@@ -85,7 +85,7 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
 
   Future<void> _contactAdmin() async {
     try {
-      final chatRoomId = await ref.read(chatControllerProvider).createDirectChatRoomWithAdmin();
+      final chatRoomId = await ref.read(chatControllerProvider.notifier).createDirectChatRoomWithAdmin();
       if (!mounted) return;
       Navigator.push(
         context,

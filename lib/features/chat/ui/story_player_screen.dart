@@ -293,12 +293,12 @@ class _StoryPlayerScreenState extends ConsumerState<StoryPlayerScreen> {
                               _isPaused = false;
                             },
                             onSubmitted: (value) async {
-                              final chatRoomId = await ref.read(chatControllerProvider)
+                              final chatRoomId = await ref.read(chatControllerProvider.notifier)
                                   .createDirectChatRoom(
                                     widget.group.authorId,
                                     false,
                                   );
-                              await ref.read(chatControllerProvider).sendMessage(
+                              await ref.read(chatControllerProvider.notifier).sendMessage(
                                 chatRoomId: chatRoomId,
                                 content: value,
                                 imageUrl:

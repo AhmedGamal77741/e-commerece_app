@@ -671,7 +671,7 @@ void showAddFriendDialog(BuildContext context, WidgetRef ref) {
 
         Future<void> addFriend(MyUser user) async {
           setDialogState(() => feedbackMessage = null);
-          final success = await ref.read(friendsControllerProvider).addFriend(user.name);
+          final success = await ref.read(friendsControllerProvider.notifier).addFriend(user.name);
           setDialogState(() {
             if (success) {
               feedbackMessage = '${user.name}님과 친구가 되었습니다!';
@@ -1313,7 +1313,7 @@ Future<void> showCreateGroupDialog({
                           ? null
                           : () async {
                               Navigator.pop(ctx);
-                              await ref.read(chatControllerProvider).createGroupChatRoom(
+                              await ref.read(chatControllerProvider.notifier).createGroupChatRoom(
                                     name: nameController.text,
                                     participantIds: selectedUserIds,
                                     groupImage: groupImagePath,
