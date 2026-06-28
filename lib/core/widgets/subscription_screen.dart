@@ -1,8 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/cart/slide_button.dart';
-import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/cart/domain/bank_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +23,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   List<Map<String, dynamic>> bankAccounts = [];
   int selectedBankIndex = 0;
   bool _isLoading = true;
-  final bool _isProcessing = false;
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -57,7 +56,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
   // ── Delete a bank account ─────────────────────────────────────────────────
   Future<void> _deleteBankAccount(String payerId) async {
-      });
+    await ref.read(bankControllerProvider.notifier).deleteBankAccount(payerId);
+    if (mounted) {
+      await _loadBankAccounts();
     }
   }
 

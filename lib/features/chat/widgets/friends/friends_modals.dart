@@ -371,7 +371,6 @@ void showBioEditDialog(BuildContext context, WidgetRef ref, MyUser? currentUser,
 
 void showChangeNameDialog(BuildContext context, WidgetRef ref, MyUser friend, String? currentAlias) {
   final aliasController = TextEditingController(text: currentAlias ?? '');
-  final uid = ref.read(currentUserIdProvider);
 
   showDialog(
     context: context,

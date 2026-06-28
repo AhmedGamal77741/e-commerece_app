@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/mypage/domain/profile_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 
 class NoBankAccountScreen extends ConsumerStatefulWidget {
   final String source; // 'shop', 'sub', or 'signup'

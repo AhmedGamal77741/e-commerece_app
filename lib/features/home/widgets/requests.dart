@@ -828,71 +828,12 @@ class _RequestsState extends ConsumerState<Requests> {
     );
   }
 
-  Future<void> _acceptFollowRequest(
-    BuildContext context,
-    String requestingUserId,
-    String currentUserId,
-  ) async {
-    try {
-      await ref.read(followControllerProvider).acceptFollowRequest(currentUserId, requestingUserId);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('요청을 수락했습니다')));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: ')));
-      }
-    }
-  }
-
-  Future<void> _declineFollowRequest(
-    BuildContext context,
-    String requestingUserId,
-    String currentUserId,
-  ) async {
-    try {
-      await ref.read(followControllerProvider).declineFollowRequest(currentUserId, requestingUserId);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('요청을 거절했습니다')));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: ')));
-      }
-    }
-  }
 
   Future<Map<String, Map<String, dynamic>>> _buildFriendRecommendations(
     String currentUserId,
     List<String> followingIds,
   ) async {
     return await ref.read(followControllerProvider).getFriendRecommendations(currentUserId, followingIds);
-  }
-
-  Future<void> _sendFollowRequest(
-    String targetUserId,
-    String currentUserId,
-  ) async {
-    try {
-      await ref.read(followControllerProvider).sendFollowRequest(targetUserId, currentUserId);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: ')));
-      }
-    }
-  }
-
-  Future<void> _cancelFollowRequest(
-    String targetUserId,
-    String currentUserId,
-  ) async {
-    try {
-      await ref.read(followControllerProvider).cancelFollowRequest(targetUserId, currentUserId);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: ')));
-      }
-    }
   }
 
   Future<void> _unblockUser(String blockedUserId, String currentUserId) async {
