@@ -2,9 +2,6 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
-import 'package:ecommerece_app/core/widgets/no_account_screen.dart';
-import 'package:ecommerece_app/core/widgets/receipt_setup_screen.dart';
-
 import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -131,11 +128,7 @@ Future<void> _navigateToSubscriptionFromBanner(
   bool hasBankAccount = await shopNotifier.checkUserHasBankAccount(uid);
   if (!hasBankAccount) {
     if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const NoBankAccountScreen(source: 'sub'),
-      ),
-    );
+    await context.pushNamed(Routes.noBankAccountScreen, queryParameters: {'source': 'sub'});
     hasBankAccount = await shopNotifier.checkUserHasBankAccount(uid);
     if (!hasBankAccount) return;
   }
@@ -144,11 +137,7 @@ Future<void> _navigateToSubscriptionFromBanner(
   bool hasReceiptData = await shopNotifier.checkUserHasReceiptData(uid);
   if (!hasReceiptData) {
     if (!context.mounted) return;
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => const ReceiptSetupScreen(source: 'sub'),
-      ),
-    );
+    final result = await context.pushNamed<bool>(Routes.receiptSetupScreen, queryParameters: {'source': 'sub'});
     if (result != true) return;
   }
 

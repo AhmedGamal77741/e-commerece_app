@@ -2,15 +2,22 @@ import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/widgets/subscription_screen.dart';
 import 'package:ecommerece_app/core/widgets/no_account_screen.dart';
+import 'package:ecommerece_app/core/widgets/receipt_setup_screen.dart';
 import 'package:ecommerece_app/features/cart/order_complete.dart';
 import 'package:ecommerece_app/features/cart/place_order.dart';
 import 'package:ecommerece_app/features/cart/buy_now.dart';
 import 'package:ecommerece_app/features/cart/registered_screen.dart';
-
+import 'package:ecommerece_app/features/cart/cart.dart';
+import 'package:ecommerece_app/features/address/ui/address_list_screen.dart';
+import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
 import 'package:ecommerece_app/features/home/add_post.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
+import 'package:ecommerece_app/features/home/profile_tab.dart';
+import 'package:ecommerece_app/features/chat/ui/edit_screen.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:ecommerece_app/features/home/notifications.dart';
+import 'package:ecommerece_app/features/review/ui/track_order.dart';
+import 'package:ecommerece_app/features/review/ui/exchange_or_refund.dart';
 import 'package:ecommerece_app/features/home/widgets/alerts.dart';
 import 'package:ecommerece_app/features/mypage/ui/cancel_subscription.dart';
 import 'package:ecommerece_app/features/mypage/ui/delete_account_screen.dart';
@@ -91,6 +98,15 @@ class AppRouter {
           );
         },
       ),
+      GoRoute(
+        name: Routes.receiptSetupScreen,
+        path: Routes.receiptSetupScreen,
+        builder: (context, state) {
+          return ReceiptSetupScreen(
+            source: state.uri.queryParameters['source'] ?? 'shop',
+          );
+        },
+      ),
 
       GoRoute(
         name: Routes.navBar,
@@ -135,7 +151,11 @@ class AppRouter {
           GoRoute(
             name: Routes.shopSearchScreen,
             path: Routes.shopSearchScreen,
-            builder: (context, state) => const HomeSearch(initialTabIndex: 2),
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final tabIndex = extra?['initialTabIndex'] ?? 2;
+              return HomeSearch(initialTabIndex: tabIndex);
+            },
           ),
           GoRoute(
             name: Routes.commentsScreen,
@@ -152,13 +172,22 @@ class AppRouter {
             builder: (context, state) {
               final id = state.pathParameters['id'] ?? '';
               String name = '고객센터';
+              bool isDeleted = false;
               final extra = state.extra;
-              if (extra is Map &&
-                  extra['name'] is String &&
-                  (extra['name'] as String).isNotEmpty) {
-                name = extra['name'] as String;
+              if (extra is Map) {
+                if (extra['name'] is String &&
+                    (extra['name'] as String).isNotEmpty) {
+                  name = extra['name'] as String;
+                }
+                if (extra['isDeleted'] is bool) {
+                  isDeleted = extra['isDeleted'] as bool;
+                }
               }
-              return ChatScreen(chatRoomId: id, chatRoomName: name);
+              return ChatScreen(
+                chatRoomId: id,
+                chatRoomName: name,
+                isDeleted: isDeleted,
+              );
             },
           ),
           GoRoute(
@@ -182,6 +211,74 @@ class AppRouter {
                 );
               }
               return BuyNow(paymentId: paymentId);
+            },
+          ),
+          GoRoute(
+            name: Routes.itemDetailsScreen,
+            path: Routes.itemDetailsScreen,
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>;
+              return ItemDetails(
+                product: extra['product'] as Product,
+                arrivalDay: extra['arrivalDay'] as String,
+                isSub: extra['isSub'] as bool,
+              );
+            },
+          ),
+          GoRoute(
+            name: Routes.cartScreen,
+            path: Routes.cartScreen,
+            builder: (context, state) => const Cart(),
+          ),
+          GoRoute(
+            name: Routes.addressListScreen,
+            path: Routes.addressListScreen,
+            builder: (context, state) => const AddressListScreen(),
+          ),
+          GoRoute(
+            name: Routes.addAddressScreen,
+            path: Routes.addAddressScreen,
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              return AddAddressScreen(showSkip: extra?['showSkip'] ?? false);
+            },
+          ),
+          GoRoute(
+            name: Routes.trackorder,
+            path: Routes.trackorder,
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>;
+              return TrackOrder(
+                order: extra['order'],
+                arrivalDate: extra['arrivalDate'],
+              );
+            },
+          ),
+          GoRoute(
+            name: Routes.exchangeOrRefund,
+            path: Routes.exchangeOrRefund,
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>;
+              return ExchangeOrRefund(
+                userId: extra['userId'],
+                orderId: extra['orderId'],
+              );
+            },
+          ),
+          GoRoute(
+            name: Routes.profileTabScreen,
+            path: Routes.profileTabScreen,
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              return Scaffold(body: ProfileTab(userId: extra?['userId'] ?? ''));
+            },
+          ),
+          GoRoute(
+            name: Routes.editScreen,
+            path: Routes.editScreen,
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              return EditScreen(initialTab: extra?['initialTab'] ?? 0);
             },
           ),
         ],

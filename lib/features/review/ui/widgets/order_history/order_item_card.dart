@@ -3,8 +3,8 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/black_text_button.dart';
-import 'package:ecommerece_app/features/review/ui/exchange_or_refund.dart';
-import 'package:ecommerece_app/features/review/ui/track_order.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/review/ui/widgets/text_and_buttons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -73,15 +73,12 @@ class OrderItemCard extends StatelessWidget {
                         product['baselineTime'],
                       );
                       if (!context.mounted) return;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) => TrackOrder(
-                                order: orderData,
-                                arrivalDate: arrivalDate,
-                              ),
-                        ),
+                      context.pushNamed(
+                        Routes.trackorder,
+                        extra: {
+                          'order': orderData,
+                          'arrivalDate': arrivalDate,
+                        },
                       );
                     },
                   ),
@@ -102,15 +99,12 @@ class OrderItemCard extends StatelessWidget {
                         txt: '교환 · 반품 신청',
                         style: TextStyles.abeezee14px400wW,
                         func: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => ExchangeOrRefund(
-                                    userId: user.uid,
-                                    orderId: orderData['orderId'],
-                                  ),
-                            ),
+                          context.pushNamed(
+                            Routes.exchangeOrRefund,
+                            extra: {
+                              'userId': user.uid,
+                              'orderId': orderData['orderId'],
+                            },
                           );
                         },
                       ),

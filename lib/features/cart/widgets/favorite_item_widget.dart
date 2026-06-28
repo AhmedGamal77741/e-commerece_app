@@ -3,7 +3,8 @@ import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
-import 'package:ecommerece_app/features/shop/item_details.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -52,15 +53,13 @@ class FavoriteItemWidget extends ConsumerWidget {
             );
             
             if (context.mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ItemDetails(
-                    product: product,
-                    arrivalDay: arrivalTime,
-                    isSub: isSub,
-                  ),
-                ),
+              context.pushNamed(
+                Routes.itemDetailsScreen,
+                extra: {
+                  'product': product,
+                  'arrivalDay': arrivalTime,
+                  'isSub': isSub,
+                },
               );
             }
           },

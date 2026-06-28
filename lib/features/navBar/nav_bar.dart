@@ -1,8 +1,6 @@
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
-import 'package:ecommerece_app/core/widgets/no_account_screen.dart';
-import 'package:ecommerece_app/core/widgets/receipt_setup_screen.dart';
-import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/chats_navbar.dart';
 import 'package:ecommerece_app/features/home/home_screen.dart';
 import 'package:ecommerece_app/features/shop/shop.dart';
@@ -11,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:ecommerece_app/core/widgets/deleted_account.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/nav_bar_providers.dart';
@@ -85,11 +82,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
     if (!hasBankAccount) {
       if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => const NoBankAccountScreen(source: 'sub'),
-        ),
-      );
+      await context.pushNamed(Routes.noBankAccountScreen, queryParameters: {'source': 'sub'});
       final nowHasAccount = await navBarService.hasBankAccount(user.uid);
       if (!nowHasAccount) return;
     }
@@ -98,11 +91,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
     if (!hasReceiptData) {
       if (!mounted) return;
-      final result = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (_) => const ReceiptSetupScreen(source: 'sub'),
-        ),
-      );
+      final result = await context.pushNamed<bool>(Routes.receiptSetupScreen, queryParameters: {'source': 'sub'});
       if (result != true) return;
     }
 
@@ -139,11 +128,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
         if (!hasBankAccount) {
           if (!mounted) return;
-          final result = await Navigator.of(context).push<bool>(
-            MaterialPageRoute(
-              builder: (_) => const NoBankAccountScreen(source: 'shop'),
-            ),
-          );
+          final result = await context.pushNamed<bool>(Routes.noBankAccountScreen, queryParameters: {'source': 'shop'});
           if (result != true) {
             final nowHasAccount = await navBarService.hasBankAccount(user.uid);
             if (!nowHasAccount) return;
@@ -154,11 +139,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
         if (!hasReceiptData) {
           if (!mounted) return;
-          final result = await Navigator.of(context).push<dynamic>(
-            MaterialPageRoute(
-              builder: (_) => const ReceiptSetupScreen(source: 'shop'),
-            ),
-          );
+          final result = await context.pushNamed<dynamic>(Routes.receiptSetupScreen, queryParameters: {'source': 'shop'});
           if (result != true && result != 'skip') return;
         }
 
@@ -167,11 +148,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
         );
         if (!hasDefaultAddress) {
           if (!mounted) return;
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const AddAddressScreen(showSkip: true),
-            ),
-          );
+          await context.pushNamed(Routes.addAddressScreen, extra: {'showSkip': true});
         }
       }
       setState(() => _selectedIndex = index);

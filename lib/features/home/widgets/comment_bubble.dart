@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
-import 'package:ecommerece_app/features/home/profile_tab.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 
@@ -52,10 +53,7 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
         children: [
           if (!isMe) ...[
             GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SafeArea(child: Scaffold(body: ProfileTab(userId: item['senderId'])))),
-              ),
+              onTap: () => context.pushNamed(Routes.profileTabScreen, extra: {'userId': item['senderId']}),
               child: Container(
                 width: 40.w,
                 height: 40.h,

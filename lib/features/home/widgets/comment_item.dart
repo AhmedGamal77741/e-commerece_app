@@ -9,8 +9,8 @@ import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/models/comment_model.dart';
-import 'package:ecommerece_app/features/home/profile_tab.dart';
-import 'package:ecommerece_app/features/shop/item_details.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
@@ -48,16 +48,9 @@ class _CommentItemState extends ConsumerState<CommentItem> {
           children: [
             InkWell(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => SafeArea(
-                          child: Scaffold(
-                            body: ProfileTab(userId: widget.comment.userId),
-                          ),
-                        ),
-                  ),
+                context.pushNamed(
+                  Routes.profileTabScreen,
+                  extra: {'userId': widget.comment.userId},
                 );
               },
               child: Container(
@@ -205,21 +198,13 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                   onTap: () async {
                                     bool isSub = await isUserSubscribed();
                                     if (!context.mounted) return;
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) => ItemDetails(
-                                              product:
-                                                  widget.comment.productData!,
-                                              isSub: isSub,
-                                              arrivalDay:
-                                                  widget
-                                                      .comment
-                                                      .productData!
-                                                      .arrivalDate!,
-                                            ),
-                                      ),
+                                    context.pushNamed(
+                                      Routes.itemDetailsScreen,
+                                      extra: {
+                                        'product': widget.comment.productData!,
+                                        'isSub': isSub,
+                                        'arrivalDay': widget.comment.productData!.arrivalDate!,
+                                      },
                                     );
                                   },
                                 ),

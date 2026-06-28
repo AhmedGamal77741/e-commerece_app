@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
-import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
-import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'friends_modals.dart';
 
 class FriendsListItem extends ConsumerWidget {
@@ -178,13 +178,9 @@ class FriendsListItem extends ConsumerWidget {
             children: [
               InkWell(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              Scaffold(body: ProfileTab(userId: friend.userId)),
-                    ),
+                  context.pushNamed(
+                    Routes.profileTabScreen,
+                    extra: {'userId': friend.userId},
                   );
                 },
                 onLongPress: showFriendMenu,
@@ -209,15 +205,10 @@ class FriendsListItem extends ConsumerWidget {
                               .read(chatControllerProvider.notifier)
                               .createDirectChatRoom(friend.userId, isBrand);
                           if (context.mounted) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => ChatScreen(
-                                      chatRoomId: chatRoomId,
-                                      chatRoomName: displayName,
-                                    ),
-                              ),
+                            context.pushNamed(
+                              Routes.chatScreen,
+                              pathParameters: {'id': chatRoomId},
+                              extra: {'name': displayName},
                             );
                           }
                         } catch (e) {
@@ -254,15 +245,10 @@ class FriendsListItem extends ConsumerWidget {
                               .read(chatControllerProvider.notifier)
                               .createDirectChatRoom(friend.userId, isBrand);
                           if (context.mounted) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => ChatScreen(
-                                      chatRoomId: chatRoomId,
-                                      chatRoomName: displayName,
-                                    ),
-                              ),
+                            context.pushNamed(
+                              Routes.chatScreen,
+                              pathParameters: {'id': chatRoomId},
+                              extra: {'name': displayName},
                             );
                           }
                         } catch (e) {

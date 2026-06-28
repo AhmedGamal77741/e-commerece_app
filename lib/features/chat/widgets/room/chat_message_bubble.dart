@@ -1,11 +1,13 @@
 import 'package:ecommerece_app/core/cache/user_cache.dart';
-import 'package:ecommerece_app/core/providers/firebase_providers.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/models/message_model.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
-import 'package:ecommerece_app/features/shop/item_details.dart';
+
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -261,16 +263,13 @@ class _BubbleContent extends ConsumerWidget {
               onTap: () async {
                 bool isSub = await isUserSubscribed();
                 if (!context.mounted) return;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => ItemDetails(
-                          product: message.productData!,
-                          isSub: isSub,
-                          arrivalDay: message.productData!.arrivalDate!,
-                        ),
-                  ),
+                context.pushNamed(
+                  Routes.itemDetailsScreen,
+                  extra: {
+                    'product': message.productData!,
+                    'isSub': isSub,
+                    'arrivalDay': message.productData!.arrivalDate!,
+                  },
                 );
               },
             ),

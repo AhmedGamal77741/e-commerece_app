@@ -1,7 +1,6 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
-import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
-import 'package:ecommerece_app/features/address/ui/address_list_screen.dart';
+
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -88,10 +87,7 @@ class PlaceOrderContent extends ConsumerWidget {
                       uid: uid,
                       address: state.address,
                       onSelectAddress: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const AddressListScreen()),
-                        );
+                        final dynamic result = await context.pushNamed(Routes.addressListScreen);
                         if (result != null) {
                           ref.read(checkoutFormControllerProvider.notifier).setAddress(result, ref.read(checkoutFormPaymentIdProvider) ?? '');
                         }
@@ -161,9 +157,7 @@ class PlaceOrderContent extends ConsumerWidget {
                 if (!controller.validateReceiptTypeFields(context)) return false;
                 
                 if (state.address.id.isEmpty) {
-                  final result = await Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const AddAddressScreen()),
-                  );
+                  final result = await context.pushNamed(Routes.addAddressScreen);
                   if (result != true) {
                     return false;
                   }

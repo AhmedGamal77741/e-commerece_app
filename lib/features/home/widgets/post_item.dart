@@ -5,7 +5,8 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
-import 'package:ecommerece_app/features/home/profile_tab.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/home/widgets/edit_post_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -304,16 +305,9 @@ class _PostItemState extends ConsumerState<PostItem> {
                                 if (myuser != null &&
                                     widget.currentProfileUserId !=
                                         myuser.userId) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => Scaffold(
-                                            body: ProfileTab(
-                                              userId: myuser.userId,
-                                            ),
-                                          ),
-                                    ),
+                                  context.pushNamed(
+                                    Routes.profileTabScreen,
+                                    extra: {'userId': myuser.userId},
                                   );
                                 }
                               },

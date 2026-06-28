@@ -1,8 +1,9 @@
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
-import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -190,15 +191,13 @@ class DirectChatTile extends ConsumerWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(
-                chatRoomId: chat.id,
-                chatRoomName: displayName,
-                isDeleted: isDeleted,
-              ),
-            ),
+          context.pushNamed(
+            Routes.chatScreen,
+            pathParameters: {'id': chat.id},
+            extra: {
+              'name': displayName,
+              'isDeleted': isDeleted,
+            },
           );
         },
         onLongPress: () {

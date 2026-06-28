@@ -1,15 +1,13 @@
 import 'dart:async';
+import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/widgets/black_text_button.dart';
-import 'package:ecommerece_app/core/widgets/no_account_screen.dart';
-import 'package:ecommerece_app/core/widgets/receipt_setup_screen.dart';
 import 'package:ecommerece_app/features/mypage/domain/profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -280,9 +278,7 @@ Future<void> _navigateToSubscription(BuildContext context, WidgetRef ref) async 
 
   if (!hasBankAccount) {
     if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const NoBankAccountScreen(source: 'sub')),
-    );
+    await context.pushNamed(Routes.noBankAccountScreen, queryParameters: {'source': 'sub'});
     final nowHasAccount = await controller.refreshBankAccount();
     if (!nowHasAccount) return;
   }
@@ -291,9 +287,7 @@ Future<void> _navigateToSubscription(BuildContext context, WidgetRef ref) async 
 
   if (!hasReceiptData) {
     if (!context.mounted) return;
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const ReceiptSetupScreen(source: 'sub')),
-    );
+    final result = await context.pushNamed<bool>(Routes.receiptSetupScreen, queryParameters: {'source': 'sub'});
     if (result != true) return;
   }
 

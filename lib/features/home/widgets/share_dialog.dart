@@ -1,12 +1,12 @@
-
 import 'package:ecommerece_app/core/models/product_model.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/services/share_service.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/chat_service.dart';
 import 'package:ecommerece_app/features/chat/services/friends_service.dart';
-import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 
 Widget _buildSquareAction({
@@ -78,15 +78,10 @@ Widget _buildFriendItem({
           }
 
           if (!context.mounted) return;
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) => ChatScreen(
-                    chatRoomId: chatRoomId,
-                    chatRoomName: friend.name,
-                  ),
-            ),
+          context.pushNamed(
+            Routes.chatScreen,
+            pathParameters: {'id': chatRoomId},
+            extra: {'name': friend.name},
           );
                 } catch (e) {
           if (!context.mounted) return;

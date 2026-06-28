@@ -2,8 +2,6 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
-import 'package:ecommerece_app/features/cart/cart.dart';
-import 'package:ecommerece_app/features/address/ui/address_list_screen.dart';
 import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
 import 'package:ecommerece_app/features/shop/widgets/category_products_screen.dart';
 import 'package:flutter/gestures.dart';
@@ -98,7 +96,7 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
           return Scaffold(
             floatingActionButton: FloatingActionButton(
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Cart()));
+                context.pushNamed(Routes.cartScreen);
               },
               elevation: 0,
               backgroundColor: Colors.black,
@@ -131,9 +129,7 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             onPressed: () async {
-                              await Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const AddressListScreen()),
-                              );
+                              await context.pushNamed(Routes.addressListScreen);
                             },
                             child: Row(
                               mainAxisSize: MainAxisSize.min,

@@ -1,15 +1,15 @@
 // features/chat/ui/chats_navbar.dart
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/ui/direct_chats_screen.dart';
-import 'package:ecommerece_app/features/chat/ui/edit_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/friends_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/group_chats_screen.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../domain/chat_controller.dart';
 
 class ChatsNavbar extends ConsumerStatefulWidget {
   const ChatsNavbar({super.key});
@@ -77,10 +77,7 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
   }
 
   void _onSettingsTapped() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => EditScreen(initialTab: _selectedIndex)),
-    );
+    context.pushNamed(Routes.editScreen, extra: {'initialTab': _selectedIndex});
   }
 
   Future<void> _contactAdmin() async {
@@ -90,13 +87,10 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
               .read(chatControllerProvider.notifier)
               .createDirectChatRoomWithAdmin();
       if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) =>
-                  ChatScreen(chatRoomId: chatRoomId, chatRoomName: "Admin"),
-        ),
+      context.pushNamed(
+        Routes.chatScreen,
+        pathParameters: {'id': chatRoomId},
+        extra: {'name': 'Admin'},
       );
     } catch (e) {
       if (!mounted) return;

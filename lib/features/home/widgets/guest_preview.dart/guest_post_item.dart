@@ -4,7 +4,7 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
-import 'package:ecommerece_app/features/home/profile_tab.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_actions.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/natural_aspect_page_view.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/post_menus.dart';
@@ -127,16 +127,9 @@ class GuestPostItem extends ConsumerWidget {
                               onTap: () {
                                 if (myuser != null &&
                                     currentProfileUserId != myuser.userId) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => Scaffold(
-                                            body: ProfileTab(
-                                              userId: myuser.userId,
-                                            ),
-                                          ),
-                                    ),
+                                  context.pushNamed(
+                                    Routes.profileTabScreen,
+                                    extra: {'userId': myuser.userId},
                                   );
                                 }
                               },
@@ -323,14 +316,9 @@ class GuestPostItem extends ConsumerWidget {
                           onTap: () {
                             if (myuser != null &&
                                 currentProfileUserId != myuser.userId) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => Scaffold(
-                                        body: ProfileTab(userId: myuser.userId),
-                                      ),
-                                ),
+                              context.pushNamed(
+                                Routes.profileTabScreen,
+                                extra: {'userId': myuser.userId},
                               );
                             }
                           },

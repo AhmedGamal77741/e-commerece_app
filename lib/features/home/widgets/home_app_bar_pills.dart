@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
-import 'package:ecommerece_app/features/home/search_screen.dart';
 
 class HomeAppBarPills extends ConsumerWidget {
   final User? firebaseUser;
@@ -131,12 +130,7 @@ class HomeAppBarPills extends ConsumerWidget {
                     );
                     return;
                   }
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HomeSearch(initialTabIndex: 1),
-                    ),
-                  );
+                  context.pushNamed(Routes.shopSearchScreen, extra: {'initialTabIndex': 1});
                 },
                 child: ImageIcon(
                   const AssetImage('assets/search_icon.png'),

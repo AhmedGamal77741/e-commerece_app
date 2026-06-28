@@ -1,7 +1,8 @@
 import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:flutter/material.dart';
@@ -159,15 +160,13 @@ class _ShopSearchState extends ConsumerState<ShopSearch> {
               product.baselineTime,
             );
             if (context.mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ItemDetails(
-                    product: product,
-                    arrivalDay: arrivalTime,
-                    isSub: isSub,
-                  ),
-                ),
+              context.pushNamed(
+                Routes.itemDetailsScreen,
+                extra: {
+                  'product': product,
+                  'arrivalDay': arrivalTime,
+                  'isSub': isSub,
+                },
               );
             }
           },

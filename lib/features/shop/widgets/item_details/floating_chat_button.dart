@@ -1,9 +1,10 @@
 import 'package:ecommerece_app/core/models/product_model.dart';
-import 'package:ecommerece_app/features/chat/ui/chat_room_screen.dart';
 import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 
 class FloatingChatButton extends ConsumerWidget {
   final Product product;
@@ -27,14 +28,10 @@ class FloatingChatButton extends ConsumerWidget {
                   product.deliveryManagerId.toString(),
                 );
             if (!context.mounted) return;
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatScreen(
-                  chatRoomId: returnList[0],
-                  chatRoomName: returnList[1],
-                ),
-              ),
+            context.pushNamed(
+              Routes.chatScreen,
+              pathParameters: {'id': returnList[0]},
+              extra: {'name': returnList[1]},
             );
           } catch (e) {
             if (!context.mounted) return;

@@ -23,4 +23,10 @@ class Routes {
   // ── Bank account registration deep link landing ───────────────────────────
   // Matches www.pang2chocolate.com/bank-registered?success=...&userId=...&paymentId=...
   static const String bankRegisteredScreen = '/bank-registered';
+  static const String receiptSetupScreen = '/receipt-setup';
+  static const String cartScreen = '/cart';
+  static const String addressListScreen = '/address-list';
+  static const String addAddressScreen = '/add-address';
+  static const String profileTabScreen = '/profile-tab';
+  static const String editScreen = '/edit-screen';
 }

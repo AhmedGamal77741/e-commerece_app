@@ -1,7 +1,8 @@
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/address/domain/models/address.dart';
 import 'package:ecommerece_app/features/address/domain/address_controller.dart';
-import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -276,10 +277,7 @@ class _AddressListScreenState extends ConsumerState<AddressListScreen> {
   }
 
   void _navigateToAddressForm(BuildContext context) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AddAddressScreen()),
-    );
+    final result = await context.pushNamed<bool>(Routes.addAddressScreen);
 
     if (!context.mounted) return;
 
