@@ -148,7 +148,12 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
         );
         if (!hasDefaultAddress) {
           if (!mounted) return;
-          await context.pushNamed(Routes.addAddressScreen, extra: {'showSkip': true});
+          final result = await context.pushNamed<bool>(Routes.addAddressScreen, extra: {'showSkip': false});
+          
+          if (result != true) {
+            final nowHasAddress = await navBarService.hasDefaultAddress(user.uid);
+            if (!nowHasAddress) return;
+          }
         }
       }
       setState(() => _selectedIndex = index);
