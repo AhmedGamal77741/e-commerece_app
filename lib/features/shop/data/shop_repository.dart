@@ -23,7 +23,7 @@ class ShopRepository {
     }
     return _firestore
         .collection('products')
-        .where('categoryId', isEqualTo: categoryId)
+        .where('category', isEqualTo: categoryId)
         .snapshots();
   }
 

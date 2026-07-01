@@ -7,6 +7,7 @@ import 'package:ecommerece_app/features/shop/widgets/category_products_screen.da
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
@@ -128,7 +129,7 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
                               maximumSize: Size(200.w, 80.h),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            onPressed: () async {
+                            onPressed: ref.read(authStateProvider).value == null ? null : () async {
                               await context.pushNamed(Routes.addressListScreen);
                             },
                             child: Row(
@@ -137,12 +138,14 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
                                 Flexible(
                                   child: _buildAddressText(userAddressAsync),
                                 ),
-                                SizedBox(width: 6.w),
-                                const Icon(
-                                  Icons.arrow_drop_down,
-                                  color: Colors.black,
-                                  size: 18,
-                                ),
+                                if (ref.watch(authStateProvider).value != null) ...[
+                                  SizedBox(width: 6.w),
+                                  const Icon(
+                                    Icons.arrow_drop_down,
+                                    color: Colors.black,
+                                    size: 18,
+                                  ),
+                                ]
                               ],
                             ),
                           ),
