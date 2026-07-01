@@ -100,6 +100,13 @@ class MyUser {
     };
   }
 
+  static bool _parseBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is String) return value.toLowerCase() == 'true';
+    if (value is int) return value == 1;
+    return false;
+  }
+
   static MyUser fromDocument(Map<String, dynamic> doc) {
     return MyUser(
       userId: (doc['userId'] ?? '') as String,
@@ -111,10 +118,10 @@ class MyUser {
               ?.map((e) => e as String)
               .toList() ??
           [],
-      isSub: doc['isSub'] ?? false,
+      isSub: _parseBool(doc['isSub']),
       defaultAddressId: (doc['defaultAddressId'] ?? '') as String?,
       payerId: (doc['payerId'] ?? '') as String?,
-      isOnline: doc['isOnline'] ?? false,
+      isOnline: _parseBool(doc['isOnline']),
       lastSeen: DateTime.fromMillisecondsSinceEpoch(doc['lastSeen'] ?? 0),
       chatRooms: List<String>.from(doc['chatRooms'] ?? []),
       friends: List<String>.from(doc['friends'] ?? []),
@@ -127,7 +134,7 @@ class MyUser {
       bio: (doc['bio'] ?? '') as String?,
       phoneNumber: (doc['phoneNumber'] ?? '') as String?,
       type: (doc['type'] ?? 'user') as String,
-      isPrivate: doc['isPrivate'] ?? false,
+      isPrivate: _parseBool(doc['isPrivate']),
       lastPostCreatedAt: doc['lastPostCreatedAt'] != null
           ? (doc['lastPostCreatedAt'] is Timestamp
               ? (doc['lastPostCreatedAt'] as Timestamp).toDate()
@@ -147,10 +154,10 @@ class MyUser {
               ?.map((e) => e as String)
               .toList() ??
           [],
-      isSub: doc['isSub'] ?? false,
+      isSub: _parseBool(doc['isSub']),
       defaultAddressId: (doc['defaultAddressId'] ?? '') as String?,
       payerId: (doc['payerId'] ?? '') as String?,
-      isOnline: doc['isOnline'] ?? false,
+      isOnline: _parseBool(doc['isOnline']),
       lastSeen: DateTime.fromMillisecondsSinceEpoch(doc['lastSeen'] ?? 0),
       chatRooms: List<String>.from(doc['chatRooms'] ?? []),
       friends: List<String>.from(doc['friends'] ?? []),
@@ -163,7 +170,7 @@ class MyUser {
       bio: (doc['bio'] ?? '') as String?,
       phoneNumber: (doc['phoneNumber'] ?? '') as String?,
       type: (doc['type'] ?? 'user') as String,
-      isPrivate: doc['isPrivate'] ?? false,
+      isPrivate: _parseBool(doc['isPrivate']),
       lastPostCreatedAt: doc['lastPostCreatedAt'] != null
           ? (doc['lastPostCreatedAt'] is Timestamp
               ? (doc['lastPostCreatedAt'] as Timestamp).toDate()
