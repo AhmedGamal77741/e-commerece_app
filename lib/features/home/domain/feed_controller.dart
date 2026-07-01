@@ -54,10 +54,11 @@ final allPostsStreamProvider = StreamProvider<List<QueryDocumentSnapshot>>((
 });
 
 final authorsDataMapProvider =
-    StreamProvider.family<Map<String, Map<String, dynamic>>, List<String>>((
+    StreamProvider.family<Map<String, Map<String, dynamic>>, String>((
       ref,
-      authorIds,
+      authorIdsJoined,
     ) {
+      final authorIds = authorIdsJoined.isEmpty ? <String>[] : authorIdsJoined.split(',');
       return ref
           .watch(feedRepositoryProvider)
           .getAuthorsDataStreamRealtime(authorIds);
@@ -126,7 +127,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     // Sort author IDs so the parameter remains consistent for caching
     final sortedAuthorIds = authorIds.toList()..sort();
     final authorsMap = await ref.watch(
-      authorsDataMapProvider(sortedAuthorIds).future,
+      authorsDataMapProvider(sortedAuthorIds.join(',')).future,
     );
 
     if (user == null) {

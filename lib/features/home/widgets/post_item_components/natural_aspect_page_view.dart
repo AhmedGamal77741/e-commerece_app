@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shimmer/shimmer.dart';
 
 // =============================================================================
 // NaturalAspectPageView
@@ -25,6 +26,7 @@ class NaturalAspectPageView extends ConsumerStatefulWidget {
 }
 
 class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
+  static final Map<String, double> _globalRatioCache = {};
   List<double?> _ratios = [];
   int _currentPage = 0;
 
@@ -33,7 +35,12 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
     super.initState();
     _ratios = List<double?>.filled(widget.imgUrls.length, null);
     for (int i = 0; i < widget.imgUrls.length; i++) {
-      _resolveRatio(i);
+      final url = widget.imgUrls[i] as String;
+      if (_globalRatioCache.containsKey(url)) {
+        _ratios[i] = _globalRatioCache[url];
+      } else {
+        _resolveRatio(i);
+      }
     }
     widget.pageController.addListener(_onPageChanged);
   }
@@ -69,7 +76,12 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
         _currentPage = 0;
       });
       for (int i = 0; i < widget.imgUrls.length; i++) {
-        _resolveRatio(i);
+        final url = widget.imgUrls[i] as String;
+        if (_globalRatioCache.containsKey(url)) {
+          _ratios[i] = _globalRatioCache[url];
+        } else {
+          _resolveRatio(i);
+        }
       }
     }
   }
@@ -82,17 +94,19 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
   }
 
   void _resolveRatio(int index) {
-    final image = NetworkImage(widget.imgUrls[index] as String);
+    final url = widget.imgUrls[index] as String;
+    final image = CachedNetworkImageProvider(url);
     final stream = image.resolve(ImageConfiguration.empty);
     late ImageStreamListener listener;
     listener = ImageStreamListener(
       (info, _) {
         stream.removeListener(listener);
         if (mounted) {
+          final ratio = info.image.width.toDouble() / info.image.height.toDouble();
+          _globalRatioCache[url] = ratio;
           setState(() {
             if (index < _ratios.length) {
-              _ratios[index] =
-                  info.image.width.toDouble() / info.image.height.toDouble();
+              _ratios[index] = ratio;
             }
           });
         }
@@ -100,6 +114,7 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
       onError: (_, __) {
         stream.removeListener(listener);
         if (mounted) {
+          _globalRatioCache[url] = 1.0;
           setState(() {
             if (index < _ratios.length) {
               _ratios[index] = 1.0;
@@ -148,10 +163,14 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
     if (currentRatio == null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(25),
-        child: Container(
-          width: availableWidth,
-          height: availableWidth * 0.75,
-          color: Colors.grey[200],
+        child: Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            width: availableWidth,
+            height: availableWidth * 0.75,
+            color: Colors.white,
+          ),
         ),
       );
     }
@@ -177,10 +196,14 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
               if (ratio == null) {
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(25),
-                  child: Container(
-                    width: availableWidth,
-                    height: currentHeight,
-                    color: Colors.grey[200],
+                  child: Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: Container(
+                      width: availableWidth,
+                      height: currentHeight,
+                      color: Colors.white,
+                    ),
                   ),
                 );
               }
@@ -194,16 +217,21 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
                   height: itemHeight,
                   child: CachedNetworkImage(
                     imageUrl: widget.imgUrls[index] as String,
+                    memCacheWidth: 800,
                     width: availableWidth,
                     height: itemHeight,
                     fit: BoxFit.cover,
                     fadeInDuration: Duration.zero,
                     fadeOutDuration: Duration.zero,
                     placeholder:
-                        (context, url) => Container(
-                          width: availableWidth,
-                          height: itemHeight,
-                          color: Colors.grey[200],
+                        (context, url) => Shimmer.fromColors(
+                          baseColor: Colors.grey[300]!,
+                          highlightColor: Colors.grey[100]!,
+                          child: Container(
+                            width: availableWidth,
+                            height: itemHeight,
+                            color: Colors.white,
+                          ),
                         ),
                     errorWidget:
                         (context, url, error) => Container(

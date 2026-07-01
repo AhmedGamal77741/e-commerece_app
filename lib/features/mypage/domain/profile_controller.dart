@@ -15,20 +15,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final subscriptionStreamProvider =
     StreamProvider.autoDispose<QuerySnapshot<Map<String, dynamic>>>((ref) {
-  final user = ref.watch(authStateProvider).value;
-  if (user == null) {
-    return const Stream.empty();
-  }
-  return FirebaseFirestore.instance
-      .collection('subscriptions')
-      .where('userId', isEqualTo: user.uid)
-      .orderBy('nextBillingDate', descending: true)
-      .limit(1)
-      .snapshots();
-});
+      final user = ref.watch(authStateProvider).value;
+      if (user == null) {
+        return const Stream.empty();
+      }
+      return FirebaseFirestore.instance
+          .collection('subscriptions')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('nextBillingDate', descending: true)
+          .limit(1)
+          .snapshots();
+    });
 
 final profileControllerProvider =
-    AsyncNotifierProvider.autoDispose<ProfileController, void>(ProfileController.new);
+    AsyncNotifierProvider.autoDispose<ProfileController, void>(
+      ProfileController.new,
+    );
 
 class ProfileController extends AsyncNotifier<void> {
   final String supportUserId = 'JuxEfED9YSc2XyHRFgkPcNCFUSJ3';
@@ -59,14 +61,18 @@ class ProfileController extends AsyncNotifier<void> {
       throw Exception("User not signed in or missing email");
     }
 
-    await ref.read(profileRepositoryProvider).reauthenticateUser(user.email!, password);
+    await ref
+        .read(profileRepositoryProvider)
+        .reauthenticateUser(user.email!, password);
   }
 
   Future<void> cancelSubscription(String reason) async {
     final user = ref.read(authStateProvider).value;
     if (user == null) throw Exception("User not signed in");
 
-    await ref.read(profileRepositoryProvider).cancelSubscription(user.uid, reason);
+    await ref
+        .read(profileRepositoryProvider)
+        .cancelSubscription(user.uid, reason);
   }
 
   Future<void> performUpdate({
@@ -76,9 +82,12 @@ class ProfileController extends AsyncNotifier<void> {
     required String phone,
   }) async {
     final isUpdatingName =
-        newNickname != null && newNickname.isNotEmpty && newNickname != currentUser.name;
+        newNickname != null &&
+        newNickname.isNotEmpty &&
+        newNickname != currentUser.name;
     final isUpdatingPassword = password.isNotEmpty;
-    final isUpdatingPhone = phone.isNotEmpty && phone != (currentUser.phoneNumber ?? '');
+    final isUpdatingPhone =
+        phone.isNotEmpty && phone != (currentUser.phoneNumber ?? '');
 
     if (!isUpdatingName && !isUpdatingPassword && !isUpdatingPhone) {
       throw Exception("변경된 내용이 없습니다");
@@ -86,7 +95,9 @@ class ProfileController extends AsyncNotifier<void> {
 
     if (isUpdatingName) {
       final name = newNickname.trim();
-      final existing = await ref.read(authRepositoryProvider).isNicknameTaken(name);
+      final existing = await ref
+          .read(authRepositoryProvider)
+          .isNicknameTaken(name);
       if (existing && name != currentUser.name) {
         throw Exception("이미 사용 중인 닉네임입니다");
       }
@@ -114,28 +125,27 @@ class ProfileController extends AsyncNotifier<void> {
       await reauthenticateUser(password);
     }
 
-    await ref.read(authNotifierProvider.notifier).updateUser(
-      updatedUser,
-      isUpdatingPassword ? password : "",
-    );
+    await ref
+        .read(authNotifierProvider.notifier)
+        .updateUser(updatedUser, isUpdatingPassword ? password : "");
   }
 
   Future<void> updatePrivacy(bool isPrivate, String userId) async {
     if (!isPrivate) {
       await _acceptAllPendingRequests(userId);
     }
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .update({'isPrivate': isPrivate});
+    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      'isPrivate': isPrivate,
+    });
   }
 
   Future<void> _acceptAllPendingRequests(String userId) async {
-    final requestsSnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('followRequests')
-        .get();
+    final requestsSnapshot =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('followRequests')
+            .get();
 
     if (requestsSnapshot.docs.isEmpty) {
       return;
@@ -166,29 +176,35 @@ class ProfileController extends AsyncNotifier<void> {
 
       batch.delete(requestDoc.reference);
 
-      final mutualFollowCheck = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('following')
-          .doc(requestingUserId)
-          .get();
+      final mutualFollowCheck =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .collection('following')
+              .doc(requestingUserId)
+              .get();
 
       if (mutualFollowCheck.exists) {
         batch.update(
           FirebaseFirestore.instance.collection('users').doc(userId),
-          {'friends': FieldValue.arrayUnion([requestingUserId])},
+          {
+            'friends': FieldValue.arrayUnion([requestingUserId]),
+          },
         );
         batch.update(
           FirebaseFirestore.instance.collection('users').doc(requestingUserId),
-          {'friends': FieldValue.arrayUnion([userId])},
+          {
+            'friends': FieldValue.arrayUnion([userId]),
+          },
         );
 
         final participants = [userId, requestingUserId]..sort();
         final chatRoomId = participants.join('_');
-        final chatRoomDoc = await FirebaseFirestore.instance
-            .collection('chatRooms')
-            .doc(chatRoomId)
-            .get();
+        final chatRoomDoc =
+            await FirebaseFirestore.instance
+                .collection('chatRooms')
+                .doc(chatRoomId)
+                .get();
         if (chatRoomDoc.exists) {
           batch.update(chatRoomDoc.reference, {
             'deletedBy': FieldValue.arrayRemove([userId, requestingUserId]),
@@ -214,15 +230,14 @@ class ProfileController extends AsyncNotifier<void> {
     }
     String chatRoomId = '';
     try {
-      chatRoomId = await ref.read(chatControllerProvider.notifier).createDirectChatRoom(
-        supportUserId,
-        true,
-      );
+      chatRoomId = await ref
+          .read(chatControllerProvider.notifier)
+          .createDirectChatRoom(supportUserId, true);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('고객센터 채팅방 생성에 실패했습니다.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('고객센터 채팅방 생성에 실패했습니다.')));
       }
       return;
     }
@@ -233,12 +248,15 @@ class ProfileController extends AsyncNotifier<void> {
 
     String supportName = '고객센터';
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(supportUserId)
-          .get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(supportUserId)
+              .get();
       final data = doc.data();
-      if (doc.exists && data != null && (data['name'] as String?)?.isNotEmpty == true) {
+      if (doc.exists &&
+          data != null &&
+          (data['name'] as String?)?.isNotEmpty == true) {
         supportName = data['name'] as String;
       }
     } catch (_) {}
@@ -256,18 +274,20 @@ class ProfileController extends AsyncNotifier<void> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final subSnap = await FirebaseFirestore.instance
-        .collection('subscriptions')
-        .where('userId', isEqualTo: user.uid)
-        .orderBy('nextBillingDate', descending: true)
-        .limit(1)
-        .get();
+    final subSnap =
+        await FirebaseFirestore.instance
+            .collection('subscriptions')
+            .where('userId', isEqualTo: user.uid)
+            .orderBy('nextBillingDate', descending: true)
+            .limit(1)
+            .get();
     if (subSnap.docs.isNotEmpty) {
       await subSnap.docs.first.reference.update({'status': 'active'});
-      final cancelsSnap = await FirebaseFirestore.instance
-          .collection('cancels')
-          .where('userId', isEqualTo: user.uid)
-          .get();
+      final cancelsSnap =
+          await FirebaseFirestore.instance
+              .collection('cancels')
+              .where('userId', isEqualTo: user.uid)
+              .get();
       for (final doc in cancelsSnap.docs) {
         await doc.reference.delete();
       }

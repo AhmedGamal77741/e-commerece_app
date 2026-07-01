@@ -91,7 +91,8 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
           return;
         }
 
-        final authorsMap = await ref.read(authorsDataMapProvider(authorIds).future);
+        final sortedAuthorIds = authorIds.toList()..sort();
+        final authorsMap = await ref.read(authorsDataMapProvider(sortedAuthorIds.join(',')).future);
 
         final filteredPosts = postsDocs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
