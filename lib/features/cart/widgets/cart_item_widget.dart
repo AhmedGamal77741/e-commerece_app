@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class CartItemWidget extends ConsumerWidget {
   final Map<String, dynamic> cartData;
@@ -86,19 +86,17 @@ class CartItemWidget extends ConsumerWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: CachedNetworkImage(
-                  imageUrl: product.imgUrl ?? '',
+                child: SafeNetworkImage(
+                  url: product.imgUrl ?? '',
                   width: 106.w,
                   height: 106.h,
                   fit: BoxFit.cover,
-                  fadeInDuration: Duration.zero,
-                  fadeOutDuration: Duration.zero,
-                  placeholder: (context, url) => Container(
+                  placeholder: Container(
                     width: 106.w,
                     height: 106.h,
                     color: Colors.grey[200],
                   ),
-                  errorWidget: (context, url, error) => Container(
+                  errorWidget: Container(
                     width: 106.w,
                     height: 106.h,
                     color: Colors.grey[200],

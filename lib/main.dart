@@ -16,7 +16,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await FirebaseAppCheck.instance.activate(
+  FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.debug,
     appleProvider: AppleProvider.debug,
   );
@@ -27,11 +27,7 @@ void main() async {
   _handleInitialDeepLink();
   _handleDeepLinks();
 
-  runApp(
-    ProviderScope(
-      child: EcommerceApp(appRouter: AppRouter()),
-    ),
-  );
+  runApp(ProviderScope(child: EcommerceApp(appRouter: AppRouter())));
 }
 
 void _handleInitialDeepLink() async {

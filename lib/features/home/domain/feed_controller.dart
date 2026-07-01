@@ -64,13 +64,15 @@ final authorsDataMapProvider =
           .getAuthorsDataStreamRealtime(authorIds);
     });
 
-final followerCountProvider = StreamProvider.family<int, String>((ref, userId) {
-  return FirebaseFirestore.instance
+final followerCountProvider = FutureProvider.family<int, String>((ref, userId) async {
+  if (userId.isEmpty) return 0;
+  final snapshot = await FirebaseFirestore.instance
       .collection('users')
       .doc(userId)
       .collection('followers')
-      .snapshots()
-      .map((snapshot) => snapshot.docs.length);
+      .count()
+      .get();
+  return snapshot.count ?? 0;
 });
 
 final isFollowingProvider = StreamProvider.family<bool, String>((ref, targetUserId) {
@@ -97,6 +99,32 @@ final hasFollowRequestProvider = StreamProvider.family<bool, String>((ref, targe
       .map((snapshot) => snapshot.exists);
 });
 
+/// Stable real-time stream for the currently logged-in user's profile document.
+/// Used by HomeFAB and other widgets that need to react to isSub / profile changes.
+final currentUserProfileProvider = StreamProvider<Map<String, dynamic>?>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return Stream.value(null);
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(user.uid)
+      .snapshots()
+      .map((doc) => doc.data());
+});
+
+/// Stable real-time stream for whether the current user has any unread notifications.
+final hasUnreadNotificationsProvider = StreamProvider<bool>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return Stream.value(false);
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(user.uid)
+      .collection('notifications')
+      .where('isRead', isEqualTo: false)
+      .limit(1)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.isNotEmpty);
+});
+
 final feedControllerProvider =
     AsyncNotifierProvider<FeedController, List<Map<String, dynamic>>>(
       FeedController.new,
@@ -111,12 +139,54 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FeedRepository get _repository => ref.read(feedRepositoryProvider);
 
+  DocumentSnapshot? _lastDocument;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+
+  bool get hasMore => _hasMore;
+
   @override
   FutureOr<List<Map<String, dynamic>>> build() async {
-    final authState = ref.watch(authStateProvider);
-    final user = authState.value;
+    _lastDocument = null;
+    _hasMore = true;
+    _isLoadingMore = false;
 
-    final postsDocs = await ref.watch(allPostsStreamProvider.future);
+    // Only watch authStateProvider to trigger rebuild and reset pagination on login/logout
+    ref.watch(authStateProvider);
+
+    return _fetchPage(limit: 20);
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchPage({int? limit}) async {
+    final user = ref.read(authStateProvider).value;
+
+    Query query = _firestore
+        .collection('posts')
+        .orderBy('createdAt', descending: true);
+
+    if (limit != null && limit > 0) {
+      query = query.limit(limit);
+    }
+
+    if (_lastDocument != null) {
+      query = query.startAfterDocument(_lastDocument!);
+    }
+
+    final postsSnapshot = await query.get();
+
+    if (postsSnapshot.docs.isEmpty) {
+      _hasMore = false;
+      return [];
+    }
+
+    if (limit == null) {
+      _hasMore = false;
+    } else if (postsSnapshot.docs.length < limit) {
+      _hasMore = false;
+    }
+
+    _lastDocument = postsSnapshot.docs.last;
+    final postsDocs = postsSnapshot.docs;
 
     final authorIds = <String>{};
     for (var doc in postsDocs) {
@@ -124,15 +194,55 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       authorIds.add(data['userId'] as String);
     }
 
-    // Sort author IDs so the parameter remains consistent for caching
-    final sortedAuthorIds = authorIds.toList()..sort();
-    final authorsMap = await ref.watch(
-      authorsDataMapProvider(sortedAuthorIds.join(',')).future,
-    );
+    final authorIdsList = authorIds
+        .where((id) => id.isNotEmpty && !_users.containsKey(id))
+        .toList();
+
+    // Build author chunk futures
+    final List<Future<QuerySnapshot>> authorChunkFutures = [];
+    for (var i = 0; i < authorIdsList.length; i += 10) {
+      final chunk = authorIdsList.sublist(
+        i,
+        i + 10 > authorIdsList.length ? authorIdsList.length : i + 10,
+      );
+      authorChunkFutures.add(
+        _firestore.collection('users').where(FieldPath.documentId, whereIn: chunk).get(),
+      );
+    }
+
+    // For authenticated users, fire user-data queries in parallel with author chunks
+    Future<DocumentSnapshot>? userDocFuture;
+    Future<QuerySnapshot>? hiddenFriendsFuture;
+
+    if (user != null) {
+      userDocFuture = _firestore.collection('users').doc(user.uid).get();
+      hiddenFriendsFuture = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('hiddenFriends')
+          .get();
+    }
+
+    // Await all author chunks in parallel
+    final authorsMap = <String, Map<String, dynamic>>{};
+    _users.forEach((key, value) {
+      authorsMap[key] = value.toDocument();
+    });
+
+    if (authorChunkFutures.isNotEmpty) {
+      final results = await Future.wait(authorChunkFutures);
+      for (final snapshot in results) {
+        for (var doc in snapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          authorsMap[doc.id] = data;
+          _users[doc.id] = MyUser.fromDocument(data);
+        }
+      }
+    }
 
     if (user == null) {
       // Guest feed
-      return postsDocs
+      final guestPosts = postsDocs
           .where((doc) {
             final data = doc.data() as Map<String, dynamic>;
             final authorData = authorsMap[data['userId'] as String] ?? {};
@@ -144,26 +254,37 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
             return data;
           })
           .toList();
+      return guestPosts;
     }
 
-    // Authenticated user feed
-    final userDoc = await ref.watch(userProfileDocProvider(user.uid).future);
-    final userData = userDoc?.data() as Map<String, dynamic>?;
+    // Await user doc + hiddenFriends (already in-flight in parallel with author chunks)
+    final userDoc = await userDocFuture!;
+    final userData = userDoc.data() as Map<String, dynamic>?;
     if (userData == null) return [];
+
+    _users[user.uid] = MyUser.fromDocument(userData);
 
     final blockedUsers = List<String>.from(userData['blocked'] ?? []);
     final isSub = userData['isSub'] ?? false;
 
-    final hiddenFriends = await ref.watch(
-      hiddenFriendsListProvider(user.uid).future,
-    );
+    final hiddenFriendsSnapshot = await hiddenFriendsFuture!;
+    final hiddenFriends = hiddenFriendsSnapshot.docs.map((doc) => doc.id).toList();
 
     Set<String> followingSet = {};
     if (isSub) {
-      followingSet = await ref.watch(followingSetProvider(user.uid).future);
+      final followingSnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('following')
+          .get();
+      for (var doc in followingSnapshot.docs) {
+        final uid = doc.get('userId') as String?;
+        if (uid != null) followingSet.add(uid);
+      }
     }
 
-    return postsDocs
+
+    final authPosts = postsDocs
         .where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final postAuthorId = data['userId'] as String;
@@ -197,6 +318,22 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
           return data;
         })
         .toList();
+    return authPosts;
+  }
+
+  Future<void> fetchNextPage() async {
+    if (!_hasMore || _isLoadingMore) return;
+
+    _isLoadingMore = true;
+    try {
+      final newPosts = await _fetchPage(limit: 20);
+      final currentPosts = state.value ?? [];
+      state = AsyncValue.data([...currentPosts, ...newPosts]);
+    } catch (e) {
+      debugPrint('Error loading next page: $e');
+    } finally {
+      _isLoadingMore = false;
+    }
   }
 
   // Getters for comments and users (kept for compatibility with other files)
@@ -507,6 +644,21 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     List<String> likedBy = List<String>.from(post['likedBy'] ?? []);
     bool isLiked = likedBy.contains(currentUser.uid);
 
+    // Optimistic Update
+    final updatedLikedBy = List<String>.from(likedBy);
+    if (isLiked) {
+      updatedLikedBy.remove(currentUser.uid);
+    } else {
+      updatedLikedBy.add(currentUser.uid);
+    }
+    final updatedPost = Map<String, dynamic>.from(post);
+    updatedPost['likedBy'] = updatedLikedBy;
+    updatedPost['likes'] = (post['likes'] ?? 0) + (isLiked ? -1 : 1);
+
+    final updatedState = List<Map<String, dynamic>>.from(currentState);
+    updatedState[postIndex] = updatedPost;
+    state = AsyncValue.data(updatedState);
+
     try {
       await _firestore.collection('posts').doc(postId).update({
         'likedBy':
@@ -583,6 +735,8 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       }
     }
   }
+
+
 
   /// Submit a report (used by comment_item menu).
   Future<void> reportComment({

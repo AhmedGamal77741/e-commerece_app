@@ -7,6 +7,7 @@ import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:flutter/material.dart';
@@ -278,7 +279,7 @@ class _BubbleContent extends ConsumerWidget {
             if (message.content.isNotEmpty) SizedBox(height: 6.h),
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.network(message.imageUrl!, fit: BoxFit.cover),
+              child: SafeNetworkImage(url: message.imageUrl!, fit: BoxFit.cover),
             ),
           ],
         ],
@@ -312,7 +313,7 @@ class _Avatar extends ConsumerWidget {
         return CircleAvatar(
           radius: 16,
           backgroundColor: Colors.grey[300],
-          backgroundImage: url.isNotEmpty ? NetworkImage(url) : null,
+          backgroundImage: url.isNotEmpty ? safeNetworkImageProvider(url) : null,
           child:
               url.isEmpty
                   ? const Icon(Icons.person, size: 16, color: Colors.grey)

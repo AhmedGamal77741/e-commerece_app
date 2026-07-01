@@ -65,11 +65,15 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
     final isSub = ref.watch(isSubscribedProvider).value ?? false;
 
     return switch (categoriesAsync) {
-      AsyncData(:final value) => _buildShopContent(value, userAddressAsync, isSub),
+      AsyncData(:final value) => _buildShopContent(
+        value,
+        userAddressAsync,
+        isSub,
+      ),
       AsyncError(:final error) => Scaffold(
-          appBar: AppBar(title: const Text('Shop')),
-          body: Center(child: Text('Error: $error')),
-        ),
+        appBar: AppBar(title: const Text('Shop')),
+        body: Center(child: Text('Error: $error')),
+      ),
       _ => const Scaffold(body: Center(child: CircularProgressIndicator())),
     };
   }
@@ -130,28 +134,37 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
                           padding: EdgeInsets.only(left: 8.w),
                           child: TextButton(
                             style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 2.w,
+                                vertical: 0,
+                              ),
                               minimumSize: const Size(0, 0),
                               maximumSize: Size(200.w, 80.h),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            onPressed: ref.read(authStateProvider).value == null ? null : () async {
-                              await context.pushNamed(Routes.addressListScreen);
-                            },
+                            onPressed:
+                                ref.read(authStateProvider).value == null
+                                    ? null
+                                    : () async {
+                                      await context.pushNamed(
+                                        Routes.addressListScreen,
+                                      );
+                                    },
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Flexible(
                                   child: _buildAddressText(userAddressAsync),
                                 ),
-                                if (ref.watch(authStateProvider).value != null) ...[
+                                if (ref.watch(authStateProvider).value !=
+                                    null) ...[
                                   SizedBox(width: 6.w),
                                   const Icon(
                                     Icons.arrow_drop_down,
                                     color: Colors.black,
                                     size: 18,
                                   ),
-                                ]
+                                ],
                               ],
                             ),
                           ),
@@ -207,9 +220,13 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
                       indicatorSize: TabBarIndicatorSize.label,
                       indicatorColor: ColorsManager.primaryblack,
                       isScrollable: true,
-                      tabs: categories
-                          .map<Widget>((category) => Tab(text: category['name'], height: 45.h))
-                          .toList(),
+                      tabs:
+                          categories
+                              .map<Widget>(
+                                (category) =>
+                                    Tab(text: category['name'], height: 45.h),
+                              )
+                              .toList(),
                     ),
                   ],
                 ),
@@ -218,14 +235,19 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
             body: Padding(
               padding: EdgeInsets.only(right: 8.w, top: 15.h, bottom: 4.h),
               child: TabBarView(
-                children: categories
-                    .map<Widget>((category) => CategoryProductsScreen(
-                          categoryId: category['id'],
-                          categoryName: category['name'],
-                          isSub: isSub,
-                          scrollController: _getScrollController(category['id']),
-                        ))
-                    .toList(),
+                children:
+                    categories
+                        .map<Widget>(
+                          (category) => CategoryProductsScreen(
+                            categoryId: category['id'],
+                            categoryName: category['name'],
+                            isSub: isSub,
+                            scrollController: _getScrollController(
+                              category['id'],
+                            ),
+                          ),
+                        )
+                        .toList(),
               ),
             ),
           );
@@ -242,14 +264,16 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
     );
 
     return switch (userAddressAsync) {
-      AsyncData(:final value) => Builder(builder: (context) {
+      AsyncData(:final value) => Builder(
+        builder: (context) {
           String displayName = '배송지 선택';
           if (value != null) {
             final basic = value['address'] as String? ?? '';
             final detail = value['detailAddress'] as String? ?? '';
-            displayName = detail.isEmpty
-                ? (basic.isEmpty ? '배송지 선택' : basic)
-                : '$basic $detail';
+            displayName =
+                detail.isEmpty
+                    ? (basic.isEmpty ? '배송지 선택' : basic)
+                    : '$basic $detail';
           }
           return Text(
             displayName,
@@ -257,7 +281,8 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
             overflow: TextOverflow.ellipsis,
             style: textStyle,
           );
-        }),
+        },
+      ),
       AsyncError() => Text('배송지 선택', style: textStyle),
       _ => Text('로딩 중...', style: textStyle),
     };

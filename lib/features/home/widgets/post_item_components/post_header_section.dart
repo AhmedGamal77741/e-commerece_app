@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
@@ -13,7 +13,7 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 
-class PostHeaderSection extends ConsumerWidget {
+class PostHeaderSection extends ConsumerStatefulWidget {
   final MyUser? myuser;
   final String displayName;
   final String profileUrl;
@@ -38,7 +38,22 @@ class PostHeaderSection extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PostHeaderSection> createState() => _PostHeaderSectionState();
+}
+
+class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
+  String? _cachedUserId;
+  Future<String?>? _nicknameFuture;
+
+  Future<String?> _getNickname(String userId) {
+    if (userId == _cachedUserId && _nicknameFuture != null) return _nicknameFuture!;
+    _cachedUserId = userId;
+    _nicknameFuture = ContactService().getContactNickname(userId);
+    return _nicknameFuture!;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -49,13 +64,13 @@ class PostHeaderSection extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildNameAndNickname(),
-              if (!userMissing && myuser!.userId.isNotEmpty)
+              if (!widget.userMissing && widget.myuser != null && widget.myuser!.userId.isNotEmpty)
                 _buildFollowerCount(ref),
             ],
           ),
         ),
-        Spacer(),
-        if (!userMissing && !isMyPost) _buildActionArea(context, ref),
+        const Spacer(),
+        if (!widget.userMissing && !widget.isMyPost) _buildActionArea(context, ref),
       ],
     );
   }
@@ -63,10 +78,10 @@ class PostHeaderSection extends ConsumerWidget {
   Widget _buildAvatar(BuildContext context) {
     return InkWell(
       onTap: () {
-        if (myuser != null && currentProfileUserId != myuser!.userId) {
+        if (widget.myuser != null && widget.currentProfileUserId != widget.myuser!.userId) {
           context.pushNamed(
             Routes.profileTabScreen,
-            extra: {'userId': myuser!.userId},
+            extra: {'userId': widget.myuser!.userId},
           );
         }
       },
@@ -75,8 +90,8 @@ class PostHeaderSection extends ConsumerWidget {
         height: 48.h,
         decoration: ShapeDecoration(
           image: DecorationImage(
-            image: profileUrl.isNotEmpty
-                ? NetworkImage(profileUrl)
+            image: widget.profileUrl.isNotEmpty
+                ? ResizeImage(CachedNetworkImageProvider(widget.profileUrl), width: 120)
                 : const AssetImage('assets/avatar.png') as ImageProvider,
             fit: BoxFit.cover,
           ),
@@ -90,20 +105,18 @@ class PostHeaderSection extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        isWaiting
-            ? Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
+        widget.isWaiting
+            ? _PulsingSkeleton(
                 child: Container(
                   width: 80.w,
                   height: 16.h,
-                  color: Colors.white,
+                  color: Colors.grey[300],
                   margin: EdgeInsets.only(bottom: 2.h),
                 ),
               )
             : Flexible(
                 child: Text(
-                  displayName,
+                  widget.displayName,
                   style: TextStyles.abeezee16px400wPblack.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -112,27 +125,51 @@ class PostHeaderSection extends ConsumerWidget {
                 ),
               ),
         horizontalSpace(4),
-        FutureBuilder<String?>(
-          future: ContactService().getContactNickname(myuser == null ? "" : myuser!.userId),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+        Builder(
+          builder: (context) {
+            final String userId = widget.myuser == null ? "" : widget.myuser!.userId;
+            final contactService = ContactService();
+            if (contactService.isNameMapLoaded()) {
+              final syncName = contactService.getContactNicknameSync(userId);
+              if (syncName != null && syncName.isNotEmpty) {
+                return Flexible(
+                  child: Text(
+                    '@$syncName',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w400,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }
               return const SizedBox.shrink();
             }
-            if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-              return const SizedBox.shrink();
-            }
-            final nickname = snapshot.data!;
-            return Flexible(
-              child: Text(
-                '@$nickname',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w400,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+            return FutureBuilder<String?>(
+              future: _getNickname(userId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SizedBox.shrink();
+                }
+                if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+                  return const SizedBox.shrink();
+                }
+                final nickname = snapshot.data!;
+                return Flexible(
+                  child: Text(
+                    '@$nickname',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w400,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              },
             );
           },
         ),
@@ -141,37 +178,32 @@ class PostHeaderSection extends ConsumerWidget {
   }
 
   Widget _buildFollowerCount(WidgetRef ref) {
-    final followerCountAsync = ref.watch(followerCountProvider(myuser!.userId));
-    
-    return followerCountAsync.when(
-      data: (count) {
-        final formatted = count.toString().replaceAllMapped(
-          RegExp(r'\B(?=(\d{3})+(?!\d))'),
-          (match) => ',',
-        );
-        return Padding(
-          padding: EdgeInsets.only(top: 2.h),
-          child: Text(
-            '구독자 $formatted명',
-            style: TextStyle(
-              color: const Color(0xFF787878),
-              fontSize: 16.sp,
-              fontFamily: 'NotoSans',
-              fontWeight: FontWeight.w400,
-              height: 1.40.h,
-              letterSpacing: -0.09.w,
-            ),
-          ),
-        );
-      },
-      loading: () => SizedBox(height: 16.sp),
-      error: (_, __) => Text('구독자 오류', style: TextStyle(color: Colors.red, fontSize: 16.sp)),
+    final count = widget.myuser!.followerCount;
+    final formatted = count.toString().replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => ',',
+    );
+    return Padding(
+      padding: EdgeInsets.only(top: 2.h),
+      child: Text(
+        '구독자 $formatted명',
+        style: TextStyle(
+          color: const Color(0xFF787878),
+          fontSize: 16.sp,
+          fontFamily: 'NotoSans',
+          fontWeight: FontWeight.w400,
+          height: 1.40.h,
+          letterSpacing: -0.09.w,
+        ),
+      ),
     );
   }
 
   Widget _buildActionArea(BuildContext context, WidgetRef ref) {
-    final followingAsync = ref.watch(isFollowingProvider(myuser!.userId));
-    final isFollowing = followingAsync.value ?? false;
+    final currentUserId = ref.watch(currentUserIdProvider);
+    final bool isFollowing = currentUserId.isEmpty
+        ? false
+        : (ref.watch(followingSetProvider(currentUserId)).value?.contains(widget.myuser!.userId) ?? false);
 
     if (isFollowing) {
       return PopupMenuButton<String>(
@@ -180,15 +212,15 @@ class PostHeaderSection extends ConsumerWidget {
             showShareDialog(
               context,
               'post',
-              'https://www.pang2chocolate.com/comment?postId=$postId',
-              postId,
-              myuser!.name,
-              myuser!.url,
-              postData,
+              'https://www.pang2chocolate.com/comment?postId=${widget.postId}',
+              widget.postId,
+              widget.myuser!.name,
+              widget.myuser!.url,
+              widget.postData,
               isLoggedIn: ref.read(currentUserIdProvider).isNotEmpty,
             );
           } else if (value == 'unfollow') {
-            ref.read(followControllerProvider).toggleFollow(myuser!.userId);
+            ref.read(followControllerProvider).toggleFollow(widget.myuser!.userId);
           }
         },
         color: Colors.white,
@@ -207,8 +239,8 @@ class PostHeaderSection extends ConsumerWidget {
       );
     }
 
-    if (myuser!.isPrivate) {
-      final followRequestAsync = ref.watch(hasFollowRequestProvider(myuser!.userId));
+    if (widget.myuser!.isPrivate) {
+      final followRequestAsync = ref.watch(hasFollowRequestProvider(widget.myuser!.userId));
       final hasRequest = followRequestAsync.value ?? false;
 
       return ElevatedButton(
@@ -223,9 +255,9 @@ class PostHeaderSection extends ConsumerWidget {
         onPressed: () async {
           final currentUserId = ref.watch(currentUserIdProvider);
           if (hasRequest) {
-            await ref.read(followControllerProvider).cancelFollowRequest(myuser!.userId, currentUserId);
+            await ref.read(followControllerProvider).cancelFollowRequest(widget.myuser!.userId, currentUserId);
           } else {
-            await ref.read(followControllerProvider).sendFollowRequest(myuser!.userId, currentUserId);
+            await ref.read(followControllerProvider).sendFollowRequest(widget.myuser!.userId, currentUserId);
           }
         },
         child: Text(
@@ -249,7 +281,7 @@ class PostHeaderSection extends ConsumerWidget {
         ),
       ),
       onPressed: () async {
-        ref.read(followControllerProvider).toggleFollow(myuser!.userId);
+        ref.read(followControllerProvider).toggleFollow(widget.myuser!.userId);
       },
       child: Text(
         '구독',
@@ -259,6 +291,44 @@ class PostHeaderSection extends ConsumerWidget {
           fontWeight: FontWeight.w500,
         ),
       ),
+    );
+  }
+}
+
+class _PulsingSkeleton extends StatefulWidget {
+  final Widget child;
+  const _PulsingSkeleton({required this.child});
+
+  @override
+  State<_PulsingSkeleton> createState() => _PulsingSkeletonState();
+}
+
+class _PulsingSkeletonState extends State<_PulsingSkeleton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.35, end: 0.85).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+      ),
+      child: widget.child,
     );
   }
 }

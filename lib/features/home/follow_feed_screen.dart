@@ -99,7 +99,15 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
     super.build(context);
     final theme = Theme.of(context);
     final followFeedState = ref.watch(followFeedNotifierProvider);
-    ref.watch(feedControllerProvider);
+    final allPosts = ref.watch(feedControllerProvider).value ?? [];
+
+    // Pre-group posts by userId once — avoids inline .where() per page frame
+    final Map<String, List<Map<String, dynamic>>> postsByUser = {};
+    for (final post in allPosts) {
+      final uid = post['userId'] as String?;
+      if (uid == null) continue;
+      postsByUser.putIfAbsent(uid, () => []).add(post);
+    }
 
     return followFeedState.when(
       data: (state) {
@@ -212,10 +220,19 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
                             itemCount: _categoryPages.length,
                             itemBuilder: (context, index) {
                               final catId = _categoryPages[index];
-
-                              return _FollowingPostsPage(
-                                userId: selectedId,
-                                categoryId: catId,
+                              final userPosts = postsByUser[selectedId] ?? [];
+                              final filteredPosts = catId == null
+                                  ? userPosts
+                                  : userPosts.where((p) => p['categoryId'] == catId).toList();
+                              
+                              return ValueListenableBuilder<int>(
+                                valueListenable: _currentPageIndex,
+                                builder: (context, activeIndex, _) {
+                                  return FollowingPostsList(
+                                    posts: filteredPosts,
+                                    scrollController: (index == activeIndex) ? _scrollController : null,
+                                  );
+                                },
                               );
                             },
                           ),
@@ -235,72 +252,4 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
   }
 }
 
-class _FollowingPostsPage extends ConsumerStatefulWidget {
-  final String userId;
-  final String? categoryId;
 
-  const _FollowingPostsPage({
-    required this.userId,
-    this.categoryId,
-  });
-
-  @override
-  ConsumerState<_FollowingPostsPage> createState() =>
-      _FollowingPostsPageState();
-}
-
-class _FollowingPostsPageState extends ConsumerState<_FollowingPostsPage>
-    with AutomaticKeepAliveClientMixin {
-  late Stream<QuerySnapshot> _stream;
-
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  void initState() {
-    super.initState();
-    _stream = ref
-        .read(feedControllerProvider.notifier)
-        .getUserPostsStream(widget.userId, categoryId: widget.categoryId);
-  }
-
-  @override
-  void didUpdateWidget(_FollowingPostsPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.userId != widget.userId || oldWidget.categoryId != widget.categoryId) {
-      _stream = ref
-          .read(feedControllerProvider.notifier)
-          .getUserPostsStream(widget.userId, categoryId: widget.categoryId);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    return StreamBuilder<QuerySnapshot>(
-      stream: _stream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.black),
-          );
-        }
-        if (snapshot.hasError) {
-          return const Center(child: Text('게시물을 불러오지 못했습니다'));
-        }
-
-        final docs = snapshot.data?.docs ?? [];
-        final posts =
-            docs.map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              data['postId'] = doc.id;
-              return data;
-            }).toList();
-
-        return FollowingPostsList(
-          posts: posts,
-        );
-      },
-    );
-  }
-}

@@ -165,19 +165,44 @@ class ContactService {
     return map;
   }
 
+  static Map<String, String>? _inMemoryNameMap;
+
+  bool isNameMapLoaded() {
+    return _inMemoryNameMap != null;
+  }
+
+  String? getContactNicknameSync(String userId) {
+    return _inMemoryNameMap?[userId];
+  }
+
   Future<void> saveContactNameMap(Map<String, String> map) async {
+    _inMemoryNameMap = map;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('contact_name_map', jsonEncode(map));
   }
 
   Future<Map<String, String>> loadContactNameMap() async {
+    if (_inMemoryNameMap != null) {
+      return _inMemoryNameMap!;
+    }
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('contact_name_map');
-    if (raw == null) return {};
-    return Map<String, String>.from(jsonDecode(raw));
+    if (raw == null) {
+      _inMemoryNameMap = {};
+      return {};
+    }
+    try {
+      _inMemoryNameMap = Map<String, String>.from(jsonDecode(raw));
+    } catch (_) {
+      _inMemoryNameMap = {};
+    }
+    return _inMemoryNameMap!;
   }
 
   Future<String?> getContactNickname(String userId) async {
+    if (_inMemoryNameMap != null) {
+      return _inMemoryNameMap![userId];
+    }
     final map = await loadContactNameMap();
     return map[userId];
   }

@@ -1,26 +1,30 @@
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
-import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final unreadChatRoomsProvider = StreamProvider.autoDispose<bool>((ref) {
   final user = ref.watch(authStateProvider).value;
   if (user == null) return Stream.value(false);
 
+  final uid = user.uid;
   final firestore = ref.watch(firestoreProvider);
+  // Limit to 50 most recent rooms — avoids downloading entire chat history.
+  // For the badge we only need to know if ANY room has unread messages.
   return firestore
       .collection('chatRooms')
-      .where('participants', arrayContains: user.uid)
+      .where('participants', arrayContains: uid)
+      .limit(50)
       .snapshots()
       .map((snapshot) {
-        final chatRooms =
-            snapshot.docs
-                .map((doc) => ChatRoomModel.fromMap(doc.data()))
-                .toList();
-        return chatRooms.any(
-          (room) =>
-              !room.deletedBy.contains(user.uid) &&
-              (room.unreadCount[user.uid] ?? 0) > 0,
-        );
+        for (final doc in snapshot.docs) {
+          final data = doc.data();
+          // Skip rooms deleted by this user
+          final deletedBy = data['deletedBy'];
+          if (deletedBy is List && deletedBy.contains(uid)) continue;
+          // Check unread count directly from the raw map — no full model parsing needed
+          final unreadCount = data['unreadCount'];
+          if (unreadCount is Map && (unreadCount[uid] ?? 0) > 0) return true;
+        }
+        return false;
       });
 });
 

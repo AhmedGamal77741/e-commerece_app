@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/natural_aspect_page_view.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -69,168 +70,175 @@ class _GuestCommentsState extends ConsumerState<GuestComments> {
   Widget build(BuildContext context) {
     final post = widget.post;
     final String postUserId = post['userId'] ?? '';
+    final cachedUser = ref.read(feedControllerProvider.notifier).getUser(postUserId);
+
+    if (cachedUser != null) {
+      return _buildCommentsScaffold(context, cachedUser);
+    }
 
     return FutureBuilder<MyUser>(
       future: _userFuture,
       builder: (context, userSnapshot) {
         final myuser = userSnapshot.data;
-        final displayName =
-            myuser?.name.isNotEmpty == true ? myuser!.name : '삭제된 사용자';
-        final String profileUrl = myuser?.url ?? '';
+        return _buildCommentsScaffold(context, myuser);
+      },
+    );
+  }
 
-        return Scaffold(
-          backgroundColor: _kBgColor,
+  Widget _buildCommentsScaffold(BuildContext context, MyUser? myuser) {
+    final post = widget.post;
+    final String postUserId = post['userId'] ?? '';
+    final displayName = myuser?.name.isNotEmpty == true ? myuser!.name : '삭제된 사용자';
+    final String profileUrl = myuser?.url ?? '';
 
-          body: SafeArea(
-            child: Column(
-              children: [
-                SizedBox(height: 10.h),
-                Container(
-                  width: 40.w,
-                  height: 5.h,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[400],
-                    borderRadius: BorderRadius.circular(2.5.r),
-                  ),
-                ),
-                SizedBox(height: 10.h),
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: ref.read(feedControllerProvider.notifier).getCommentsStreamForPost(post['postId']),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const SizedBox.shrink();
-                      }
-                      if (snapshot.hasError) {
-                        return const Center(child: Text('댓글을 불러올 수 없습니다'));
-                      }
+    return Scaffold(
+      backgroundColor: _kBgColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            SizedBox(height: 10.h),
+            Container(
+              width: 40.w,
+              height: 5.h,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2.5.r),
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: ref.read(feedControllerProvider.notifier).getCommentsStreamForPost(post['postId']),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox.shrink();
+                  }
+                  if (snapshot.hasError) {
+                    return const Center(child: Text('댓글을 불러올 수 없습니다'));
+                  }
 
-                      final docs = snapshot.data?.docs ?? [];
-                      final List<ChatMessageItem> chatItems = [];
+                  final docs = snapshot.data?.docs ?? [];
+                  final List<ChatMessageItem> chatItems = [];
 
-                      // Add comments first
-                      for (final doc in docs) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        chatItems.add(
-                          ChatMessageItem(
-                            id: data['id'] ?? doc.id,
-                            senderId: data['userId'] ?? '',
-                            senderName: data['userName'] ?? '알 수 없음',
-                            senderImage: data['userImage'] ?? '',
-                            content: data['text'] ?? '',
-                            timestamp:
-                                data['createdAt'] is Timestamp
-                                    ? (data['createdAt'] as Timestamp).toDate()
-                                    : DateTime.now(),
-                            imageUrls:
-                                data['imageUrl'] != null &&
-                                        data['imageUrl'].toString().isNotEmpty
-                                    ? [data['imageUrl'].toString()]
-                                    : null,
-                            // postData & productData parsing if exist
-                            postData: data['postData'],
-                            productData:
-                                data['productData'] != null
-                                    ? Product.fromMap(data['productData'])
-                                    : null,
-                            isPost: false,
-                          ),
-                        );
-                      }
+                  // Add comments first
+                  for (final doc in docs) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    chatItems.add(
+                      ChatMessageItem(
+                        id: data['id'] ?? doc.id,
+                        senderId: data['userId'] ?? '',
+                        senderName: data['userName'] ?? '알 수 없음',
+                        senderImage: data['userImage'] ?? '',
+                        content: data['text'] ?? '',
+                        timestamp:
+                            data['createdAt'] is Timestamp
+                                ? (data['createdAt'] as Timestamp).toDate()
+                                : DateTime.now(),
+                        imageUrls:
+                            data['imageUrl'] != null &&
+                                    data['imageUrl'].toString().isNotEmpty
+                                ? [data['imageUrl'].toString()]
+                                : null,
+                        postData: data['postData'],
+                        productData:
+                            data['productData'] != null
+                                ? Product.fromMap(data['productData'])
+                                : null,
+                        isPost: false,
+                      ),
+                    );
+                  }
 
-                      // Add post itself
-                      final String postText = post['text'] ?? '';
-                      final List imgUrls = post['imgUrls'] as List? ?? [];
-                      final List<String> castedUrls =
-                          imgUrls.map((e) => e.toString()).toList();
-                      final DateTime postTime =
-                          post['createdAt'] is Timestamp
-                              ? (post['createdAt'] as Timestamp).toDate()
-                              : DateTime.now();
+                  // Add post itself
+                  final String postText = post['text'] ?? '';
+                  final List imgUrls = post['imgUrls'] as List? ?? [];
+                  final List<String> castedUrls =
+                      imgUrls.map((e) => e.toString()).toList();
+                  final DateTime postTime =
+                      post['createdAt'] is Timestamp
+                          ? (post['createdAt'] as Timestamp).toDate()
+                          : DateTime.now();
 
-                      chatItems.add(
-                        ChatMessageItem(
-                          id: post['postId'] ?? '',
-                          senderId: postUserId,
-                          senderName: displayName,
-                          senderImage: profileUrl,
-                          content: postText,
-                          timestamp: postTime,
-                          imageUrls: castedUrls,
-                          postData: null,
-                          isPost: true,
-                        ),
-                      );
+                  chatItems.add(
+                    ChatMessageItem(
+                      id: post['postId'] ?? '',
+                      senderId: postUserId,
+                      senderName: displayName,
+                      senderImage: profileUrl,
+                      content: postText,
+                      timestamp: postTime,
+                      imageUrls: castedUrls,
+                      postData: null,
+                      isPost: true,
+                    ),
+                  );
 
-                      return ListView.builder(
-                        reverse: true,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 14.w,
-                          vertical: 8.h,
-                        ),
-                        itemCount: chatItems.length,
-                        itemBuilder: (context, index) {
-                          final item = chatItems[index];
-                          // Since guests are logged out, isMe is always false
-                          const isMe = false;
-                          final showDate =
-                              index == chatItems.length - 1 ||
-                              !_isSameDay(
-                                item.timestamp,
-                                chatItems[index + 1].timestamp,
-                              );
-
-                          return Column(
-                            children: [
-                              if (showDate)
-                                _DateSeparator(date: item.timestamp),
-                              _CommentBubble(item: item, isMe: isMe),
-                            ],
+                  return ListView.builder(
+                    reverse: true,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 14.w,
+                      vertical: 8.h,
+                    ),
+                    itemCount: chatItems.length,
+                    itemBuilder: (context, index) {
+                      final item = chatItems[index];
+                      const isMe = false;
+                      final showDate =
+                          index == chatItems.length - 1 ||
+                          !_isSameDay(
+                            item.timestamp,
+                            chatItems[index + 1].timestamp,
                           );
-                        },
+
+                      return Column(
+                        children: [
+                          if (showDate)
+                            _DateSeparator(date: item.timestamp),
+                          _CommentBubble(item: item, isMe: isMe),
+                        ],
                       );
                     },
-                  ),
-                ),
-                // Disabled Input Bar for guests
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 16.w,
-                    vertical: 12.h,
-                  ),
-                  color: Colors.white,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.add, color: Colors.grey),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                            vertical: 10.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF2F2F2),
-                            borderRadius: BorderRadius.circular(20.r),
-                          ),
-                          child: Text(
-                            '일반 사용자는 댓글을 작성할 수 없습니다.',
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 14.sp,
-                              fontFamily: 'NotoSans',
-                            ),
-                          ),
+                  );
+                },
+              ),
+            ),
+            // Disabled Input Bar for guests
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: 16.w,
+                vertical: 12.h,
+              ),
+              color: Colors.white,
+              child: Row(
+                children: [
+                  const Icon(Icons.add, color: Colors.grey),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 10.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF2F2F2),
+                        borderRadius: BorderRadius.circular(20.r),
+                      ),
+                      child: Text(
+                        '일반 사용자는 댓글을 작성할 수 없습니다.',
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 14.sp,
+                          fontFamily: 'NotoSans',
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }
@@ -295,7 +303,7 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
                   image: DecorationImage(
                     image:
                         item.senderImage.isNotEmpty
-                            ? NetworkImage(item.senderImage)
+                            ? safeNetworkImageProvider(item.senderImage)
                             : const AssetImage('assets/avatar.png')
                                 as ImageProvider,
                     fit: BoxFit.cover,
@@ -314,23 +322,41 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
                 if (!isMe)
                   Padding(
                     padding: EdgeInsets.only(left: 4.w, bottom: 3.h),
-                    child: FutureBuilder<String?>(
-                      future: ContactService().getContactNickname(
-                        item.senderId,
-                      ),
-                      builder: (context, snapshot) {
-                        final nickname = snapshot.data;
-                        final display =
-                            nickname != null && nickname.isNotEmpty
-                                ? '${item.senderName} (@$nickname)'
-                                : item.senderName;
-                        return Text(
-                          display,
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.w500,
-                          ),
+                    child: Builder(
+                      builder: (context) {
+                        final contactService = ContactService();
+                        final String senderId = item.senderId;
+                        if (contactService.isNameMapLoaded()) {
+                          final syncName = contactService.getContactNicknameSync(senderId);
+                          final display = syncName != null && syncName.isNotEmpty
+                              ? '${item.senderName} (@$syncName)'
+                              : item.senderName;
+                          return Text(
+                            display,
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              color: Colors.grey[500],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          );
+                        }
+                        return FutureBuilder<String?>(
+                          future: contactService.getContactNickname(senderId),
+                          builder: (context, snapshot) {
+                            final nickname = snapshot.data;
+                            final display =
+                                nickname != null && nickname.isNotEmpty
+                                    ? '${item.senderName} (@$nickname)'
+                                    : item.senderName;
+                            return Text(
+                              display,
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                color: Colors.grey[500],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -346,7 +372,7 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
                           vertical: 9.h,
                         ),
                         decoration: BoxDecoration(
-                          color: Color(0xFFEEEEEE),
+                          color: const Color(0xFFEEEEEE),
                           borderRadius: BorderRadius.all(Radius.circular(16.r)),
                         ),
                         child: Column(
@@ -445,8 +471,8 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
                                   borderRadius: BorderRadius.circular(10.r),
                                   child: Container(
                                     constraints: BoxConstraints(maxWidth: maxW),
-                                    child: Image.network(
-                                      item.imageUrls!.first,
+                                    child: SafeNetworkImage(
+                                      url: item.imageUrls!.first,
                                       fit: BoxFit.cover,
                                     ),
                                   ),

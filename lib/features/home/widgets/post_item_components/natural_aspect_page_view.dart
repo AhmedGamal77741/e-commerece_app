@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 // =============================================================================
 // NaturalAspectPageView
@@ -20,6 +21,7 @@ class NaturalAspectPageView extends ConsumerStatefulWidget {
     this.explicitWidth,
   });
 
+
   @override
   ConsumerState<NaturalAspectPageView> createState() =>
       NaturalAspectPageViewState();
@@ -27,6 +29,7 @@ class NaturalAspectPageView extends ConsumerStatefulWidget {
 
 class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
   static final Map<String, double> _globalRatioCache = {};
+  final Set<String> _resolvingUrls = {};
   List<double?> _ratios = [];
   int _currentPage = 0;
 
@@ -38,26 +41,19 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
       final url = widget.imgUrls[i] as String;
       if (_globalRatioCache.containsKey(url)) {
         _ratios[i] = _globalRatioCache[url];
-      } else {
-        _resolveRatio(i);
       }
     }
-    widget.pageController.addListener(_onPageChanged);
+    _resolveRatiosIfNeeded();
   }
 
   @override
   void dispose() {
-    widget.pageController.removeListener(_onPageChanged);
     super.dispose();
   }
 
   @override
   void didUpdateWidget(NaturalAspectPageView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.pageController != oldWidget.pageController) {
-      oldWidget.pageController.removeListener(_onPageChanged);
-      widget.pageController.addListener(_onPageChanged);
-    }
 
     // Check if the list of image URLs changed (different elements or different length)
     bool urlsChanged = widget.imgUrls.length != oldWidget.imgUrls.length;
@@ -79,45 +75,59 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
         final url = widget.imgUrls[i] as String;
         if (_globalRatioCache.containsKey(url)) {
           _ratios[i] = _globalRatioCache[url];
-        } else {
+        }
+      }
+      _resolveRatiosIfNeeded();
+    }
+  }
+
+  void _resolveRatiosIfNeeded() {
+    for (int i = 0; i < widget.imgUrls.length; i++) {
+      if (i == 0 || (i - _currentPage).abs() <= 1) {
+        final url = widget.imgUrls[i] as String;
+        if (!_globalRatioCache.containsKey(url) && !_resolvingUrls.contains(url)) {
+          _resolvingUrls.add(url);
           _resolveRatio(i);
         }
       }
     }
   }
 
-  void _onPageChanged() {
-    final page = widget.pageController.page?.round() ?? 0;
-    if (page != _currentPage && mounted) {
-      setState(() => _currentPage = page);
-    }
-  }
-
   void _resolveRatio(int index) {
     final url = widget.imgUrls[index] as String;
-    final image = CachedNetworkImageProvider(url);
+    final image = ResizeImage(CachedNetworkImageProvider(url), width: 300);
     final stream = image.resolve(ImageConfiguration.empty);
     late ImageStreamListener listener;
     listener = ImageStreamListener(
-      (info, _) {
+      (info, synchronousCall) {
         stream.removeListener(listener);
-        if (mounted) {
-          final ratio = info.image.width.toDouble() / info.image.height.toDouble();
-          _globalRatioCache[url] = ratio;
-          setState(() {
-            if (index < _ratios.length) {
-              _ratios[index] = ratio;
-            }
-          });
+        _resolvingUrls.remove(url);
+        final ratio = info.image.width.toDouble() / info.image.height.toDouble();
+        _globalRatioCache[url] = ratio;
+        if (synchronousCall) {
+          _ratios[index] = ratio;
+        } else {
+          if (mounted) {
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  if (index < _ratios.length) _ratios[index] = ratio;
+                });
+              }
+            });
+          }
         }
       },
-      onError: (_, __) {
+      onError: (exception, stackTrace) {
         stream.removeListener(listener);
+        _resolvingUrls.remove(url);
+        _globalRatioCache[url] = 1.0;
         if (mounted) {
-          _globalRatioCache[url] = 1.0;
-          setState(() {
-            if (index < _ratios.length) {
-              _ratios[index] = 1.0;
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                if (index < _ratios.length) _ratios[index] = 1.0;
+              });
             }
           });
         }
@@ -130,13 +140,9 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
   Widget build(BuildContext context) {
     // If explicitWidth is provided, bypass LayoutBuilder completely.
     if (widget.explicitWidth != null) {
-      debugPrint(
-        '✅ NaturalAspectPageView using explicitWidth=${widget.explicitWidth}',
-      );
       return _buildWithWidth(widget.explicitWidth!);
     }
 
-    debugPrint('⚠️ NaturalAspectPageView falling back to LayoutBuilder');
     return LayoutBuilder(
       builder: (context, constraints) {
         final double availableWidth =
@@ -149,10 +155,6 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
   }
 
   Widget _buildWithWidth(double availableWidth) {
-    debugPrint(
-      '🟢 _buildWithWidth availableWidth=$availableWidth  ratio=${_ratios.isNotEmpty ? _ratios[0] : "empty"}',
-    );
-
     final int safePage =
         (_ratios.isNotEmpty && _currentPage < _ratios.length)
             ? _currentPage
@@ -161,49 +163,77 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
     final double? currentRatio = _ratios.isNotEmpty ? _ratios[safePage] : null;
 
     if (currentRatio == null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(25),
-        child: Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
-          child: Container(
-            width: availableWidth,
-            height: availableWidth * 0.75,
-            color: Colors.white,
-          ),
+      return Container(
+        width: availableWidth,
+        height: availableWidth * 0.75,
+        decoration: BoxDecoration(
+          color: const Color(0xFFEEEEEE),
+          borderRadius: BorderRadius.circular(25),
         ),
       );
     }
 
     final double currentHeight = availableWidth / currentRatio;
 
+    // SHORT-CIRCUIT: If only 1 image exists, render the Image widget directly
+    // and bypass PageView entirely to avoid horizontal gesture/scroll contention.
+    if (widget.imgUrls.length == 1) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(25),
+        clipBehavior: Clip.hardEdge,
+        child: SafeNetworkImage(
+          url: widget.imgUrls[0] as String,
+          width: availableWidth,
+          height: currentHeight,
+          fit: BoxFit.cover,
+          placeholder: Container(
+            width: availableWidth,
+            height: currentHeight,
+            color: const Color(0xFFEEEEEE),
+          ),
+          errorWidget: Container(
+            width: availableWidth,
+            height: currentHeight,
+            color: Colors.grey[200],
+            child: const Center(
+              child: Icon(
+                Icons.broken_image,
+                color: Colors.grey,
+                size: 48,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Stack(
       alignment: Alignment.bottomCenter,
       children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
+        SizedBox(
           width: availableWidth,
           height: currentHeight,
           child: PageView.builder(
             controller: widget.pageController,
             itemCount: widget.imgUrls.length,
             physics: const BouncingScrollPhysics(),
+            onPageChanged: (page) {
+              if (mounted && page != _currentPage) {
+                setState(() => _currentPage = page);
+                _resolveRatiosIfNeeded();
+              }
+            },
             itemBuilder: (context, index) {
               final double? ratio =
                   index < _ratios.length ? _ratios[index] : null;
 
               if (ratio == null) {
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(25),
-                  child: Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
-                    child: Container(
-                      width: availableWidth,
-                      height: currentHeight,
-                      color: Colors.white,
-                    ),
+                return Container(
+                  width: availableWidth,
+                  height: currentHeight,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEEEEE),
+                    borderRadius: BorderRadius.circular(25),
                   ),
                 );
               }
@@ -212,40 +242,28 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
 
               return ClipRRect(
                 borderRadius: BorderRadius.circular(25),
-                child: SizedBox(
+                clipBehavior: Clip.hardEdge,
+                child: SafeNetworkImage(
+                  url: widget.imgUrls[index] as String,
                   width: availableWidth,
                   height: itemHeight,
-                  child: CachedNetworkImage(
-                    imageUrl: widget.imgUrls[index] as String,
-                    memCacheWidth: 800,
+                  fit: BoxFit.cover,
+                  placeholder: Container(
                     width: availableWidth,
                     height: itemHeight,
-                    fit: BoxFit.cover,
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    placeholder:
-                        (context, url) => Shimmer.fromColors(
-                          baseColor: Colors.grey[300]!,
-                          highlightColor: Colors.grey[100]!,
-                          child: Container(
-                            width: availableWidth,
-                            height: itemHeight,
-                            color: Colors.white,
-                          ),
-                        ),
-                    errorWidget:
-                        (context, url, error) => Container(
-                          width: availableWidth,
-                          height: itemHeight,
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: Icon(
-                              Icons.broken_image,
-                              color: Colors.grey,
-                              size: 48,
-                            ),
-                          ),
-                        ),
+                    color: const Color(0xFFEEEEEE),
+                  ),
+                  errorWidget: Container(
+                    width: availableWidth,
+                    height: itemHeight,
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: Icon(
+                        Icons.broken_image,
+                        color: Colors.grey,
+                        size: 48,
+                      ),
+                    ),
                   ),
                 ),
               );

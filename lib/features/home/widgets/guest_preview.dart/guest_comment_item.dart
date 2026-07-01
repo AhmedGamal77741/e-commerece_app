@@ -3,6 +3,7 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class GuestCommentItem extends ConsumerWidget {
   final Map<String, dynamic> comment;
@@ -22,7 +23,7 @@ class GuestCommentItem extends ConsumerWidget {
               height: 40.h,
               decoration: ShapeDecoration(
                 image: DecorationImage(
-                  image: NetworkImage(comment['userImage'] ?? ''),
+                  image: ResizeImage(CachedNetworkImageProvider(comment['userImage'] ?? ''), width: 120),
                   fit: BoxFit.cover,
                 ),
                 shape: OvalBorder(),

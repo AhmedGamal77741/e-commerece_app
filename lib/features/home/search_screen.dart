@@ -263,14 +263,22 @@ class _HomeFeedSearchTab extends ConsumerWidget {
 
         return ListView.builder(
           itemCount: state.posts.length,
+          cacheExtent: 500,
           itemBuilder: (context, index) {
             final post = state.posts[index];
             final postId = post['postId'] ?? post['id'];
             if (postId == null) return const SizedBox.shrink();
 
-            return useGuestPostItem || isGuest
-                ? GuestPostItem(post: post)
-                : PostItem(postId: postId, fromComments: false);
+            return RepaintBoundary(
+              key: ValueKey(postId),
+              child: useGuestPostItem || isGuest
+                  ? GuestPostItem(post: post)
+                  : PostItem(
+                      postId: postId,
+                      fromComments: false,
+                      postData: post,
+                    ),
+            );
           },
         );
       },

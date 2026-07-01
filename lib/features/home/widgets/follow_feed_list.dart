@@ -113,20 +113,28 @@ class FollowingPostsList extends StatelessWidget {
 
     return ListView.builder(
       controller: scrollController,
+      cacheExtent: 500,
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: posts.length,
       itemBuilder: (context, index) {
         final postData = posts[index];
         final postId = postData['postId'] ?? postData['id'] ?? '';
         if (postId.isEmpty) return const SizedBox.shrink();
 
-        return Column(
+        return RepaintBoundary(
           key: ValueKey(postId),
-          children: [
-            useGuestPostItem
-                ? GuestPostItem(post: postData)
-                : PostItem(postId: postId, fromComments: false),
-            SizedBox(height: 10.h),
-          ],
+          child: Column(
+            children: [
+              useGuestPostItem
+                  ? GuestPostItem(post: postData)
+                  : PostItem(
+                      postId: postId,
+                      fromComments: false,
+                      postData: postData,
+                    ),
+              SizedBox(height: 10.h),
+            ],
+          ),
         );
       },
     );

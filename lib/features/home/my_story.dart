@@ -278,10 +278,18 @@ class _PostsPageState extends ConsumerState<_PostsPage>
 
         return ListView.builder(
           itemCount: posts.length,
+          cacheExtent: 500,
           itemBuilder: (context, index) {
+            final doc = posts[index];
+            final postData = doc.data() as Map<String, dynamic>;
+            postData['postId'] = doc.id;
             return Column(
               children: [
-                PostItem(postId: posts[index].id, fromComments: false),
+                PostItem(
+                  postId: doc.id,
+                  fromComments: false,
+                  postData: postData,
+                ),
                 verticalSpace(10),
               ],
             );

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/core/helpers/basetime.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
@@ -9,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class FavoriteItemWidget extends ConsumerWidget {
   final Map<String, dynamic> favoriteData;
@@ -70,19 +70,17 @@ class FavoriteItemWidget extends ConsumerWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: CachedNetworkImage(
-                    imageUrl: product.imgUrl ?? '',
+                  child: SafeNetworkImage(
+                    url: product.imgUrl ?? '',
                     width: 106.w,
                     height: 110.h,
                     fit: BoxFit.cover,
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    placeholder: (context, url) => Container(
+                    placeholder: Container(
                       width: 106.w,
                       height: 110.h,
                       color: Colors.grey[200],
                     ),
-                    errorWidget: (context, url, error) => Container(
+                    errorWidget: Container(
                       width: 106.w,
                       height: 110.h,
                       color: Colors.grey[200],

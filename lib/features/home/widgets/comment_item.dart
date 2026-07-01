@@ -15,6 +15,8 @@ import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class CommentItem extends ConsumerStatefulWidget {
   final Comment comment;
@@ -58,7 +60,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                 height: 40.h,
                 decoration: ShapeDecoration(
                   image: DecorationImage(
-                    image: NetworkImage(widget.comment.userImage.toString()),
+                    image: ResizeImage(CachedNetworkImageProvider(widget.comment.userImage.toString()), width: 120),
                     fit: BoxFit.cover,
                   ),
                   shape: OvalBorder(),
@@ -79,29 +81,54 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                       widget.comment.userName ?? '',
                       style: TextStyles.abeezee16px400wPblack,
                     ),
-                    FutureBuilder<String?>(
-                      future: ContactService().getContactNickname(
-                        widget.comment.userId,
-                      ),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
+                    Builder(
+                      builder: (context) {
+                        final contactService = ContactService();
+                        final userId = widget.comment.userId;
+                        if (contactService.isNameMapLoaded()) {
+                          final syncName = contactService.getContactNicknameSync(userId);
+                          if (syncName != null && syncName.isNotEmpty) {
+                            return Padding(
+                              padding: EdgeInsets.only(top: 2.h),
+                              child: Text(
+                                '@$syncName',
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w400,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }
                           return const SizedBox.shrink();
                         }
-
-                        final nickname = snapshot.data!;
-                        return Padding(
-                          padding: EdgeInsets.only(top: 2.h),
-                          child: Text(
-                            '@$nickname',
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w400,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        return FutureBuilder<String?>(
+                          future: contactService.getContactNickname(userId),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const SizedBox.shrink();
+                            }
+                            final nickname = snapshot.data;
+                            if (nickname == null || nickname.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: EdgeInsets.only(top: 2.h),
+                              child: Text(
+                                '@$nickname',
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w400,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -215,8 +242,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                   SizedBox(height: 6.h),
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(10),
-                                  child: Image.network(
-                                    widget.comment.imageUrl!,
+                                  child: SafeNetworkImage(
+                                    url: widget.comment.imageUrl!,
                                     fit: BoxFit.cover,
                                   ),
                                 ),

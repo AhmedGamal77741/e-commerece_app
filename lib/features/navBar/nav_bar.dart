@@ -24,31 +24,58 @@ class NavBar extends ConsumerStatefulWidget {
 class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
   final shopKey = GlobalKey<ShopState>();
   final homeKey = GlobalKey<HomeScreenState>();
-  int _selectedIndex = 0;
+  int _selectedIndex = 2;
 
   final ScrollController homeScrollController = ScrollController();
   late TabController homeTabController;
-  List<Widget> widgetOptions = [];
+  final List<bool> _tabInitialized = [true, false, false, false, false];
 
   @override
   void initState() {
     super.initState();
     homeTabController = TabController(length: 2, vsync: this);
-    widgetOptions = [
-      HomeScreen(
-        key: homeKey,
-        scrollController: homeScrollController,
-        tabController: homeTabController,
-      ),
-      const ChatsNavbar(),
-      const Center(child: Text('멤버십 라운지')),
-      Shop(key: shopKey),
-      const LandingScreen(),
-    ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPendingNavigation();
     });
+  }
+
+  bool _imagesPrecached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_imagesPrecached) {
+      _imagesPrecached = true;
+      // Precache the currently-visible icon first (tab 2 = active by default)
+      precacheImage(const AssetImage('assets/mypage_avatar_grey.png'), context);
+      precacheImage(const AssetImage('assets/mypage_avatar.png'), context);
+      // Defer all other icons to after the first frame to avoid I/O queue starvation
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final ctx = context;
+        precacheImage(const AssetImage('assets/001m.png'), ctx);
+        precacheImage(const AssetImage('assets/grey_001m.png'), ctx);
+        precacheImage(const AssetImage('assets/002m.png'), ctx);
+        precacheImage(const AssetImage('assets/grey_002m.png'), ctx);
+        precacheImage(const AssetImage('assets/005m.png'), ctx);
+        precacheImage(const AssetImage('assets/grey_005m.png'), ctx);
+        precacheImage(const AssetImage('assets/chat_with_seller.png'), ctx);
+        precacheImage(
+          const AssetImage('assets/chat_with_seller_grey.png'),
+          ctx,
+        );
+        precacheImage(const AssetImage('assets/notification.png'), ctx);
+        precacheImage(const AssetImage('assets/add_post_transparent.png'), ctx);
+        precacheImage(
+          const AssetImage('assets/notification_bell_transparent.png'),
+          ctx,
+        );
+        precacheImage(const AssetImage('assets/notification_dot.png'), ctx);
+        precacheImage(const AssetImage('assets/search_icon.png'), ctx);
+        precacheImage(const AssetImage('assets/avatar.png'), ctx);
+      });
+    }
   }
 
   @override
@@ -82,7 +109,10 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
     if (!hasBankAccount) {
       if (!mounted) return;
-      await context.pushNamed(Routes.noBankAccountScreen, queryParameters: {'source': 'sub'});
+      await context.pushNamed(
+        Routes.noBankAccountScreen,
+        queryParameters: {'source': 'sub'},
+      );
       final nowHasAccount = await navBarService.hasBankAccount(user.uid);
       if (!nowHasAccount) return;
     }
@@ -91,7 +121,10 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
     if (!hasReceiptData) {
       if (!mounted) return;
-      final result = await context.pushNamed<bool>(Routes.receiptSetupScreen, queryParameters: {'source': 'sub'});
+      final result = await context.pushNamed<bool>(
+        Routes.receiptSetupScreen,
+        queryParameters: {'source': 'sub'},
+      );
       if (result != true) return;
     }
 
@@ -111,7 +144,10 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
       if (_selectedIndex == 0) {
         homeKey.currentState?.resetToTop();
       }
-      setState(() => _selectedIndex = 0);
+      setState(() {
+        _selectedIndex = 0;
+        _tabInitialized[0] = true;
+      });
       return;
     } else if (index == 3) {
       final user = ref.read(authStateProvider).value;
@@ -120,7 +156,10 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
         final isDeleted = await navBarService.isAccountDeleted(user.uid);
         if (isDeleted) {
-          setState(() => _selectedIndex = index);
+          setState(() {
+            _selectedIndex = index;
+            _tabInitialized[index] = true;
+          });
           return;
         }
 
@@ -128,7 +167,10 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
         if (!hasBankAccount) {
           if (!mounted) return;
-          final result = await context.pushNamed<bool>(Routes.noBankAccountScreen, queryParameters: {'source': 'shop'});
+          final result = await context.pushNamed<bool>(
+            Routes.noBankAccountScreen,
+            queryParameters: {'source': 'shop'},
+          );
           if (result != true) {
             final nowHasAccount = await navBarService.hasBankAccount(user.uid);
             if (!nowHasAccount) return;
@@ -139,7 +181,10 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
         if (!hasReceiptData) {
           if (!mounted) return;
-          final result = await context.pushNamed<dynamic>(Routes.receiptSetupScreen, queryParameters: {'source': 'shop'});
+          final result = await context.pushNamed<dynamic>(
+            Routes.receiptSetupScreen,
+            queryParameters: {'source': 'shop'},
+          );
           if (result != true && result != 'skip') return;
         }
 
@@ -156,60 +201,76 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
           }
         }
       }
-      setState(() => _selectedIndex = index);
+      setState(() {
+        _selectedIndex = index;
+        _tabInitialized[index] = true;
+      });
     } else {
-      setState(() => _selectedIndex = index);
+      setState(() {
+        _selectedIndex = index;
+        _tabInitialized[index] = true;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authStateProvider).value;
     final theme = Theme.of(context);
-
-    Widget bodyWidget;
-
-    if (user == null) {
-      bodyWidget = IndexedStack(index: _selectedIndex, children: widgetOptions);
-    } else {
-      final userProfileAsync = ref.watch(userProfileStreamProvider);
-
-      if (userProfileAsync.hasValue) {
-        final userData = userProfileAsync.value;
-        if (userData != null && userData['deleted'] == true) {
-          bodyWidget = DeletedAccount(
-            deletedAt: userData['deletedAt']?.toString() ?? '',
-            onRecover: () async {
-              final uid = user.uid;
-              await ref.read(navBarServiceProvider).recoverAccount(uid);
-              if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('계정이 복구되었습니다.')));
-              }
-            },
-            onSignOut: () async {
-              await ref.read(navBarServiceProvider).signOut();
-            },
-          );
-        } else {
-          bodyWidget = IndexedStack(
-            index: _selectedIndex,
-            children: widgetOptions,
-          );
-        }
-      } else {
-        bodyWidget = IndexedStack(
-          index: _selectedIndex,
-          children: widgetOptions,
-        );
-      }
-    }
-
     final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
 
+    final children = [
+      _tabInitialized[0]
+          ? HomeScreen(
+            key: homeKey,
+            scrollController: homeScrollController,
+            tabController: homeTabController,
+          )
+          : const SizedBox.shrink(),
+
+      _tabInitialized[1] ? const ChatsNavbar() : const SizedBox.shrink(),
+      _tabInitialized[2]
+          ? const Center(child: Text('멤버십 라운지'))
+          : const SizedBox.shrink(),
+      _tabInitialized[3] ? Shop(key: shopKey) : const SizedBox.shrink(),
+      _tabInitialized[4] ? const LandingScreen() : const SizedBox.shrink(),
+    ];
+
     return Scaffold(
-      body: bodyWidget,
+      // Isolated Consumer: only this subtree rebuilds when auth/profile streams emit.
+      // The BottomNavigationBar and outer Scaffold are untouched.
+      body: RepaintBoundary(
+        child: Consumer(
+          builder: (context, ref, _) {
+            final user = ref.watch(authStateProvider).value;
+            if (user == null) {
+              return IndexedStack(index: _selectedIndex, children: children);
+            }
+            final userProfileAsync = ref.watch(userProfileStreamProvider);
+            if (userProfileAsync.hasValue) {
+              final userData = userProfileAsync.value;
+              if (userData != null && userData['deleted'] == true) {
+                return DeletedAccount(
+                  deletedAt: userData['deletedAt']?.toString() ?? '',
+                  onRecover: () async {
+                    await ref
+                        .read(navBarServiceProvider)
+                        .recoverAccount(user.uid);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('계정이 복구되었습니다.')),
+                      );
+                    }
+                  },
+                  onSignOut: () async {
+                    await ref.read(navBarServiceProvider).signOut();
+                  },
+                );
+              }
+            }
+            return IndexedStack(index: _selectedIndex, children: children);
+          },
+        ),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: theme.colorScheme.surface,
         showSelectedLabels: false,
@@ -224,9 +285,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Image.asset(
-              _selectedIndex == 0
-                  ? 'assets/001m.png'
-                  : 'assets/grey_001m.png',
+              _selectedIndex == 0 ? 'assets/001m.png' : 'assets/grey_001m.png',
               width: 30.r,
               height: 30.r,
               gaplessPlayback: true,
@@ -256,9 +315,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
           ),
           BottomNavigationBarItem(
             icon: Image.asset(
-              _selectedIndex == 3
-                  ? 'assets/002m.png'
-                  : 'assets/grey_002m.png',
+              _selectedIndex == 3 ? 'assets/002m.png' : 'assets/grey_002m.png',
               width: 30.r,
               height: 30.r,
               gaplessPlayback: true,
@@ -268,9 +325,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
           ),
           BottomNavigationBarItem(
             icon: Image.asset(
-              _selectedIndex == 4
-                  ? 'assets/005m.png'
-                  : 'assets/grey_005m.png',
+              _selectedIndex == 4 ? 'assets/005m.png' : 'assets/grey_005m.png',
               width: 30.r,
               height: 30.r,
               gaplessPlayback: true,

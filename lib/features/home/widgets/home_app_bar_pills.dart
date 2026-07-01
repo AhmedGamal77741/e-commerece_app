@@ -5,7 +5,7 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart' show hasUnreadNotificationsProvider;
 
 class HomeAppBarPills extends ConsumerWidget {
   final User? firebaseUser;
@@ -88,38 +88,7 @@ class HomeAppBarPills extends ConsumerWidget {
                   }
                   context.pushNamed(Routes.alertsScreen);
                 },
-                child: firebaseUser == null
-                    ? Image.asset(
-                        'assets/notification_bell_transparent.png',
-                        height: 35.h,
-                        width: 35.w,
-                      )
-                    : StreamBuilder(
-                        stream: ref.read(feedControllerProvider.notifier).getUnreadNotificationsStream(firebaseUser!.uid),
-                        builder: (context, notifSnapshot) {
-                          final hasUnread = notifSnapshot.hasData && notifSnapshot.data!.docs.isNotEmpty;
-                          return Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Image.asset(
-                                'assets/notification_bell_transparent.png',
-                                height: 35.h,
-                                width: 35.w,
-                              ),
-                              if (hasUnread)
-                                Positioned(
-                                  left: 0.w,
-                                  top: 0.h,
-                                  child: Image.asset(
-                                    'assets/notification_dot.png',
-                                    width: 18.w,
-                                    height: 18.h,
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
+                child: _NotificationBellIcon(firebaseUser: firebaseUser),
               ),
               InkWell(
                 onTap: () {
@@ -136,6 +105,46 @@ class HomeAppBarPills extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Isolated widget so notification dot changes never rebuild the entire AppBar.
+class _NotificationBellIcon extends ConsumerWidget {
+  final User? firebaseUser;
+  const _NotificationBellIcon({required this.firebaseUser});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (firebaseUser == null) {
+      return Image.asset(
+        'assets/notification_bell_transparent.png',
+        height: 35.h,
+        width: 35.w,
+      );
+    }
+
+    final hasUnread = ref.watch(hasUnreadNotificationsProvider).value ?? false;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Image.asset(
+          'assets/notification_bell_transparent.png',
+          height: 35.h,
+          width: 35.w,
+        ),
+        if (hasUnread)
+          Positioned(
+            left: 0.w,
+            top: 0.h,
+            child: Image.asset(
+              'assets/notification_dot.png',
+              width: 18.w,
+              height: 18.h,
+            ),
+          ),
+      ],
     );
   }
 }

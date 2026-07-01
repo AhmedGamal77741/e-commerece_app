@@ -1,9 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class ItemImageCarousel extends StatefulWidget {
   final Product product;
@@ -38,13 +38,13 @@ class _ItemImageCarouselState extends State<ItemImageCarousel> {
               controller: _pageController,
               itemCount: imageUrls.length,
               physics: const BouncingScrollPhysics(),
-              itemBuilder: (context, index) => CachedNetworkImage(
-                imageUrl: imageUrls[index],
+              itemBuilder: (context, index) => SafeNetworkImage(
+                url: imageUrls[index],
+                width: MediaQuery.of(context).size.width,
+                height: 428,
                 fit: BoxFit.cover,
-                fadeInDuration: Duration.zero,
-                fadeOutDuration: Duration.zero,
-                placeholder: (context, url) => Container(color: Colors.grey[200]),
-                errorWidget: (context, url, error) => Container(
+                placeholder: Container(color: Colors.grey[200]),
+                errorWidget: Container(
                   color: Colors.grey[200],
                   child: const Center(
                     child: Icon(Icons.broken_image, color: Colors.grey),

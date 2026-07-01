@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
@@ -6,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class ShopProductCard extends StatelessWidget {
   final Product product;
@@ -40,21 +40,17 @@ class ShopProductCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: product.imgUrl != null && product.imgUrl!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: product.imgUrl!,
+                      ? SafeNetworkImage(
+                          url: product.imgUrl!,
                           width: 106.w,
                           height: 106.h,
                           fit: BoxFit.cover,
-                          memCacheWidth: 300,
-                          memCacheHeight: 300,
-                          fadeInDuration: Duration.zero,
-                          fadeOutDuration: Duration.zero,
-                          placeholder: (context, url) => Container(
+                          placeholder: Container(
                             width: 106.w,
                             height: 106.h,
                             color: Colors.grey[200],
                           ),
-                          errorWidget: (context, url, error) => Container(
+                          errorWidget: Container(
                             width: 106.w,
                             height: 106.h,
                             color: Colors.grey[200],

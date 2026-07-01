@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'friends_modals.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class FriendsListItem extends ConsumerWidget {
   final MyUser friend;
@@ -187,7 +188,7 @@ class FriendsListItem extends ConsumerWidget {
                 child: CircleAvatar(
                   backgroundColor: Colors.grey[300],
                   radius: 25.r,
-                  backgroundImage: NetworkImage(friend.url),
+                  backgroundImage: safeNetworkImageProvider(friend.url),
                 ),
               ),
             ],

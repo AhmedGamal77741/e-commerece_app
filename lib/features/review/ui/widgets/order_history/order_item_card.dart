@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/review/ui/widgets/text_and_buttons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -32,21 +33,20 @@ class OrderItemCard extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: Image.network(
-            product['imgUrl'] ?? '',
+          child: SafeNetworkImage(
+            url: product['imgUrl'] ?? '',
             width: 120.w,
             height: 120.h,
             fit: BoxFit.cover,
-            errorBuilder:
-                (_, __, ___) => Container(
-                  width: 120.w,
-                  height: 120.h,
-                  color: Colors.grey.shade200,
-                  child: const Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey,
-                  ),
-                ),
+            errorWidget: Container(
+              width: 120.w,
+              height: 120.h,
+              color: Colors.grey.shade200,
+              child: const Icon(
+                Icons.image_not_supported,
+                color: Colors.grey,
+              ),
+            ),
           ),
         ),
         horizontalSpace(10),

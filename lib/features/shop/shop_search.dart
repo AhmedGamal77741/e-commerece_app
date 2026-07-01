@@ -6,6 +6,8 @@ import 'package:ecommerece_app/features/shop/widgets/shop_product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class ShopSearch extends ConsumerWidget {
   const ShopSearch({super.key});
@@ -120,13 +122,52 @@ class ShopSearch extends ConsumerWidget {
       itemCount: sortedProducts.length,
       itemBuilder: (context, index) {
         final product = sortedProducts[index];
-
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
-          child: ShopProductCard(
-            key: ValueKey(product.productId),
-            product: product,
-            isSub: isSub,
+        final displayPrice = isSub ? product.price : (product.price / 0.8);
+        final _formatCurrency = NumberFormat('#,###');
+        
+        return ListTile(
+          title: Text(product.productName),
+          subtitle: Text('${_formatCurrency.format(displayPrice)} 원'),
+          leading: Stack(
+            children: [
+              SafeNetworkImage(
+                url: product.imgUrl ?? '',
+                width: 50.w,
+                height: 50.h,
+                fit: BoxFit.cover,
+                placeholder: Container(
+                  width: 50.w,
+                  height: 50.h,
+                  color: Colors.grey[200],
+                ),
+                errorWidget: Container(
+                  width: 50.w,
+                  height: 50.h,
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      color: Colors.grey,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+              if (product.stock == 0)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.transparent,
+                    child: Center(
+                      child: Image.asset(
+                        'assets/sold_out.png',
+                        fit: BoxFit.contain,
+                        cacheWidth: 100,
+                        cacheHeight: 100,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       },

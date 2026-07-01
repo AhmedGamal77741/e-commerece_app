@@ -138,29 +138,51 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    FutureBuilder<String?>(
-                      future: ContactService().getContactNickname(
-                        profileUser.userId,
-                      ),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
+                    Builder(
+                      builder: (context) {
+                        final contactService = ContactService();
+                        if (contactService.isNameMapLoaded()) {
+                          final syncName = contactService.getContactNicknameSync(profileUser.userId);
+                          if (syncName != null && syncName.isNotEmpty) {
+                            return Padding(
+                              padding: EdgeInsets.only(top: 2.h),
+                              child: Text(
+                                '@$syncName',
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            );
+                          }
                           return const SizedBox.shrink();
                         }
-                        final savedName = snapshot.data;
-                        if (savedName == null || savedName.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-                        return Padding(
-                          padding: EdgeInsets.only(top: 2.h),
-                          child: Text(
-                            '@$savedName',
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w400,
-                            ),
+                        return FutureBuilder<String?>(
+                          future: contactService.getContactNickname(
+                            profileUser.userId,
                           ),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const SizedBox.shrink();
+                            }
+                            final savedName = snapshot.data;
+                            if (savedName == null || savedName.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: EdgeInsets.only(top: 2.h),
+                              child: Text(
+                                '@$savedName',
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -260,28 +282,33 @@ class _PostsPageState extends ConsumerState<_PostsPage>
         final bool isGuest = ref.watch(currentUserProvider).value == null;
         return ListView.builder(
           itemCount: posts.length,
+          cacheExtent: 500,
           itemBuilder: (context, index) {
             final doc = posts[index];
             final post = doc.data() as Map<String, dynamic>;
             if (post['postId'] == null) {
               post['postId'] = doc.id;
             }
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-              child: Column(
-                children: [
-                  if (index != 0) Divider(color: ColorsManager.primary100),
-                  isGuest
-                      ? GuestPostItem(
-                        post: post,
-                        currentProfileUserId: widget.userId,
-                      )
-                      : PostItem(
-                        postId: doc.id,
-                        fromComments: false,
-                        currentProfileUserId: widget.userId,
-                      ),
-                ],
+            return RepaintBoundary(
+              key: ValueKey(doc.id),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                child: Column(
+                  children: [
+                    if (index != 0) Divider(color: ColorsManager.primary100),
+                    isGuest
+                        ? GuestPostItem(
+                          post: post,
+                          currentProfileUserId: widget.userId,
+                        )
+                        : PostItem(
+                            postId: doc.id,
+                            fromComments: false,
+                            currentProfileUserId: widget.userId,
+                            postData: post,
+                          ),
+                  ],
+                ),
               ),
             );
           },

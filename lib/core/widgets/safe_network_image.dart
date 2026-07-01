@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-/// A thin wrapper around [Image.network] that guards against empty URLs
-/// and provides consistent loading/error handling.
-///
-/// When the `url` is empty the [errorWidget] is shown immediately; otherwise
-/// the remote image is fetched and the supplied callbacks are used.  This
-/// prevents the "Connection closed before full header was received" logs that
-/// occur when an empty string is passed to [Image.network].
+/// A thin wrapper around [CachedNetworkImage] that guards against empty URLs,
+/// caches images automatically, and optimizes memory consumption using dynamic cache sizes.
 class SafeNetworkImage extends StatelessWidget {
   final String url;
   final double? width;
@@ -31,19 +27,47 @@ class SafeNetworkImage extends StatelessWidget {
       return errorWidget ?? const Icon(Icons.image_not_supported);
     }
 
-    return Image.network(
-      url,
+    final double devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final double logicalWidth = width ?? MediaQuery.of(context).size.width;
+    int? cacheWidth = (logicalWidth * devicePixelRatio).round();
+    int? cacheHeight = height != null ? (height! * devicePixelRatio).round() : null;
+
+    // Cap the maximum physical decode size to 700 pixels to prevent massive memory usage and decoding lag on high-DPI screens.
+    if (cacheWidth > 700) {
+      if (cacheHeight != null) {
+        cacheHeight = (cacheHeight * (700 / cacheWidth)).round();
+      }
+      cacheWidth = 700;
+    }
+    if (cacheHeight != null && cacheHeight > 700) {
+      cacheWidth = (cacheWidth * (700 / cacheHeight)).round();
+      cacheHeight = 700;
+    }
+
+    return CachedNetworkImage(
+      imageUrl: url,
       width: width,
       height: height,
       fit: fit,
-      loadingBuilder: (ctx, child, progress) {
-        if (progress == null) return child;
-        return placeholder ??
-            const SizedBox.shrink();
-      },
-      errorBuilder: (ctx, error, stack) {
-        return errorWidget ?? const Icon(Icons.image_not_supported);
-      },
+      memCacheWidth: cacheWidth,
+      memCacheHeight: cacheHeight,
+      placeholder: (ctx, url) => placeholder ?? const SizedBox.shrink(),
+      errorWidget: (ctx, url, error) => errorWidget ?? const Icon(Icons.image_not_supported),
     );
   }
+}
+
+/// A memory-efficient ImageProvider for network images (typically avatars or backgrounds).
+/// Automatically caches the image and downsamples its decode resolution to prevent main thread lag.
+ImageProvider safeNetworkImageProvider(
+  String url, {
+  int maxCacheWidth = 200, // Default to 200 physical pixels wide for crisp yet small avatars
+  int? maxCacheHeight,
+}) {
+  final provider = CachedNetworkImageProvider(url);
+  return ResizeImage(
+    provider,
+    width: maxCacheWidth,
+    height: maxCacheHeight,
+  );
 }

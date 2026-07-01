@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class CommentBubble extends ConsumerStatefulWidget {
   final Map<String, dynamic> item;
@@ -60,7 +61,7 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                 decoration: ShapeDecoration(
                   image: DecorationImage(
                     image: (item['senderImage'] as String).isNotEmpty
-                        ? NetworkImage(item['senderImage'])
+                        ? safeNetworkImageProvider(item['senderImage'])
                         : const AssetImage('assets/avatar.png') as ImageProvider,
                     fit: BoxFit.cover,
                   ),
@@ -77,16 +78,32 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                 if (!isMe)
                   Padding(
                     padding: EdgeInsets.only(left: 4.w, bottom: 3.h),
-                    child: FutureBuilder<String?>(
-                      future: ContactService().getContactNickname(item['senderId']),
-                      builder: (context, snapshot) {
-                        final nickname = snapshot.data;
-                        final display = nickname != null && nickname.isNotEmpty
-                            ? '${item['senderName']} (@$nickname)'
-                            : item['senderName'];
-                        return Text(
-                          display,
-                          style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+                    child: Builder(
+                      builder: (context) {
+                        final contactService = ContactService();
+                        final String senderId = item['senderId'] ?? '';
+                        if (contactService.isNameMapLoaded()) {
+                          final nickname = contactService.getContactNicknameSync(senderId);
+                          final display = nickname != null && nickname.isNotEmpty
+                              ? '${item['senderName']} (@$nickname)'
+                              : item['senderName'];
+                          return Text(
+                            display,
+                            style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+                          );
+                        }
+                        return FutureBuilder<String?>(
+                          future: contactService.getContactNickname(senderId),
+                          builder: (context, snapshot) {
+                            final nickname = snapshot.data;
+                            final display = nickname != null && nickname.isNotEmpty
+                                ? '${item['senderName']} (@$nickname)'
+                                : item['senderName'];
+                            return Text(
+                              display,
+                              style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+                            );
+                          },
                         );
                       },
                     ),
@@ -169,7 +186,7 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                                   borderRadius: BorderRadius.circular(10.r),
                                   child: Container(
                                     constraints: BoxConstraints(maxWidth: maxW),
-                                    child: Image.network((item['imageUrls'] as List).first, fit: BoxFit.cover),
+                                    child: SafeNetworkImage(url: (item['imageUrls'] as List).first, fit: BoxFit.cover),
                                   ),
                                 )
                             ],
