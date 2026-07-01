@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -30,7 +29,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool obscurePassword = true;
   bool isPrivate = false;
   String imgUrl = '';
-  String error = '';
   XFile? selectedImage;
 
   @override
@@ -45,6 +43,26 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
+
+    ref.listen<AsyncValue<void>>(authNotifierProvider, (previous, next) {
+      next.whenOrNull(
+        error: (err, stack) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                err.toString().replaceAll('Exception: ', ''),
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        },
+      );
+    });
 
     return Stack(
       children: [
@@ -239,25 +257,31 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       });
                     },
                   ),
-                  if (error.isNotEmpty) ...[
-                    verticalSpace(16),
-                    Text(error, style: TextStyles.abeezee16px400wPred),
-                  ],
                   verticalSpace(20),
                   ElevatedButton(
                     onPressed: authState.isLoading
                         ? null
                         : () async {
                             if (!agreedToTerms || !agreedToPrivacy) {
-                              setState(() {
-                                error = '모든 약관에 동의해야 가입할 수 있습니다.';
-                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('모든 약관에 동의해야 가입할 수 있습니다.', style: TextStyle(color: Colors.white)),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              );
                               return;
                             }
                             if (selectedImage == null) {
-                              setState(() {
-                                error = '프로필 사진을 등록해야 가입할 수 있습니다.';
-                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('프로필 사진을 등록해야 가입할 수 있습니다.', style: TextStyle(color: Colors.white)),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              );
                               return;
                             }
                             if (_formKey.currentState!.validate()) {
@@ -273,25 +297,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               final prefs = await SharedPreferences.getInstance();
                               await prefs.setBool('show_bank_prompt_after_login', true);
 
-                              try {
-                                await ref.read(authNotifierProvider.notifier).signUp(
-                                  myUser,
-                                  passwordController.text,
-                                  selectedImage,
-                                );
-                                if (context.mounted) {
-                                  setState(() {
-                                    error = '';
-                                  });
-                                }
-                              } catch (e) {
-                                await prefs.remove('show_bank_prompt_after_login');
-                                if (context.mounted) {
-                                  setState(() {
-                                    error = e.toString().replaceAll('Exception: ', '');
-                                  });
-                                }
-                              }
+                              await ref.read(authNotifierProvider.notifier).signUp(
+                                myUser,
+                                passwordController.text,
+                                selectedImage,
+                              );
                             }
                           },
                     style: ElevatedButton.styleFrom(
