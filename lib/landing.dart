@@ -21,7 +21,7 @@ class LandingScreen extends ConsumerWidget {
               const AuthScreen(),
               if (authState.value != null)
                 Container(
-                  color: const Color(0x80000000),
+                  color: Colors.black,
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
