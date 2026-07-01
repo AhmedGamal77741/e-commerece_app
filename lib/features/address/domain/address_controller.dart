@@ -15,7 +15,16 @@ class AddressController extends AsyncNotifier<List<Address>> {
 
   Future<List<Address>> _fetchAddresses() async {
     final repo = ref.read(addressRepositoryProvider);
-    return repo.getAddresses();
+    final addresses = await repo.getAddresses();
+    
+    // Sort addresses: default address first
+    addresses.sort((a, b) {
+      if (a.isDefault && !b.isDefault) return -1;
+      if (!a.isDefault && b.isDefault) return 1;
+      return 0;
+    });
+    
+    return addresses;
   }
 
   Future<void> addAddress({
@@ -42,32 +51,65 @@ class AddressController extends AsyncNotifier<List<Address>> {
   }
 
   Future<void> deleteAddress(String addressId) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    // Optimistically remove the address from the current state
+    if (state.hasValue) {
+      final currentList = state.value!;
+      state = AsyncValue.data(currentList.where((a) => a.id != addressId).toList());
+    }
+
+    try {
       final repo = ref.read(addressRepositoryProvider);
       final success = await repo.deleteAddress(addressId);
       if (!success) {
         throw Exception('Failed to delete address');
       }
-      return _fetchAddresses();
-    });
+    } catch (e) {
+      // Re-fetch to rollback if deletion failed
+      final addresses = await _fetchAddresses();
+      state = AsyncValue.data(addresses);
+      rethrow;
+    }
   }
 
   Future<void> setAsDefaultAddress(String addressId) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    // We update the data seamlessly without setting state to AsyncValue.loading()
+    // Optimistic update for better UX
+    if (state.hasValue) {
+      final currentList = state.value!;
+      final updatedList = currentList.map((a) {
+        return a.copyWith(isDefault: a.id == addressId);
+      }).toList();
+      
+      updatedList.sort((a, b) {
+        if (a.isDefault && !b.isDefault) return -1;
+        if (!a.isDefault && b.isDefault) return 1;
+        return 0;
+      });
+      state = AsyncValue.data(updatedList);
+    }
+
+    try {
       final repo = ref.read(addressRepositoryProvider);
       final success = await repo.setAsDefaultAddress(addressId);
       if (!success) {
         throw Exception('Failed to set default address');
       }
-      return _fetchAddresses();
-    });
+      
+      // Fetch fresh data in the background to ensure consistency
+      final freshAddresses = await _fetchAddresses();
+      state = AsyncValue.data(freshAddresses);
+    } catch (e) {
+      // Rollback
+      final addresses = await _fetchAddresses();
+      state = AsyncValue.data(addresses);
+      rethrow;
+    }
   }
 
   Future<void> refreshAddresses() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _fetchAddresses());
+    // Seamless refresh without full loading spinner
+    final addresses = await _fetchAddresses();
+    state = AsyncValue.data(addresses);
   }
 }
 
