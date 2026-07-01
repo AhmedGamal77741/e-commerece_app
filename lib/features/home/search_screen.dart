@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/shop/shop_search.dart';
 import 'package:ecommerece_app/features/home/domain/search_notifier.dart';
 import 'package:ecommerece_app/features/home/widgets/user_search_tile.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
@@ -8,61 +9,73 @@ import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
-import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
-import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
-import 'package:ecommerece_app/core/helpers/basetime.dart';
-import 'package:ecommerece_app/features/shop/item_details.dart';
-import 'package:intl/intl.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeSearch extends ConsumerStatefulWidget {
-  final int initialTabIndex;
   final bool useGuestPostItem;
-
+  final int initialTabIndex;
   const HomeSearch({
     super.key,
-    this.initialTabIndex = 1,
     this.useGuestPostItem = false,
+    this.initialTabIndex = 1,
   });
 
   @override
   ConsumerState<HomeSearch> createState() => _HomeSearchState();
 }
 
-class _HomeSearchState extends ConsumerState<HomeSearch> with SingleTickerProviderStateMixin {
+class _HomeSearchState extends ConsumerState<HomeSearch> {
   final TextEditingController _searchController = TextEditingController();
-  late TabController _tabController;
   late int _selectedIndex;
-  
-  final List<String> _tabs = ['???', '???', '??'];
+  final List<Map<String, dynamic>> _userTabs = [
+    {'label': '프로필'},
+    {'label': '게시글'},
+    {'label': '쇼핑'},
+  ];
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialTabIndex;
-    _tabController = TabController(length: _tabs.length, vsync: this, initialIndex: _selectedIndex);
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        setState(() {
-          _selectedIndex = _tabController.index;
-        });
-      }
-    });
-
     _searchController.addListener(() {
       ref
           .read(searchNotifierProvider.notifier)
           .updateQuery(_searchController.text);
-      setState(() {}); // trigger rebuild to pass new query to ShopSearchTab
     });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _tabController.dispose();
     super.dispose();
+  }
+
+  Widget _buildPill(BuildContext context, int index) {
+    final theme = Theme.of(context);
+    final bool isSelected = _selectedIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedIndex = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          color:
+              isSelected
+                  ? theme.colorScheme.surface
+                  : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          _userTabs[index]['label'],
+          style: theme.textTheme.labelMedium?.copyWith(
+            color:
+                isSelected
+                    ? theme.colorScheme.onSurface
+                    : theme.colorScheme.onSurfaceVariant,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -87,20 +100,23 @@ class _HomeSearchState extends ConsumerState<HomeSearch> with SingleTickerProvid
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  SizedBox(width: 8.w),
                   Expanded(
                     child: Container(
-                      height: 45.h,
+                      height: 42.h,
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(30.r),
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(25),
                       ),
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
                       child: TextField(
                         controller: _searchController,
-                        textInputAction: TextInputAction.search,
+                        autofocus: true,
+                        textAlignVertical: TextAlignVertical.center,
                         decoration: InputDecoration(
-                          hintText: '??',
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20.h,
+                          ),
                           border: InputBorder.none,
                           isDense: true,
                         ),
@@ -113,22 +129,24 @@ class _HomeSearchState extends ConsumerState<HomeSearch> with SingleTickerProvid
                 ],
               ),
             ),
-            TabBar(
-              controller: _tabController,
-              labelStyle: TextStyle(
-                fontSize: 16.sp,
-                decoration: TextDecoration.none,
-                fontFamily: 'NotoSans',
-                fontStyle: FontStyle.normal,
-                fontWeight: FontWeight.w400,
-                letterSpacing: 0,
-                color: ColorsManager.primaryblack,
+            Padding(
+              padding: EdgeInsets.fromLTRB(5.w, 0, 5.w, 5.h),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (int i = 0; i < _userTabs.length; i++) ...[
+                          _buildPill(context, i),
+                          if (i < _userTabs.length - 1) SizedBox(width: 8.w),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              unselectedLabelColor: ColorsManager.primary600,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicatorColor: ColorsManager.primaryblack,
-              indicatorWeight: 2,
-              tabs: _tabs.map((label) => Tab(text: label)).toList(),
             ),
             Expanded(
               child: IndexedStack(
@@ -136,7 +154,7 @@ class _HomeSearchState extends ConsumerState<HomeSearch> with SingleTickerProvid
                 children: [
                   const _FollowingSearchTab(),
                   _HomeFeedSearchTab(useGuestPostItem: widget.useGuestPostItem),
-                  _ShopSearchTab(searchQuery: _searchController.text),
+                  ShopSearch(),
                 ],
               ),
             ),
@@ -164,6 +182,7 @@ class _FollowingSearchTab extends ConsumerWidget {
           itemBuilder: (context, index) {
             final user = state.users[index];
 
+            // We use feedControllerProvider to fetch following status and requests since follow state wasn't entirely moved to searchNotifier.
             return StreamBuilder(
               stream: ref
                   .read(feedControllerProvider.notifier)
@@ -208,7 +227,7 @@ class _FollowingSearchTab extends ConsumerWidget {
         );
       },
       loading: () => const Center(),
-      error: (e, st) => Center(child: Text('Error: ')),
+      error: (e, st) => Center(child: Text('Error: $e')),
     );
   }
 }
@@ -239,68 +258,7 @@ class _HomeFeedSearchTab extends ConsumerWidget {
         );
       },
       loading: () => const Center(),
-      error: (e, st) => Center(child: Text('Error: ')),
-    );
-  }
-}
-
-class _ShopSearchTab extends ConsumerWidget {
-  final String searchQuery;
-  const _ShopSearchTab({required this.searchQuery});
-  
-  static final _formatCurrency = NumberFormat('#,###');
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final query = searchQuery.trim().toLowerCase();
-    if (query.isEmpty) return const SizedBox.shrink();
-
-    final productsAsync = ref.watch(categoryProductsStreamProvider('all'));
-    final isSub = ref.watch(isSubscribedProvider).value ?? false;
-
-    return productsAsync.when(
-      data: (products) {
-        final filtered = products.where((p) => p.productName.toLowerCase().contains(query)).toList();
-        return ListView.builder(
-          itemCount: filtered.length,
-          itemBuilder: (context, index) {
-            final product = filtered[index];
-            return ListTile(
-              title: Text(product.productName),
-              subtitle: isSub
-                  ? Text('\ ?')
-                  : Text('\ ?'),
-              leading: (product.imgUrl != null && product.imgUrl!.isNotEmpty)
-                  ? CachedNetworkImage(
-                      imageUrl: product.imgUrl!,
-                      width: 50.w,
-                      height: 50.h,
-                      fit: BoxFit.cover,
-                    )
-                  : SizedBox(width: 50.w, height: 50.h),
-              onTap: () async {
-                String arrivalTime = await getArrivalDay(
-                  product.meridiem,
-                  product.baselineTime,
-                );
-                if (!context.mounted) return;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ItemDetails(
-                      product: product,
-                      arrivalDay: arrivalTime,
-                      isSub: isSub,
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-      loading: () => const Center(),
-      error: (e, st) => Center(child: Text('Error: ')),
+      error: (e, st) => Center(child: Text('Error: $e')),
     );
   }
 }
