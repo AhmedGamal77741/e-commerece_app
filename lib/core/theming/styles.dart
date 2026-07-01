@@ -1,7 +1,6 @@
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class TextStyles {
   static TextStyle _textStyle({
@@ -9,10 +8,12 @@ class TextStyles {
     required FontWeight fontWeight,
     required color,
     double letterSpacing = 0,
+    String fontFamily = 'NotoSans',
   }) {
-    return GoogleFonts.outfit(
+    return TextStyle(
       fontSize: fontSize.sp,
       decoration: TextDecoration.none,
+      fontFamily: fontFamily,
       fontStyle: FontStyle.normal,
       fontWeight: fontWeight,
       color: color,

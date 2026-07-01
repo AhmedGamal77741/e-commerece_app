@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ecommerece_app/core/theming/styles.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -43,7 +44,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final authState = ref.watch(authNotifierProvider);
 
     return Stack(
@@ -67,31 +67,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   verticalSpace(30),
                   Padding(
                     padding: EdgeInsets.only(bottom: 8.h),
-                    child: Text(
-                      '닉네임', 
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
+                    child: const Text('닉네임', style: TextStyle(fontSize: 14, color: Colors.black87)),
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface, 
+                      color: Colors.white, 
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: TextFormField(
                       controller: nameController,
                       keyboardType: TextInputType.name,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: '한글',
-                        hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                        hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                       ),
                       validator: (val) {
                         if (val == null || val.isEmpty) {
@@ -106,24 +96,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   verticalSpace(16),
                   Padding(
                     padding: EdgeInsets.only(bottom: 8.h),
-                    child: Text(
-                      '전화번호', 
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
+                    child: const Text('전화번호', style: TextStyle(fontSize: 14, color: Colors.black87)),
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface, 
+                      color: Colors.white, 
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: TextFormField(
                       controller: phoneController,
                       keyboardType: TextInputType.phone,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
@@ -145,24 +127,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   verticalSpace(16),
                   Padding(
                     padding: EdgeInsets.only(bottom: 8.h),
-                    child: Text(
-                      '이메일', 
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
+                    child: const Text('이메일', style: TextStyle(fontSize: 14, color: Colors.black87)),
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface, 
+                      color: Colors.white, 
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: TextFormField(
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
@@ -182,30 +156,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   verticalSpace(16),
                   Padding(
                     padding: EdgeInsets.only(bottom: 8.h),
-                    child: Text(
-                      '비밀번호', 
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
+                    child: const Text('비밀번호', style: TextStyle(fontSize: 14, color: Colors.black87)),
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface, 
+                      color: Colors.white, 
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: TextFormField(
                       controller: passwordController,
                       obscureText: obscurePassword,
                       keyboardType: TextInputType.visiblePassword,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
                       decoration: InputDecoration(
                         hintText: '영문, 숫자 조합 8자 이상',
-                        hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                        hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                         suffixIcon: IconButton(
@@ -216,7 +180,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           },
                           icon: Icon(
                             obscurePassword ? Icons.visibility_off : Icons.visibility,
-                            color: theme.colorScheme.onSurfaceVariant,
+                            color: Colors.grey,
                           ),
                         ),
                       ),
@@ -235,17 +199,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   verticalSpace(16),
                   Padding(
                     padding: EdgeInsets.only(bottom: 8.h),
-                    child: Text(
-                      '비공개 프로필', 
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
+                    child: const Text('비공개 프로필', style: TextStyle(fontSize: 14, color: Colors.black87)),
                   ),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -257,15 +216,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               isPrivate = s;
                             });
                           },
-                          activeTrackColor: theme.colorScheme.primary,
+                          activeTrackColor: Colors.black,
                         ),
                         SizedBox(width: 16.w),
                         Expanded(
                           child: Text(
                             '친구로 수락한 사람만 회원님을\n구독하고 게시물을 볼수있어요.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                           ),
                         ),
                       ],
@@ -284,12 +241,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   ),
                   if (error.isNotEmpty) ...[
                     verticalSpace(16),
-                    Text(
-                      error, 
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
-                    ),
+                    Text(error, style: TextStyles.abeezee16px400wPred),
                   ],
                   verticalSpace(20),
                   ElevatedButton(
@@ -343,27 +295,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             }
                           },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
+                      backgroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                       padding: EdgeInsets.symmetric(vertical: 16.h),
                     ),
                     child: authState.isLoading
-                        ? SizedBox(
+                        ? const SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
-                              color: theme.colorScheme.onPrimary,
+                              color: Colors.white,
                               strokeWidth: 2,
                             ),
                           )
-                        : Text(
+                        : const Text(
                             '가입하기',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: theme.colorScheme.onPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                   ),
                   verticalSpace(30),

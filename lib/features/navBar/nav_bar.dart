@@ -201,6 +201,8 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
       }
     }
 
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+
     return Scaffold(
       body: bodyWidget,
       bottomNavigationBar: BottomNavigationBar(
@@ -208,8 +210,6 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
         showSelectedLabels: false,
         showUnselectedLabels: false,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: theme.colorScheme.primary,
-        unselectedItemColor: theme.colorScheme.onSurfaceVariant,
         selectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
           fontSize: 10.sp,
         ),
@@ -218,13 +218,14 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
         ),
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: ImageIcon(
-              AssetImage(
-                _selectedIndex == 0
-                    ? 'assets/001m.png'
-                    : 'assets/grey_001m.png',
-              ),
-              size: 30.r,
+            icon: Image.asset(
+              _selectedIndex == 0
+                  ? 'assets/001m.png'
+                  : 'assets/grey_001m.png',
+              width: 30.r,
+              height: 30.r,
+              gaplessPlayback: true,
+              cacheWidth: (30 * devicePixelRatio).toInt(),
             ),
             label: '상점',
           ),
@@ -249,24 +250,26 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
             label: '홈',
           ),
           BottomNavigationBarItem(
-            icon: ImageIcon(
-              AssetImage(
-                _selectedIndex == 3
-                    ? 'assets/002m.png'
-                    : 'assets/grey_002m.png',
-              ),
-              size: 30.r,
+            icon: Image.asset(
+              _selectedIndex == 3
+                  ? 'assets/002m.png'
+                  : 'assets/grey_002m.png',
+              width: 30.r,
+              height: 30.r,
+              gaplessPlayback: true,
+              cacheWidth: (30 * devicePixelRatio).toInt(),
             ),
             label: '장바구니',
           ),
           BottomNavigationBarItem(
-            icon: ImageIcon(
-              AssetImage(
-                _selectedIndex == 4
-                    ? 'assets/005m.png'
-                    : 'assets/grey_005m.png',
-              ),
-              size: 30.r,
+            icon: Image.asset(
+              _selectedIndex == 4
+                  ? 'assets/005m.png'
+                  : 'assets/grey_005m.png',
+              width: 30.r,
+              height: 30.r,
+              gaplessPlayback: true,
+              cacheWidth: (30 * devicePixelRatio).toInt(),
             ),
             label: '내페이지',
           ),

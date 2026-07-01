@@ -27,8 +27,6 @@ class ProfileImagePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
     return Center(
       child: GestureDetector(
         onTap: _pickImage,
@@ -45,13 +43,13 @@ class ProfileImagePicker extends StatelessWidget {
                 height: 80.h,
                 width: 80.h,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
+                  color: Colors.grey[300],
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.person, 
                   size: 50.h, 
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: Colors.white,
                 ),
               ),
       ),

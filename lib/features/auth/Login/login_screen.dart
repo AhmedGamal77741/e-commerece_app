@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/auth/widgets/forgot_password_dialog.dart';
+import 'package:ecommerece_app/core/theming/styles.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -28,7 +29,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final authState = ref.watch(authNotifierProvider);
 
     return SingleChildScrollView(
@@ -41,22 +41,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextFormField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: '이메일',
-                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
+                    contentPadding: EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 15,
                     ),
@@ -76,20 +71,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               verticalSpace(12),
               Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextFormField(
                   controller: passwordController,
                   obscureText: obsecurepassword,
                   keyboardType: TextInputType.visiblePassword,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
                   decoration: InputDecoration(
                     hintText: '영어, 숫자 조합',
-                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    hintStyle: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
@@ -106,7 +99,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         obsecurepassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: Colors.grey,
                       ),
                     ),
                   ),
@@ -124,12 +117,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               if (error.isNotEmpty) ...[
                 verticalSpace(12),
-                Text(
-                  error, 
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
+                Text(error, style: TextStyles.abeezee16px400wPred),
               ],
               verticalSpace(20),
               ElevatedButton(
@@ -157,25 +145,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         }
                       },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
+                  backgroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                   padding: EdgeInsets.symmetric(vertical: 16.h),
                 ),
                 child: authState.isLoading
-                    ? SizedBox(
+                    ? const SizedBox(
                         width: 24,
                         height: 24,
                         child: CircularProgressIndicator(
-                          color: theme.colorScheme.onPrimary,
+                          color: Colors.white,
                           strokeWidth: 2,
                         ),
                       )
-                    : Text(
+                    : const Text(
                         '로그인',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onPrimary,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -188,9 +177,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                   child: Text(
                     '비밀번호 찾기',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                 ),
               ),

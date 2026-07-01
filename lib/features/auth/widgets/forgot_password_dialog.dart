@@ -2,6 +2,8 @@ import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
+import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/core/theming/colors.dart';
 
 Future<void> showForgotPasswordDialog(BuildContext context) async {
   await showDialog(
@@ -16,7 +18,8 @@ class ForgotPasswordDialog extends ConsumerStatefulWidget {
   const ForgotPasswordDialog({super.key});
 
   @override
-  ConsumerState<ForgotPasswordDialog> createState() => _ForgotPasswordDialogState();
+  ConsumerState<ForgotPasswordDialog> createState() =>
+      _ForgotPasswordDialogState();
 }
 
 class _ForgotPasswordDialogState extends ConsumerState<ForgotPasswordDialog> {
@@ -31,46 +34,29 @@ class _ForgotPasswordDialogState extends ConsumerState<ForgotPasswordDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final authState = ref.watch(authNotifierProvider);
 
     return AlertDialog(
-      backgroundColor: theme.colorScheme.surface,
-      title: Text(
-        '비밀번호 찾기', 
-        style: theme.textTheme.titleMedium?.copyWith(
-          color: theme.colorScheme.onSurface,
-        ),
-      ),
+      backgroundColor: ColorsManager.white,
+      title: Text('비밀번호 찾기', style: TextStyles.abeezee16px400wPblack),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '가입한 이메일을 입력해주세요.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
+          Text('가입한 이메일을 입력해주세요.', style: TextStyles.abeezee13px400wPblack),
           verticalSpace(10),
           Container(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
+              color: Colors.grey[200],
               borderRadius: BorderRadius.circular(10),
             ),
             child: TextFormField(
               controller: resetEmailController,
               keyboardType: TextInputType.emailAddress,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: '이메일',
-                hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
+                contentPadding: EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 15,
                 ),
@@ -79,12 +65,7 @@ class _ForgotPasswordDialogState extends ConsumerState<ForgotPasswordDialog> {
           ),
           if (dialogError.isNotEmpty) ...[
             verticalSpace(10),
-            Text(
-              dialogError, 
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
+            Text(dialogError, style: TextStyles.abeezee16px400wPred),
           ],
         ],
       ),
@@ -95,55 +76,54 @@ class _ForgotPasswordDialogState extends ConsumerState<ForgotPasswordDialog> {
               Navigator.pop(context);
             }
           },
-          child: Text(
-            '취소', 
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+          child: Text('취소', style: TextStyles.abeezee14px400wP600),
         ),
         TextButton(
-          onPressed: authState.isLoading
-              ? null
-              : () async {
-                  if (resetEmailController.text.isEmpty) {
-                    setState(() {
-                      dialogError = '이메일을 입력해주세요.';
-                    });
-                    return;
-                  }
-
-                  try {
-                    await ref.read(authNotifierProvider.notifier).sendPasswordReset(
-                      resetEmailController.text,
-                    );
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('비밀번호 재설정 이메일이 전송되었습니다.'),
-                        ),
-                      );
+          onPressed:
+              authState.isLoading
+                  ? null
+                  : () async {
+                    if (resetEmailController.text.isEmpty) {
+                      setState(() {
+                        dialogError = '이메일을 입력해주세요.';
+                      });
+                      return;
                     }
-                  } catch (e) {
-                    setState(() {
-                      dialogError = e.toString().replaceAll('Exception: ', '');
-                    });
-                  }
-                },
-          child: authState.isLoading 
-              ? const SizedBox(
-                  width: 16, 
-                  height: 16, 
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(
-                  '전송',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
+
+                    try {
+                      await ref
+                          .read(authNotifierProvider.notifier)
+                          .sendPasswordReset(resetEmailController.text);
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('비밀번호 재설정 이메일이 전송되었습니다.'),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      setState(() {
+                        dialogError = e.toString().replaceAll(
+                          'Exception: ',
+                          '',
+                        );
+                      });
+                    }
+                  },
+          child:
+              authState.isLoading
+                  ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : Text(
+                    '전송',
+                    style: TextStyles.abeezee14px400wP600.copyWith(
+                      color: ColorsManager.primaryblack,
+                    ),
                   ),
-                ),
         ),
       ],
     );

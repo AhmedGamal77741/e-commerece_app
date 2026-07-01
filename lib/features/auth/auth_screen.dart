@@ -29,10 +29,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      backgroundColor: theme.colorScheme.surfaceContainerLow,
+      backgroundColor: const Color(0xFFEEEEEE),
       body: SafeArea(
         child: Column(
           children: [
@@ -47,18 +45,15 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                     decoration: BoxDecoration(
-                      color: _tabController.index == 0 
-                          ? theme.colorScheme.surface 
-                          : Colors.transparent,
+                      color: _tabController.index == 0 ? Colors.white : Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '로그인',
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: _tabController.index == 0 
-                            ? theme.colorScheme.onSurface 
-                            : theme.colorScheme.onSurfaceVariant,
+                        color: _tabController.index == 0 ? Colors.black : Colors.black87,
                       ),
                     ),
                   ),
@@ -71,18 +66,15 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                     decoration: BoxDecoration(
-                      color: _tabController.index == 1 
-                          ? theme.colorScheme.surface 
-                          : Colors.transparent,
+                      color: _tabController.index == 1 ? Colors.white : Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '회원가입',
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: _tabController.index == 1 
-                            ? theme.colorScheme.onSurface 
-                            : theme.colorScheme.onSurfaceVariant,
+                        color: _tabController.index == 1 ? Colors.black : Colors.black87,
                       ),
                     ),
                   ),
