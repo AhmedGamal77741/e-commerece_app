@@ -96,7 +96,10 @@ class MyUser {
       'phoneNumber': phoneNumber,
       'type': type,
       'isPrivate': isPrivate,
-      'lastPostCreatedAt': lastPostCreatedAt != null ? Timestamp.fromDate(lastPostCreatedAt!) : null,
+      'lastPostCreatedAt':
+          lastPostCreatedAt != null
+              ? Timestamp.fromDate(lastPostCreatedAt!)
+              : null,
     };
   }
 
@@ -135,11 +138,14 @@ class MyUser {
       phoneNumber: (doc['phoneNumber'] ?? '') as String?,
       type: (doc['type'] ?? 'user') as String,
       isPrivate: _parseBool(doc['isPrivate']),
-      lastPostCreatedAt: doc['lastPostCreatedAt'] != null
-          ? (doc['lastPostCreatedAt'] is Timestamp
-              ? (doc['lastPostCreatedAt'] as Timestamp).toDate()
-              : DateTime.fromMillisecondsSinceEpoch(doc['lastPostCreatedAt'] as int))
-          : null,
+      lastPostCreatedAt:
+          doc['lastPostCreatedAt'] != null
+              ? (doc['lastPostCreatedAt'] is Timestamp
+                  ? (doc['lastPostCreatedAt'] as Timestamp).toDate()
+                  : DateTime.fromMillisecondsSinceEpoch(
+                    doc['lastPostCreatedAt'] as int,
+                  ))
+              : null,
     );
   }
 
@@ -171,11 +177,14 @@ class MyUser {
       phoneNumber: (doc['phoneNumber'] ?? '') as String?,
       type: (doc['type'] ?? 'user') as String,
       isPrivate: _parseBool(doc['isPrivate']),
-      lastPostCreatedAt: doc['lastPostCreatedAt'] != null
-          ? (doc['lastPostCreatedAt'] is Timestamp
-              ? (doc['lastPostCreatedAt'] as Timestamp).toDate()
-              : DateTime.fromMillisecondsSinceEpoch(doc['lastPostCreatedAt'] as int))
-          : null,
+      lastPostCreatedAt:
+          doc['lastPostCreatedAt'] != null
+              ? (doc['lastPostCreatedAt'] is Timestamp
+                  ? (doc['lastPostCreatedAt'] as Timestamp).toDate()
+                  : DateTime.fromMillisecondsSinceEpoch(
+                    doc['lastPostCreatedAt'] as int,
+                  ))
+              : null,
     );
   }
 
