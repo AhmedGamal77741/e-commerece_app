@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/auth/widgets/forgot_password_dialog.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -18,8 +17,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final emailController = TextEditingController();
   bool obsecurepassword = true;
   final _formKey = GlobalKey<FormState>();
-  String error = '';
-
   @override
   void dispose() {
     passwordController.dispose();
@@ -30,6 +27,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
+
+    ref.listen<AsyncValue<void>>(authNotifierProvider, (previous, next) {
+      next.whenOrNull(
+        error: (err, stack) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                err.toString().replaceAll('Exception: ', ''),
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        },
+      );
+    });
 
     return SingleChildScrollView(
       child: Padding(
@@ -115,33 +132,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
               ),
-              if (error.isNotEmpty) ...[
-                verticalSpace(12),
-                Text(error, style: TextStyles.abeezee16px400wPred),
-              ],
               verticalSpace(20),
               ElevatedButton(
                 onPressed: authState.isLoading
                     ? null
                     : () async {
                         if (_formKey.currentState!.validate()) {
-                          try {
-                            await ref.read(authNotifierProvider.notifier).signIn(
-                                  emailController.text,
-                                  passwordController.text,
-                                );
-                            if (context.mounted) {
-                              setState(() {
-                                error = '';
-                              });
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              setState(() {
-                                error = e.toString().replaceAll('Exception: ', '');
-                              });
-                            }
-                          }
+                          await ref.read(authNotifierProvider.notifier).signIn(
+                                emailController.text,
+                                passwordController.text,
+                              );
                         }
                       },
                 style: ElevatedButton.styleFrom(
