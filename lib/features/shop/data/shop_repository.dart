@@ -11,13 +11,12 @@ class ShopRepository {
   ShopRepository(this._firestore);
 
   Stream<QuerySnapshot<Map<String, dynamic>>> categoriesStream() {
-    return _firestore
-        .collection('categories')
-        .orderBy('order')
-        .snapshots();
+    return _firestore.collection('categories').orderBy('order').snapshots();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> productsByCategoryStream(String categoryId) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> productsByCategoryStream(
+    String categoryId,
+  ) {
     if (categoryId == 'all') {
       return _firestore.collection('products').snapshots();
     }
@@ -35,7 +34,10 @@ class ShopRepository {
     return _firestore.collection('users').doc(uid).snapshots();
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getAddress(String uid, String addressId) {
+  Future<DocumentSnapshot<Map<String, dynamic>>> getAddress(
+    String uid,
+    String addressId,
+  ) {
     return _firestore
         .collection('users')
         .doc(uid)
