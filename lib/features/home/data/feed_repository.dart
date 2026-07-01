@@ -90,16 +90,17 @@ class FeedRepository {
   }
 
   Stream<Map<String, Map<String, dynamic>>> getAuthorsDataStreamRealtime(
-    List<String> authorIds,
+    List<String> userIds,
   ) {
-    if (authorIds.isEmpty) return Stream.value({});
+    userIds = userIds.where((id) => id.isNotEmpty).toList();
+    if (userIds.isEmpty) return Stream.value({});
 
     final chunks = <List<String>>[];
-    for (var i = 0; i < authorIds.length; i += 10) {
+    for (var i = 0; i < userIds.length; i += 10) {
       chunks.add(
-        authorIds.sublist(
+        userIds.sublist(
           i,
-          i + 10 > authorIds.length ? authorIds.length : i + 10,
+          i + 10 > userIds.length ? userIds.length : i + 10,
         ),
       );
     }
@@ -198,6 +199,7 @@ class FeedRepository {
     String currentUserId,
     String targetUserId,
   ) {
+    if (currentUserId.isEmpty || targetUserId.isEmpty) return const Stream.empty();
     return _firestore
         .collection('users')
         .doc(currentUserId)
@@ -210,6 +212,7 @@ class FeedRepository {
     String targetUserId,
     String currentUserId,
   ) {
+    if (currentUserId.isEmpty || targetUserId.isEmpty) return const Stream.empty();
     return _firestore
         .collection('users')
         .doc(targetUserId)
