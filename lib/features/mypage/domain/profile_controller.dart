@@ -103,21 +103,8 @@ class ProfileController extends AsyncNotifier<void> {
       }
     }
 
-    final updatedUser = MyUser(
-      userId: currentUser.userId,
-      email: currentUser.email,
+    final updatedUser = currentUser.copyWith(
       name: isUpdatingName ? newNickname.trim() : currentUser.name,
-      url: currentUser.url,
-      isSub: currentUser.isSub,
-      defaultAddressId: currentUser.defaultAddressId,
-      blocked: currentUser.blocked,
-      payerId: currentUser.payerId,
-      isOnline: currentUser.isOnline,
-      lastSeen: currentUser.lastSeen,
-      chatRooms: currentUser.chatRooms,
-      friends: currentUser.friends,
-      friendRequestsSent: currentUser.friendRequestsSent,
-      friendRequestsReceived: currentUser.friendRequestsReceived,
       phoneNumber: isUpdatingPhone ? phone : currentUser.phoneNumber,
     );
 

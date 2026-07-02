@@ -32,7 +32,10 @@ class ProfileRepository {
 
   Future<void> recoverUserAccount(String userId) async {
     try {
-      await _firestore.collection('deleted').doc(userId).delete();
+      await _firestore.collection('users').doc(userId).update({
+        'deleted': FieldValue.delete(),
+        'deletedAt': FieldValue.delete(),
+      });
       final query = await _firestore.collection('deletes').where('userId', isEqualTo: userId).get();
       for (final doc in query.docs) {
         await doc.reference.delete();
