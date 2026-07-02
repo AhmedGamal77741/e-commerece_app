@@ -36,7 +36,7 @@ class ShopSearch extends ConsumerWidget {
     final isSub = ref.watch(isSubscribedProvider).value ?? false;
     final query = ref.watch(searchNotifierProvider).value?.query ?? '';
     final userAddressAsync = ref.watch(userDefaultAddressStreamProvider);
-    final userAddress = userAddressAsync.value;
+    final userAddress = userAddressAsync.value?['addressMap'] as Map<String, dynamic>?;
 
     return switch (productsAsync) {
       AsyncData(:final value) => _buildSearchResults(value, isSub, query, userAddress),
