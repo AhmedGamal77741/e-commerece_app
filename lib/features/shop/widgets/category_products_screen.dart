@@ -38,20 +38,25 @@ class _CategoryProductsScreenState extends ConsumerState<CategoryProductsScreen>
     if (userAddress == null || productAddress == null) return false;
     final userRegion1 =
         userAddress['road_address']?['region_1depth_name'] ??
-        userAddress['address']?['region_1depth_name'];
+        userAddress['address']?['region_1depth_name'] ??
+        userAddress['region_1depth_name'];
     final userRegion2 =
         userAddress['road_address']?['region_2depth_name'] ??
-        userAddress['address']?['region_2depth_name'];
+        userAddress['address']?['region_2depth_name'] ??
+        userAddress['region_2depth_name'];
     final productRegion1 =
         productAddress['road_address']?['region_1depth_name'] ??
-        productAddress['address']?['region_1depth_name'];
+        productAddress['address']?['region_1depth_name'] ??
+        productAddress['region_1depth_name'];
     final productRegion2 =
         productAddress['road_address']?['region_2depth_name'] ??
-        productAddress['address']?['region_2depth_name'];
+        productAddress['address']?['region_2depth_name'] ??
+        productAddress['region_2depth_name'];
 
     if (userRegion1 == null || productRegion1 == null) return false;
     if (userRegion1 != productRegion1) return false;
-    if (productRegion2 != null && productRegion2.isNotEmpty) {
+    if (userRegion2 != null && userRegion2.isNotEmpty && 
+        productRegion2 != null && productRegion2.isNotEmpty) {
       if (userRegion2 != productRegion2) return false;
     }
     return true;
@@ -85,10 +90,14 @@ class _CategoryProductsScreenState extends ConsumerState<CategoryProductsScreen>
           List<Product> soldOutList = [];
 
           for (var product in products) {
+            if (hasUserAddress && !_isSameRegion(userAddressMap, product.address)) {
+              continue;
+            }
+
             if (product.stock == 0) {
               soldOutList.add(product);
             } else {
-              if (hasUserAddress && _isSameRegion(userAddressMap, product.address)) {
+              if (hasUserAddress) {
                 sameRegion.add(product);
               } else {
                 otherRegion.add(product);
