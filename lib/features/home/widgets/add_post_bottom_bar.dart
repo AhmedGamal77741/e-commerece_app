@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/features/home/domain/add_post_notifier.dart';
+import 'package:ecommerece_app/core/theming/colors.dart';
 
 class AddPostBottomBar extends ConsumerWidget {
   final TextEditingController textController;
@@ -37,19 +38,14 @@ class AddPostBottomBar extends ConsumerWidget {
               ref.read(addPostNotifierProvider.notifier).addImages(pickedFiles);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onSurface,
+              backgroundColor: Colors.black,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               elevation: 0,
             ),
-            child: Text(
-              "사진 첨부",
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Theme.of(context).colorScheme.surface,
-              ),
-            ),
+            child: const Text("사진 첨부", style: TextStyle(color: Colors.white)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -81,20 +77,15 @@ class AddPostBottomBar extends ConsumerWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: isPublishDisabled
-                  ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)
-                  : Theme.of(context).colorScheme.onSurface,
+                  ? ColorsManager.primary200
+                  : Colors.black,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               elevation: 0,
             ),
-            child: Text(
-              "게시",
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Theme.of(context).colorScheme.surface,
-              ),
-            ),
+            child: const Text("게시", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
