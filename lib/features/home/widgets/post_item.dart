@@ -87,13 +87,15 @@ class _PostItemState extends ConsumerState<PostItem> {
               ),
         );
 
-        await ref.read(feedControllerProvider.notifier).updatePost(
-          postId: widget.postId,
-          text: result.text,
-          networkImgUrls: result.imgUrls,
-          newImages: result.newImages,
-          categoryId: result.categoryId,
-        );
+        await ref
+            .read(feedControllerProvider.notifier)
+            .updatePost(
+              postId: widget.postId,
+              text: result.text,
+              networkImgUrls: result.imgUrls,
+              newImages: result.newImages,
+              categoryId: result.categoryId,
+            );
 
         if (!context.mounted) return;
         Navigator.pop(context); // Close loading dialog
@@ -157,10 +159,11 @@ class _PostItemState extends ConsumerState<PostItem> {
       postsProvider.listenToComments(widget.postId);
     }
 
-    final double fromCommentsImageWidth = MediaQuery.of(context).size.width - 20.w;
+    final double fromCommentsImageWidth =
+        MediaQuery.of(context).size.width - 20.w;
 
     final allPostsState = ref.watch(allPostsStreamProvider);
-    
+
     return Builder(
       builder: (context) {
         final docs = allPostsState.value ?? [];
@@ -170,9 +173,11 @@ class _PostItemState extends ConsumerState<PostItem> {
           tempPostData = doc.data() as Map<String, dynamic>;
           tempPostData['postId'] = doc.id;
         } catch (_) {}
-        
+
         final postData = tempPostData;
-        if (postData == null || postData.isEmpty) return const SizedBox.shrink();
+        if (postData == null || postData.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
         final cachedUser = postsProvider.getUser(postData['userId']);
         return FutureBuilder<MyUser>(
@@ -201,9 +206,7 @@ class _PostItemState extends ConsumerState<PostItem> {
                 !userMissing && !isWaiting ? (myuser?.url ?? '') : '';
             final currentUid = ref.watch(currentUserIdProvider);
             final bool isMyPost =
-                !userMissing &&
-                !isWaiting &&
-                myuser!.userId == currentUid;
+                !userMissing && !isWaiting && myuser!.userId == currentUid;
 
             final List imgUrls =
                 (postData['imgUrls'] != null &&
@@ -257,17 +260,19 @@ class _PostItemState extends ConsumerState<PostItem> {
                                   ),
                                   if (widget.showMoreButton)
                                     isMyPost
-                                      ? OwnPostMenu(
+                                        ? OwnPostMenu(
                                           postId: widget.postId,
                                           currentText: postData['text'] ?? '',
-                                          onEdit: () => _showEditDialog(
-                                            context,
-                                            postData['text'] ?? '',
-                                            imgUrls.cast<String>(),
-                                            postData['categoryId'] as String?,
-                                          ),
+                                          onEdit:
+                                              () => _showEditDialog(
+                                                context,
+                                                postData['text'] ?? '',
+                                                imgUrls.cast<String>(),
+                                                postData['categoryId']
+                                                    as String?,
+                                              ),
                                         )
-                                      : OtherPostMenu(
+                                        : OtherPostMenu(
                                           postId: widget.postId,
                                           userId: myuser?.userId ?? '',
                                           onRunWithLoading: _runWithLoading,
@@ -325,7 +330,9 @@ class _PostItemState extends ConsumerState<PostItem> {
                                         (myuser?.url != null &&
                                                 myuser!.url.isNotEmpty)
                                             ? NetworkImage(myuser.url)
-                                            : const AssetImage('assets/avatar.png')
+                                            : const AssetImage(
+                                                  'assets/avatar.png',
+                                                )
                                                 as ImageProvider,
                                     fit: BoxFit.cover,
                                   ),
