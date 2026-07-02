@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -73,115 +72,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
     });
   }
 
-  Future<void> _runImageMigration(BuildContext context) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Migrating post image ratios...'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
 
-    try {
-      final firestore = FirebaseFirestore.instance;
-      final postsSnapshot = await firestore.collection('posts').get();
-      int migratedCount = 0;
-
-      for (final doc in postsSnapshot.docs) {
-        final data = doc.data();
-        final imgUrls = data['imgUrls'] as List<dynamic>?;
-        final existingRatios = data['imageRatios'] as Map<String, dynamic>?;
-
-        if (imgUrls != null && imgUrls.isNotEmpty) {
-          bool needsMigration = false;
-          final Map<String, double> imageRatios = {};
-          if (existingRatios == null) {
-            needsMigration = true;
-          } else {
-            for (final url in imgUrls) {
-              if (url is String && !existingRatios.containsKey(url)) {
-                needsMigration = true;
-                break;
-              }
-            }
-          }
-
-          if (needsMigration) {
-            for (final url in imgUrls) {
-              if (url is String) {
-                if (existingRatios != null && existingRatios.containsKey(url)) {
-                  imageRatios[url] = (existingRatios[url] as num).toDouble();
-                  continue;
-                }
-                try {
-                  final image = ResizeImage(CachedNetworkImageProvider(url), width: 100);
-                  final stream = image.resolve(ImageConfiguration.empty);
-                  final completer = Completer<double>();
-                  late ImageStreamListener listener;
-                  listener = ImageStreamListener(
-                    (info, synchronousCall) {
-                      stream.removeListener(listener);
-                      completer.complete(info.image.width.toDouble() / info.image.height.toDouble());
-                    },
-                    onError: (e, stack) {
-                      stream.removeListener(listener);
-                      completer.complete(1.1);
-                    },
-                  );
-                  stream.addListener(listener);
-                  final ratio = await completer.future.timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () => 1.1,
-                  );
-                  imageRatios[url] = ratio;
-                } catch (e) {
-                  imageRatios[url] = 1.1;
-                }
-              }
-            }
-
-            await doc.reference.update({
-              'imageRatios': imageRatios,
-            });
-            migratedCount++;
-          }
-        }
-      }
-
-      if (context.mounted) Navigator.of(context).pop();
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Successfully migrated $migratedCount posts!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) Navigator.of(context).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Migration failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -221,11 +112,6 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                           icon: Icon(Icons.arrow_back, size: 24.sp),
                         ),
                         const Spacer(),
-                        IconButton(
-                          icon: Icon(Icons.image_aspect_ratio_outlined, size: 24.sp, color: Colors.blue),
-                          onPressed: () => _runImageMigration(context),
-                          tooltip: 'Migrate Image Aspect Ratios',
-                        ),
                       ],
                     ),
                     verticalSpace(10),
