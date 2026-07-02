@@ -74,6 +74,7 @@ class AddPostState {
     List<UploadableImage>? images,
     List<Map<String, dynamic>>? categories,
     String? selectedCategoryId,
+    bool clearSelectedCategory = false,
     bool? isArrangeMode,
     bool? isDeleteMode,
     bool? isEditMode,
@@ -83,7 +84,7 @@ class AddPostState {
     return AddPostState(
       images: images ?? this.images,
       categories: categories ?? this.categories,
-      selectedCategoryId: selectedCategoryId ?? this.selectedCategoryId,
+      selectedCategoryId: clearSelectedCategory ? null : (selectedCategoryId ?? this.selectedCategoryId),
       isArrangeMode: isArrangeMode ?? this.isArrangeMode,
       isDeleteMode: isDeleteMode ?? this.isDeleteMode,
       isEditMode: isEditMode ?? this.isEditMode,
@@ -250,7 +251,7 @@ class AddPostNotifier extends Notifier<AddPostState> {
 
   void selectCategory(String categoryId) {
     if (state.selectedCategoryId == categoryId) {
-      state = state.copyWith(selectedCategoryId: null);
+      state = state.copyWith(clearSelectedCategory: true);
     } else {
       state = state.copyWith(selectedCategoryId: categoryId);
     }
