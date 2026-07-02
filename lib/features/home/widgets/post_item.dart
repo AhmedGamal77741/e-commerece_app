@@ -19,9 +19,13 @@ import 'package:ecommerece_app/features/home/widgets/post_item_components/post_h
 import 'package:ecommerece_app/features/home/widgets/post_item_components/post_action_buttons.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/post_menus.dart';
 
-final postDocumentStreamProvider = StreamProvider.family<DocumentSnapshot, String>((ref, postId) {
-  return FirebaseFirestore.instance.collection('posts').doc(postId).snapshots();
-});
+final postDocumentStreamProvider =
+    StreamProvider.family<DocumentSnapshot, String>((ref, postId) {
+      return FirebaseFirestore.instance
+          .collection('posts')
+          .doc(postId)
+          .snapshots();
+    });
 
 // =============================================================================
 // PostItem — converted to StatefulWidget so PageController is stable
@@ -57,7 +61,8 @@ class _PostItemState extends ConsumerState<PostItem> {
   Future<String?>? _nicknameFuture;
 
   Future<String?> _getNickname(String userId) {
-    if (userId == _cachedUserId && _nicknameFuture != null) return _nicknameFuture!;
+    if (userId == _cachedUserId && _nicknameFuture != null)
+      return _nicknameFuture!;
     _cachedUserId = userId;
     _nicknameFuture = ContactService().getContactNickname(userId);
     return _nicknameFuture!;
@@ -189,19 +194,21 @@ class _PostItemState extends ConsumerState<PostItem> {
   @override
   Widget build(BuildContext context) {
     final postsProvider = ref.read(feedControllerProvider.notifier);
-
     final double fromCommentsImageWidth = MediaQuery.of(context).size.width - 20.w;
 
     // 1. Try to get post data from constructor or select it from feedControllerProvider
-    final Map<String, dynamic>? postData = widget.postData ??
-        ref.watch(feedControllerProvider.select((asyncList) {
-          final list = asyncList.value;
-          if (list == null) return null;
-          for (var p in list) {
-            if (p['postId'] == widget.postId) return p;
-          }
-          return null;
-        }));
+    final Map<String, dynamic>? postData =
+        widget.postData ??
+        ref.watch(
+          feedControllerProvider.select((asyncList) {
+            final list = asyncList.value;
+            if (list == null) return null;
+            for (var p in list) {
+              if (p['postId'] == widget.postId) return p;
+            }
+            return null;
+          }),
+        );
 
     // 3. If we have postData, render it immediately! No stream connection, no skeleton shimmer!
     if (postData != null) {
@@ -220,7 +227,8 @@ class _PostItemState extends ConsumerState<PostItem> {
       return FutureBuilder<MyUser>(
         future: _getProfileUser(postData['userId'], postsProvider),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
             return _buildSkeleton(fromCommentsImageWidth);
           }
           final bool userMissing =
@@ -243,7 +251,9 @@ class _PostItemState extends ConsumerState<PostItem> {
 
     // 4. Fallback: only if we have NO postData anywhere (e.g. deep link or search screen first load),
     // then and only then watch the realtime stream provider.
-    final postStreamAsync = ref.watch(postDocumentStreamProvider(widget.postId));
+    final postStreamAsync = ref.watch(
+      postDocumentStreamProvider(widget.postId),
+    );
 
     return postStreamAsync.when(
       loading: () => _buildSkeleton(fromCommentsImageWidth),
@@ -270,7 +280,8 @@ class _PostItemState extends ConsumerState<PostItem> {
         return FutureBuilder<MyUser>(
           future: _getProfileUser(pData['userId'], postsProvider),
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData) {
               return _buildSkeleton(fromCommentsImageWidth);
             }
             final bool userMissing =
@@ -315,9 +326,17 @@ class _PostItemState extends ConsumerState<PostItem> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(width: 120.w, height: 14.h, color: Colors.grey[300]),
+                  Container(
+                    width: 120.w,
+                    height: 14.h,
+                    color: Colors.grey[300],
+                  ),
                   SizedBox(height: 8.h),
-                  Container(width: double.infinity, height: width * 0.6, color: Colors.grey[300]),
+                  Container(
+                    width: double.infinity,
+                    height: width * 0.6,
+                    color: Colors.grey[300],
+                  ),
                 ],
               ),
             ),
@@ -338,16 +357,12 @@ class _PostItemState extends ConsumerState<PostItem> {
     final displayName =
         isWaiting
             ? '로딩 중...'
-            : (myuser?.name.isNotEmpty == true
-                ? myuser!.name
-                : '삭제된 사용자');
+            : (myuser?.name.isNotEmpty == true ? myuser!.name : '삭제된 사용자');
     final String profileUrl =
         !userMissing && !isWaiting ? (myuser?.url ?? '') : '';
     final currentUid = ref.watch(currentUserIdProvider);
     final bool isMyPost =
-        !userMissing &&
-        !isWaiting &&
-        myuser!.userId == currentUid;
+        !userMissing && !isWaiting && myuser!.userId == currentUid;
 
     final List imgUrls =
         (postData['imgUrls'] != null &&
@@ -361,11 +376,7 @@ class _PostItemState extends ConsumerState<PostItem> {
         children: [
           if (widget.fromComments)
             Padding(
-              padding: EdgeInsets.only(
-                top: 5.h,
-                left: 10.w,
-                right: 10.w,
-              ),
+              padding: EdgeInsets.only(top: 5.h, left: 10.w, right: 10.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -401,17 +412,18 @@ class _PostItemState extends ConsumerState<PostItem> {
                           ),
                           if (widget.showMoreButton)
                             isMyPost
-                              ? OwnPostMenu(
+                                ? OwnPostMenu(
                                   postId: widget.postId,
                                   currentText: postData['text'] ?? '',
-                                  onEdit: () => _showEditDialog(
-                                    context,
-                                    postData['text'] ?? '',
-                                    imgUrls.cast<String>(),
-                                    postData['categoryId'] as String?,
-                                  ),
+                                  onEdit:
+                                      () => _showEditDialog(
+                                        context,
+                                        postData['text'] ?? '',
+                                        imgUrls.cast<String>(),
+                                        postData['categoryId'] as String?,
+                                      ),
                                 )
-                              : OtherPostMenu(
+                                : OtherPostMenu(
                                   postId: widget.postId,
                                   userId: myuser?.userId ?? '',
                                   onRunWithLoading: _runWithLoading,
@@ -430,10 +442,7 @@ class _PostItemState extends ConsumerState<PostItem> {
                       explicitWidth: fromCommentsImageWidth,
                     ),
                   verticalSpace(30),
-                  PostActionButtons(
-                    postId: widget.postId,
-                    postData: postData,
-                  ),
+                  PostActionButtons(postId: widget.postId, postData: postData),
                 ],
               ),
             ),
@@ -441,243 +450,228 @@ class _PostItemState extends ConsumerState<PostItem> {
           // Feed path: wrap in a plain Padding — Screenshot only needed on share action
           if (!widget.fromComments)
             Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 12.w,
-                vertical: 8.h,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                    InkWell(
-                      onTap: () {
-                        if (myuser != null &&
-                            widget.currentProfileUserId !=
-                                myuser.userId) {
-                          context.pushNamed(
-                            Routes.profileTabScreen,
-                            extra: {'userId': myuser.userId},
-                          );
-                        }
-                      },
-                      child: Container(
-                        width: 48.w,
-                        height: 48.h,
-                        decoration: ShapeDecoration(
-                          image: DecorationImage(
-                            image:
-                                (myuser?.url != null &&
-                                        myuser!.url.isNotEmpty)
-                                    ? ResizeImage(CachedNetworkImageProvider(myuser.url), width: 120)
-                                    : const AssetImage('assets/avatar.png')
-                                        as ImageProvider,
-                            fit: BoxFit.cover,
-                          ),
-                          shape: const OvalBorder(),
+                  InkWell(
+                    onTap: () {
+                      if (myuser != null &&
+                          widget.currentProfileUserId != myuser.userId) {
+                        context.pushNamed(
+                          Routes.profileTabScreen,
+                          extra: {'userId': myuser.userId},
+                        );
+                      }
+                    },
+                    child: Container(
+                      width: 48.w,
+                      height: 48.h,
+                      decoration: ShapeDecoration(
+                        image: DecorationImage(
+                          image:
+                              (myuser?.url != null && myuser!.url.isNotEmpty)
+                                  ? ResizeImage(
+                                    CachedNetworkImageProvider(myuser.url),
+                                    width: 120,
+                                  )
+                                  : const AssetImage('assets/avatar.png')
+                                      as ImageProvider,
+                          fit: BoxFit.cover,
                         ),
+                        shape: const OvalBorder(),
                       ),
                     ),
-                    horizontalSpace(10),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder:
-                                (context) => Container(
-                                  height:
-                                      MediaQuery.of(
-                                        context,
-                                      ).size.height *
-                                      0.95,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFF2F2F2),
-                                    borderRadius: BorderRadius.vertical(
-                                      top: Radius.circular(20),
-                                    ),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius:
-                                        const BorderRadius.vertical(
-                                          top: Radius.circular(20),
-                                        ),
-                                    child: Comments(
-                                      postId: widget.postId,
-                                    ),
+                  ),
+                  horizontalSpace(10),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder:
+                              (context) => Container(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.95,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF2F2F2),
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(20),
                                   ),
                                 ),
-                          );
-                        },
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.center,
-                              children: [
-                                isWaiting
-                                    ? _PulsingSkeleton(
-                                         child: Container(
-                                           width: 80.w,
-                                           height: 16.h,
-                                           color: Colors.grey[300],
-                                           margin: EdgeInsets.only(
-                                             bottom: 2.h,
-                                           ),
-                                         ),
-                                       )
-                                    : Flexible(
-                                      child: Text(
-                                        displayName,
-                                        style: TextStyles
-                                            .abeezee16px400wPblack
-                                            .copyWith(
-                                              fontWeight:
-                                                  FontWeight.bold,
-                                            ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                     ),
-                                  horizontalSpace(4),
-                                  Builder(
-                                   builder: (context) {
-                                     final String userId = myuser == null ? '' : myuser.userId;
-                                     final contactService = ContactService();
-                                     if (contactService.isNameMapLoaded()) {
-                                       final syncName = contactService.getContactNicknameSync(userId);
-                                       if (syncName != null && syncName.isNotEmpty) {
-                                         return Flexible(
-                                           child: Text(
-                                             '@$syncName',
-                                             style: TextStyle(
-                                               fontSize: 14.sp,
-                                               color: Colors.grey[600],
-                                               fontWeight: FontWeight.w400,
-                                             ),
-                                             maxLines: 1,
-                                             overflow: TextOverflow.ellipsis,
-                                           ),
-                                         );
-                                       }
-                                       return const SizedBox.shrink();
-                                     }
-                                     return FutureBuilder<String?>(
-                                       future: _getNickname(userId),
-                                       builder: (context, snapshot) {
-                                         if (snapshot.connectionState ==
-                                             ConnectionState.waiting) {
-                                           return const SizedBox.shrink();
-                                         }
-                                         if (snapshot.hasError ||
-                                             !snapshot.hasData ||
-                                             snapshot.data == null) {
-                                           return const SizedBox.shrink();
-                                         }
-                                         return Flexible(
-                                           child: Text(
-                                             '@${snapshot.data!}',
-                                             style: TextStyle(
-                                               fontSize: 14.sp,
-                                               color: Colors.grey[600],
-                                               fontWeight: FontWeight.w400,
-                                             ),
-                                             maxLines: 1,
-                                             overflow: TextOverflow.ellipsis,
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(20),
                                   ),
-                              ],
-                            ),
-                            if (postData['text'] != null &&
-                                postData['text']
-                                    .toString()
-                                    .trim()
-                                    .isNotEmpty)
-                              Padding(
-                                padding: EdgeInsets.only(top: 5.h),
-                                child: Builder(
-                                  builder: (context) {
-                                    final String text =
-                                        postData['text'].toString();
-                                    if (text.length > 110) {
-                                      return RichText(
-                                        text: TextSpan(
-                                          text:
-                                              '${text.substring(0, 110)}...\n',
-                                          style: TextStyle(
-                                            color: const Color(
-                                              0xFF343434,
-                                            ),
-                                            fontSize: 16.sp,
-                                            fontFamily: 'NotoSans',
-                                            fontWeight: FontWeight.w400,
-                                            height: 1.40.h,
-                                            letterSpacing: -0.09.w,
+                                  child: Comments(postId: widget.postId),
+                                ),
+                              ),
+                        );
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              isWaiting
+                                  ? _PulsingSkeleton(
+                                    child: Container(
+                                      width: 80.w,
+                                      height: 16.h,
+                                      color: Colors.grey[300],
+                                      margin: EdgeInsets.only(bottom: 2.h),
+                                    ),
+                                  )
+                                  : Flexible(
+                                    child: Text(
+                                      displayName,
+                                      style: TextStyles.abeezee16px400wPblack
+                                          .copyWith(
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                          children: [
-                                            TextSpan(
-                                              text: '(더보기)',
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-                                          ],
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                              horizontalSpace(4),
+                              Builder(
+                                builder: (context) {
+                                  final String userId =
+                                      myuser == null ? '' : myuser.userId;
+                                  final contactService = ContactService();
+                                  if (contactService.isNameMapLoaded()) {
+                                    final syncName = contactService
+                                        .getContactNicknameSync(userId);
+                                    if (syncName != null &&
+                                        syncName.isNotEmpty) {
+                                      return Flexible(
+                                        child: Text(
+                                          '@$syncName',
+                                          style: TextStyle(
+                                            fontSize: 14.sp,
+                                            color: Colors.grey[600],
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       );
                                     }
-                                    return Text(
-                                      text,
-                                      style: TextStyle(
-                                        color: const Color(0xFF343434),
-                                        fontSize: 16.sp,
-                                        fontFamily: 'NotoSans',
-                                        fontWeight: FontWeight.w400,
-                                        height: 1.40.h,
-                                        letterSpacing: -0.09.w,
+                                    return const SizedBox.shrink();
+                                  }
+                                  return FutureBuilder<String?>(
+                                    future: _getNickname(userId),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      if (snapshot.hasError ||
+                                          !snapshot.hasData ||
+                                          snapshot.data == null) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return Flexible(
+                                        child: Text(
+                                          '@${snapshot.data!}',
+                                          style: TextStyle(
+                                            fontSize: 14.sp,
+                                            color: Colors.grey[600],
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          if (postData['text'] != null &&
+                              postData['text'].toString().trim().isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.only(top: 5.h),
+                              child: Builder(
+                                builder: (context) {
+                                  final String text =
+                                      postData['text'].toString();
+                                  if (text.length > 110) {
+                                    return RichText(
+                                      text: TextSpan(
+                                        text: '${text.substring(0, 110)}...\n',
+                                        style: TextStyle(
+                                          color: const Color(0xFF343434),
+                                          fontSize: 16.sp,
+                                          fontFamily: 'NotoSans',
+                                          fontWeight: FontWeight.w400,
+                                          height: 1.40.h,
+                                          letterSpacing: -0.09.w,
+                                        ),
+                                        children: [
+                                          TextSpan(
+                                            text: '(더보기)',
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     );
-                                  },
-                                ),
+                                  }
+                                  return Text(
+                                    text,
+                                    style: TextStyle(
+                                      color: const Color(0xFF343434),
+                                      fontSize: 16.sp,
+                                      fontFamily: 'NotoSans',
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.40.h,
+                                      letterSpacing: -0.09.w,
+                                    ),
+                                  );
+                                },
                               ),
-                            verticalSpace(5),
-                            if (imgUrls.isNotEmpty)
-                              NaturalAspectPageView(
-                                imgUrls: imgUrls,
-                                pageController: _pageController,
-                                explicitWidth: MediaQuery.of(context).size.width - 82.w,
-                              ),
-                          ],
-                        ),
+                            ),
+                          verticalSpace(5),
+                          if (imgUrls.isNotEmpty)
+                            NaturalAspectPageView(
+                              imgUrls: imgUrls,
+                              pageController: _pageController,
+                              explicitWidth:
+                                  MediaQuery.of(context).size.width - 82.w,
+                            ),
+                        ],
                       ),
                     ),
-                    if (widget.showMoreButton)
-                      isMyPost
-                          ? OwnPostMenu(
-                            postId: widget.postId,
-                            currentText: postData['text'] ?? '',
-                            onEdit:
-                                () => _showEditDialog(
-                                  context,
-                                  postData['text'] ?? '',
-                                  imgUrls.cast<String>(),
-                                  postData['categoryId'] as String?,
-                                ),
-                          )
-                          : OtherPostMenu(
-                            postId: widget.postId,
-                            userId: myuser?.userId ?? '',
-                            onRunWithLoading: _runWithLoading,
-                            displayName: displayName,
-                            profileUrl: profileUrl,
-                            postData: postData,
-                          ),
-                  ],
-                ),
+                  ),
+                  if (widget.showMoreButton)
+                    isMyPost
+                        ? OwnPostMenu(
+                          postId: widget.postId,
+                          currentText: postData['text'] ?? '',
+                          onEdit:
+                              () => _showEditDialog(
+                                context,
+                                postData['text'] ?? '',
+                                imgUrls.cast<String>(),
+                                postData['categoryId'] as String?,
+                              ),
+                        )
+                        : OtherPostMenu(
+                          postId: widget.postId,
+                          userId: myuser?.userId ?? '',
+                          onRunWithLoading: _runWithLoading,
+                          displayName: displayName,
+                          profileUrl: profileUrl,
+                          postData: postData,
+                        ),
+                ],
+              ),
             ),
         ],
       ),
@@ -715,9 +709,10 @@ class _PulsingSkeletonState extends State<_PulsingSkeleton>
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
-      opacity: Tween<double>(begin: 0.35, end: 0.85).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-      ),
+      opacity: Tween<double>(
+        begin: 0.35,
+        end: 0.85,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
       child: widget.child,
     );
   }

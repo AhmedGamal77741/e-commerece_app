@@ -139,58 +139,33 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FeedRepository get _repository => ref.read(feedRepositoryProvider);
 
-  DocumentSnapshot? _lastDocument;
-  bool _hasMore = true;
-  bool _isLoadingMore = false;
-
-  bool get hasMore => _hasMore;
+  bool get hasMore => false;
 
   @override
   FutureOr<List<Map<String, dynamic>>> build() async {
-    _lastDocument = null;
-    _hasMore = true;
-    _isLoadingMore = false;
-
-    // Only watch authStateProvider to trigger rebuild and reset pagination on login/logout
+    // Only watch authStateProvider to trigger rebuild on login/logout
     ref.watch(authStateProvider);
 
-    return _fetchPage(limit: 20);
+    return _fetchPage();
   }
 
-  Future<List<Map<String, dynamic>>> _fetchPage({int? limit}) async {
+  Future<List<Map<String, dynamic>>> _fetchPage() async {
     final user = ref.read(authStateProvider).value;
 
-    Query query = _firestore
+    final postsSnapshot = await _firestore
         .collection('posts')
-        .orderBy('createdAt', descending: true);
-
-    if (limit != null && limit > 0) {
-      query = query.limit(limit);
-    }
-
-    if (_lastDocument != null) {
-      query = query.startAfterDocument(_lastDocument!);
-    }
-
-    final postsSnapshot = await query.get();
+        .orderBy('createdAt', descending: true)
+        .get();
 
     if (postsSnapshot.docs.isEmpty) {
-      _hasMore = false;
       return [];
     }
 
-    if (limit == null) {
-      _hasMore = false;
-    } else if (postsSnapshot.docs.length < limit) {
-      _hasMore = false;
-    }
-
-    _lastDocument = postsSnapshot.docs.last;
     final postsDocs = postsSnapshot.docs;
 
     final authorIds = <String>{};
     for (var doc in postsDocs) {
-      final data = doc.data() as Map<String, dynamic>;
+      final data = doc.data();
       authorIds.add(data['userId'] as String);
     }
 
@@ -244,12 +219,12 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       // Guest feed
       final guestPosts = postsDocs
           .where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
+            final data = doc.data();
             final authorData = authorsMap[data['userId'] as String] ?? {};
             return (authorData['isPrivate'] ?? false) == false;
           })
           .map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
+            final data = doc.data();
             data['postId'] = data['postId'] ?? doc.id;
             return data;
           })
@@ -286,7 +261,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
 
     final authPosts = postsDocs
         .where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
+          final data = doc.data();
           final postAuthorId = data['userId'] as String;
 
           if (postAuthorId == user.uid) return false;
@@ -313,7 +288,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
           return false;
         })
         .map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
+          final data = doc.data();
           data['postId'] = data['postId'] ?? doc.id;
           return data;
         })
@@ -321,20 +296,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     return authPosts;
   }
 
-  Future<void> fetchNextPage() async {
-    if (!_hasMore || _isLoadingMore) return;
-
-    _isLoadingMore = true;
-    try {
-      final newPosts = await _fetchPage(limit: 20);
-      final currentPosts = state.value ?? [];
-      state = AsyncValue.data([...currentPosts, ...newPosts]);
-    } catch (e) {
-      debugPrint('Error loading next page: $e');
-    } finally {
-      _isLoadingMore = false;
-    }
-  }
+  Future<void> fetchNextPage() async {}
 
   // Getters for comments and users (kept for compatibility with other files)
   List<Comment> getComments(String postId) {

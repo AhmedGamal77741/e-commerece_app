@@ -103,7 +103,8 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
     final cachedUser = postsProvider.getUser(widget.post['userId']);
 
     if (cachedUser != null) {
-      final displayName = cachedUser.name.isNotEmpty == true ? cachedUser.name : '삭제된 사용자';
+      final displayName =
+          cachedUser.name.isNotEmpty == true ? cachedUser.name : '삭제된 사용자';
       final profileUrl = cachedUser.url;
       return _buildPostItemContent(
         context: context,
@@ -158,7 +159,8 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
     required String profileUrl,
   }) {
     final List imgUrls =
-        (widget.post['imgUrls'] != null && (widget.post['imgUrls'] as List).isNotEmpty)
+        (widget.post['imgUrls'] != null &&
+                (widget.post['imgUrls'] as List).isNotEmpty)
             ? widget.post['imgUrls'] as List
             : [];
 
@@ -195,7 +197,12 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
                               image: DecorationImage(
                                 image:
                                     profileUrl.isNotEmpty
-                                        ? ResizeImage(CachedNetworkImageProvider(profileUrl), width: 120)
+                                        ? ResizeImage(
+                                          CachedNetworkImageProvider(
+                                            profileUrl,
+                                          ),
+                                          width: 120,
+                                        )
                                         : const AssetImage('assets/avatar.png')
                                             as ImageProvider,
                                 fit: BoxFit.cover,
@@ -211,21 +218,21 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
                             children: [
                               isWaiting
                                   ? _PulsingSkeleton(
-                                     child: Container(
-                                       width: 80.w,
-                                       height: 16.h,
-                                       color: Colors.grey[300],
-                                       margin: EdgeInsets.only(bottom: 2.h),
-                                     ),
-                                   )
-                                  : Text(
-                                      displayName,
-                                      style: TextStyles.abeezee16px400wPblack
-                                          .copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                    child: Container(
+                                      width: 80.w,
+                                      height: 16.h,
+                                      color: Colors.grey[300],
+                                      margin: EdgeInsets.only(bottom: 2.h),
                                     ),
-                              if (!userMissing && myuser != null && myuser.userId.isNotEmpty)
+                                  )
+                                  : Text(
+                                    displayName,
+                                    style: TextStyles.abeezee16px400wPblack
+                                        .copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                              if (!userMissing &&
+                                  myuser != null &&
+                                  myuser.userId.isNotEmpty)
                                 Padding(
                                   padding: EdgeInsets.only(top: 2.h),
                                   child: Text(
@@ -247,22 +254,24 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
                         isGuest
                             ? const SizedBox.shrink()
                             : OtherPostMenu(
-                                postId: widget.post['postId'] ?? '',
-                                userId: myuser?.userId ?? '',
-                                onRunWithLoading: (context, action, success, error) =>
-                                    _runWithLoading(
-                                      context: context,
-                                      action: action,
-                                      successMessage: success,
-                                      errorMessage: error,
-                                    ),
-                                displayName: displayName,
-                                profileUrl: profileUrl,
-                                postData: widget.post,
-                              ),
+                              postId: widget.post['postId'] ?? '',
+                              userId: myuser?.userId ?? '',
+                              onRunWithLoading:
+                                  (context, action, success, error) =>
+                                      _runWithLoading(
+                                        context: context,
+                                        action: action,
+                                        successMessage: success,
+                                        errorMessage: error,
+                                      ),
+                              displayName: displayName,
+                              profileUrl: profileUrl,
+                              postData: widget.post,
+                            ),
                       ],
                     ),
-                    if (widget.post['text'] != null && widget.post['text'].toString().trim().isNotEmpty)
+                    if (widget.post['text'] != null &&
+                        widget.post['text'].toString().trim().isNotEmpty)
                       Padding(
                         padding: EdgeInsets.only(top: 15.h),
                         child: Text(
@@ -310,10 +319,7 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
           // ── normal feed branch ────────────────────────────────────────
           if (widget.post['fromComments'] != true)
             Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 12.w,
-                vertical: 8.h,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
@@ -361,7 +367,10 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
                           image: DecorationImage(
                             image:
                                 profileUrl.isNotEmpty
-                                    ? ResizeImage(CachedNetworkImageProvider(profileUrl), width: 120)
+                                    ? ResizeImage(
+                                      CachedNetworkImageProvider(profileUrl),
+                                      width: 120,
+                                    )
                                     : const AssetImage('assets/avatar.png')
                                         as ImageProvider,
                             fit: BoxFit.cover,
@@ -381,24 +390,26 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
                         children: [
                           isWaiting
                               ? _PulsingSkeleton(
-                                 child: Container(
-                                   width: 80.w,
-                                   height: 16.h,
-                                   color: Colors.grey[300],
-                                   margin: EdgeInsets.only(bottom: 2.h),
-                                 ),
-                               )
-                              : Text(
-                                  displayName,
-                                  style: TextStyles.abeezee16px400wPblack
-                                      .copyWith(fontWeight: FontWeight.bold),
+                                child: Container(
+                                  width: 80.w,
+                                  height: 16.h,
+                                  color: Colors.grey[300],
+                                  margin: EdgeInsets.only(bottom: 2.h),
                                 ),
-                          if (widget.post['text'] != null && widget.post['text'].toString().trim().isNotEmpty)
+                              )
+                              : Text(
+                                displayName,
+                                style: TextStyles.abeezee16px400wPblack
+                                    .copyWith(fontWeight: FontWeight.bold),
+                              ),
+                          if (widget.post['text'] != null &&
+                              widget.post['text'].toString().trim().isNotEmpty)
                             Padding(
                               padding: EdgeInsets.only(top: 5.h),
                               child: Builder(
                                 builder: (context) {
-                                  final String text = widget.post['text'].toString();
+                                  final String text =
+                                      widget.post['text'].toString();
                                   if (text.length > 110) {
                                     return RichText(
                                       text: TextSpan(
@@ -441,7 +452,8 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
                             NaturalAspectPageView(
                               imgUrls: imgUrls,
                               pageController: _pageController,
-                              explicitWidth: MediaQuery.of(context).size.width - 82.w,
+                              explicitWidth:
+                                  MediaQuery.of(context).size.width - 82.w,
                             ),
                           verticalSpace(5),
                           Row(children: [GuestPostActions(post: widget.post)]),
@@ -451,19 +463,20 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
                     isGuest
                         ? const SizedBox.shrink()
                         : OtherPostMenu(
-                            postId: widget.post['postId'] ?? '',
-                            userId: myuser?.userId ?? '',
-                            onRunWithLoading: (context, action, success, error) =>
-                                _runWithLoading(
-                                  context: context,
-                                  action: action,
-                                  successMessage: success,
-                                  errorMessage: error,
-                                ),
-                            displayName: displayName,
-                            profileUrl: profileUrl,
-                            postData: widget.post,
-                          ),
+                          postId: widget.post['postId'] ?? '',
+                          userId: myuser?.userId ?? '',
+                          onRunWithLoading:
+                              (context, action, success, error) =>
+                                  _runWithLoading(
+                                    context: context,
+                                    action: action,
+                                    successMessage: success,
+                                    errorMessage: error,
+                                  ),
+                          displayName: displayName,
+                          profileUrl: profileUrl,
+                          postData: widget.post,
+                        ),
                   ],
                 ),
               ),
@@ -472,11 +485,7 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
       ),
     );
 
-    return isWaiting
-        ? _PulsingSkeleton(
-            child: content,
-          )
-        : content;
+    return isWaiting ? _PulsingSkeleton(child: content) : content;
   }
 }
 
@@ -510,9 +519,10 @@ class _PulsingSkeletonState extends State<_PulsingSkeleton>
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
-      opacity: Tween<double>(begin: 0.35, end: 0.85).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-      ),
+      opacity: Tween<double>(
+        begin: 0.35,
+        end: 0.85,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
       child: widget.child,
     );
   }

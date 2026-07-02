@@ -23,7 +23,10 @@ class GuestCommentItem extends ConsumerWidget {
               height: 40.h,
               decoration: ShapeDecoration(
                 image: DecorationImage(
-                  image: ResizeImage(CachedNetworkImageProvider(comment['userImage'] ?? ''), width: 120),
+                  image: ResizeImage(
+                    CachedNetworkImageProvider(comment['userImage'] ?? ''),
+                    width: 120,
+                  ),
                   fit: BoxFit.cover,
                 ),
                 shape: OvalBorder(),

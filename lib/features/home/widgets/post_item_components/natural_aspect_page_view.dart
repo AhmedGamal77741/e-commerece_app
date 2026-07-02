@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -95,7 +94,7 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
 
   void _resolveRatio(int index) {
     final url = widget.imgUrls[index] as String;
-    final image = ResizeImage(CachedNetworkImageProvider(url), width: 300);
+    final image = ResizeImage(CachedNetworkImageProvider(url), width: 100);
     final stream = image.resolve(ImageConfiguration.empty);
     late ImageStreamListener listener;
     listener = ImageStreamListener(
@@ -104,33 +103,13 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
         _resolvingUrls.remove(url);
         final ratio = info.image.width.toDouble() / info.image.height.toDouble();
         _globalRatioCache[url] = ratio;
-        if (synchronousCall) {
-          _ratios[index] = ratio;
-        } else {
-          if (mounted) {
-            SchedulerBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                setState(() {
-                  if (index < _ratios.length) _ratios[index] = ratio;
-                });
-              }
-            });
-          }
-        }
+        _ratios[index] = ratio;
       },
       onError: (exception, stackTrace) {
         stream.removeListener(listener);
         _resolvingUrls.remove(url);
-        _globalRatioCache[url] = 1.0;
-        if (mounted) {
-          SchedulerBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                if (index < _ratios.length) _ratios[index] = 1.0;
-              });
-            }
-          });
-        }
+        _globalRatioCache[url] = 1.1;
+        _ratios[index] = 1.1;
       },
     );
     stream.addListener(listener);
@@ -160,47 +139,41 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
             ? _currentPage
             : 0;
 
-    final double? currentRatio = _ratios.isNotEmpty ? _ratios[safePage] : null;
-
-    if (currentRatio == null) {
-      return Container(
-        width: availableWidth,
-        height: availableWidth * 0.75,
-        decoration: BoxDecoration(
-          color: const Color(0xFFEEEEEE),
-          borderRadius: BorderRadius.circular(25),
-        ),
-      );
-    }
+    final double currentRatio = (_ratios.isNotEmpty && _ratios[safePage] != null)
+        ? _ratios[safePage]!
+        : 1.1; // Smooth fallback to default ratio of 1.1 to eliminate layout shifts
 
     final double currentHeight = availableWidth / currentRatio;
 
     // SHORT-CIRCUIT: If only 1 image exists, render the Image widget directly
     // and bypass PageView entirely to avoid horizontal gesture/scroll contention.
     if (widget.imgUrls.length == 1) {
-      return ClipRRect(
+      return SafeNetworkImage(
+        url: widget.imgUrls[0] as String,
+        width: availableWidth,
+        height: currentHeight,
+        fit: BoxFit.cover,
         borderRadius: BorderRadius.circular(25),
-        clipBehavior: Clip.hardEdge,
-        child: SafeNetworkImage(
-          url: widget.imgUrls[0] as String,
+        placeholder: Container(
           width: availableWidth,
           height: currentHeight,
-          fit: BoxFit.cover,
-          placeholder: Container(
-            width: availableWidth,
-            height: currentHeight,
+          decoration: BoxDecoration(
             color: const Color(0xFFEEEEEE),
+            borderRadius: BorderRadius.circular(25),
           ),
-          errorWidget: Container(
-            width: availableWidth,
-            height: currentHeight,
+        ),
+        errorWidget: Container(
+          width: availableWidth,
+          height: currentHeight,
+          decoration: BoxDecoration(
             color: Colors.grey[200],
-            child: const Center(
-              child: Icon(
-                Icons.broken_image,
-                color: Colors.grey,
-                size: 48,
-              ),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.broken_image,
+              color: Colors.grey,
+              size: 48,
             ),
           ),
         ),
@@ -224,45 +197,38 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
               }
             },
             itemBuilder: (context, index) {
-              final double? ratio =
-                  index < _ratios.length ? _ratios[index] : null;
+              final double ratio = (index < _ratios.length && _ratios[index] != null)
+                  ? _ratios[index]!
+                  : 1.1;
 
-              if (ratio == null) {
-                return Container(
+              final double itemHeight = availableWidth / ratio;
+
+              return SafeNetworkImage(
+                url: widget.imgUrls[index] as String,
+                width: availableWidth,
+                height: itemHeight,
+                fit: BoxFit.cover,
+                borderRadius: BorderRadius.circular(25),
+                placeholder: Container(
                   width: availableWidth,
-                  height: currentHeight,
+                  height: itemHeight,
                   decoration: BoxDecoration(
                     color: const Color(0xFFEEEEEE),
                     borderRadius: BorderRadius.circular(25),
                   ),
-                );
-              }
-
-              final double itemHeight = availableWidth / ratio;
-
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(25),
-                clipBehavior: Clip.hardEdge,
-                child: SafeNetworkImage(
-                  url: widget.imgUrls[index] as String,
+                ),
+                errorWidget: Container(
                   width: availableWidth,
                   height: itemHeight,
-                  fit: BoxFit.cover,
-                  placeholder: Container(
-                    width: availableWidth,
-                    height: itemHeight,
-                    color: const Color(0xFFEEEEEE),
-                  ),
-                  errorWidget: Container(
-                    width: availableWidth,
-                    height: itemHeight,
+                  decoration: BoxDecoration(
                     color: Colors.grey[200],
-                    child: const Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        color: Colors.grey,
-                        size: 48,
-                      ),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      color: Colors.grey,
+                      size: 48,
                     ),
                   ),
                 ),

@@ -24,11 +24,11 @@ class NavBar extends ConsumerStatefulWidget {
 class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
   final shopKey = GlobalKey<ShopState>();
   final homeKey = GlobalKey<HomeScreenState>();
-  int _selectedIndex = 2;
+  int _selectedIndex = 0;
 
   final ScrollController homeScrollController = ScrollController();
   late TabController homeTabController;
-  final List<bool> _tabInitialized = [true, false, false, false, false];
+  final List<bool> _tabInitialized = [true, false, true, false, false];
 
   @override
   void initState() {
@@ -38,44 +38,6 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPendingNavigation();
     });
-  }
-
-  bool _imagesPrecached = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_imagesPrecached) {
-      _imagesPrecached = true;
-      // Precache the currently-visible icon first (tab 2 = active by default)
-      precacheImage(const AssetImage('assets/mypage_avatar_grey.png'), context);
-      precacheImage(const AssetImage('assets/mypage_avatar.png'), context);
-      // Defer all other icons to after the first frame to avoid I/O queue starvation
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final ctx = context;
-        precacheImage(const AssetImage('assets/001m.png'), ctx);
-        precacheImage(const AssetImage('assets/grey_001m.png'), ctx);
-        precacheImage(const AssetImage('assets/002m.png'), ctx);
-        precacheImage(const AssetImage('assets/grey_002m.png'), ctx);
-        precacheImage(const AssetImage('assets/005m.png'), ctx);
-        precacheImage(const AssetImage('assets/grey_005m.png'), ctx);
-        precacheImage(const AssetImage('assets/chat_with_seller.png'), ctx);
-        precacheImage(
-          const AssetImage('assets/chat_with_seller_grey.png'),
-          ctx,
-        );
-        precacheImage(const AssetImage('assets/notification.png'), ctx);
-        precacheImage(const AssetImage('assets/add_post_transparent.png'), ctx);
-        precacheImage(
-          const AssetImage('assets/notification_bell_transparent.png'),
-          ctx,
-        );
-        precacheImage(const AssetImage('assets/notification_dot.png'), ctx);
-        precacheImage(const AssetImage('assets/search_icon.png'), ctx);
-        precacheImage(const AssetImage('assets/avatar.png'), ctx);
-      });
-    }
   }
 
   @override
@@ -193,10 +155,15 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
         );
         if (!hasDefaultAddress) {
           if (!mounted) return;
-          final result = await context.pushNamed<bool>(Routes.addAddressScreen, extra: {'showSkip': false});
-          
+          final result = await context.pushNamed<bool>(
+            Routes.addAddressScreen,
+            extra: {'showSkip': false},
+          );
+
           if (result != true) {
-            final nowHasAddress = await navBarService.hasDefaultAddress(user.uid);
+            final nowHasAddress = await navBarService.hasDefaultAddress(
+              user.uid,
+            );
             if (!nowHasAddress) return;
           }
         }

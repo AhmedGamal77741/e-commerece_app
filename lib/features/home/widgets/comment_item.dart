@@ -60,7 +60,12 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                 height: 40.h,
                 decoration: ShapeDecoration(
                   image: DecorationImage(
-                    image: ResizeImage(CachedNetworkImageProvider(widget.comment.userImage.toString()), width: 120),
+                    image: ResizeImage(
+                      CachedNetworkImageProvider(
+                        widget.comment.userImage.toString(),
+                      ),
+                      width: 120,
+                    ),
                     fit: BoxFit.cover,
                   ),
                   shape: OvalBorder(),
@@ -86,7 +91,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                         final contactService = ContactService();
                         final userId = widget.comment.userId;
                         if (contactService.isNameMapLoaded()) {
-                          final syncName = contactService.getContactNicknameSync(userId);
+                          final syncName = contactService
+                              .getContactNicknameSync(userId);
                           if (syncName != null && syncName.isNotEmpty) {
                             return Padding(
                               padding: EdgeInsets.only(top: 2.h),
@@ -230,7 +236,11 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                       extra: {
                                         'product': widget.comment.productData!,
                                         'isSub': isSub,
-                                        'arrivalDay': widget.comment.productData!.arrivalDate!,
+                                        'arrivalDay':
+                                            widget
+                                                .comment
+                                                .productData!
+                                                .arrivalDate!,
                                       },
                                     );
                                   },
@@ -346,7 +356,10 @@ class _CommentItemState extends ConsumerState<CommentItem> {
           enabled: false,
           padding: EdgeInsets.zero,
           child: StreamBuilder<DocumentSnapshot?>(
-            stream: ref.watch(userProfileDocProvider(commentUserId).future).asStream(),
+            stream:
+                ref
+                    .watch(userProfileDocProvider(commentUserId).future)
+                    .asStream(),
             builder: (context, userSnapshot) {
               if (!userSnapshot.hasData || userSnapshot.data == null) {
                 return SizedBox(height: 50.h, child: const SizedBox.shrink());
@@ -363,12 +376,20 @@ class _CommentItemState extends ConsumerState<CommentItem> {
               final currentUserId = ref.read(currentUserIdProvider);
 
               return StreamBuilder<bool>(
-                stream: ref.watch(isFollowingProvider(commentUserId).future).asStream(),
+                stream:
+                    ref
+                        .watch(isFollowingProvider(commentUserId).future)
+                        .asStream(),
                 builder: (context, followingSnapshot) {
                   final isFollowing = followingSnapshot.data ?? false;
 
                   return StreamBuilder<bool>(
-                    stream: ref.watch(hasFollowRequestProvider(commentUserId).future).asStream(),
+                    stream:
+                        ref
+                            .watch(
+                              hasFollowRequestProvider(commentUserId).future,
+                            )
+                            .asStream(),
                     builder: (context, requestSnapshot) {
                       final hasRequest = requestSnapshot.data ?? false;
 
@@ -386,16 +407,32 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                         onTap: () async {
                           Navigator.pop(context);
                           if (isFollowing) {
-                            await ref.read(followControllerProvider).toggleFollow(commentUserId);
+                            await ref
+                                .read(followControllerProvider)
+                                .toggleFollow(commentUserId);
                           } else if (isPrivate && !hasRequest) {
-                            await ref.read(followControllerProvider).sendFollowRequest(commentUserId, currentUserId);
+                            await ref
+                                .read(followControllerProvider)
+                                .sendFollowRequest(
+                                  commentUserId,
+                                  currentUserId,
+                                );
                           } else if (isPrivate && hasRequest) {
-                            await ref.read(followControllerProvider).cancelFollowRequest(commentUserId, currentUserId);
+                            await ref
+                                .read(followControllerProvider)
+                                .cancelFollowRequest(
+                                  commentUserId,
+                                  currentUserId,
+                                );
                           } else {
-                            await ref.read(followControllerProvider).toggleFollow(commentUserId);
+                            await ref
+                                .read(followControllerProvider)
+                                .toggleFollow(commentUserId);
                           }
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('작업이 완료되었습니다')));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('작업이 완료되었습니다')),
+                            );
                           }
                         },
                         child: Container(
@@ -457,17 +494,21 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     ).then((value) async {
       if (!mounted) return;
       if (value == 'block') {
-        await ref.read(feedControllerProvider.notifier).blockUser(userIdToBlock: commentUserId);
+        await ref
+            .read(feedControllerProvider.notifier)
+            .blockUser(userIdToBlock: commentUserId);
       } else if (value == 'report') {
-        await ref.read(feedControllerProvider.notifier).reportComment(
-          reportedUserId: commentUserId,
-          postId: widget.postId,
-          commentId: widget.comment.id,
-        );
-        await ref.read(feedControllerProvider.notifier).blockUser(userIdToBlock: commentUserId);
+        await ref
+            .read(feedControllerProvider.notifier)
+            .reportComment(
+              reportedUserId: commentUserId,
+              postId: widget.postId,
+              commentId: widget.comment.id,
+            );
+        await ref
+            .read(feedControllerProvider.notifier)
+            .blockUser(userIdToBlock: commentUserId);
       }
     });
   }
-
-
 }

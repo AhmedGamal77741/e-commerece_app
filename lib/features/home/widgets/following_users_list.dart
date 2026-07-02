@@ -30,7 +30,9 @@ class _FollowingUsersListState extends ConsumerState<FollowingUsersList> {
     // 1. Find the initial index of the preselected user
     int initialPage = 0;
     if (widget.selectedUserId != null) {
-      initialPage = widget.followingUsers.indexWhere((u) => u.userId == widget.selectedUserId!);
+      initialPage = widget.followingUsers.indexWhere(
+        (u) => u.userId == widget.selectedUserId!,
+      );
       // If not found (index -1), default back to 0
       if (initialPage == -1) initialPage = 0;
     }
@@ -87,24 +89,26 @@ class _FollowingUsersListState extends ConsumerState<FollowingUsersList> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      decoration: isSelected
-                          ? BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                width: 2,
-                                color: Colors.black,
-                              ),
-                            )
-                          : null,
+                      decoration:
+                          isSelected
+                              ? BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  width: 2,
+                                  color: Colors.black,
+                                ),
+                              )
+                              : null,
                       child: CircleAvatar(
                         radius: 20,
                         backgroundColor: Colors.grey[300],
-                        backgroundImage: user.url.isNotEmpty
-                            ? ResizeImage(
-                                CachedNetworkImageProvider(user.url),
-                                width: 80,
-                              )
-                            : null,
+                        backgroundImage:
+                            user.url.isNotEmpty
+                                ? ResizeImage(
+                                  CachedNetworkImageProvider(user.url),
+                                  width: 80,
+                                )
+                                : null,
                       ),
                     ),
                     SizedBox(height: 4.h),

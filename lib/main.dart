@@ -8,6 +8,7 @@ import 'package:ecommerece_app/e_commerce_app.dart';
 import 'package:ecommerece_app/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 
 late AppLinks _appLinks;
 late GoRouter _router;
@@ -16,6 +17,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Pre-load contact name map on startup to prevent async disk I/O during list scrolling
+  await ContactService().loadContactNameMap();
+
   FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.debug,
     appleProvider: AppleProvider.debug,

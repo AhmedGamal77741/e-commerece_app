@@ -10,6 +10,7 @@ class SafeNetworkImage extends StatelessWidget {
   final BoxFit? fit;
   final Widget? placeholder;
   final Widget? errorWidget;
+  final BorderRadius? borderRadius;
 
   const SafeNetworkImage({
     super.key,
@@ -19,6 +20,7 @@ class SafeNetworkImage extends StatelessWidget {
     this.fit,
     this.placeholder,
     this.errorWidget,
+    this.borderRadius,
   });
 
   @override
@@ -30,7 +32,8 @@ class SafeNetworkImage extends StatelessWidget {
     final double devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
     final double logicalWidth = width ?? MediaQuery.of(context).size.width;
     int? cacheWidth = (logicalWidth * devicePixelRatio).round();
-    int? cacheHeight = height != null ? (height! * devicePixelRatio).round() : null;
+    int? cacheHeight =
+        height != null ? (height! * devicePixelRatio).round() : null;
 
     // Cap the maximum physical decode size to 700 pixels to prevent massive memory usage and decoding lag on high-DPI screens.
     if (cacheWidth > 700) {
@@ -51,8 +54,26 @@ class SafeNetworkImage extends StatelessWidget {
       fit: fit,
       memCacheWidth: cacheWidth,
       memCacheHeight: cacheHeight,
+      fadeInDuration: const Duration(milliseconds: 150),
+      fadeOutDuration: const Duration(milliseconds: 150),
+      imageBuilder:
+          borderRadius != null
+              ? (context, imageProvider) => Container(
+                width: width,
+                height: height,
+                decoration: BoxDecoration(
+                  borderRadius: borderRadius,
+                  image: DecorationImage(
+                    image: imageProvider,
+                    fit: fit ?? BoxFit.cover,
+                  ),
+                ),
+              )
+              : null,
       placeholder: (ctx, url) => placeholder ?? const SizedBox.shrink(),
-      errorWidget: (ctx, url, error) => errorWidget ?? const Icon(Icons.image_not_supported),
+      errorWidget:
+          (ctx, url, error) =>
+              errorWidget ?? const Icon(Icons.image_not_supported),
     );
   }
 }
@@ -61,13 +82,10 @@ class SafeNetworkImage extends StatelessWidget {
 /// Automatically caches the image and downsamples its decode resolution to prevent main thread lag.
 ImageProvider safeNetworkImageProvider(
   String url, {
-  int maxCacheWidth = 200, // Default to 200 physical pixels wide for crisp yet small avatars
+  int maxCacheWidth =
+      200, // Default to 200 physical pixels wide for crisp yet small avatars
   int? maxCacheHeight,
 }) {
   final provider = CachedNetworkImageProvider(url);
-  return ResizeImage(
-    provider,
-    width: maxCacheWidth,
-    height: maxCacheHeight,
-  );
+  return ResizeImage(provider, width: maxCacheWidth, height: maxCacheHeight);
 }

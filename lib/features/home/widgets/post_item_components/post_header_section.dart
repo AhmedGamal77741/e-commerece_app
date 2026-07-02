@@ -46,7 +46,8 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
   Future<String?>? _nicknameFuture;
 
   Future<String?> _getNickname(String userId) {
-    if (userId == _cachedUserId && _nicknameFuture != null) return _nicknameFuture!;
+    if (userId == _cachedUserId && _nicknameFuture != null)
+      return _nicknameFuture!;
     _cachedUserId = userId;
     _nicknameFuture = ContactService().getContactNickname(userId);
     return _nicknameFuture!;
@@ -64,13 +65,16 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildNameAndNickname(),
-              if (!widget.userMissing && widget.myuser != null && widget.myuser!.userId.isNotEmpty)
+              if (!widget.userMissing &&
+                  widget.myuser != null &&
+                  widget.myuser!.userId.isNotEmpty)
                 _buildFollowerCount(ref),
             ],
           ),
         ),
         const Spacer(),
-        if (!widget.userMissing && !widget.isMyPost) _buildActionArea(context, ref),
+        if (!widget.userMissing && !widget.isMyPost)
+          _buildActionArea(context, ref),
       ],
     );
   }
@@ -78,7 +82,8 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
   Widget _buildAvatar(BuildContext context) {
     return InkWell(
       onTap: () {
-        if (widget.myuser != null && widget.currentProfileUserId != widget.myuser!.userId) {
+        if (widget.myuser != null &&
+            widget.currentProfileUserId != widget.myuser!.userId) {
           context.pushNamed(
             Routes.profileTabScreen,
             extra: {'userId': widget.myuser!.userId},
@@ -90,9 +95,13 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
         height: 48.h,
         decoration: ShapeDecoration(
           image: DecorationImage(
-            image: widget.profileUrl.isNotEmpty
-                ? ResizeImage(CachedNetworkImageProvider(widget.profileUrl), width: 120)
-                : const AssetImage('assets/avatar.png') as ImageProvider,
+            image:
+                widget.profileUrl.isNotEmpty
+                    ? ResizeImage(
+                      CachedNetworkImageProvider(widget.profileUrl),
+                      width: 120,
+                    )
+                    : const AssetImage('assets/avatar.png') as ImageProvider,
             fit: BoxFit.cover,
           ),
           shape: const OvalBorder(),
@@ -107,27 +116,28 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
       children: [
         widget.isWaiting
             ? _PulsingSkeleton(
-                child: Container(
-                  width: 80.w,
-                  height: 16.h,
-                  color: Colors.grey[300],
-                  margin: EdgeInsets.only(bottom: 2.h),
-                ),
-              )
-            : Flexible(
-                child: Text(
-                  widget.displayName,
-                  style: TextStyles.abeezee16px400wPblack.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              child: Container(
+                width: 80.w,
+                height: 16.h,
+                color: Colors.grey[300],
+                margin: EdgeInsets.only(bottom: 2.h),
               ),
+            )
+            : Flexible(
+              child: Text(
+                widget.displayName,
+                style: TextStyles.abeezee16px400wPblack.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
         horizontalSpace(4),
         Builder(
           builder: (context) {
-            final String userId = widget.myuser == null ? "" : widget.myuser!.userId;
+            final String userId =
+                widget.myuser == null ? "" : widget.myuser!.userId;
             final contactService = ContactService();
             if (contactService.isNameMapLoaded()) {
               final syncName = contactService.getContactNicknameSync(userId);
@@ -153,7 +163,9 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const SizedBox.shrink();
                 }
-                if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+                if (snapshot.hasError ||
+                    !snapshot.hasData ||
+                    snapshot.data == null) {
                   return const SizedBox.shrink();
                 }
                 final nickname = snapshot.data!;
@@ -201,9 +213,14 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
 
   Widget _buildActionArea(BuildContext context, WidgetRef ref) {
     final currentUserId = ref.watch(currentUserIdProvider);
-    final bool isFollowing = currentUserId.isEmpty
-        ? false
-        : (ref.watch(followingSetProvider(currentUserId)).value?.contains(widget.myuser!.userId) ?? false);
+    final bool isFollowing =
+        currentUserId.isEmpty
+            ? false
+            : (ref
+                    .watch(followingSetProvider(currentUserId))
+                    .value
+                    ?.contains(widget.myuser!.userId) ??
+                false);
 
     if (isFollowing) {
       return PopupMenuButton<String>(
@@ -220,27 +237,38 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
               isLoggedIn: ref.read(currentUserIdProvider).isNotEmpty,
             );
           } else if (value == 'unfollow') {
-            ref.read(followControllerProvider).toggleFollow(widget.myuser!.userId);
+            ref
+                .read(followControllerProvider)
+                .toggleFollow(widget.myuser!.userId);
           }
         },
         color: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        itemBuilder: (BuildContext context) => [
-          PopupMenuItem<String>(
-            value: 'share',
-            child: Text('공유', style: TextStyle(color: Colors.black, fontSize: 13.sp)),
-          ),
-          PopupMenuItem<String>(
-            value: 'unfollow',
-            child: Text('구독 취소', style: TextStyle(color: Colors.black, fontSize: 13.sp)),
-          ),
-        ],
+        itemBuilder:
+            (BuildContext context) => [
+              PopupMenuItem<String>(
+                value: 'share',
+                child: Text(
+                  '공유',
+                  style: TextStyle(color: Colors.black, fontSize: 13.sp),
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'unfollow',
+                child: Text(
+                  '구독 취소',
+                  style: TextStyle(color: Colors.black, fontSize: 13.sp),
+                ),
+              ),
+            ],
         child: Icon(Icons.more_horiz, color: Colors.black, size: 22.sp),
       );
     }
 
     if (widget.myuser!.isPrivate) {
-      final followRequestAsync = ref.watch(hasFollowRequestProvider(widget.myuser!.userId));
+      final followRequestAsync = ref.watch(
+        hasFollowRequestProvider(widget.myuser!.userId),
+      );
       final hasRequest = followRequestAsync.value ?? false;
 
       return ElevatedButton(
@@ -255,9 +283,13 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
         onPressed: () async {
           final currentUserId = ref.watch(currentUserIdProvider);
           if (hasRequest) {
-            await ref.read(followControllerProvider).cancelFollowRequest(widget.myuser!.userId, currentUserId);
+            await ref
+                .read(followControllerProvider)
+                .cancelFollowRequest(widget.myuser!.userId, currentUserId);
           } else {
-            await ref.read(followControllerProvider).sendFollowRequest(widget.myuser!.userId, currentUserId);
+            await ref
+                .read(followControllerProvider)
+                .sendFollowRequest(widget.myuser!.userId, currentUserId);
           }
         },
         child: Text(
@@ -276,9 +308,7 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         minimumSize: Size(40.w, 28.h),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       onPressed: () async {
         ref.read(followControllerProvider).toggleFollow(widget.myuser!.userId);
@@ -325,9 +355,10 @@ class _PulsingSkeletonState extends State<_PulsingSkeleton>
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
-      opacity: Tween<double>(begin: 0.35, end: 0.85).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-      ),
+      opacity: Tween<double>(
+        begin: 0.35,
+        end: 0.85,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
       child: widget.child,
     );
   }

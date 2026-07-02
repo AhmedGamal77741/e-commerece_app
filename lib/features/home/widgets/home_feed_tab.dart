@@ -24,54 +24,45 @@ class HomeFeedTab extends ConsumerWidget {
           return const Center(child: Text('No posts available.'));
         }
 
-        return NotificationListener<ScrollNotification>(
-          onNotification: (ScrollNotification scrollInfo) {
-            final notifier = ref.read(feedControllerProvider.notifier);
-            if (notifier.hasMore && scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
-              notifier.fetchNextPage();
+        return ListView.builder(
+          controller: scrollController,
+          cacheExtent: 500,
+          itemCount: posts.length + (firebaseUser != null ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (firebaseUser != null && index == 0) {
+              return const SizedBox.shrink();
             }
-            return false;
-          },
-          child: ListView.builder(
-            controller: scrollController,
-            cacheExtent: 500,
-            itemCount: posts.length + (firebaseUser != null ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (firebaseUser != null && index == 0) {
-                return const SizedBox.shrink();
-              }
-  
-              final postIndex = firebaseUser != null ? index - 1 : index;
-              final post = posts[postIndex];
-              final postId = post['postId'] ?? 'unknown';
-  
-              if (firebaseUser == null) {
-                return RepaintBoundary(
-                  key: ValueKey(postId),
-                  child: Column(
-                    children: [
-                      GuestPostItem(post: post),
-                      verticalSpace(10),
-                    ],
-                  ),
-                );
-              }
-  
+
+            final postIndex = firebaseUser != null ? index - 1 : index;
+            final post = posts[postIndex];
+            final postId = post['postId'] ?? 'unknown';
+
+            if (firebaseUser == null) {
               return RepaintBoundary(
                 key: ValueKey(postId),
                 child: Column(
                   children: [
-                    PostItem(
-                      postId: postId,
-                      fromComments: false,
-                      postData: post,
-                    ),
-                    SizedBox(height: 16.h),
+                    GuestPostItem(post: post),
+                    verticalSpace(10),
                   ],
                 ),
               );
-            },
-          ),
+            }
+
+            return RepaintBoundary(
+              key: ValueKey(postId),
+              child: Column(
+                children: [
+                  PostItem(
+                    postId: postId,
+                    fromComments: false,
+                    postData: post,
+                  ),
+                  SizedBox(height: 16.h),
+                ],
+              ),
+            );
+          },
         );
       },
       loading:
