@@ -9,22 +9,26 @@ class SearchState {
   final List<Map<String, dynamic>> posts;
   final List<MyUser> users;
   final bool isLoading;
+  final String query;
 
   SearchState({
     this.posts = const [],
     this.users = const [],
     this.isLoading = false,
+    this.query = '',
   });
 
   SearchState copyWith({
     List<Map<String, dynamic>>? posts,
     List<MyUser>? users,
     bool? isLoading,
+    String? query,
   }) {
     return SearchState(
       posts: posts ?? this.posts,
       users: users ?? this.users,
       isLoading: isLoading ?? this.isLoading,
+      query: query ?? this.query,
     );
   }
 }
@@ -52,30 +56,34 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
     _usersSub?.cancel();
     
     if (_query.trim().isEmpty) {
-      state = AsyncValue.data(SearchState(posts: [], users: []));
+      state = AsyncValue.data(SearchState(posts: [], users: [], query: _query));
       return;
     }
 
-    state = const AsyncValue.loading();
+    state = AsyncValue.data((state.value ?? SearchState()).copyWith(isLoading: true, query: _query));
     _listenToData();
   }
 
   Future<void> _listenToData() async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) return;
+    final String? currentUserId = currentUser?.uid;
 
     final feedController = ref.read(feedControllerProvider.notifier);
     
     try {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
-      final userData = userDoc.data() ?? {};
-      final blockedUsers = List<String>.from(userData['blocked'] ?? []);
-      final isPremium = userData['isSub'] == true;
-
+      List<String> blockedUsers = [];
       Set<String> followingSet = {};
-      if (isPremium) {
-        final followingSnapshot = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).collection('following').get();
-        followingSet = followingSnapshot.docs.map((d) => d.id).toSet();
+      
+      if (currentUserId != null) {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
+        final userData = userDoc.data() ?? {};
+        blockedUsers = List<String>.from(userData['blocked'] ?? []);
+        final isPremium = userData['isSub'] == true;
+
+        if (isPremium) {
+          final followingSnapshot = await FirebaseFirestore.instance.collection('users').doc(currentUserId).collection('following').get();
+          followingSet = followingSnapshot.docs.map((d) => d.id).toSet();
+        }
       }
 
       // We'll combine posts and users in a single state update for simplicity
@@ -101,16 +109,20 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
 
           if (blockedUsers.contains(postAuthorId)) return false;
           
-          final authorBlockedUsers = List<dynamic>.from(authorData['blocked'] ?? []);
-          if (authorBlockedUsers.contains(currentUser.uid)) return false;
+          if (currentUserId != null) {
+            final authorBlockedUsers = List<dynamic>.from(authorData['blocked'] ?? []);
+            if (authorBlockedUsers.contains(currentUserId)) return false;
+          }
 
           final postText = data['text']?.toString().toLowerCase() ?? '';
           if (!postText.contains(_query)) return false;
 
-          final notInterestedBy = List<dynamic>.from(data['notInterestedBy'] ?? []);
-          if (notInterestedBy.contains(currentUser.uid)) return false;
+          if (currentUserId != null) {
+            final notInterestedBy = List<dynamic>.from(data['notInterestedBy'] ?? []);
+            if (notInterestedBy.contains(currentUserId)) return false;
 
-          if (postAuthorId == currentUser.uid) return true;
+            if (postAuthorId == currentUserId) return true;
+          }
 
           final bool isPrivate = authorData['isPrivate'] ?? false;
           if (!isPrivate) return true;
@@ -132,10 +144,12 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
           return MyUser.fromDocument(data);
         }).where((user) {
           if (blockedUsers.contains(user.userId)) return false;
-          final userBlockedList = user.blocked ?? [];
-          if (userBlockedList.contains(currentUser.uid)) return false;
+          if (currentUserId != null) {
+            final userBlockedList = user.blocked ?? [];
+            if (userBlockedList.contains(currentUserId)) return false;
+            if (user.userId == currentUserId) return false;
+          }
           
-          if (user.userId == currentUser.uid) return false;
           if (!user.name.toLowerCase().contains(_query)) return false;
           
           return true;
@@ -151,13 +165,13 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
 
   void _updateStatePosts(List<Map<String, dynamic>> posts) {
     if (state.value != null) {
-      state = AsyncValue.data(state.value!.copyWith(posts: posts));
+      state = AsyncValue.data(state.value!.copyWith(posts: posts, isLoading: false));
     }
   }
 
   void _updateStateUsers(List<MyUser> users) {
     if (state.value != null) {
-      state = AsyncValue.data(state.value!.copyWith(users: users));
+      state = AsyncValue.data(state.value!.copyWith(users: users, isLoading: false));
     }
   }
 }

@@ -9,6 +9,9 @@ import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
+import 'dart:async';
 
 class HomeSearch extends ConsumerStatefulWidget {
   final bool useGuestPostItem;
@@ -25,6 +28,7 @@ class HomeSearch extends ConsumerStatefulWidget {
 
 class _HomeSearchState extends ConsumerState<HomeSearch> {
   final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
   late int _selectedIndex;
   final List<Map<String, dynamic>> _userTabs = [
     {'label': '프로필'},
@@ -37,14 +41,18 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
     super.initState();
     _selectedIndex = widget.initialTabIndex;
     _searchController.addListener(() {
-      ref
-          .read(searchNotifierProvider.notifier)
-          .updateQuery(_searchController.text);
+      if (_debounce?.isActive ?? false) _debounce!.cancel();
+      _debounce = Timer(const Duration(milliseconds: 300), () {
+        ref
+            .read(searchNotifierProvider.notifier)
+            .updateQuery(_searchController.text);
+      });
     });
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -60,8 +68,8 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
         decoration: BoxDecoration(
           color:
               isSelected
-                  ? theme.colorScheme.surface
-                  : theme.colorScheme.surfaceContainerHighest,
+                  ? Colors.white
+                  : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -69,7 +77,7 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
           style: theme.textTheme.labelMedium?.copyWith(
             color:
                 isSelected
-                    ? theme.colorScheme.onSurface
+                    ? Colors.black
                     : theme.colorScheme.onSurfaceVariant,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
@@ -84,7 +92,7 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
 
     return SafeArea(
       child: Scaffold(
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: Colors.grey[100],
         body: Column(
           children: [
             Padding(
@@ -105,8 +113,7 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
                       height: 42.h,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.5),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: TextField(
@@ -184,40 +191,48 @@ class _FollowingSearchTab extends ConsumerWidget {
 
             // We use feedControllerProvider to fetch following status and requests since follow state wasn't entirely moved to searchNotifier.
             return StreamBuilder(
-              stream: ref
+              stream: currentUserId.isEmpty 
+                  ? Stream.value(null)
+                  : ref
                   .read(feedControllerProvider.notifier)
                   .getFollowingDocStream(currentUserId, user.userId),
               builder: (context, followingSnapshot) {
                 final isFollowing =
-                    followingSnapshot.hasData && followingSnapshot.data!.exists;
+                    followingSnapshot.hasData && followingSnapshot.data?.exists == true;
 
                 return StreamBuilder(
-                  stream: ref
+                  stream: currentUserId.isEmpty 
+                      ? Stream.value(null)
+                      : ref
                       .read(feedControllerProvider.notifier)
                       .getFollowRequestDocStream(user.userId, currentUserId),
                   builder: (context, requestSnapshot) {
                     final hasRequest =
-                        requestSnapshot.hasData && requestSnapshot.data!.exists;
+                        requestSnapshot.hasData && requestSnapshot.data?.exists == true;
 
-                    return UserSearchTile(
-                      user: user,
-                      isFollowing: isFollowing,
-                      hasPendingRequest: hasRequest,
-                      onToggleFollow:
-                          () => ref
-                              .read(followControllerProvider)
-                              .toggleFollow(user.userId),
-                      onToggleRequest: () async {
-                        if (hasRequest) {
-                          await ref
-                              .read(followControllerProvider)
-                              .cancelFollowRequest(user.userId, currentUserId);
-                        } else {
-                          await ref
-                              .read(followControllerProvider)
-                              .sendFollowRequest(user.userId, currentUserId);
-                        }
-                      },
+                    return InkWell(
+                      onTap: () => context.pushNamed(Routes.profileTabScreen, extra: {'userId': user.userId}),
+                      child: UserSearchTile(
+                        user: user,
+                        isFollowing: isFollowing,
+                        hasPendingRequest: hasRequest,
+                        hideFollowButton: currentUserId.isEmpty,
+                        onToggleFollow:
+                            () => ref
+                                .read(followControllerProvider)
+                                .toggleFollow(user.userId),
+                        onToggleRequest: () async {
+                          if (hasRequest) {
+                            await ref
+                                .read(followControllerProvider)
+                                .cancelFollowRequest(user.userId, currentUserId);
+                          } else {
+                            await ref
+                                .read(followControllerProvider)
+                                .sendFollowRequest(user.userId, currentUserId);
+                          }
+                        },
+                      ),
                     );
                   },
                 );

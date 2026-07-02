@@ -124,12 +124,6 @@ class HomeAppBarPills extends ConsumerWidget {
               ),
               InkWell(
                 onTap: () {
-                  if (firebaseUser == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("검색은 회원가입 후 이용가능합니다")),
-                    );
-                    return;
-                  }
                   context.pushNamed(Routes.shopSearchScreen, extra: {'initialTabIndex': 1});
                 },
                 child: ImageIcon(

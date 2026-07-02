@@ -6,6 +6,7 @@ class UserSearchTile extends StatelessWidget {
   final MyUser user;
   final bool isFollowing;
   final bool hasPendingRequest;
+  final bool hideFollowButton;
   final VoidCallback onToggleFollow;
   final VoidCallback onToggleRequest;
 
@@ -14,6 +15,7 @@ class UserSearchTile extends StatelessWidget {
     required this.user,
     required this.isFollowing,
     required this.hasPendingRequest,
+    this.hideFollowButton = false,
     required this.onToggleFollow,
     required this.onToggleRequest,
   });
@@ -94,7 +96,7 @@ class UserSearchTile extends StatelessWidget {
               ],
             ),
           ),
-          actionButton,
+          if (!hideFollowButton) actionButton,
         ],
       ),
     );
