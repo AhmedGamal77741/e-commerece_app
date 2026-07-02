@@ -433,6 +433,7 @@ class FeedRepository {
   Future<void> uploadPost({
     required String text,
     required List<String> imgUrls,
+    Map<String, double>? imageRatios,
     String? categoryId,
   }) async {
     try {
@@ -449,6 +450,7 @@ class FeedRepository {
         'text': text,
         'imgUrl': imgUrls.isNotEmpty ? imgUrls[0] : null,
         'imgUrls': imgUrls,
+        'imageRatios': imageRatios ?? {},
         'categoryId': categoryId,
         'likes': 0,
         'comments': 0,

@@ -236,6 +236,7 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
                   imgUrls: imgUrls,
                   pageController: _pageController,
                   explicitWidth: widget.imageWidth,
+                  imageRatios: postData['imageRatios'] as Map<String, dynamic>?,
                 ),
               SizedBox(height: 30.h),
               Row(
@@ -302,6 +303,7 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
                         imgUrls: imgUrls,
                         pageController: _pageController,
                         explicitWidth: screenWidth - 82.w,
+                        imageRatios: postData['imageRatios'] as Map<String, dynamic>?,
                       ),
                     SizedBox(height: 5.h),
                     GuestPostActions(post: postData),

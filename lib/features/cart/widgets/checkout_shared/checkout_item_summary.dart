@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
+
 class CheckoutItemSummary extends StatelessWidget {
   final String displayImgUrl;
   final String displayName;
@@ -34,11 +36,13 @@ class CheckoutItemSummary extends StatelessWidget {
         Row(
           children: [
             if (displayImgUrl.isNotEmpty)
-              Image.network(
-                displayImgUrl,
+              SizedBox(
                 width: 80.w,
                 height: 80.h,
-                fit: BoxFit.cover,
+                child: SafeNetworkImage(
+                  url: displayImgUrl,
+                  fit: BoxFit.cover,
+                ),
               ),
             horizontalSpace(10),
             Expanded(

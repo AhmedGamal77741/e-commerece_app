@@ -425,10 +425,12 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
   Future<void> uploadPost({
     required String text,
     required List<String> imgUrls,
+    Map<String, double>? imageRatios,
     String? categoryId,
   }) => _repository.uploadPost(
     text: text,
     imgUrls: imgUrls,
+    imageRatios: imageRatios,
     categoryId: categoryId,
   );
   Future<void> updatePost({

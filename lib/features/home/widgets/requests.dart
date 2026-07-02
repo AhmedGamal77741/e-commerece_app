@@ -8,6 +8,7 @@ import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class Requests extends ConsumerStatefulWidget {
   const Requests({super.key});
@@ -239,10 +240,13 @@ class _RequestsState extends ConsumerState<Requests> {
                                                       BorderRadius.circular(
                                                         24.r,
                                                       ),
-                                                  child: Image.network(
-                                                    requestingUser.url,
+                                                  child: SizedBox(
                                                     width: 48.w,
                                                     height: 48.w,
+                                                    child: SafeNetworkImage(
+                                                      url: requestingUser.url,
+                                                      fit: BoxFit.cover,
+                                                    ),
                                                   ),
                                                 ),
                                                 SizedBox(width: 12.w),
@@ -463,10 +467,13 @@ class _RequestsState extends ConsumerState<Requests> {
                                               ClipRRect(
                                                 borderRadius:
                                                     BorderRadius.circular(24.r),
-                                                child: Image.network(
-                                                  user.url,
+                                                child: SizedBox(
                                                   width: 48.w,
                                                   height: 48.w,
+                                                  child: SafeNetworkImage(
+                                                    url: user.url,
+                                                    fit: BoxFit.cover,
+                                                  ),
                                                 ),
                                               ),
                                               SizedBox(width: 12.w),
@@ -501,10 +508,9 @@ class _RequestsState extends ConsumerState<Requests> {
                                               ),
                                               SizedBox(width: 8.w),
                                               // Follow button
-                                              StreamBuilder<bool>(
-                                                stream: ref.watch(isFollowingProvider(userId).future).asStream(),
-                                                builder: (context, snapshot) {
-                                                  final isFollowing = snapshot.data ?? false;
+                                              Consumer(
+                                                builder: (context, ref, _) {
+                                                  final isFollowing = ref.watch(isFollowingProvider(userId)).value ?? false;
 
                                                   if (isFollowing) {
                                                     return ElevatedButton(
@@ -546,13 +552,9 @@ class _RequestsState extends ConsumerState<Requests> {
                                                       user.isPrivate;
 
                                                   if (isPrivate) {
-                                                    return StreamBuilder<bool>(
-                                                      stream: ref.watch(hasFollowRequestProvider(userId).future).asStream(),
-                                                      builder: (
-                                                        context,
-                                                        snapshot,
-                                                      ) {
-                                                        final hasRequest = snapshot.data ?? false;
+                                                    return Consumer(
+                                                      builder: (context, ref, _) {
+                                                        final hasRequest = ref.watch(hasFollowRequestProvider(userId)).value ?? false;
 
                                                         return ElevatedButton(
                                                           style: ElevatedButton.styleFrom(
@@ -743,10 +745,13 @@ class _RequestsState extends ConsumerState<Requests> {
                                             borderRadius: BorderRadius.circular(
                                               24.r,
                                             ),
-                                            child: Image.network(
-                                              blockedUser.url,
+                                            child: SizedBox(
                                               width: 48.w,
                                               height: 48.w,
+                                              child: SafeNetworkImage(
+                                                url: blockedUser.url,
+                                                fit: BoxFit.cover,
+                                              ),
                                             ),
                                           ),
                                           SizedBox(width: 12.w),

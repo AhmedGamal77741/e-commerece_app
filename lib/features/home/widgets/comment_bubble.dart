@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +8,7 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
+import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 
 class CommentBubble extends ConsumerStatefulWidget {
   final Map<String, dynamic> item;
@@ -78,32 +78,16 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                 if (!isMe)
                   Padding(
                     padding: EdgeInsets.only(left: 4.w, bottom: 3.h),
-                    child: Builder(
-                      builder: (context) {
-                        final contactService = ContactService();
+                    child: Consumer(
+                      builder: (context, ref, _) {
                         final String senderId = item['senderId'] ?? '';
-                        if (contactService.isNameMapLoaded()) {
-                          final nickname = contactService.getContactNicknameSync(senderId);
-                          final display = nickname != null && nickname.isNotEmpty
-                              ? '${item['senderName']} (@$nickname)'
-                              : item['senderName'];
-                          return Text(
-                            display,
-                            style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
-                          );
-                        }
-                        return FutureBuilder<String?>(
-                          future: contactService.getContactNickname(senderId),
-                          builder: (context, snapshot) {
-                            final nickname = snapshot.data;
-                            final display = nickname != null && nickname.isNotEmpty
-                                ? '${item['senderName']} (@$nickname)'
-                                : item['senderName'];
-                            return Text(
-                              display,
-                              style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
-                            );
-                          },
+                        final nickname = ref.watch(contactNicknameProvider(senderId));
+                        final display = nickname != null && nickname.isNotEmpty
+                            ? '${item['senderName']} (@$nickname)'
+                            : item['senderName'];
+                        return Text(
+                          display,
+                          style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
                         );
                       },
                     ),

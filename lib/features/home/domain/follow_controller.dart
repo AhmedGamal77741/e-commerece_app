@@ -12,6 +12,23 @@ final contactServiceProvider = Provider<ContactService>((ref) {
   return ContactService();
 });
 
+final contactNameMapProvider = FutureProvider<Map<String, String>>((ref) async {
+  final contactService = ref.watch(contactServiceProvider);
+  return await contactService.loadContactNameMap();
+});
+
+final contactNicknameProvider = Provider.family<String?, String>((ref, userId) {
+  final contactService = ref.watch(contactServiceProvider);
+  if (contactService.isNameMapLoaded()) {
+    return contactService.getContactNicknameSync(userId);
+  }
+  final mapAsync = ref.watch(contactNameMapProvider);
+  return mapAsync.maybeWhen(
+    data: (map) => map[userId],
+    orElse: () => null,
+  );
+});
+
 final followControllerProvider = Provider<FollowController>((ref) {
   return FollowController(
     ref.read(followServiceProvider),

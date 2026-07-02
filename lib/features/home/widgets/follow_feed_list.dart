@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
 
@@ -86,21 +88,35 @@ class UserCategoriesBar extends StatelessWidget {
   }
 }
 
-class FollowingPostsList extends StatelessWidget {
-  final List<Map<String, dynamic>> posts;
+final userFilteredPostIdsProvider = Provider.family<List<String>, ({String userId, String? categoryId})>((ref, arg) {
+  final allPostsAsync = ref.watch(feedControllerProvider);
+  final allPosts = allPostsAsync.value ?? [];
+  return allPosts
+      .where((p) => p['userId'] == arg.userId && (arg.categoryId == null || p['categoryId'] == arg.categoryId))
+      .map((p) => (p['postId'] ?? p['id'] ?? '').toString())
+      .where((id) => id.isNotEmpty)
+      .toList();
+});
+
+class FollowingPostsList extends ConsumerWidget {
+  final String userId;
+  final String? categoryId;
   final bool useGuestPostItem;
   final ScrollController? scrollController;
 
   const FollowingPostsList({
     super.key,
-    required this.posts,
+    required this.userId,
+    this.categoryId,
     this.useGuestPostItem = false,
     this.scrollController,
   });
 
   @override
-  Widget build(BuildContext context) {
-    if (posts.isEmpty) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final postIds = ref.watch(userFilteredPostIdsProvider((userId: userId, categoryId: categoryId)));
+
+    if (postIds.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -113,13 +129,13 @@ class FollowingPostsList extends StatelessWidget {
 
     return ListView.builder(
       controller: scrollController,
-      cacheExtent: 500,
+      cacheExtent: 1200,
+      addAutomaticKeepAlives: false,
+      addRepaintBoundaries: false,
       physics: const AlwaysScrollableScrollPhysics(),
-      itemCount: posts.length,
+      itemCount: postIds.length,
       itemBuilder: (context, index) {
-        final postData = posts[index];
-        final postId = postData['postId'] ?? postData['id'] ?? '';
-        if (postId.isEmpty) return const SizedBox.shrink();
+        final postId = postIds[index];
 
         return RepaintBoundary(
           key: ValueKey(postId),

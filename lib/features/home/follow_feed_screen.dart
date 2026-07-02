@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/home/domain/follow_feed_notifier.dart';
-import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/following_users_list.dart';
 import 'package:ecommerece_app/features/home/widgets/follow_feed_list.dart';
 import 'package:ecommerece_app/features/home/widgets/proxy_scroll_controller.dart';
@@ -122,15 +121,6 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
     super.build(context);
     final theme = Theme.of(context);
     final followFeedState = ref.watch(followFeedNotifierProvider);
-    final allPosts = ref.watch(feedControllerProvider).value ?? [];
-
-    // Pre-group posts by userId once — avoids inline .where() per page frame
-    final Map<String, List<Map<String, dynamic>>> postsByUser = {};
-    for (final post in allPosts) {
-      final uid = post['userId'] as String?;
-      if (uid == null) continue;
-      postsByUser.putIfAbsent(uid, () => []).add(post);
-    }
 
     return followFeedState.when(
       data: (state) {
@@ -243,13 +233,10 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
                             itemCount: _categoryPages.length,
                             itemBuilder: (context, index) {
                               final catId = _categoryPages[index];
-                              final userPosts = postsByUser[selectedId] ?? [];
-                              final filteredPosts = catId == null
-                                  ? userPosts
-                                  : userPosts.where((p) => p['categoryId'] == catId).toList();
                               
                               return FollowingPostsList(
-                                posts: filteredPosts,
+                                userId: selectedId,
+                                categoryId: catId,
                                 scrollController: _getScrollControllerForPage(index),
                               );
                             },

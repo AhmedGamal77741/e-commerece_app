@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class CheckoutMultiItemSummary extends ConsumerWidget {
   final String uid;
@@ -60,15 +61,12 @@ class CheckoutMultiItemSummary extends ConsumerWidget {
                         productSnapshot.data!.data() as Map<String, dynamic>;
                     return Row(
                       children: [
-                        Image.network(
-                          productData['imgUrl'] ?? '',
+                        SizedBox(
                           width: 80.w,
                           height: 80.h,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => SizedBox(
-                            width: 80.w,
-                            height: 80.h,
-                            child: const Icon(Icons.image_not_supported),
+                          child: SafeNetworkImage(
+                            url: productData['imgUrl'] ?? '',
+                            fit: BoxFit.cover,
                           ),
                         ),
                         horizontalSpace(10),

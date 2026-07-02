@@ -1,6 +1,7 @@
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class ChatPostShareWidget extends ConsumerWidget {
   final String imageUrl;
@@ -40,17 +41,9 @@ class ChatPostShareWidget extends ConsumerWidget {
               ),
               child: AspectRatio(
                 aspectRatio: 1, // Keeps it square like Instagram shares
-                child: Image.network(
-                  imageUrl,
+                child: SafeNetworkImage(
+                  url: imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder:
-                      (context, error, stackTrace) => Container(
-                        color: Colors.grey[400],
-                        child: const Icon(
-                          Icons.broken_image,
-                          color: Colors.white,
-                        ),
-                      ),
                 ),
               ),
             ),

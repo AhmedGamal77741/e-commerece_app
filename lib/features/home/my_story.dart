@@ -278,7 +278,7 @@ class _PostsPageState extends ConsumerState<_PostsPage>
 
         return ListView.builder(
           itemCount: posts.length,
-          cacheExtent: 500,
+          cacheExtent: 1200,
           itemBuilder: (context, index) {
             final doc = posts[index];
             final postData = doc.data() as Map<String, dynamic>;

@@ -1,8 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
-import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 
 import 'package:ecommerece_app/features/home/comments.dart';
@@ -86,55 +84,24 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                       widget.comment.userName ?? '',
                       style: TextStyles.abeezee16px400wPblack,
                     ),
-                    Builder(
-                      builder: (context) {
-                        final contactService = ContactService();
-                        final userId = widget.comment.userId;
-                        if (contactService.isNameMapLoaded()) {
-                          final syncName = contactService
-                              .getContactNicknameSync(userId);
-                          if (syncName != null && syncName.isNotEmpty) {
-                            return Padding(
-                              padding: EdgeInsets.only(top: 2.h),
-                              child: Text(
-                                '@$syncName',
-                                style: TextStyle(
-                                  fontSize: 11.sp,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w400,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          }
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final nickname = ref.watch(contactNicknameProvider(widget.comment.userId));
+                        if (nickname == null || nickname.isEmpty) {
                           return const SizedBox.shrink();
                         }
-                        return FutureBuilder<String?>(
-                          future: contactService.getContactNickname(userId),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const SizedBox.shrink();
-                            }
-                            final nickname = snapshot.data;
-                            if (nickname == null || nickname.isEmpty) {
-                              return const SizedBox.shrink();
-                            }
-                            return Padding(
-                              padding: EdgeInsets.only(top: 2.h),
-                              child: Text(
-                                '@$nickname',
-                                style: TextStyle(
-                                  fontSize: 11.sp,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w400,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          },
+                        return Padding(
+                          padding: EdgeInsets.only(top: 2.h),
+                          child: Text(
+                            '@$nickname',
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w400,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         );
                       },
                     ),
@@ -355,106 +322,87 @@ class _CommentItemState extends ConsumerState<CommentItem> {
         PopupMenuItem<String>(
           enabled: false,
           padding: EdgeInsets.zero,
-          child: StreamBuilder<DocumentSnapshot?>(
-            stream:
-                ref
-                    .watch(userProfileDocProvider(commentUserId).future)
-                    .asStream(),
-            builder: (context, userSnapshot) {
-              if (!userSnapshot.hasData || userSnapshot.data == null) {
-                return SizedBox(height: 50.h, child: const SizedBox.shrink());
-              }
+          child: Consumer(
+            builder: (context, ref, _) {
+              final userAsync = ref.watch(userProfileDocProvider(commentUserId));
+              return userAsync.when(
+                data: (doc) {
+                  if (doc == null) {
+                    return SizedBox(height: 50.h, child: const SizedBox.shrink());
+                  }
+                  final commentUserData = doc.data() as Map<String, dynamic>?;
+                  if (commentUserData == null) {
+                    return const SizedBox.shrink();
+                  }
 
-              final commentUserData =
-                  userSnapshot.data!.data() as Map<String, dynamic>?;
+                  final isPrivate = commentUserData['isPrivate'] ?? false;
+                  final currentUserId = ref.read(currentUserIdProvider);
 
-              if (commentUserData == null) {
-                return SizedBox.shrink();
-              }
+                  final isFollowing = ref.watch(isFollowingProvider(commentUserId)).value ?? false;
+                  final hasRequest = ref.watch(hasFollowRequestProvider(commentUserId)).value ?? false;
 
-              final isPrivate = commentUserData['isPrivate'] ?? false;
-              final currentUserId = ref.read(currentUserIdProvider);
+                  String buttonText = '구독';
 
-              return StreamBuilder<bool>(
-                stream:
-                    ref
-                        .watch(isFollowingProvider(commentUserId).future)
-                        .asStream(),
-                builder: (context, followingSnapshot) {
-                  final isFollowing = followingSnapshot.data ?? false;
+                  if (isFollowing) {
+                    buttonText = '구독 취소';
+                  } else if (isPrivate && hasRequest) {
+                    buttonText = '요청 취소';
+                  } else if (isPrivate) {
+                    buttonText = '구독 요청';
+                  }
 
-                  return StreamBuilder<bool>(
-                    stream:
-                        ref
-                            .watch(
-                              hasFollowRequestProvider(commentUserId).future,
-                            )
-                            .asStream(),
-                    builder: (context, requestSnapshot) {
-                      final hasRequest = requestSnapshot.data ?? false;
-
-                      String buttonText = '구독';
-
+                  return InkWell(
+                    onTap: () async {
+                      Navigator.pop(context);
                       if (isFollowing) {
-                        buttonText = '구독 취소';
-                      } else if (isPrivate && hasRequest) {
-                        buttonText = '요청 취소';
-                      } else if (isPrivate) {
-                        buttonText = '구독 요청';
-                      }
-
-                      return InkWell(
-                        onTap: () async {
-                          Navigator.pop(context);
-                          if (isFollowing) {
-                            await ref
-                                .read(followControllerProvider)
-                                .toggleFollow(commentUserId);
-                          } else if (isPrivate && !hasRequest) {
-                            await ref
-                                .read(followControllerProvider)
-                                .sendFollowRequest(
-                                  commentUserId,
-                                  currentUserId,
-                                );
-                          } else if (isPrivate && hasRequest) {
-                            await ref
-                                .read(followControllerProvider)
-                                .cancelFollowRequest(
-                                  commentUserId,
-                                  currentUserId,
-                                );
-                          } else {
-                            await ref
-                                .read(followControllerProvider)
-                                .toggleFollow(commentUserId);
-                          }
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('작업이 완료되었습니다')),
+                        await ref
+                            .read(followControllerProvider)
+                            .toggleFollow(commentUserId);
+                      } else if (isPrivate && !hasRequest) {
+                        await ref
+                            .read(followControllerProvider)
+                            .sendFollowRequest(
+                              commentUserId,
+                              currentUserId,
                             );
-                          }
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                            vertical: 12.h,
-                          ),
-                          child: Text(
-                            buttonText,
-                            style: TextStyle(
-                              color: const Color(0xFF343434),
-                              fontSize: 13.sp,
-                              fontFamily: 'NotoSans',
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      );
+                      } else if (isPrivate && hasRequest) {
+                        await ref
+                            .read(followControllerProvider)
+                            .cancelFollowRequest(
+                              commentUserId,
+                              currentUserId,
+                            );
+                      } else {
+                        await ref
+                            .read(followControllerProvider)
+                            .toggleFollow(commentUserId);
+                      }
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('작업이 완료되었습니다')),
+                        );
+                      }
                     },
+                    child: Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 12.h,
+                      ),
+                      child: Text(
+                        buttonText,
+                        style: TextStyle(
+                          color: const Color(0xFF343434),
+                          fontSize: 13.sp,
+                          fontFamily: 'NotoSans',
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
                   );
                 },
+                loading: () => SizedBox(height: 50.h, child: const SizedBox.shrink()),
+                error: (e, st) => const SizedBox.shrink(),
               );
             },
           ),

@@ -2,7 +2,6 @@ import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +12,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
+import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/natural_aspect_page_view.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/post_header_section.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/post_action_buttons.dart';
@@ -309,10 +309,7 @@ class _PostItemState extends ConsumerState<PostItem> {
         !userMissing && !isWaiting && myuser!.userId == currentUid;
 
     final String userId = myuser?.userId ?? '';
-    final contactService = ContactService();
-    final bool nameMapLoaded = contactService.isNameMapLoaded();
-    final String? syncName =
-        nameMapLoaded ? contactService.getContactNicknameSync(userId) : null;
+    final String? syncName = ref.watch(contactNicknameProvider(userId));
 
     final List imgUrls =
         (postData['imgUrls'] is List && (postData['imgUrls'] as List).isNotEmpty)
@@ -344,7 +341,6 @@ class _PostItemState extends ConsumerState<PostItem> {
       isWaiting: isWaiting,
       isMyPost: isMyPost,
       userId: userId,
-      nameMapLoaded: nameMapLoaded,
       syncName: syncName,
       imgUrls: imgUrls,
     );
@@ -415,6 +411,7 @@ class _PostItemState extends ConsumerState<PostItem> {
                 imgUrls: imgUrls,
                 pageController: _pageController,
                 explicitWidth: fromCommentsImageWidth,
+                imageRatios: postData['imageRatios'] as Map<String, dynamic>?,
               ),
             SizedBox(height: 30.h),
             PostActionButtons(postId: widget.postId, postData: postData),
@@ -438,7 +435,6 @@ class _PostItemState extends ConsumerState<PostItem> {
     required bool isWaiting,
     required bool isMyPost,
     required String userId,
-    required bool nameMapLoaded,
     required String? syncName,
     required List imgUrls,
   }) {
@@ -486,7 +482,6 @@ class _PostItemState extends ConsumerState<PostItem> {
                     _buildNameRow(
                       displayName: displayName,
                       isWaiting: isWaiting,
-                      nameMapLoaded: nameMapLoaded,
                       syncName: syncName,
                       userId: userId,
                     ),
@@ -506,6 +501,7 @@ class _PostItemState extends ConsumerState<PostItem> {
                         imgUrls: imgUrls,
                         pageController: _pageController,
                         explicitWidth: screenWidth - 82.w,
+                        imageRatios: postData['imageRatios'] as Map<String, dynamic>?,
                       ),
                   ],
                 ),
@@ -555,7 +551,6 @@ class _PostItemState extends ConsumerState<PostItem> {
   Widget _buildNameRow({
     required String displayName,
     required bool isWaiting,
-    required bool nameMapLoaded,
     required String? syncName,
     required String userId,
   }) {
@@ -580,7 +575,6 @@ class _PostItemState extends ConsumerState<PostItem> {
             ),
           ),
         if (!isWaiting &&
-            nameMapLoaded &&
             syncName != null &&
             syncName.isNotEmpty) ...[
           SizedBox(width: 8.w),

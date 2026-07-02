@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:ui' as ui;
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -315,10 +316,26 @@ class AddPostNotifier extends Notifier<AddPostState> {
           .where((url) => url != null)
           .cast<String>()
           .toList();
+
+      final Map<String, double> imageRatios = {};
+      for (final img in state.images) {
+        if (img.networkUrl != null) {
+          try {
+            final bytes = await img.localFile.readAsBytes();
+            final codec = await ui.instantiateImageCodec(bytes);
+            final frame = await codec.getNextFrame();
+            final ratio = frame.image.width.toDouble() / frame.image.height.toDouble();
+            imageRatios[img.networkUrl!] = ratio;
+          } catch (e) {
+            imageRatios[img.networkUrl!] = 1.1; // fallback
+          }
+        }
+      }
           
       await ref.read(feedControllerProvider.notifier).uploadPost(
         text: text,
         imgUrls: finalUrls,
+        imageRatios: imageRatios,
         categoryId: state.selectedCategoryId,
       );
     } finally {

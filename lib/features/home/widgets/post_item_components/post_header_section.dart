@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:go_router/go_router.dart';
@@ -89,12 +88,6 @@ class PostHeaderSection extends ConsumerWidget {
 
   Widget _buildNameAndNickname() {
     final String userId = myuser?.userId ?? '';
-    final contactService = ContactService();
-    String? syncName;
-
-    if (contactService.isNameMapLoaded()) {
-      syncName = contactService.getContactNicknameSync(userId);
-    }
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -117,21 +110,32 @@ class PostHeaderSection extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-        if (syncName != null && syncName.isNotEmpty) ...[
-          SizedBox(width: 4.w),
-          Flexible(
-            child: Text(
-              '@$syncName',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w400,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+        Consumer(
+          builder: (context, ref, _) {
+            final syncName = ref.watch(contactNicknameProvider(userId));
+            if (syncName == null || syncName.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(width: 4.w),
+                Flexible(
+                  child: Text(
+                    '@$syncName',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w400,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ],
     );
   }

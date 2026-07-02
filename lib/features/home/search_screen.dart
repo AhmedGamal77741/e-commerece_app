@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/shop/shop_search.dart';
 import 'package:ecommerece_app/features/home/domain/search_notifier.dart';
 import 'package:ecommerece_app/features/home/widgets/user_search_tile.dart';
+import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
@@ -186,63 +187,68 @@ class _FollowingSearchTab extends ConsumerWidget {
 
         return ListView.builder(
           itemCount: state.users.length,
+          addAutomaticKeepAlives: false,
+          addRepaintBoundaries: false,
           itemBuilder: (context, index) {
             final user = state.users[index];
-
-            // We use feedControllerProvider to fetch following status and requests since follow state wasn't entirely moved to searchNotifier.
-            return StreamBuilder(
-              stream: currentUserId.isEmpty 
-                  ? Stream.value(null)
-                  : ref
-                  .read(feedControllerProvider.notifier)
-                  .getFollowingDocStream(currentUserId, user.userId),
-              builder: (context, followingSnapshot) {
-                final isFollowing =
-                    followingSnapshot.hasData && followingSnapshot.data?.exists == true;
-
-                return StreamBuilder(
-                  stream: currentUserId.isEmpty 
-                      ? Stream.value(null)
-                      : ref
-                      .read(feedControllerProvider.notifier)
-                      .getFollowRequestDocStream(user.userId, currentUserId),
-                  builder: (context, requestSnapshot) {
-                    final hasRequest =
-                        requestSnapshot.hasData && requestSnapshot.data?.exists == true;
-
-                    return InkWell(
-                      onTap: () => context.pushNamed(Routes.profileTabScreen, extra: {'userId': user.userId}),
-                      child: UserSearchTile(
-                        user: user,
-                        isFollowing: isFollowing,
-                        hasPendingRequest: hasRequest,
-                        hideFollowButton: currentUserId.isEmpty,
-                        onToggleFollow:
-                            () => ref
-                                .read(followControllerProvider)
-                                .toggleFollow(user.userId),
-                        onToggleRequest: () async {
-                          if (hasRequest) {
-                            await ref
-                                .read(followControllerProvider)
-                                .cancelFollowRequest(user.userId, currentUserId);
-                          } else {
-                            await ref
-                                .read(followControllerProvider)
-                                .sendFollowRequest(user.userId, currentUserId);
-                          }
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
+            return RepaintBoundary(
+              key: ValueKey(user.userId),
+              child: _UserSearchTileWrapper(
+                user: user,
+                currentUserId: currentUserId,
+              ),
             );
           },
         );
       },
       loading: () => const Center(),
       error: (e, st) => Center(child: Text('Error: $e')),
+    );
+  }
+}
+
+class _UserSearchTileWrapper extends ConsumerWidget {
+  final MyUser user;
+  final String currentUserId;
+
+  const _UserSearchTileWrapper({
+    required this.user,
+    required this.currentUserId,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool isFollowing = currentUserId.isEmpty
+        ? false
+        : (ref.watch(isFollowingProvider(user.userId)).value ?? false);
+
+    final bool hasRequest = currentUserId.isEmpty
+        ? false
+        : (ref.watch(hasFollowRequestProvider(user.userId)).value ?? false);
+
+    return InkWell(
+      onTap: () => context.pushNamed(Routes.profileTabScreen, extra: {'userId': user.userId}),
+      child: UserSearchTile(
+        user: user,
+        isFollowing: isFollowing,
+        hasPendingRequest: hasRequest,
+        hideFollowButton: currentUserId.isEmpty,
+        onToggleFollow:
+            () => ref
+                .read(followControllerProvider)
+                .toggleFollow(user.userId),
+        onToggleRequest: () async {
+          if (hasRequest) {
+            await ref
+                .read(followControllerProvider)
+                .cancelFollowRequest(user.userId, currentUserId);
+          } else {
+            await ref
+                .read(followControllerProvider)
+                .sendFollowRequest(user.userId, currentUserId);
+          }
+        },
+      ),
     );
   }
 }
@@ -263,7 +269,9 @@ class _HomeFeedSearchTab extends ConsumerWidget {
 
         return ListView.builder(
           itemCount: state.posts.length,
-          cacheExtent: 500,
+          cacheExtent: 1200,
+          addAutomaticKeepAlives: false,
+          addRepaintBoundaries: false,
           itemBuilder: (context, index) {
             final post = state.posts[index];
             final postId = post['postId'] ?? post['id'];
