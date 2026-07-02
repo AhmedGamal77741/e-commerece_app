@@ -156,31 +156,108 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
                 ),
                 textInputAction: TextInputAction.search,
                 onSubmitted: _performSearch,
+                onChanged: (value) {
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 500), () {
+                    if (value.trim().isNotEmpty) {
+                      _performSearch(value.trim());
+                    } else {
+                      setState(() {
+                        _searchResults = [];
+                        _errorMessage = null;
+                      });
+                    }
+                  });
+                },
                 autofocus: true,
               ),
             ),
 
             // Loading indicator
             if (_isLoading)
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: const SizedBox.shrink(),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 48.0),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: Colors.black),
+                      SizedBox(height: 16),
+                      Text('검색 중...', style: TextStyle(color: Colors.grey)),
+                    ],
+                  ),
+                ),
               )
             // Error message
             else if (_errorMessage != null)
               Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 48.0,
+                  horizontal: 24.0,
+                ),
+                child: Center(
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               )
-            // Empty state
-            else if (_searchResults.isEmpty &&
-                _searchController.text.isNotEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24.0),
-                child: Text('검색 결과가 없습니다. 다른 주소를 입력해 보세요.'),
+            // Initial/Empty Input state
+            else if (_searchController.text.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 64.0,
+                  horizontal: 24.0,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.search, size: 48, color: Colors.grey[300]),
+                      const SizedBox(height: 16),
+                      Text(
+                        '도로명, 지번, 또는 건물명을 입력해주세요.',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 16),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            // No Results state
+            else if (_searchResults.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 64.0,
+                  horizontal: 24.0,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.grey[300],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '검색 결과가 없습니다.',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '다른 주소를 입력해 보세요.',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
               )
             // Results list
             else
