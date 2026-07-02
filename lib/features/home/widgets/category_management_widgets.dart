@@ -128,12 +128,12 @@ class CategoryPill extends ConsumerWidget {
                   ref.read(addPostNotifierProvider.notifier).selectCategory(categoryId);
                 },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
         decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: isSelected ? Colors.white : Colors.transparent,
           border: Border.all(
-            color: isSelected ? Colors.transparent : Theme.of(context).colorScheme.outlineVariant,
-            width: isSelected ? 1.5 : 1,
+            color: isSelected ? Colors.transparent : Colors.grey[300]!,
+            width: 1,
           ),
           borderRadius: BorderRadius.circular(20),
         ),
@@ -141,13 +141,13 @@ class CategoryPill extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isArrangeMode) ...[
-              Icon(Icons.drag_handle, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              Icon(Icons.drag_handle, size: 14, color: Colors.grey[600]),
               SizedBox(width: 4.w),
             ],
             Text(
               categoryName,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: isSelected ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
+                color: isSelected ? Colors.black : Colors.grey[600],
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
