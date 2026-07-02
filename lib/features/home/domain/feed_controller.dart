@@ -171,30 +171,35 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
 
   @override
   FutureOr<List<Map<String, dynamic>>> build() async {
-    // Only watch authStateProvider to trigger rebuild on login/logout
     ref.watch(authStateProvider);
+    ref.watch(currentUserProfileProvider);
 
-    return _fetchPage();
+    final postsAsync = ref.watch(allPostsStreamProvider);
+
+    if (postsAsync.isLoading && !postsAsync.hasValue) {
+      final docs = await ref.read(allPostsStreamProvider.future);
+      return _fetchPage(docs);
+    }
+
+    final docs = postsAsync.value ?? [];
+    return _fetchPage(docs);
   }
 
-  Future<List<Map<String, dynamic>>> _fetchPage() async {
+  Future<List<Map<String, dynamic>>> _fetchPage(List<QueryDocumentSnapshot> postsDocs) async {
     final user = ref.read(authStateProvider).value;
 
-    final postsSnapshot = await _firestore
-        .collection('posts')
-        .orderBy('createdAt', descending: true)
-        .get();
-
-    if (postsSnapshot.docs.isEmpty) {
+    if (postsDocs.isEmpty) {
       return [];
     }
 
-    final postsDocs = postsSnapshot.docs;
-
     final authorIds = <String>{};
     for (var doc in postsDocs) {
-      final data = doc.data();
-      authorIds.add(data['userId'] as String);
+      final data = doc.data() as Map<String, dynamic>?;
+      if (data == null) continue;
+      final uId = data['userId']?.toString() ?? '';
+      if (uId.isNotEmpty) {
+        authorIds.add(uId);
+      }
     }
 
     final authorIdsList = authorIds
@@ -268,14 +273,19 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       // Guest feed
       final guestPosts = postsDocs
           .where((doc) {
-            final data = doc.data();
-            final authorData = authorsMap[data['userId'] as String] ?? {};
-            return (authorData['isPrivate'] ?? false) == false;
+            final data = doc.data() as Map<String, dynamic>?;
+            if (data == null) return false;
+            final postAuthorId = data['userId']?.toString() ?? '';
+            if (postAuthorId.isEmpty) return false;
+            final authorData = authorsMap[postAuthorId] ?? {};
+            final bool isPrivate = authorData['isPrivate'] ?? false;
+            return !isPrivate;
           })
           .map((doc) {
-            final data = doc.data();
-            data['postId'] = data['postId'] ?? doc.id;
-            return data;
+            final data = doc.data() as Map<String, dynamic>? ?? {};
+            final mapped = Map<String, dynamic>.from(data);
+            mapped['postId'] = mapped['postId'] ?? doc.id;
+            return mapped;
           })
           .toList();
       return guestPosts;
@@ -309,25 +319,26 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       }
     }
 
-
     final authPosts = postsDocs
         .where((doc) {
-          final data = doc.data();
-          final postAuthorId = data['userId'] as String;
+          final data = doc.data() as Map<String, dynamic>?;
+          if (data == null) return false;
+          final postAuthorId = data['userId']?.toString() ?? '';
+          if (postAuthorId.isEmpty) return false;
 
           if (postAuthorId == user.uid) return false;
           if (blockedUsers.contains(postAuthorId)) return false;
           if (hiddenFriends.contains(postAuthorId)) return false;
 
           final authorData = authorsMap[postAuthorId] ?? {};
-          final authorBlockedUsers = List<dynamic>.from(
-            authorData['blocked'] ?? [],
-          );
+          final authorBlockedUsers = authorData['blocked'] is Iterable
+              ? List<dynamic>.from(authorData['blocked'] as Iterable)
+              : [];
           if (authorBlockedUsers.contains(user.uid)) return false;
 
-          final notInterestedBy = List<dynamic>.from(
-            data['notInterestedBy'] ?? [],
-          );
+          final notInterestedBy = data['notInterestedBy'] is Iterable
+              ? List<dynamic>.from(data['notInterestedBy'] as Iterable)
+              : [];
           if (notInterestedBy.contains(user.uid)) return false;
 
           final bool isPrivate = authorData['isPrivate'] ?? false;
@@ -339,9 +350,10 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
           return false;
         })
         .map((doc) {
-          final data = doc.data();
-          data['postId'] = data['postId'] ?? doc.id;
-          return data;
+          final data = doc.data() as Map<String, dynamic>? ?? {};
+          final mapped = Map<String, dynamic>.from(data);
+          mapped['postId'] = mapped['postId'] ?? doc.id;
+          return mapped;
         })
         .toList();
     return authPosts;

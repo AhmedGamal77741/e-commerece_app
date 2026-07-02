@@ -9,6 +9,7 @@ import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
+import 'package:ecommerece_app/features/home/widgets/post_item_components/natural_aspect_page_view.dart';
 
 class CommentBubble extends ConsumerStatefulWidget {
   final Map<String, dynamic> item;
@@ -165,14 +166,18 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                             ],
                             if (item['imageUrls'] != null && (item['imageUrls'] as List).isNotEmpty && item['postData'] == null) ...[
                               if ((item['content'] as String).isNotEmpty) SizedBox(height: 6.h),
-                              if ((item['imageUrls'] as List).length == 1)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10.r),
-                                  child: Container(
-                                    constraints: BoxConstraints(maxWidth: maxW),
-                                    child: SafeNetworkImage(url: (item['imageUrls'] as List).first, fit: BoxFit.cover),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10.r),
+                                child: SizedBox(
+                                  width: maxW,
+                                  child: NaturalAspectPageView(
+                                    imgUrls: item['imageUrls'] as List,
+                                    pageController: _pageController,
+                                    explicitWidth: maxW,
+                                    imageRatios: item['imageRatios'] as Map?,
                                   ),
-                                )
+                                ),
+                              )
                             ],
                           ],
                         ),

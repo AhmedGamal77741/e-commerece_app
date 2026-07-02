@@ -35,16 +35,24 @@ class SafeNetworkImage extends StatelessWidget {
     int? cacheHeight =
         height != null ? (height! * devicePixelRatio).round() : null;
 
-    // Cap the maximum physical decode size to 700 pixels to prevent massive memory usage and decoding lag on high-DPI screens.
-    if (cacheWidth > 700) {
+    // Cap the maximum physical decode size to 1080 pixels (full HD width) to prevent massive memory usage and decoding lag.
+    const double maxPhysicalSize = 1080.0;
+    if (cacheWidth > maxPhysicalSize) {
       if (cacheHeight != null) {
-        cacheHeight = (cacheHeight * (700 / cacheWidth)).round();
+        cacheHeight = (cacheHeight * (maxPhysicalSize / cacheWidth)).round();
       }
-      cacheWidth = 700;
+      cacheWidth = maxPhysicalSize.round();
     }
-    if (cacheHeight != null && cacheHeight > 700) {
-      cacheWidth = (cacheWidth * (700 / cacheHeight)).round();
-      cacheHeight = 700;
+    if (cacheHeight != null && cacheHeight > maxPhysicalSize) {
+      cacheWidth = (cacheWidth * (maxPhysicalSize / cacheHeight)).round();
+      cacheHeight = maxPhysicalSize.round();
+    }
+
+    // Step-align the cache sizes to the nearest 50 pixels. This creates a stable
+    // cache key, preventing minor layout changes/shifts from triggering a cache miss.
+    cacheWidth = ((cacheWidth + 25) ~/ 50) * 50;
+    if (cacheHeight != null) {
+      cacheHeight = ((cacheHeight + 25) ~/ 50) * 50;
     }
 
     return CachedNetworkImage(

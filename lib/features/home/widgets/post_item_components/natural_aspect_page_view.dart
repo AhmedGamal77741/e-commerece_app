@@ -9,7 +9,7 @@ class NaturalAspectPageView extends ConsumerStatefulWidget {
   final List imgUrls;
   final PageController pageController;
   final double? explicitWidth;
-  final Map<String, dynamic>? imageRatios;
+  final Map? imageRatios;
 
   const NaturalAspectPageView({
     super.key,
@@ -35,15 +35,15 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
     super.initState();
     if (widget.imageRatios != null) {
       widget.imageRatios!.forEach((key, value) {
-        if (value is num) {
+        if (key is String && value is num) {
           _globalRatioCache[key] = value.toDouble();
         }
       });
     }
     _ratios = List<double?>.filled(widget.imgUrls.length, null);
     for (int i = 0; i < widget.imgUrls.length; i++) {
-      final url = widget.imgUrls[i] as String;
-      if (_globalRatioCache.containsKey(url)) {
+      final url = widget.imgUrls[i]?.toString() ?? '';
+      if (url.isNotEmpty && _globalRatioCache.containsKey(url)) {
         _ratios[i] = _globalRatioCache[url];
       }
     }
@@ -56,7 +56,7 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
 
     if (widget.imageRatios != null) {
       widget.imageRatios!.forEach((key, value) {
-        if (value is num) {
+        if (key is String && value is num) {
           _globalRatioCache[key] = value.toDouble();
         }
       });
@@ -78,8 +78,8 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
         _currentPage = 0;
       });
       for (int i = 0; i < widget.imgUrls.length; i++) {
-        final url = widget.imgUrls[i] as String;
-        if (_globalRatioCache.containsKey(url)) {
+        final url = widget.imgUrls[i]?.toString() ?? '';
+        if (url.isNotEmpty && _globalRatioCache.containsKey(url)) {
           _ratios[i] = _globalRatioCache[url];
         }
       }
@@ -90,8 +90,10 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
   void _resolveRatiosIfNeeded() {
     for (int i = 0; i < widget.imgUrls.length; i++) {
       if (i == 0 || (i - _currentPage).abs() <= 1) {
-        final url = widget.imgUrls[i] as String;
-        if (!_globalRatioCache.containsKey(url) && !_resolvingUrls.contains(url)) {
+        final url = widget.imgUrls[i]?.toString() ?? '';
+        if (url.isNotEmpty &&
+            !_globalRatioCache.containsKey(url) &&
+            !_resolvingUrls.contains(url)) {
           _resolvingUrls.add(url);
           _resolveRatio(i);
         }
@@ -100,7 +102,8 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
   }
 
   void _resolveRatio(int index) {
-    final url = widget.imgUrls[index] as String;
+    final url = widget.imgUrls[index]?.toString() ?? '';
+    if (url.isEmpty) return;
     final image = ResizeImage(CachedNetworkImageProvider(url), width: 100);
     final stream = image.resolve(ImageConfiguration.empty);
     late ImageStreamListener listener;
@@ -109,7 +112,8 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
         stream.removeListener(listener);
         if (!mounted) return;
         _resolvingUrls.remove(url);
-        final ratio = info.image.width.toDouble() / info.image.height.toDouble();
+        final ratio =
+            info.image.width.toDouble() / info.image.height.toDouble();
         _globalRatioCache[url] = ratio;
         setState(() {
           _ratios[index] = ratio;
@@ -136,9 +140,10 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double availableWidth = constraints.hasBoundedWidth
-            ? constraints.maxWidth
-            : MediaQuery.sizeOf(context).width - 20.w;
+        final double availableWidth =
+            constraints.hasBoundedWidth
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width - 20.w;
         return _buildWithWidth(availableWidth);
       },
     );
@@ -150,36 +155,33 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
             ? _currentPage
             : 0;
 
-    final double currentRatio = (_ratios.isNotEmpty && _ratios[safePage] != null)
-        ? _ratios[safePage]!
-        : 1.1; 
+    final double currentRatio =
+        (_ratios.isNotEmpty && _ratios[safePage] != null)
+            ? _ratios[safePage]!
+            : 1.1;
 
     if (widget.imgUrls.length == 1) {
       return AspectRatio(
         aspectRatio: currentRatio,
         child: SafeNetworkImage(
-          url: widget.imgUrls[0] as String,
+          url: widget.imgUrls[0]?.toString() ?? '',
           width: availableWidth,
           height: availableWidth / currentRatio,
           fit: BoxFit.cover,
           borderRadius: BorderRadius.circular(25),
-          placeholder: Container(
+          placeholder: const DecoratedBox(
             decoration: BoxDecoration(
-              color: const Color(0xFFEEEEEE),
-              borderRadius: BorderRadius.circular(25),
+              color: Color(0xFFEEEEEE),
+              borderRadius: BorderRadius.all(Radius.circular(25)),
             ),
           ),
-          errorWidget: Container(
+          errorWidget: const DecoratedBox(
             decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(25),
+              color: Color(0xFFEEEEEE),
+              borderRadius: BorderRadius.all(Radius.circular(25)),
             ),
-            child: const Center(
-              child: Icon(
-                Icons.broken_image,
-                color: Colors.grey,
-                size: 48,
-              ),
+            child: Center(
+              child: Icon(Icons.broken_image, color: Colors.grey, size: 48),
             ),
           ),
         ),
@@ -204,30 +206,31 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
                 }
               },
               itemBuilder: (context, index) {
-                final double ratio = (index < _ratios.length && _ratios[index] != null)
-                    ? _ratios[index]!
-                    : 1.1;
+                final double ratio =
+                    (index < _ratios.length && _ratios[index] != null)
+                        ? _ratios[index]!
+                        : 1.1;
 
                 return AspectRatio(
                   aspectRatio: ratio,
                   child: SafeNetworkImage(
-                    url: widget.imgUrls[index] as String,
+                    url: widget.imgUrls[index]?.toString() ?? '',
                     width: availableWidth,
                     height: availableWidth / ratio,
                     fit: BoxFit.cover,
                     borderRadius: BorderRadius.circular(25),
-                    placeholder: Container(
+                    placeholder: const DecoratedBox(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEEEEEE),
-                        borderRadius: BorderRadius.circular(25),
+                        color: Color(0xFFEEEEEE),
+                        borderRadius: BorderRadius.all(Radius.circular(25)),
                       ),
                     ),
-                    errorWidget: Container(
+                    errorWidget: const DecoratedBox(
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(25),
+                        color: Color(0xFFEEEEEE),
+                        borderRadius: BorderRadius.all(Radius.circular(25)),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Icon(
                           Icons.broken_image,
                           color: Colors.grey,

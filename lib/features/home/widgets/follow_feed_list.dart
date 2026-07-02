@@ -130,7 +130,7 @@ class FollowingPostsList extends ConsumerWidget {
     return ListView.builder(
       controller: scrollController,
       cacheExtent: 1200,
-      addAutomaticKeepAlives: false,
+      addAutomaticKeepAlives: true,
       addRepaintBoundaries: false,
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: postIds.length,

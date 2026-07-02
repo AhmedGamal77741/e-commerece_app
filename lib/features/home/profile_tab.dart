@@ -123,11 +123,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                         height: 64.h,
                         fit: BoxFit.cover,
                         errorWidget: Icon(Icons.person, size: 64.h),
-                        placeholder: SizedBox(
-                          width: 64.w,
-                          height: 64.h,
-                          child: const SizedBox.shrink(),
-                        ),
+                        placeholder: const SizedBox.shrink(),
                       ),
                     ),
                     verticalSpace(4),

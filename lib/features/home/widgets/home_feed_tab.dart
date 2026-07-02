@@ -29,7 +29,7 @@ class HomeFeedTab extends ConsumerWidget {
         return ListView.builder(
           controller: scrollController,
           cacheExtent: 1200,
-          addAutomaticKeepAlives: false,
+          addAutomaticKeepAlives: true,
           addRepaintBoundaries: false,
           itemCount: postIds.length,
           itemBuilder: (context, index) {

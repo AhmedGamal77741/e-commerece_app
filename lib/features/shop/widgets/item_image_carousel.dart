@@ -43,10 +43,10 @@ class _ItemImageCarouselState extends State<ItemImageCarousel> {
                 width: MediaQuery.of(context).size.width,
                 height: 428,
                 fit: BoxFit.cover,
-                placeholder: Container(color: Colors.grey[200]),
-                errorWidget: Container(
-                  color: Colors.grey[200],
-                  child: const Center(
+                placeholder: const ColoredBox(color: Color(0xFFEEEEEE)),
+                errorWidget: const ColoredBox(
+                  color: Color(0xFFEEEEEE),
+                  child: Center(
                     child: Icon(Icons.broken_image, color: Colors.grey),
                   ),
                 ),

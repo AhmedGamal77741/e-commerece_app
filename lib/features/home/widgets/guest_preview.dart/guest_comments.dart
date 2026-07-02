@@ -465,7 +465,7 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
                                       imgUrls: item.imageUrls!,
                                       pageController: _pageController,
                                       explicitWidth: maxW,
-                                      imageRatios: item.postData?['imageRatios'] as Map<String, dynamic>?,
+                                      imageRatios: item.postData?['imageRatios'] as Map?,
                                     ),
                                   ),
                                 ),

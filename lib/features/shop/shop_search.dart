@@ -49,8 +49,10 @@ class ShopSearch extends ConsumerWidget {
     final isSub = ref.watch(isSubscribedProvider).value ?? false;
     final query = ref.watch(searchNotifierProvider).value?.query ?? '';
     final userAddressAsync = ref.watch(userDefaultAddressStreamProvider);
-    final userAddress =
-        userAddressAsync.value?['addressMap'] as Map<String, dynamic>?;
+    final userAddressRaw = userAddressAsync.value?['addressMap'];
+    final userAddress = userAddressRaw is Map
+        ? Map<String, dynamic>.from(userAddressRaw)
+        : null;
 
     return switch (productsAsync) {
       AsyncData(:final value) => _buildSearchResults(
@@ -134,16 +136,12 @@ class ShopSearch extends ConsumerWidget {
                 width: 50.w,
                 height: 50.h,
                 fit: BoxFit.cover,
-                placeholder: Container(
-                  width: 50.w,
-                  height: 50.h,
-                  color: Colors.grey[200],
+                placeholder: const ColoredBox(
+                  color: Color(0xFFEEEEEE),
                 ),
-                errorWidget: Container(
-                  width: 50.w,
-                  height: 50.h,
-                  color: Colors.grey[200],
-                  child: const Center(
+                errorWidget: const ColoredBox(
+                  color: Color(0xFFEEEEEE),
+                  child: Center(
                     child: Icon(
                       Icons.broken_image,
                       color: Colors.grey,

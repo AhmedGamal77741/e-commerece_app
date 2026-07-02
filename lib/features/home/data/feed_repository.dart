@@ -95,7 +95,10 @@ class FeedRepository {
   }
 
   Stream<QuerySnapshot> searchPostsStream() {
-    return _firestore.collection('posts').snapshots();
+    return _firestore
+        .collection('posts')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
   }
 
   Stream<Map<String, Map<String, dynamic>>> getAuthorsDataStreamRealtime(

@@ -75,16 +75,12 @@ class FavoriteItemWidget extends ConsumerWidget {
                     width: 106.w,
                     height: 110.h,
                     fit: BoxFit.cover,
-                    placeholder: Container(
-                      width: 106.w,
-                      height: 110.h,
-                      color: Colors.grey[200],
+                    placeholder: const ColoredBox(
+                      color: Color(0xFFEEEEEE),
                     ),
-                    errorWidget: Container(
-                      width: 106.w,
-                      height: 110.h,
-                      color: Colors.grey[200],
-                      child: const Center(
+                    errorWidget: const ColoredBox(
+                      color: Color(0xFFEEEEEE),
+                      child: Center(
                         child: Icon(Icons.broken_image, color: Colors.grey),
                       ),
                     ),
