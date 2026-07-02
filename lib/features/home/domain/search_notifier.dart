@@ -148,6 +148,8 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
             final userBlockedList = user.blocked ?? [];
             if (userBlockedList.contains(currentUserId)) return false;
             if (user.userId == currentUserId) return false;
+          } else {
+            if (user.isPrivate) return false;
           }
           
           if (!user.name.toLowerCase().contains(_query)) return false;

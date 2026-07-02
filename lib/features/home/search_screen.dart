@@ -254,6 +254,8 @@ class _HomeFeedSearchTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final searchState = ref.watch(searchNotifierProvider);
+    final currentUserId = ref.watch(currentUserIdProvider);
+    final isGuest = currentUserId.isEmpty;
 
     return searchState.when(
       data: (state) {
@@ -266,7 +268,7 @@ class _HomeFeedSearchTab extends ConsumerWidget {
             final postId = post['postId'] ?? post['id'];
             if (postId == null) return const SizedBox.shrink();
 
-            return useGuestPostItem
+            return useGuestPostItem || isGuest
                 ? GuestPostItem(post: post)
                 : PostItem(postId: postId, fromComments: false);
           },
