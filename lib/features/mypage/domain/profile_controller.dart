@@ -28,7 +28,7 @@ final subscriptionStreamProvider =
     });
 
 final profileControllerProvider =
-    AsyncNotifierProvider.autoDispose<ProfileController, void>(
+    AsyncNotifierProvider<ProfileController, void>(
       ProfileController.new,
     );
 

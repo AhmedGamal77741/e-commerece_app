@@ -23,7 +23,7 @@ class UserSearchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     Widget actionButton;
     if (isFollowing) {
       actionButton = ElevatedButton(
@@ -31,8 +31,12 @@ class UserSearchTile extends StatelessWidget {
           backgroundColor: theme.colorScheme.surfaceContainerHighest,
           foregroundColor: theme.colorScheme.onSurface,
           minimumSize: Size(47.w, 33.h),
-          textStyle: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w500),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          textStyle: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
         ),
         onPressed: onToggleFollow,
         child: const Text('구독 취소'),
@@ -40,15 +44,21 @@ class UserSearchTile extends StatelessWidget {
     } else if (user.isPrivate) {
       actionButton = ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: hasPendingRequest 
-              ? theme.colorScheme.surfaceContainerHighest 
-              : theme.colorScheme.primary,
-          foregroundColor: hasPendingRequest 
-              ? theme.colorScheme.onSurface 
-              : theme.colorScheme.onPrimary,
+          backgroundColor:
+              hasPendingRequest
+                  ? theme.colorScheme.surfaceContainerHighest
+                  : theme.colorScheme.primary,
+          foregroundColor:
+              hasPendingRequest
+                  ? theme.colorScheme.onSurface
+                  : theme.colorScheme.onPrimary,
           minimumSize: Size(47.w, 33.h),
-          textStyle: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w500),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          textStyle: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
         ),
         onPressed: onToggleRequest,
         child: Text(hasPendingRequest ? '요청 취소' : '요청'),
@@ -59,8 +69,12 @@ class UserSearchTile extends StatelessWidget {
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
           minimumSize: Size(47.w, 33.h),
-          textStyle: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w500),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          textStyle: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
         ),
         onPressed: onToggleFollow,
         child: const Text('구독'),
@@ -84,13 +98,17 @@ class UserSearchTile extends StatelessWidget {
               children: [
                 Text(
                   user.name,
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 if (user.bio != null && user.bio!.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     user.bio.toString(),
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ],
