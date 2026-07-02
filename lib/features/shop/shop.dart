@@ -97,6 +97,12 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
           return Scaffold(
             floatingActionButton: FloatingActionButton(
               onPressed: () {
+                if (ref.read(authStateProvider).value == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('장바구니를 이용하시려면 로그인이 필요합니다')),
+                  );
+                  return;
+                }
                 context.pushNamed(Routes.cartScreen);
               },
               elevation: 0,
@@ -153,6 +159,12 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
                         const Spacer(),
                         InkWell(
                           onTap: () {
+                            if (ref.read(authStateProvider).value == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('주문 내역을 보시려면 로그인이 필요합니다')),
+                              );
+                              return;
+                            }
                             context.go(Routes.reviewScreen);
                           },
                           child: Image.asset(
