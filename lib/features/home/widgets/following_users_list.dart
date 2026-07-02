@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class FollowingUsersList extends ConsumerStatefulWidget {
   final List<MyUser> followingUsers;
@@ -102,13 +101,7 @@ class _FollowingUsersListState extends ConsumerState<FollowingUsersList> {
                       child: CircleAvatar(
                         radius: 20,
                         backgroundColor: Colors.grey[300],
-                        backgroundImage:
-                            user.url.isNotEmpty
-                                ? ResizeImage(
-                                  CachedNetworkImageProvider(user.url),
-                                  width: 80,
-                                )
-                                : null,
+                        backgroundImage: const AssetImage('assets/avatar.png'),
                       ),
                     ),
                     SizedBox(height: 4.h),

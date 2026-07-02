@@ -125,6 +125,34 @@ final hasUnreadNotificationsProvider = StreamProvider<bool>((ref) {
       .map((snapshot) => snapshot.docs.isNotEmpty);
 });
 
+final userCacheProvider = NotifierProvider<UserCacheNotifier, Map<String, MyUser>>(
+  UserCacheNotifier.new,
+);
+
+class UserCacheNotifier extends Notifier<Map<String, MyUser>> {
+  @override
+  Map<String, MyUser> build() => const {};
+
+  void putUser(String userId, MyUser user) {
+    if (state[userId] == user) return;
+    state = {...state, userId: user};
+  }
+
+  void putUsers(Map<String, MyUser> newUsers) {
+    final updated = <String, MyUser>{...state};
+    bool changed = false;
+    newUsers.forEach((userId, user) {
+      if (updated[userId] != user) {
+        updated[userId] = user;
+        changed = true;
+      }
+    });
+    if (changed) {
+      state = updated;
+    }
+  }
+}
+
 final feedControllerProvider =
     AsyncNotifierProvider<FeedController, List<Map<String, dynamic>>>(
       FeedController.new,
@@ -134,6 +162,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
   final Map<String, List<Comment>> _comments = {};
   final Map<String, MyUser> _users = {};
   final Set<String> _loadingCommentPosts = {};
+  final Map<String, Future<MyUser>> _pendingUserLoads = {};
 
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   FirebaseAuth get _auth => FirebaseAuth.instance;
@@ -204,15 +233,36 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       authorsMap[key] = value.toDocument();
     });
 
+    final loadedUsersMap = <String, MyUser>{};
     if (authorChunkFutures.isNotEmpty) {
       final results = await Future.wait(authorChunkFutures);
       for (final snapshot in results) {
         for (var doc in snapshot.docs) {
           final data = doc.data() as Map<String, dynamic>;
           authorsMap[doc.id] = data;
-          _users[doc.id] = MyUser.fromDocument(data);
+          final userObj = MyUser.fromDocument(data);
+          _users[doc.id] = userObj;
+          loadedUsersMap[doc.id] = userObj;
         }
       }
+    }
+
+    for (final id in authorIdsList) {
+      if (!authorsMap.containsKey(id)) {
+        final deletedUser = MyUser(
+          userId: id,
+          name: '삭제된 사용자',
+          email: '',
+          url: '',
+          lastSeen: DateTime.fromMillisecondsSinceEpoch(0),
+        );
+        _users[id] = deletedUser;
+        loadedUsersMap[id] = deletedUser;
+      }
+    }
+
+    if (loadedUsersMap.isNotEmpty) {
+      ref.read(userCacheProvider.notifier).putUsers(loadedUsersMap);
     }
 
     if (user == null) {
@@ -237,7 +287,9 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     final userData = userDoc.data() as Map<String, dynamic>?;
     if (userData == null) return [];
 
-    _users[user.uid] = MyUser.fromDocument(userData);
+    final currentUserObj = MyUser.fromDocument(userData);
+    _users[user.uid] = currentUserObj;
+    ref.read(userCacheProvider.notifier).putUser(user.uid, currentUserObj);
 
     final blockedUsers = List<String>.from(userData['blocked'] ?? []);
     final isSub = userData['isSub'] ?? false;
@@ -670,15 +722,58 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
 
   Future<MyUser> loadUser(String userId) async {
     if (_users.containsKey(userId)) {
-      return _users[userId]!;
+      final user = _users[userId]!;
+      final cache = ref.read(userCacheProvider);
+      if (!cache.containsKey(userId)) {
+        ref.read(userCacheProvider.notifier).putUser(userId, user);
+      }
+      return user;
     }
 
-    final userDoc = await _firestore.collection('users').doc(userId).get();
-    final userData = userDoc.data() ?? {};
-    final user = MyUser.fromDocument(userData);
+    if (_pendingUserLoads.containsKey(userId)) {
+      return _pendingUserLoads[userId]!;
+    }
 
-    _users[userId] = user;
-    return user;
+    final future = () async {
+      try {
+        final userDoc = await _firestore.collection('users').doc(userId).get();
+        if (!userDoc.exists) {
+          final deletedUser = MyUser(
+            userId: userId,
+            name: '삭제된 사용자',
+            email: '',
+            url: '',
+            lastSeen: DateTime.fromMillisecondsSinceEpoch(0),
+          );
+          _users[userId] = deletedUser;
+          ref.read(userCacheProvider.notifier).putUser(userId, deletedUser);
+          return deletedUser;
+        }
+
+        final userData = userDoc.data() ?? {};
+        final user = MyUser.fromDocument(userData);
+
+        _users[userId] = user;
+        ref.read(userCacheProvider.notifier).putUser(userId, user);
+        return user;
+      } catch (e) {
+        final errorUser = MyUser(
+          userId: userId,
+          name: '삭제된 사용자',
+          email: '',
+          url: '',
+          lastSeen: DateTime.fromMillisecondsSinceEpoch(0),
+        );
+        _users[userId] = errorUser;
+        ref.read(userCacheProvider.notifier).putUser(userId, errorUser);
+        return errorUser;
+      } finally {
+        _pendingUserLoads.remove(userId);
+      }
+    }();
+
+    _pendingUserLoads[userId] = future;
+    return future;
   }
 
   Future<void> preloadUsers() async {

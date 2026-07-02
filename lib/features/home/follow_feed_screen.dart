@@ -5,6 +5,7 @@ import 'package:ecommerece_app/features/home/domain/follow_feed_notifier.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/following_users_list.dart';
 import 'package:ecommerece_app/features/home/widgets/follow_feed_list.dart';
+import 'package:ecommerece_app/features/home/widgets/proxy_scroll_controller.dart';
 
 class FollowingTab extends ConsumerStatefulWidget {
   final String? preselectedUser;
@@ -19,11 +20,27 @@ class FollowingTab extends ConsumerStatefulWidget {
 class _FollowingTabState extends ConsumerState<FollowingTab>
     with AutomaticKeepAliveClientMixin {
   late ScrollController _scrollController;
+  final Map<int, ScrollController> _pageScrollControllers = {};
   final ValueNotifier<String?> _selectedUserId = ValueNotifier(null);
   final ValueNotifier<String?> _selectedCategoryId = ValueNotifier(null);
   late PageController _categoryPageController;
   List<String?> _categoryPages = [null];
   final ValueNotifier<int> _currentPageIndex = ValueNotifier(0);
+
+  ScrollController _getScrollControllerForPage(int index) {
+    final controller = _pageScrollControllers.putIfAbsent(index, () => ScrollController());
+    if (index == _currentPageIndex.value) {
+      _updateActiveController(index);
+    }
+    return controller;
+  }
+
+  void _updateActiveController(int index) {
+    if (widget.scrollController is ProxyScrollController) {
+      final proxy = widget.scrollController as ProxyScrollController;
+      proxy.activeController = _pageScrollControllers[index];
+    }
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -34,6 +51,7 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
     _scrollController = widget.scrollController ?? ScrollController();
     _categoryPageController = PageController();
     _selectedUserId.value = widget.preselectedUser;
+    _updateActiveController(0);
   }
 
   @override
@@ -53,6 +71,9 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
     _selectedUserId.dispose();
     _selectedCategoryId.dispose();
     _currentPageIndex.dispose();
+    for (final controller in _pageScrollControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -61,6 +82,7 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
     _selectedCategoryId.value = null;
     _categoryPages = [null];
     _currentPageIndex.value = 0;
+    _updateActiveController(0);
 
     if (_categoryPageController.hasClients) {
       _categoryPageController.jumpToPage(0);
@@ -84,6 +106,7 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
         curve: Curves.easeInOut,
       );
       _currentPageIndex.value = index;
+      _updateActiveController(index);
     }
   }
 
@@ -91,6 +114,7 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
     final categoryId = _categoryPages[index];
     _selectedCategoryId.value = categoryId;
     _currentPageIndex.value = index;
+    _updateActiveController(index);
   }
 
   @override
@@ -224,14 +248,9 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
                                   ? userPosts
                                   : userPosts.where((p) => p['categoryId'] == catId).toList();
                               
-                              return ValueListenableBuilder<int>(
-                                valueListenable: _currentPageIndex,
-                                builder: (context, activeIndex, _) {
-                                  return FollowingPostsList(
-                                    posts: filteredPosts,
-                                    scrollController: (index == activeIndex) ? _scrollController : null,
-                                  );
-                                },
+                              return FollowingPostsList(
+                                posts: filteredPosts,
+                                scrollController: _getScrollControllerForPage(index),
                               );
                             },
                           ),

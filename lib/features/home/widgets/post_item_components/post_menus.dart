@@ -162,8 +162,7 @@ class OtherPostMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentUserId = ref.watch(currentUserIdProvider);
-    final followingAsync = ref.watch(followingSetProvider(currentUserId));
+    final isFollowingAsync = ref.watch(isFollowingProvider(userId));
 
     return PopupMenuButton<String>(
       onSelected: (value) async {
@@ -207,7 +206,7 @@ class OtherPostMenu extends ConsumerWidget {
       ),
       itemBuilder:
           (_) {
-            final isFollowing = followingAsync.value?.contains(userId) ?? false;
+            final isFollowing = isFollowingAsync.value ?? false;
             return [
               PopupMenuItem<String>(
                 value: 'share',

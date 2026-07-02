@@ -14,35 +14,31 @@ class HomeFeedTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final feedAsync = ref.watch(feedControllerProvider);
+    final postIdsAsync = ref.watch(feedControllerProvider.select((asyncList) {
+      return asyncList.whenData((list) => list.map((p) => p['postId'] as String? ?? 'unknown').toList());
+    }));
     final authState = ref.watch(authStateProvider);
     final firebaseUser = authState.value;
 
-    return feedAsync.when(
-      data: (posts) {
-        if (posts.isEmpty) {
+    return postIdsAsync.when(
+      data: (postIds) {
+        if (postIds.isEmpty) {
           return const Center(child: Text('No posts available.'));
         }
 
         return ListView.builder(
           controller: scrollController,
           cacheExtent: 500,
-          itemCount: posts.length + (firebaseUser != null ? 1 : 0),
+          itemCount: postIds.length,
           itemBuilder: (context, index) {
-            if (firebaseUser != null && index == 0) {
-              return const SizedBox.shrink();
-            }
-
-            final postIndex = firebaseUser != null ? index - 1 : index;
-            final post = posts[postIndex];
-            final postId = post['postId'] ?? 'unknown';
+            final postId = postIds[index];
 
             if (firebaseUser == null) {
               return RepaintBoundary(
                 key: ValueKey(postId),
                 child: Column(
                   children: [
-                    GuestPostItem(post: post),
+                    GuestPostItem(postId: postId),
                     verticalSpace(10),
                   ],
                 ),
@@ -56,7 +52,6 @@ class HomeFeedTab extends ConsumerWidget {
                   PostItem(
                     postId: postId,
                     fromComments: false,
-                    postData: post,
                   ),
                   SizedBox(height: 16.h),
                 ],
@@ -124,40 +119,12 @@ class HomeFeedTab extends ConsumerWidget {
   }
 }
 
-class _PulsingSkeleton extends StatefulWidget {
+class _PulsingSkeleton extends StatelessWidget {
   final Widget child;
   const _PulsingSkeleton({required this.child});
 
   @override
-  State<_PulsingSkeleton> createState() => _PulsingSkeletonState();
-}
-
-class _PulsingSkeletonState extends State<_PulsingSkeleton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.35, end: 0.85).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-      ),
-      child: widget.child,
-    );
+    return child;
   }
 }

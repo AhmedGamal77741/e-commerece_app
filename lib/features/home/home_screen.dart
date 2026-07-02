@@ -7,6 +7,8 @@ import 'package:ecommerece_app/features/home/widgets/home_feed_tab.dart';
 import 'package:ecommerece_app/features/home/widgets/home_app_bar_pills.dart';
 import 'package:ecommerece_app/features/home/widgets/home_fab.dart';
 
+import 'package:ecommerece_app/features/home/widgets/proxy_scroll_controller.dart';
+
 class HomeScreen extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
   final TabController? tabController;
@@ -23,7 +25,7 @@ class HomeScreenState extends ConsumerState<HomeScreen>
 
   int _selectedIndex = 0;
   late final ScrollController _feedTabController;
-  late final ScrollController _followingTabController;
+  late final ProxyScrollController _followingTabController;
   late final ScrollController _myStoryTabController;
   final List<bool> _tabInitialized = [false, false, false];
 
@@ -50,7 +52,7 @@ class HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     _feedTabController = ScrollController();
-    _followingTabController = ScrollController();
+    _followingTabController = ProxyScrollController();
     _myStoryTabController = ScrollController();
     // Defer feed initialization to after the first frame so the navbar
     // and scaffold render fast before firing the Firestore query.

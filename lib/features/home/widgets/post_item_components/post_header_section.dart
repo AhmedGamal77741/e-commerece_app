@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
@@ -96,13 +95,7 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
         height: 48.h,
         decoration: ShapeDecoration(
           image: DecorationImage(
-            image:
-                widget.profileUrl.isNotEmpty
-                    ? ResizeImage(
-                      CachedNetworkImageProvider(widget.profileUrl),
-                      width: 120,
-                    )
-                    : const AssetImage('assets/avatar.png') as ImageProvider,
+            image: const AssetImage('assets/avatar.png') as ImageProvider,
             fit: BoxFit.cover,
           ),
           shape: const OvalBorder(),
@@ -217,11 +210,7 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
     final bool isFollowing =
         currentUserId.isEmpty
             ? false
-            : (ref
-                    .watch(followingSetProvider(currentUserId))
-                    .value
-                    ?.contains(widget.myuser!.userId) ??
-                false);
+            : (ref.watch(isFollowingProvider(widget.myuser!.userId)).value ?? false);
 
     if (isFollowing) {
       return PopupMenuButton<String>(
@@ -282,7 +271,7 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
           ),
         ),
         onPressed: () async {
-          final currentUserId = ref.watch(currentUserIdProvider);
+          final currentUserId = ref.read(currentUserIdProvider);
           if (hasRequest) {
             await ref
                 .read(followControllerProvider)
@@ -326,41 +315,12 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
   }
 }
 
-class _PulsingSkeleton extends StatefulWidget {
+class _PulsingSkeleton extends StatelessWidget {
   final Widget child;
   const _PulsingSkeleton({required this.child});
 
   @override
-  State<_PulsingSkeleton> createState() => _PulsingSkeletonState();
-}
-
-class _PulsingSkeletonState extends State<_PulsingSkeleton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: Tween<double>(
-        begin: 0.35,
-        end: 0.85,
-      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
-      child: widget.child,
-    );
+    return child;
   }
 }

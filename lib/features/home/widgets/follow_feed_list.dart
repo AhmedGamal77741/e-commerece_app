@@ -126,11 +126,10 @@ class FollowingPostsList extends StatelessWidget {
           child: Column(
             children: [
               useGuestPostItem
-                  ? GuestPostItem(post: postData)
+                  ? GuestPostItem(postId: postId)
                   : PostItem(
                       postId: postId,
                       fromComments: false,
-                      postData: postData,
                     ),
               SizedBox(height: 10.h),
             ],

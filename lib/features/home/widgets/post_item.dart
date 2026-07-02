@@ -12,7 +12,6 @@ import 'package:ecommerece_app/features/home/widgets/edit_post_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:ecommerece_app/features/home/widgets/post_item_components/natural_aspect_page_view.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/post_header_section.dart';
@@ -69,18 +68,6 @@ class _PostItemState extends ConsumerState<PostItem> {
     return _nicknameFuture!;
   }
 
-  // Cache profile user future to avoid rebuilding to ConnectionState.waiting
-  String? _cachedProfileUserId;
-  Future<MyUser>? _userFuture;
-
-  Future<MyUser> _getProfileUser(String userId, dynamic postsProvider) {
-    if (userId == _cachedProfileUserId && _userFuture != null) {
-      return _userFuture!;
-    }
-    _cachedProfileUserId = userId;
-    _userFuture = postsProvider.loadUser(userId);
-    return _userFuture!;
-  }
 
   @override
   void initState() {
@@ -213,40 +200,21 @@ class _PostItemState extends ConsumerState<PostItem> {
 
     // 3. If we have postData, render it immediately! No stream connection, no skeleton shimmer!
     if (postData != null) {
-      final cachedUser = postsProvider.getUser(postData['userId']);
-      if (cachedUser != null) {
-        return _buildPostItemContent(
-          context: context,
-          myuser: cachedUser,
-          postData: postData,
-          isWaiting: false,
-          userMissing: false,
-          fromCommentsImageWidth: fromCommentsImageWidth,
-        );
+      final cachedUser = ref.watch(userCacheProvider.select((map) => map[postData['userId']]));
+
+      if (cachedUser == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          postsProvider.loadUser(postData['userId']);
+        });
       }
 
-      return FutureBuilder<MyUser>(
-        future: _getProfileUser(postData['userId'], postsProvider),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting &&
-              !snapshot.hasData) {
-            return _buildSkeleton(fromCommentsImageWidth);
-          }
-          final bool userMissing =
-              snapshot.hasError ||
-              !snapshot.hasData ||
-              (snapshot.data?.userId ?? '').isEmpty;
-          final myuser = snapshot.data;
-
-          return _buildPostItemContent(
-            context: context,
-            myuser: myuser,
-            postData: postData,
-            isWaiting: false,
-            userMissing: userMissing,
-            fromCommentsImageWidth: fromCommentsImageWidth,
-          );
-        },
+      return _buildPostItemContent(
+        context: context,
+        myuser: cachedUser,
+        postData: postData,
+        isWaiting: cachedUser == null,
+        userMissing: false,
+        fromCommentsImageWidth: fromCommentsImageWidth,
       );
     }
 
@@ -265,40 +233,21 @@ class _PostItemState extends ConsumerState<PostItem> {
         if (pData == null || pData.isEmpty) return const SizedBox.shrink();
         pData['postId'] = widget.postId;
 
-        final cachedUser = postsProvider.getUser(pData['userId']);
-        if (cachedUser != null) {
-          return _buildPostItemContent(
-            context: context,
-            myuser: cachedUser,
-            postData: pData,
-            isWaiting: false,
-            userMissing: false,
-            fromCommentsImageWidth: fromCommentsImageWidth,
-          );
+        final cachedUser = ref.watch(userCacheProvider.select((map) => map[pData['userId']]));
+
+        if (cachedUser == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            postsProvider.loadUser(pData['userId']);
+          });
         }
 
-        return FutureBuilder<MyUser>(
-          future: _getProfileUser(pData['userId'], postsProvider),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting &&
-                !snapshot.hasData) {
-              return _buildSkeleton(fromCommentsImageWidth);
-            }
-            final bool userMissing =
-                snapshot.hasError ||
-                !snapshot.hasData ||
-                (snapshot.data?.userId ?? '').isEmpty;
-            final myuser = snapshot.data;
-
-            return _buildPostItemContent(
-              context: context,
-              myuser: myuser,
-              postData: pData,
-              isWaiting: false,
-              userMissing: userMissing,
-              fromCommentsImageWidth: fromCommentsImageWidth,
-            );
-          },
+        return _buildPostItemContent(
+          context: context,
+          myuser: cachedUser,
+          postData: pData,
+          isWaiting: cachedUser == null,
+          userMissing: false,
+          fromCommentsImageWidth: fromCommentsImageWidth,
         );
       },
     );
@@ -363,6 +312,11 @@ class _PostItemState extends ConsumerState<PostItem> {
     final currentUid = ref.watch(currentUserIdProvider);
     final bool isMyPost =
         !userMissing && !isWaiting && myuser!.userId == currentUid;
+
+    final String userId = myuser == null ? '' : myuser.userId;
+    final contactService = ContactService();
+    final bool nameMapLoaded = contactService.isNameMapLoaded();
+    final String? syncName = nameMapLoaded ? contactService.getContactNicknameSync(userId) : null;
 
     final List imgUrls =
         (postData['imgUrls'] != null &&
@@ -469,14 +423,7 @@ class _PostItemState extends ConsumerState<PostItem> {
                       height: 48.h,
                       decoration: ShapeDecoration(
                         image: DecorationImage(
-                          image:
-                              (myuser?.url != null && myuser!.url.isNotEmpty)
-                                  ? ResizeImage(
-                                    CachedNetworkImageProvider(myuser.url),
-                                    width: 120,
-                                  )
-                                  : const AssetImage('assets/avatar.png')
-                                      as ImageProvider,
+                          image: const AssetImage('assets/avatar.png') as ImageProvider,
                           fit: BoxFit.cover,
                         ),
                         shape: const OvalBorder(),
@@ -537,59 +484,56 @@ class _PostItemState extends ConsumerState<PostItem> {
                                     ),
                                   ),
                               horizontalSpace(4),
-                              Builder(
-                                builder: (context) {
-                                  final String userId =
-                                      myuser == null ? '' : myuser.userId;
-                                  final contactService = ContactService();
-                                  if (contactService.isNameMapLoaded()) {
-                                    final syncName = contactService
-                                        .getContactNicknameSync(userId);
-                                    if (syncName != null &&
-                                        syncName.isNotEmpty) {
-                                      return Flexible(
-                                        child: Text(
-                                          '@$syncName',
-                                          style: TextStyle(
-                                            fontSize: 14.sp,
-                                            color: Colors.grey[600],
-                                            fontWeight: FontWeight.w400,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      );
+                              if (nameMapLoaded) ...[
+                                if (syncName != null && syncName.isNotEmpty) ...[
+                                  horizontalSpace(4),
+                                  Flexible(
+                                    child: Text(
+                                      '@$syncName',
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ] else ...[
+                                FutureBuilder<String?>(
+                                  future: _getNickname(userId),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return const SizedBox.shrink();
                                     }
-                                    return const SizedBox.shrink();
-                                  }
-                                  return FutureBuilder<String?>(
-                                    future: _getNickname(userId),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      if (snapshot.hasError ||
-                                          !snapshot.hasData ||
-                                          snapshot.data == null) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      return Flexible(
-                                        child: Text(
-                                          '@${snapshot.data!}',
-                                          style: TextStyle(
-                                            fontSize: 14.sp,
-                                            color: Colors.grey[600],
-                                            fontWeight: FontWeight.w400,
+                                    if (snapshot.hasError ||
+                                        !snapshot.hasData ||
+                                        snapshot.data == null) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        horizontalSpace(4),
+                                        Flexible(
+                                          child: Text(
+                                            '@${snapshot.data!}',
+                                            style: TextStyle(
+                                              fontSize: 14.sp,
+                                              color: Colors.grey[600],
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
                             ],
                           ),
                           if (postData['text'] != null &&
@@ -679,41 +623,12 @@ class _PostItemState extends ConsumerState<PostItem> {
   }
 }
 
-class _PulsingSkeleton extends StatefulWidget {
+class _PulsingSkeleton extends StatelessWidget {
   final Widget child;
   const _PulsingSkeleton({required this.child});
 
   @override
-  State<_PulsingSkeleton> createState() => _PulsingSkeletonState();
-}
-
-class _PulsingSkeletonState extends State<_PulsingSkeleton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: Tween<double>(
-        begin: 0.35,
-        end: 0.85,
-      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
-      child: widget.child,
-    );
+    return child;
   }
 }
