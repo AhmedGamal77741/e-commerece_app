@@ -159,14 +159,19 @@ class _PostItemState extends ConsumerState<PostItem> {
 
     final double fromCommentsImageWidth = MediaQuery.of(context).size.width - 20.w;
 
-    final feedState = ref.watch(feedControllerProvider);
+    final allPostsState = ref.watch(allPostsStreamProvider);
     
     return Builder(
       builder: (context) {
-        final postData = feedState.value?.firstWhere(
-          (p) => p['postId'] == widget.postId,
-          orElse: () => <String, dynamic>{},
-        );
+        final docs = allPostsState.value ?? [];
+        Map<String, dynamic>? tempPostData;
+        try {
+          final doc = docs.firstWhere((d) => d.id == widget.postId);
+          tempPostData = doc.data() as Map<String, dynamic>;
+          tempPostData['postId'] = doc.id;
+        } catch (_) {}
+        
+        final postData = tempPostData;
         if (postData == null || postData.isEmpty) return const SizedBox.shrink();
 
         final cachedUser = postsProvider.getUser(postData['userId']);

@@ -220,7 +220,7 @@ class _PostsPage extends ConsumerStatefulWidget {
 
 class _PostsPageState extends ConsumerState<_PostsPage>
     with AutomaticKeepAliveClientMixin {
-  late final Stream<QuerySnapshot> _stream;
+  late Stream<QuerySnapshot> _stream;
 
   @override
   bool get wantKeepAlive => true;
@@ -235,6 +235,17 @@ class _PostsPageState extends ConsumerState<_PostsPage>
   }
 
   @override
+  void didUpdateWidget(_PostsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId || oldWidget.categoryId != widget.categoryId) {
+      _stream = ref.read(feedControllerProvider.notifier).getUserPostsStream(
+        widget.userId,
+        categoryId: widget.categoryId,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     super.build(context);
     return StreamBuilder<QuerySnapshot>(
@@ -244,7 +255,8 @@ class _PostsPageState extends ConsumerState<_PostsPage>
           return const SizedBox.shrink();
         }
         if (snapshot.hasError) {
-          return const Center(child: Text('게시물을 불러오지 못했습니다'));
+          debugPrint('Error loading posts: ${snapshot.error}');
+          return Center(child: Text('Error: ${snapshot.error}'));
         }
 
         final posts = snapshot.data!.docs;
