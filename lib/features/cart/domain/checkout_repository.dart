@@ -104,6 +104,7 @@ class CheckoutRepository {
       final isSubed = userSnap.data()?['isSub'] ?? false;
 
       // 2. Validate
+      Map<String, int> productRequestedQuantities = {};
       for (int i = 0; i < items.length; i++) {
         final item = items[i];
         final prodSnap = productSnaps[i];
@@ -112,13 +113,6 @@ class CheckoutRepository {
         }
 
         final prodData = prodSnap.data() as Map<String, dynamic>;
-        final liveStock = prodData['stock'] as int? ?? 0;
-        final requestedQuantity = item['quantity'] as int;
-
-        if (liveStock < requestedQuantity) {
-          throw Exception('Out of stock: ${prodData['productName']} (재고 부족)');
-        }
-
         final pricePointIndex = item['pricePointIndex'] as int;
         final pricePoints = prodData['pricePoints'] as List<dynamic>? ?? [];
         if (pricePointIndex >= pricePoints.length) {
@@ -126,28 +120,52 @@ class CheckoutRepository {
         }
 
         final pp = pricePoints[pricePointIndex] as Map<String, dynamic>;
+        final requestedQuantity = item['quantity'] as int? ?? pp['quantity'] as int? ?? 1;
+        item['quantity'] = requestedQuantity; // Inject for order saving
+
+        final productId = item['product_id'] as String;
+        productRequestedQuantities[productId] = (productRequestedQuantities[productId] ?? 0) + requestedQuantity;
+
         num computedPrice = pp['price'] ?? 0;
         if (!isSubed) {
           computedPrice = (computedPrice / 0.8).round();
         }
         final livePrice = computedPrice is double ? computedPrice.round() : computedPrice.toInt();
-        final cachedPrice = item['price'] as int;
-
-        if (livePrice != cachedPrice) {
+        
+        final cachedPrice = item['price'] as int?;
+        if (cachedPrice != null && livePrice != cachedPrice) {
           throw Exception('Price changed for ${prodData['productName']}. Please refresh the cart. (가격 변동)');
+        }
+        item['price'] = livePrice; // Inject for order saving
+      }
+
+      for (int i = 0; i < items.length; i++) {
+        final item = items[i];
+        final productId = item['product_id'] as String;
+        final prodSnap = productSnaps[i];
+        final prodData = prodSnap.data() as Map<String, dynamic>;
+        final liveStock = prodData['stock'] as int? ?? 0;
+        final totalRequested = productRequestedQuantities[productId]!;
+
+        if (liveStock < totalRequested) {
+          throw Exception('Out of stock: ${prodData['productName']} (재고 부족)');
         }
       }
 
       // 3. Execute
+      Set<String> updatedProducts = {};
       for (int i = 0; i < items.length; i++) {
         final item = items[i];
+        final productId = item['product_id'] as String;
         final prodSnap = productSnaps[i];
-        final liveStock = (prodSnap.data() as Map<String, dynamic>)['stock'] as int? ?? 0;
-        final requestedQuantity = item['quantity'] as int;
         
-        transaction.update(prodSnap.reference, {
-          'stock': liveStock - requestedQuantity
-        });
+        if (!updatedProducts.contains(productId)) {
+          final totalRequested = productRequestedQuantities[productId]!;
+          transaction.update(prodSnap.reference, {
+            'stock': FieldValue.increment(-totalRequested)
+          });
+          updatedProducts.add(productId);
+        }
       }
 
       final orderRef = _firestore.collection('orders').doc(paymentId);

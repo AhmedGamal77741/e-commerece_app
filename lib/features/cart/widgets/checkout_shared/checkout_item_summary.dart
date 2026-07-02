@@ -41,23 +41,26 @@ class CheckoutItemSummary extends StatelessWidget {
                 fit: BoxFit.cover,
               ),
             horizontalSpace(10),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  displayName,
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 16.sp,
-                    fontFamily: 'NotoSans',
-                    fontWeight: FontWeight.w400,
-                    height: 1.40.h,
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16.sp,
+                      fontFamily: 'NotoSans',
+                      fontWeight: FontWeight.w400,
+                      height: 1.40.h,
+                    ),
                   ),
-                ),
-                verticalSpace(8),
-                Text(
-                  '$pendingQuantity 개',
+                  verticalSpace(8),
+                  Text(
+                    '$pendingQuantity 개',
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 16.sp,
@@ -78,6 +81,7 @@ class CheckoutItemSummary extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
             ),
           ],
         ),

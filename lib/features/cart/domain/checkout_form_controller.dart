@@ -81,6 +81,7 @@ final checkoutFormPaymentIdProvider = Provider<String?>((ref) => null);
 final checkoutFormControllerProvider = AsyncNotifierProvider<
     CheckoutFormController, CheckoutFormState>(
   CheckoutFormController.new,
+  dependencies: [checkoutFormPaymentIdProvider],
 );
 
 class CheckoutFormController
@@ -124,22 +125,24 @@ class CheckoutFormController
     );
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null || paymentId == null) return state;
+    if (uid == null) return state;
 
     // 1. Load pending buynow
-    try {
-      final data = await ref
-          .read(checkoutControllerProvider.notifier)
-          .getPendingBuynow(uid, paymentId);
-      if (data != null) {
-        state = state.copyWith(
-          pendingBuynowData: data,
-          pendingPrice: data['price'] ?? 0,
-          pendingQuantity: data['quantity'] ?? 0,
-        );
+    if (paymentId != null) {
+      try {
+        final data = await ref
+            .read(checkoutControllerProvider.notifier)
+            .getPendingBuynow(uid, paymentId);
+        if (data != null) {
+          state = state.copyWith(
+            pendingBuynowData: data,
+            pendingPrice: data['price'] ?? 0,
+            pendingQuantity: data['quantity'] ?? 0,
+          );
+        }
+      } catch (e) {
+        debugPrint('Error loading pending_buynow: $e');
       }
-    } catch (e) {
-      debugPrint('Error loading pending_buynow: $e');
     }
 
     // 2. Load cached user values
@@ -197,7 +200,7 @@ class CheckoutFormController
 
   Future<CheckoutFormState> _ensureCachedAddressAndInstructions(
     String uid,
-    String paymentId,
+    String? paymentId,
     CheckoutFormState currentState,
   ) async {
     var newState = currentState;
@@ -236,7 +239,7 @@ class CheckoutFormController
         await ref
             .read(checkoutControllerProvider.notifier)
             .saveCachedUserValues(addressPatch);
-        _patchPendingBuynow(paymentId, addressPatch);
+        if (paymentId != null) _patchPendingBuynow(paymentId, addressPatch);
       }
     }
 

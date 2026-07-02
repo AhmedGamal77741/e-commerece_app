@@ -47,86 +47,91 @@ class PricePointsCard extends StatelessWidget {
                 return Column(
                   children: [
                     RadioListTile<String>(
-                      title: isSub
-                          ? Row(
-                              children: [
-                                Text(
-                                  '${pricePoint.quantity}개 ${formatCurrency.format(pricePoint.price)}원',
-                                  style: TextStyle(
-                                    fontFamily: 'NotoSans',
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 16.sp,
-                                    height: 1.4,
-                                  ),
-                                ),
-                                SizedBox(width: 5.w),
-                                Text(
-                                  '(1개 ${formatCurrency.format(perUnit.round())}원)',
-                                  style: TextStyles.abeezee14px400wP600,
-                                ),
-                              ],
-                            )
-                          : Row(
-                              children: [
-                                Text(
-                                  '${pricePoint.quantity}개 ',
-                                  style: TextStyle(
-                                    fontFamily: 'NotoSans',
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 18.sp,
-                                    height: 1.4,
-                                  ),
-                                ),
-                                SizedBox(width: 5.w),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          '일반가 ${formatCurrency.format((pricePoint.price / 0.8).round())} 원',
-                                          style: TextStyle(
-                                            fontFamily: 'NotoSans',
-                                            fontWeight: FontWeight.w400,
-                                            fontSize: 16.sp,
-                                            height: 1.4,
-                                          ),
-                                        ),
-                                        SizedBox(width: 5.w),
-                                        Text(
-                                          '(1개 ${formatCurrency.format(perUnitN.round())}원)',
-                                          style: TextStyles.abeezee14px400wP600,
-                                        ),
-                                      ],
+                      title:
+                          isSub
+                              ? Row(
+                                children: [
+                                  Text(
+                                    '${pricePoint.quantity}개 ${formatCurrency.format(pricePoint.price)}원',
+                                    style: TextStyle(
+                                      fontFamily: 'NotoSans',
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 16.sp,
+                                      height: 1.4,
                                     ),
-                                    Container(
-                                      color: Colors.black,
-                                      child: Row(
+                                  ),
+                                  SizedBox(width: 5.w),
+                                  Text(
+                                    '(1개 ${formatCurrency.format(perUnit.round())}원)',
+                                    style: TextStyles.abeezee14px400wP600,
+                                  ),
+                                ],
+                              )
+                              : Row(
+                                children: [
+                                  Text(
+                                    '${pricePoint.quantity}개 ',
+                                    style: TextStyle(
+                                      fontFamily: 'NotoSans',
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 18.sp,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                  SizedBox(width: 5.w),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
                                         children: [
                                           Text(
-                                            '멤버십 ${formatCurrency.format(pricePoint.price)} 원',
+                                            '일반가 ${formatCurrency.format((pricePoint.price / 0.8).round())} 원',
                                             style: TextStyle(
                                               fontFamily: 'NotoSans',
                                               fontWeight: FontWeight.w400,
                                               fontSize: 16.sp,
                                               height: 1.4,
-                                              color: Colors.white,
                                             ),
                                           ),
                                           SizedBox(width: 5.w),
                                           Text(
-                                            '(1개 ${formatCurrency.format(perUnit.round())}원)',
-                                            style: TextStyles
-                                                .abeezee14px400wP600
-                                                .copyWith(color: Colors.white),
+                                            '(1개 ${formatCurrency.format(perUnitN.round())}원)',
+                                            style:
+                                                TextStyles.abeezee14px400wP600,
                                           ),
                                         ],
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                                      Container(
+                                        color: Colors.black,
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              '멤버십 ${formatCurrency.format(pricePoint.price)} 원',
+                                              style: TextStyle(
+                                                fontFamily: 'NotoSans',
+                                                fontWeight: FontWeight.w400,
+                                                fontSize: 16.sp,
+                                                height: 1.4,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            SizedBox(width: 5.w),
+                                            Text(
+                                              '(1개 ${formatCurrency.format(perUnit.round())}원)',
+                                              style: TextStyles
+                                                  .abeezee14px400wP600
+                                                  .copyWith(
+                                                    color: Colors.white,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                       value: index.toString(),
                       activeColor: ColorsManager.primaryblack,
                     ),
@@ -144,43 +149,5 @@ class PricePointsCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class RadioGroup<T> extends StatelessWidget {
-  final T? groupValue;
-  final ValueChanged<T?> onChanged;
-  final Widget child;
-
-  const RadioGroup({
-    super.key,
-    required this.groupValue,
-    required this.onChanged,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _RadioGroupInherited<T>(
-      groupValue: groupValue,
-      onChanged: onChanged,
-      child: child,
-    );
-  }
-}
-
-class _RadioGroupInherited<T> extends InheritedWidget {
-  final T? groupValue;
-  final ValueChanged<T?> onChanged;
-
-  const _RadioGroupInherited({
-    required this.groupValue,
-    required this.onChanged,
-    required super.child,
-  });
-
-  @override
-  bool updateShouldNotify(covariant _RadioGroupInherited<T> oldWidget) {
-    return groupValue != oldWidget.groupValue || onChanged != oldWidget.onChanged;
   }
 }

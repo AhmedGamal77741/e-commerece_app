@@ -122,7 +122,7 @@ class _CategoryProductsScreenState extends ConsumerState<CategoryProductsScreen>
 
           return ListView.separated(
             controller: widget.scrollController,
-            findChildIndexCallback: (Key key) {
+            findItemIndexCallback: (Key key) {
               final valueKey = key as ValueKey<String>;
               final index = sortedProducts.indexWhere((p) => p.productId == valueKey.value);
               return index == -1 ? null : index;

@@ -31,8 +31,6 @@ class HomeAppBarPills extends ConsumerWidget {
 
   Widget _buildPill(BuildContext context, int index, String label) {
     final bool isSelected = selectedIndex == index;
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return GestureDetector(
       onTap: () => onTabSelected(index),
@@ -40,15 +38,16 @@ class HomeAppBarPills extends ConsumerWidget {
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 6.h),
         decoration: BoxDecoration(
-          color: isSelected ? colorScheme.surface : colorScheme.surfaceContainerHighest,
+          color: isSelected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
-          style: textTheme.bodyMedium?.copyWith(
-            fontSize: 12.sp,
-            color: isSelected ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          style: TextStyle(
+            fontFamily: 'NotoSans',
+            fontSize: 14.sp,
+            color: isSelected ? const Color(0xFF424242) : const Color(0xFF9E9E9E),
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ),
