@@ -52,6 +52,10 @@ class _MyStoryState extends ConsumerState<MyStory> {
   }
 
   void _onCategorySelected(String categoryId) {
+    setState(() {
+      selectedCategoryId = categoryId.isEmpty ? null : categoryId;
+    });
+    
     final index = _categoryPages.indexOf(
       categoryId.isEmpty ? null : categoryId,
     );
@@ -330,16 +334,19 @@ class UserCategoriesBar extends ConsumerWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
         decoration: BoxDecoration(
-          color: selected ? Colors.grey : Colors.transparent,
+          color: selected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey),
+          border: Border.all(
+            color: selected ? const Color(0xFF9E9E9E) : Colors.transparent,
+            width: 1,
+          ),
         ),
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 13.sp,
-            color: selected ? Colors.white : Colors.grey[600],
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            fontSize: 14.sp,
+            color: selected ? const Color(0xFF424242) : const Color(0xFF9E9E9E),
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
       ),

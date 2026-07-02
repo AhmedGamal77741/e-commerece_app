@@ -64,18 +64,20 @@ class UserCategoriesBar extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
         decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.surface : Colors.transparent,
+          color: isSelected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? theme.colorScheme.outline : Colors.transparent,
+            color: isSelected ? const Color(0xFF9E9E9E) : Colors.transparent,
+            width: 1,
           ),
         ),
         child: Center(
           child: Text(
             categoryName,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.onSurface,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: isSelected ? const Color(0xFF424242) : const Color(0xFF9E9E9E),
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
         ),
@@ -103,16 +105,14 @@ class FollowingPostsList extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.feed_outlined, size: 64, color: Theme.of(context).colorScheme.surfaceContainerHighest),
+            const Icon(Icons.feed_outlined, size: 64, color: Color(0xFFE0E0E0)),
           ],
         ),
       );
     }
 
     return ListView.builder(
-      shrinkWrap: true,
       controller: scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: posts.length,
       itemBuilder: (context, index) {
         final postData = posts[index];
