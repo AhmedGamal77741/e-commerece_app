@@ -26,6 +26,15 @@ class FeedRepository {
   }) : _firestore = firestore,
        _auth = auth;
 
+  Stream<DocumentSnapshot> getCurrentUserStream(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots();
+  }
+
+  Stream<QuerySnapshot> getUsersChunkStream(List<String> userIds) {
+    if (userIds.isEmpty) return const Stream.empty();
+    return _firestore.collection('users').where('userId', whereIn: userIds).snapshots();
+  }
+
   Stream<QuerySnapshot> getUserCategoriesStream(String userId) {
     return _firestore
         .collection('users')

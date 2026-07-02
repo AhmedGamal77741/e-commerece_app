@@ -213,18 +213,9 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
                             itemBuilder: (context, index) {
                               final catId = _categoryPages[index];
 
-                              return ValueListenableBuilder<int>(
-                                valueListenable: _currentPageIndex,
-                                builder: (context, activeIndex, _) {
-                                  return _FollowingPostsPage(
-                                    userId: selectedId,
-                                    categoryId: catId,
-                                    scrollController:
-                                        (index == activeIndex)
-                                            ? _scrollController
-                                            : null,
-                                  );
-                                },
+                              return _FollowingPostsPage(
+                                userId: selectedId,
+                                categoryId: catId,
                               );
                             },
                           ),
@@ -247,12 +238,10 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
 class _FollowingPostsPage extends ConsumerStatefulWidget {
   final String userId;
   final String? categoryId;
-  final ScrollController? scrollController;
 
   const _FollowingPostsPage({
     required this.userId,
     this.categoryId,
-    this.scrollController,
   });
 
   @override
@@ -262,7 +251,7 @@ class _FollowingPostsPage extends ConsumerStatefulWidget {
 
 class _FollowingPostsPageState extends ConsumerState<_FollowingPostsPage>
     with AutomaticKeepAliveClientMixin {
-  late final Stream<QuerySnapshot> _stream;
+  late Stream<QuerySnapshot> _stream;
 
   @override
   bool get wantKeepAlive => true;
@@ -273,6 +262,16 @@ class _FollowingPostsPageState extends ConsumerState<_FollowingPostsPage>
     _stream = ref
         .read(feedControllerProvider.notifier)
         .getUserPostsStream(widget.userId, categoryId: widget.categoryId);
+  }
+
+  @override
+  void didUpdateWidget(_FollowingPostsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId || oldWidget.categoryId != widget.categoryId) {
+      _stream = ref
+          .read(feedControllerProvider.notifier)
+          .getUserPostsStream(widget.userId, categoryId: widget.categoryId);
+    }
   }
 
   @override
@@ -300,7 +299,6 @@ class _FollowingPostsPageState extends ConsumerState<_FollowingPostsPage>
 
         return FollowingPostsList(
           posts: posts,
-          scrollController: widget.scrollController,
         );
       },
     );
