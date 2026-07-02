@@ -61,8 +61,9 @@ class _PostItemState extends ConsumerState<PostItem> {
   Future<String?>? _nicknameFuture;
 
   Future<String?> _getNickname(String userId) {
-    if (userId == _cachedUserId && _nicknameFuture != null)
+    if (userId == _cachedUserId && _nicknameFuture != null) {
       return _nicknameFuture!;
+    }
     _cachedUserId = userId;
     _nicknameFuture = ContactService().getContactNickname(userId);
     return _nicknameFuture!;
@@ -274,7 +275,6 @@ class _PostItemState extends ConsumerState<PostItem> {
             userMissing: false,
             fromCommentsImageWidth: fromCommentsImageWidth,
           );
->>>>>>> e9fd417 (trying to fix performance issues in app)
         }
 
         return FutureBuilder<MyUser>(

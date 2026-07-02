@@ -2,7 +2,6 @@ import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/features/shop/domain/shop_controller.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/home/domain/search_notifier.dart';
-import 'package:ecommerece_app/features/shop/widgets/shop_product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -123,11 +122,11 @@ class ShopSearch extends ConsumerWidget {
       itemBuilder: (context, index) {
         final product = sortedProducts[index];
         final displayPrice = isSub ? product.price : (product.price / 0.8);
-        final _formatCurrency = NumberFormat('#,###');
+        final formatCurrency = NumberFormat('#,###');
         
         return ListTile(
           title: Text(product.productName),
-          subtitle: Text('${_formatCurrency.format(displayPrice)} 원'),
+          subtitle: Text('${formatCurrency.format(displayPrice)} 원'),
           leading: Stack(
             children: [
               SafeNetworkImage(

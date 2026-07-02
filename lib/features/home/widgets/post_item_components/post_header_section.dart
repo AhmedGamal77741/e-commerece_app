@@ -46,8 +46,9 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
   Future<String?>? _nicknameFuture;
 
   Future<String?> _getNickname(String userId) {
-    if (userId == _cachedUserId && _nicknameFuture != null)
+    if (userId == _cachedUserId && _nicknameFuture != null) {
       return _nicknameFuture!;
+    }
     _cachedUserId = userId;
     _nicknameFuture = ContactService().getContactNickname(userId);
     return _nicknameFuture!;
