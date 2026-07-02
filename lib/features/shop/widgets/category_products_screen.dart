@@ -86,24 +86,10 @@ class _CategoryProductsScreenState extends ConsumerState<CategoryProductsScreen>
 
           for (var product in products) {
             if (product.stock == 0) {
-              if (!hasUserAddress) {
-                soldOutList.add(product);
-              } else {
-                if (product.address != null && product.address!.isNotEmpty) {
-                  if (_isSameRegion(userAddressMap, product.address)) {
-                    soldOutList.add(product);
-                  }
-                } else {
-                  soldOutList.add(product);
-                }
-              }
+              soldOutList.add(product);
             } else {
-              if (product.address != null && product.address!.isNotEmpty) {
-                if (hasUserAddress && _isSameRegion(userAddressMap, product.address)) {
-                  sameRegion.add(product);
-                } else if (!hasUserAddress) {
-                  otherRegion.add(product);
-                }
+              if (hasUserAddress && _isSameRegion(userAddressMap, product.address)) {
+                sameRegion.add(product);
               } else {
                 otherRegion.add(product);
               }
@@ -127,6 +113,11 @@ class _CategoryProductsScreenState extends ConsumerState<CategoryProductsScreen>
 
           return ListView.separated(
             controller: widget.scrollController,
+            findChildIndexCallback: (Key key) {
+              final valueKey = key as ValueKey<String>;
+              final index = sortedProducts.indexWhere((p) => p.productId == valueKey.value);
+              return index == -1 ? null : index;
+            },
             separatorBuilder: (context, index) {
               if (index == sortedProducts.length - 1) {
                 return const SizedBox.shrink();
@@ -136,6 +127,7 @@ class _CategoryProductsScreenState extends ConsumerState<CategoryProductsScreen>
             itemCount: sortedProducts.length,
             itemBuilder: (context, index) {
               return ShopProductCard(
+                key: ValueKey(sortedProducts[index].productId),
                 product: sortedProducts[index],
                 isSub: widget.isSub,
               );

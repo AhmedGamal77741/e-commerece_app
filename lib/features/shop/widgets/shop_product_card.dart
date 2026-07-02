@@ -45,6 +45,8 @@ class ShopProductCard extends StatelessWidget {
                           width: 106.w,
                           height: 106.h,
                           fit: BoxFit.cover,
+                          memCacheWidth: 300,
+                          memCacheHeight: 300,
                           fadeInDuration: Duration.zero,
                           fadeOutDuration: Duration.zero,
                           placeholder: (context, url) => Container(

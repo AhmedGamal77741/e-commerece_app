@@ -22,7 +22,12 @@ class ShopRepository {
     }
     return _firestore
         .collection('products')
-        .where('category', isEqualTo: categoryId)
+        .where(
+          Filter.or(
+            Filter('category', isEqualTo: categoryId),
+            Filter('categoryList', arrayContains: categoryId),
+          ),
+        )
         .snapshots();
   }
 
