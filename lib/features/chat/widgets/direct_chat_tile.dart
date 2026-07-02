@@ -8,6 +8,7 @@ import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class DirectChatTile extends ConsumerWidget {
   final ChatRoomModel chat;
@@ -209,8 +210,8 @@ class DirectChatTile extends ConsumerWidget {
           children: [
             CircleAvatar(
               radius: 25,
-              backgroundImage: avatarUrl != null
-                  ? NetworkImage(avatarUrl!) as ImageProvider
+              backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                  ? safeNetworkImageProvider(avatarUrl!)
                   : isDeleted
                       ? const AssetImage('assets/avatar.png') as ImageProvider
                       : null,

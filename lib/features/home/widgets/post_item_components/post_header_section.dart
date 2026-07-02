@@ -8,11 +8,11 @@ import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/home/widgets/share_dialog.dart';
-import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
-class PostHeaderSection extends ConsumerStatefulWidget {
+class PostHeaderSection extends ConsumerWidget {
   final MyUser? myuser;
   final String displayName;
   final String profileUrl;
@@ -37,56 +37,39 @@ class PostHeaderSection extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<PostHeaderSection> createState() => _PostHeaderSectionState();
-}
-
-class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
-  String? _cachedUserId;
-  Future<String?>? _nicknameFuture;
-
-  Future<String?> _getNickname(String userId) {
-    if (userId == _cachedUserId && _nicknameFuture != null) {
-      return _nicknameFuture!;
-    }
-    _cachedUserId = userId;
-    _nicknameFuture = ContactService().getContactNickname(userId);
-    return _nicknameFuture!;
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildAvatar(context),
-        horizontalSpace(10),
+        SizedBox(width: 10.w),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildNameAndNickname(),
-              if (!widget.userMissing &&
-                  widget.myuser != null &&
-                  widget.myuser!.userId.isNotEmpty)
-                _buildFollowerCount(ref),
+              if (!userMissing &&
+                  myuser != null &&
+                  myuser!.userId.isNotEmpty)
+                _buildFollowerCount(),
             ],
           ),
         ),
         const Spacer(),
-        if (!widget.userMissing && !widget.isMyPost)
+        if (!userMissing && !isMyPost)
           _buildActionArea(context, ref),
       ],
     );
   }
 
   Widget _buildAvatar(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: () {
-        if (widget.myuser != null &&
-            widget.currentProfileUserId != widget.myuser!.userId) {
+        if (myuser != null &&
+            currentProfileUserId != myuser!.userId) {
           context.pushNamed(
             Routes.profileTabScreen,
-            extra: {'userId': widget.myuser!.userId},
+            extra: {'userId': myuser!.userId},
           );
         }
       },
@@ -95,7 +78,7 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
         height: 48.h,
         decoration: ShapeDecoration(
           image: DecorationImage(
-            image: const AssetImage('assets/avatar.png') as ImageProvider,
+            image: safeNetworkImageProvider(profileUrl),
             fit: BoxFit.cover,
           ),
           shape: const OvalBorder(),
@@ -105,86 +88,56 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
   }
 
   Widget _buildNameAndNickname() {
+    final String userId = myuser?.userId ?? '';
+    final contactService = ContactService();
+    String? syncName;
+
+    if (contactService.isNameMapLoaded()) {
+      syncName = contactService.getContactNicknameSync(userId);
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        widget.isWaiting
-            ? _PulsingSkeleton(
-              child: Container(
-                width: 80.w,
-                height: 16.h,
-                color: Colors.grey[300],
-                margin: EdgeInsets.only(bottom: 2.h),
+        if (isWaiting)
+          Container(
+            width: 80.w,
+            height: 16.h,
+            color: Colors.grey[300],
+            margin: EdgeInsets.only(bottom: 2.h),
+          )
+        else
+          Flexible(
+            child: Text(
+              displayName,
+              style: TextStyles.abeezee16px400wPblack.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-            )
-            : Flexible(
-              child: Text(
-                widget.displayName,
-                style: TextStyles.abeezee16px400wPblack.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-        horizontalSpace(4),
-        Builder(
-          builder: (context) {
-            final String userId =
-                widget.myuser == null ? "" : widget.myuser!.userId;
-            final contactService = ContactService();
-            if (contactService.isNameMapLoaded()) {
-              final syncName = contactService.getContactNicknameSync(userId);
-              if (syncName != null && syncName.isNotEmpty) {
-                return Flexible(
-                  child: Text(
-                    '@$syncName',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w400,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            }
-            return FutureBuilder<String?>(
-              future: _getNickname(userId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SizedBox.shrink();
-                }
-                if (snapshot.hasError ||
-                    !snapshot.hasData ||
-                    snapshot.data == null) {
-                  return const SizedBox.shrink();
-                }
-                final nickname = snapshot.data!;
-                return Flexible(
-                  child: Text(
-                    '@$nickname',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w400,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              },
-            );
-          },
-        ),
+          ),
+        if (syncName != null && syncName.isNotEmpty) ...[
+          SizedBox(width: 4.w),
+          Flexible(
+            child: Text(
+              '@$syncName',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w400,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildFollowerCount(WidgetRef ref) {
-    final count = widget.myuser!.followerCount;
+  Widget _buildFollowerCount() {
+    final count = myuser!.followerCount;
     final formatted = count.toString().replaceAllMapped(
       RegExp(r'\B(?=(\d{3})+(?!\d))'),
       (match) => ',',
@@ -207,10 +160,9 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
 
   Widget _buildActionArea(BuildContext context, WidgetRef ref) {
     final currentUserId = ref.watch(currentUserIdProvider);
-    final bool isFollowing =
-        currentUserId.isEmpty
-            ? false
-            : (ref.watch(isFollowingProvider(widget.myuser!.userId)).value ?? false);
+    final bool isFollowing = currentUserId.isEmpty
+        ? false
+        : (ref.watch(isFollowingProvider(myuser!.userId)).value ?? false);
 
     if (isFollowing) {
       return PopupMenuButton<String>(
@@ -219,45 +171,38 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
             showShareDialog(
               context,
               'post',
-              'https://www.pang2chocolate.com/comment?postId=${widget.postId}',
-              widget.postId,
-              widget.myuser!.name,
-              widget.myuser!.url,
-              widget.postData,
+              'https://www.pang2chocolate.com/comment?postId=$postId',
+              postId,
+              myuser!.name,
+              myuser!.url,
+              postData,
               isLoggedIn: ref.read(currentUserIdProvider).isNotEmpty,
             );
           } else if (value == 'unfollow') {
-            ref
-                .read(followControllerProvider)
-                .toggleFollow(widget.myuser!.userId);
+            ref.read(followControllerProvider).toggleFollow(myuser!.userId);
           }
         },
         color: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        itemBuilder:
-            (BuildContext context) => [
-              PopupMenuItem<String>(
-                value: 'share',
-                child: Text(
-                  '공유',
-                  style: TextStyle(color: Colors.black, fontSize: 13.sp),
-                ),
-              ),
-              PopupMenuItem<String>(
-                value: 'unfollow',
-                child: Text(
-                  '구독 취소',
-                  style: TextStyle(color: Colors.black, fontSize: 13.sp),
-                ),
-              ),
-            ],
+        itemBuilder: (_) => [
+          PopupMenuItem<String>(
+            value: 'share',
+            child: Text('공유',
+                style: TextStyle(color: Colors.black, fontSize: 13.sp)),
+          ),
+          PopupMenuItem<String>(
+            value: 'unfollow',
+            child: Text('구독 취소',
+                style: TextStyle(color: Colors.black, fontSize: 13.sp)),
+          ),
+        ],
         child: Icon(Icons.more_horiz, color: Colors.black, size: 22.sp),
       );
     }
 
-    if (widget.myuser!.isPrivate) {
+    if (myuser!.isPrivate) {
       final followRequestAsync = ref.watch(
-        hasFollowRequestProvider(widget.myuser!.userId),
+        hasFollowRequestProvider(myuser!.userId),
       );
       final hasRequest = followRequestAsync.value ?? false;
 
@@ -275,11 +220,11 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
           if (hasRequest) {
             await ref
                 .read(followControllerProvider)
-                .cancelFollowRequest(widget.myuser!.userId, currentUserId);
+                .cancelFollowRequest(myuser!.userId, currentUserId);
           } else {
             await ref
                 .read(followControllerProvider)
-                .sendFollowRequest(widget.myuser!.userId, currentUserId);
+                .sendFollowRequest(myuser!.userId, currentUserId);
           }
         },
         child: Text(
@@ -301,7 +246,7 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       onPressed: () async {
-        ref.read(followControllerProvider).toggleFollow(widget.myuser!.userId);
+        ref.read(followControllerProvider).toggleFollow(myuser!.userId);
       },
       child: Text(
         '구독',
@@ -312,15 +257,5 @@ class _PostHeaderSectionState extends ConsumerState<PostHeaderSection> {
         ),
       ),
     );
-  }
-}
-
-class _PulsingSkeleton extends StatelessWidget {
-  final Widget child;
-  const _PulsingSkeleton({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return child;
   }
 }

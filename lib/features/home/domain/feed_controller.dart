@@ -168,7 +168,6 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FeedRepository get _repository => ref.read(feedRepositoryProvider);
 
-  bool get hasMore => false;
 
   @override
   FutureOr<List<Map<String, dynamic>>> build() async {
@@ -348,7 +347,6 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
     return authPosts;
   }
 
-  Future<void> fetchNextPage() async {}
 
   // Getters for comments and users (kept for compatibility with other files)
   List<Comment> getComments(String postId) {
@@ -366,10 +364,7 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       _loadingCommentPosts.contains(postId);
   MyUser? getUser(String userId) => _users[userId];
 
-  // Dummy implementations to prevent other files from crashing during sub-phase
-  bool hasPostChanged(String postId) => false;
-  void resetListening() {}
-  void startListening() {}
+
 
   // ---------------------------------------------------------------------------
   // Proxy methods delegating to FeedRepository
