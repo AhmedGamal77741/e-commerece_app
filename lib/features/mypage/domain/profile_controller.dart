@@ -108,10 +108,6 @@ class ProfileController extends AsyncNotifier<void> {
       phoneNumber: isUpdatingPhone ? phone : currentUser.phoneNumber,
     );
 
-    if (isUpdatingPassword) {
-      await reauthenticateUser(password);
-    }
-
     await ref
         .read(authNotifierProvider.notifier)
         .updateUser(updatedUser, isUpdatingPassword ? password : "");
