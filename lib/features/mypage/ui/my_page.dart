@@ -177,6 +177,10 @@ class _MyPageState extends ConsumerState<MyPage> {
                     );
                   } catch (e) {
                     if (!context.mounted) return;
+                    _nicknameController.text = widget.currentUser.name;
+                    _phoneController.text = widget.currentUser.phoneNumber ?? '';
+                    _passwordController.clear();
+                    
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
