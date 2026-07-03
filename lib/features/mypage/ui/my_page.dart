@@ -107,25 +107,47 @@ class _MyPageState extends ConsumerState<MyPage> {
                       context: context,
                       builder: (context) {
                         final controller = TextEditingController();
-                        return AlertDialog(
-                          title: Text('현재 비밀번호 확인', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
-                          content: TextField(
-                            controller: controller,
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              hintText: '현재 비밀번호를 입력하세요',
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('취소'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, controller.text),
-                              child: const Text('확인'),
-                            ),
-                          ],
+                        bool obscure = true;
+                        return StatefulBuilder(
+                          builder: (context, setState) {
+                            return AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: Text('현재 비밀번호 확인', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('안전한 정보 변경을 위해 현재 비밀번호를 입력해 주세요.', style: TextStyle(fontSize: 14.sp, color: Colors.grey[700])),
+                                  SizedBox(height: 16.h),
+                                  TextField(
+                                    controller: controller,
+                                    obscureText: obscure,
+                                    decoration: InputDecoration(
+                                      hintText: '현재 비밀번호',
+                                      suffixIcon: IconButton(
+                                        icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
+                                        onPressed: () {
+                                          setState(() {
+                                            obscure = !obscure;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text('취소', style: TextStyle(color: Colors.grey[600])),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, controller.text),
+                                  child: const Text('확인', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            );
+                          }
                         );
                       },
                     );

@@ -51,7 +51,7 @@ class FavoriteItemWidget extends ConsumerWidget {
               product.meridiem,
               product.baselineTime,
             );
-            
+
             if (context.mounted) {
               context.pushNamed(
                 Routes.itemDetailsScreen,
@@ -75,9 +75,7 @@ class FavoriteItemWidget extends ConsumerWidget {
                     width: 106.w,
                     height: 110.h,
                     fit: BoxFit.cover,
-                    placeholder: const ColoredBox(
-                      color: Color(0xFFEEEEEE),
-                    ),
+                    placeholder: const ColoredBox(color: Color(0xFFEEEEEE)),
                     errorWidget: const ColoredBox(
                       color: Color(0xFFEEEEEE),
                       child: Center(
@@ -104,7 +102,9 @@ class FavoriteItemWidget extends ConsumerWidget {
                       if (isOutOfStock)
                         Text(
                           '품절',
-                          style: TextStyles.abeezee14px400wP600.copyWith(color: Colors.red),
+                          style: TextStyles.abeezee14px400wP600.copyWith(
+                            color: Colors.red,
+                          ),
                         ),
                       Text(
                         isSub
@@ -121,7 +121,9 @@ class FavoriteItemWidget extends ConsumerWidget {
                 ),
                 IconButton(
                   onPressed: () {
-                    ref.read(cartControllerProvider.notifier).removeFavItem(favoriteId);
+                    ref
+                        .read(cartControllerProvider.notifier)
+                        .removeFavItem(favoriteId);
                   },
                   icon: const Icon(Icons.close, size: 18),
                 ),
