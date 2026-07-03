@@ -117,9 +117,7 @@ class AuthNotifier extends AsyncNotifier<void> {
         } else if (e.code == 'weak-password') {
           throw Exception("비밀번호가 너무 약합니다");
         }
-        throw Exception("알 수 없는 오류가 발생했습니다");
-      } catch (e) {
-        throw Exception("알 수 없는 오류가 발생했습니다");
+        throw Exception("알 수 없는 오류가 발생했습니다: ${e.message}");
       }
     });
   }
