@@ -64,7 +64,22 @@ class _MyPageState extends ConsumerState<MyPage> {
   @override
   Widget build(BuildContext context) {
     final myuser = widget.currentUser;
-    final bool isSub = myuser.isSub; 
+    final bool isSub = myuser.isSub;
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            if (!isSub) ...[
+              Container(
+                width: double.infinity,
+                height: 500.h,
+                color: Colors.black,
+                child: Center(child: ShiningPremiumBanner()),
+              ),
+              verticalSpace(20),
+            ],
+            Padding(
               padding: EdgeInsets.fromLTRB(12.w, isSub ? 20.h : 0, 12.w, 20.h),
               child: Column(
                 children: [
