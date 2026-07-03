@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -577,6 +578,8 @@ void showChangeNameDialog(BuildContext context, WidgetRef ref, MyUser friend, St
 
 void showAddFriendDialog(BuildContext context, WidgetRef ref) {
   final controller = TextEditingController();
+  final focusNode = FocusNode();
+  Timer? debounce;
   List<MyUser> results = [];
   bool isSearching = false;
   String? feedbackMessage;
@@ -587,18 +590,21 @@ void showAddFriendDialog(BuildContext context, WidgetRef ref) {
     builder: (dialogContext) => StatefulBuilder(
       builder: (ctx, setDialogState) {
         Future<void> runSearch(String query) async {
-          if (query.trim().isEmpty) {
+          if (debounce?.isActive ?? false) debounce!.cancel();
+          debounce = Timer(const Duration(milliseconds: 300), () async {
+            if (query.trim().isEmpty) {
+              setDialogState(() {
+                results = [];
+                isSearching = false;
+              });
+              return;
+            }
+            setDialogState(() => isSearching = true);
+            final found = await searchUsersByAny(query.trim(), ref);
             setDialogState(() {
-              results = [];
+              results = found;
               isSearching = false;
             });
-            return;
-          }
-          setDialogState(() => isSearching = true);
-          final found = await searchUsersByAny(query.trim(), ref);
-          setDialogState(() {
-            results = found;
-            isSearching = false;
           });
         }
 
@@ -652,6 +658,7 @@ void showAddFriendDialog(BuildContext context, WidgetRef ref) {
                       ),
                       child: TextField(
                         controller: controller,
+                        focusNode: focusNode,
                         autofocus: true,
                         style: TextStyle(
                           fontSize: 14.sp,
@@ -840,6 +847,7 @@ Future<void> showCreateGroupDialog({
 }) async {
   final nameController = TextEditingController();
   final searchCtrl = TextEditingController();
+  final searchFocusNode = FocusNode();
   List<String> selectedUserIds = [];
   String? groupImagePath;
   String groupSearch = '';
@@ -886,11 +894,14 @@ Future<void> showCreateGroupDialog({
                 ),
               ),
               Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // ── Group image picker ──
+                child: CustomScrollView(
+                  shrinkWrap: true,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // ── Group image picker ──
                       GestureDetector(
                         onTap: () async {
                           groupImagePath = await ref.read(feedControllerProvider.notifier).uploadImageToFirebaseStorageHome();
@@ -1046,6 +1057,7 @@ Future<void> showCreateGroupDialog({
                           ),
                           child: TextField(
                             controller: searchCtrl,
+                            focusNode: searchFocusNode,
                             style: TextStyle(
                               fontSize: 13.sp,
                               color: Colors.black,
@@ -1089,9 +1101,13 @@ Future<void> showCreateGroupDialog({
                         ),
                       ),
 
-                      // ── Friends list ──
-                      if (filteredFriends.isEmpty)
-                        Padding(
+                        ],
+                      ),
+                    ),
+                    // ── Friends list ──
+                    if (filteredFriends.isEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 24.h),
                           child: Center(
                             child: Text(
@@ -1102,10 +1118,13 @@ Future<void> showCreateGroupDialog({
                               ),
                             ),
                           ),
-                        )
-                      else
-                        Column(
-                          children: filteredFriends.map((user) {
+                        ),
+                      )
+                    else
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final user = filteredFriends[index];
                             final isSelected = selectedUserIds.contains(user.userId);
                             final displayName = aliases[user.userId] ?? user.name;
                             final hasAlias = aliases.containsKey(user.userId) && aliases[user.userId]!.isNotEmpty;
@@ -1198,11 +1217,12 @@ Future<void> showCreateGroupDialog({
                                 ),
                               ),
                             );
-                          }).toList(),
+                          },
+                          childCount: filteredFriends.length,
                         ),
-                      SizedBox(height: 8.h),
-                    ],
-                  ),
+                      ),
+                    SliverToBoxAdapter(child: SizedBox(height: 8.h)),
+                  ],
                 ),
               ),
 
