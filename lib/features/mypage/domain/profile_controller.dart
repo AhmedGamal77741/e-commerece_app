@@ -104,6 +104,15 @@ class ProfileController extends AsyncNotifier<void> {
       }
     }
 
+    if (isUpdatingPhone) {
+      final existingPhone = await ref
+          .read(authRepositoryProvider)
+          .isPhoneNumberTaken(phone);
+      if (existingPhone && phone != (currentUser.phoneNumber ?? '')) {
+        throw Exception("이미 사용 중인 전화번호입니다");
+      }
+    }
+
     final updatedUser = currentUser.copyWith(
       name: isUpdatingName ? newNickname.trim() : currentUser.name,
       phoneNumber: isUpdatingPhone ? phone : currentUser.phoneNumber,
