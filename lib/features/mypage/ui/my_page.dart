@@ -101,10 +101,50 @@ class _MyPageState extends ConsumerState<MyPage> {
               WideTextButton(
                 txt: '저장',
                 func: () async {
+                  String? currentPassword;
+                  if (_passwordController.text.isNotEmpty) {
+                    currentPassword = await showDialog<String>(
+                      context: context,
+                      builder: (context) {
+                        final controller = TextEditingController();
+                        return AlertDialog(
+                          title: Text('현재 비밀번호 확인', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
+                          content: TextField(
+                            controller: controller,
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              hintText: '현재 비밀번호를 입력하세요',
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('취소'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, controller.text),
+                              child: const Text('확인'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (currentPassword == null || currentPassword.isEmpty) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('비밀번호 변경이 취소되었습니다', style: TextStyle(fontSize: 14.sp))),
+                        );
+                      }
+                      return;
+                    }
+                  }
+
                   try {
                     await ref.read(profileControllerProvider.notifier).performUpdate(
                           currentUser: widget.currentUser,
                           newNickname: _nicknameController.text,
+                          currentPassword: currentPassword,
                           password: _passwordController.text,
                           phone: _phoneController.text,
                         );

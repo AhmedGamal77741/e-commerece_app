@@ -78,6 +78,7 @@ class ProfileController extends AsyncNotifier<void> {
   Future<void> performUpdate({
     required MyUser currentUser,
     String? newNickname,
+    String? currentPassword,
     required String password,
     required String phone,
   }) async {
@@ -107,6 +108,13 @@ class ProfileController extends AsyncNotifier<void> {
       name: isUpdatingName ? newNickname.trim() : currentUser.name,
       phoneNumber: isUpdatingPhone ? phone : currentUser.phoneNumber,
     );
+
+    if (isUpdatingPassword) {
+      if (currentPassword == null || currentPassword.isEmpty) {
+        throw Exception("비밀번호를 변경하려면 현재 비밀번호를 입력해야 합니다");
+      }
+      await reauthenticateUser(currentPassword);
+    }
 
     await ref
         .read(authNotifierProvider.notifier)
