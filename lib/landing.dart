@@ -21,17 +21,17 @@ class LandingScreen extends ConsumerWidget {
               const AuthScreen(),
               if (authState.value != null)
                 Container(
-                  color: Colors.black,
+                  color: Colors.white,
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
-                        CircularProgressIndicator(color: Colors.white),
+                        CircularProgressIndicator(color: Colors.black),
                         SizedBox(height: 20),
                         Text(
                           '계정 설정 마무리 중...',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Colors.black,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             decoration: TextDecoration.none,
