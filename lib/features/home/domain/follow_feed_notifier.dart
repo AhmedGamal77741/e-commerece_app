@@ -30,7 +30,8 @@ class FollowFeedState {
       currentUser: currentUser ?? this.currentUser,
       followingUsers: followingUsers ?? this.followingUsers,
       categories: categories ?? this.categories,
-      effectiveBlockedUsers: effectiveBlockedUsers ?? this.effectiveBlockedUsers,
+      effectiveBlockedUsers:
+          effectiveBlockedUsers ?? this.effectiveBlockedUsers,
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -41,7 +42,7 @@ class FollowFeedNotifier extends AsyncNotifier<FollowFeedState> {
   StreamSubscription? _followingSub;
   StreamSubscription? _hiddenFriendsSub;
   StreamSubscription? _categoriesSub;
-  
+
   final Map<int, StreamSubscription> _chunkSubs = {};
   final Map<String, MyUser> _fetchedUsersMap = {};
   Timer? _debounceTimer;
@@ -90,16 +91,25 @@ class FollowFeedNotifier extends AsyncNotifier<FollowFeedState> {
       final blockedUsers = List<String>.from(userData['blocked'] ?? []);
 
       _hiddenFriendsSub?.cancel();
-      _hiddenFriendsSub = repo.getHiddenFriendsStream(uid).listen((hiddenFriendsSnapshot) {
-        final hiddenFriendsSet = hiddenFriendsSnapshot.docs.map((d) => d.id).toSet();
-        final effectiveBlockedUsers = {...blockedUsers, ...hiddenFriendsSet}.toList();
+      _hiddenFriendsSub = repo.getHiddenFriendsStream(uid).listen((
+        hiddenFriendsSnapshot,
+      ) {
+        final hiddenFriendsSet =
+            hiddenFriendsSnapshot.docs.map((d) => d.id).toSet();
+        final effectiveBlockedUsers =
+            {...blockedUsers, ...hiddenFriendsSet}.toList();
 
-        _updateState(currentUser: currentUser, effectiveBlockedUsers: effectiveBlockedUsers);
+        _updateState(
+          currentUser: currentUser,
+          effectiveBlockedUsers: effectiveBlockedUsers,
+        );
         _refreshFollowingList();
       });
     });
 
-    _followingSub = repo.getFollowingStreamForUser(uid).listen((followingSnapshot) {
+    _followingSub = repo.getFollowingStreamForUser(uid).listen((
+      followingSnapshot,
+    ) {
       final followingIds = followingSnapshot.docs.map((doc) => doc.id).toList();
       _currentFollowingIds = followingIds;
       _refreshFollowingList();
@@ -109,10 +119,13 @@ class FollowFeedNotifier extends AsyncNotifier<FollowFeedState> {
   void _refreshFollowingList() {
     final currentState = state.value;
     if (currentState == null) return;
-    
+
     final effectiveBlockedUsers = currentState.effectiveBlockedUsers;
-    final filteredIds = _currentFollowingIds.where((id) => !effectiveBlockedUsers.contains(id)).toList();
-    
+    final filteredIds =
+        _currentFollowingIds
+            .where((id) => !effectiveBlockedUsers.contains(id))
+            .toList();
+
     if (filteredIds.isEmpty) {
       _cancelChunkSubs();
       _fetchedUsersMap.clear();
@@ -122,7 +135,12 @@ class FollowFeedNotifier extends AsyncNotifier<FollowFeedState> {
 
     final List<List<String>> chunks = [];
     for (var i = 0; i < filteredIds.length; i += 30) {
-      chunks.add(filteredIds.sublist(i, i + 30 > filteredIds.length ? filteredIds.length : i + 30));
+      chunks.add(
+        filteredIds.sublist(
+          i,
+          i + 30 > filteredIds.length ? filteredIds.length : i + 30,
+        ),
+      );
     }
 
     _cancelChunkSubs();
@@ -131,22 +149,24 @@ class FollowFeedNotifier extends AsyncNotifier<FollowFeedState> {
     final repo = ref.read(feedRepositoryProvider);
 
     for (int i = 0; i < chunks.length; i++) {
-      _chunkSubs[i] = repo.getUsersChunkStream(chunks[i]).listen((querySnapshot) {
+      _chunkSubs[i] = repo.getUsersChunkStream(chunks[i]).listen((
+        querySnapshot,
+      ) {
         bool changed = false;
         for (var doc in querySnapshot.docs) {
           final userData = doc.data() as Map<String, dynamic>;
           final user = MyUser.fromDocument(userData);
           final userBlockedList = List<dynamic>.from(userData['blocked'] ?? []);
-          
+
           if (!userBlockedList.contains(user.userId)) {
-             _fetchedUsersMap[user.userId] = user;
-             changed = true;
+            _fetchedUsersMap[user.userId] = user;
+            changed = true;
           } else if (_fetchedUsersMap.containsKey(user.userId)) {
-             _fetchedUsersMap.remove(user.userId);
-             changed = true;
+            _fetchedUsersMap.remove(user.userId);
+            changed = true;
           }
         }
-        
+
         if (changed) {
           _debounceEmission();
         }
@@ -163,7 +183,7 @@ class FollowFeedNotifier extends AsyncNotifier<FollowFeedState> {
 
   void _emitAggregatedUsers() {
     final usersList = _fetchedUsersMap.values.toList();
-    
+
     usersList.sort((a, b) {
       if (a.lastPostCreatedAt == null && b.lastPostCreatedAt == null) return 0;
       if (a.lastPostCreatedAt == null) return 1;
@@ -171,7 +191,7 @@ class FollowFeedNotifier extends AsyncNotifier<FollowFeedState> {
       return b.lastPostCreatedAt!.compareTo(a.lastPostCreatedAt!);
     });
 
-    _updateState(followingUsers: usersList);
+    _updateState(followingUsers: usersList, isLoading: false);
   }
 
   void loadCategories(String userId) {
@@ -182,11 +202,12 @@ class FollowFeedNotifier extends AsyncNotifier<FollowFeedState> {
 
     _categoriesSub?.cancel();
     _categoriesSub = repo.getUserCategoriesStream(userId).listen((snapshot) {
-      final categories = snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id;
-        return data;
-      }).toList();
+      final categories =
+          snapshot.docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            data['id'] = doc.id;
+            return data;
+          }).toList();
       _updateState(categories: categories);
     });
   }
@@ -196,15 +217,18 @@ class FollowFeedNotifier extends AsyncNotifier<FollowFeedState> {
     List<MyUser>? followingUsers,
     List<Map<String, dynamic>>? categories,
     List<String>? effectiveBlockedUsers,
+    bool? isLoading,
   }) {
     if (state.value != null) {
-      state = AsyncValue.data(state.value!.copyWith(
-        currentUser: currentUser,
-        followingUsers: followingUsers,
-        categories: categories,
-        effectiveBlockedUsers: effectiveBlockedUsers,
-        isLoading: false,
-      ));
+      state = AsyncValue.data(
+        state.value!.copyWith(
+          currentUser: currentUser,
+          followingUsers: followingUsers,
+          categories: categories,
+          effectiveBlockedUsers: effectiveBlockedUsers,
+          isLoading: isLoading ?? state.value!.isLoading,
+        ),
+      );
     }
   }
 
@@ -216,4 +240,7 @@ class FollowFeedNotifier extends AsyncNotifier<FollowFeedState> {
   }
 }
 
-final followFeedNotifierProvider = AsyncNotifierProvider<FollowFeedNotifier, FollowFeedState>(FollowFeedNotifier.new);
+final followFeedNotifierProvider =
+    AsyncNotifierProvider<FollowFeedNotifier, FollowFeedState>(
+      FollowFeedNotifier.new,
+    );

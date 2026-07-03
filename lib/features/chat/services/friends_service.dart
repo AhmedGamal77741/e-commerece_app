@@ -168,24 +168,48 @@ class FriendsService {
       });
 
       // Check follow relationships to decrement counts
-      final followingRef1 = _firestore.collection('users').doc(currentUserId).collection('following').doc(friendId);
-      final followerRef1 = _firestore.collection('users').doc(friendId).collection('followers').doc(currentUserId);
+      final followingRef1 = _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('following')
+          .doc(friendId);
+      final followerRef1 = _firestore
+          .collection('users')
+          .doc(friendId)
+          .collection('followers')
+          .doc(currentUserId);
       final followingDoc1 = await followingRef1.get();
       if (followingDoc1.exists) {
         batch.delete(followingRef1);
         batch.delete(followerRef1);
-        batch.update(currentUserDoc.reference, {'followingCount': FieldValue.increment(-1)});
-        batch.update(_firestore.collection('users').doc(friendId), {'followerCount': FieldValue.increment(-1)});
+        batch.update(currentUserDoc.reference, {
+          'followingCount': FieldValue.increment(-1),
+        });
+        batch.update(_firestore.collection('users').doc(friendId), {
+          'followerCount': FieldValue.increment(-1),
+        });
       }
 
-      final followingRef2 = _firestore.collection('users').doc(friendId).collection('following').doc(currentUserId);
-      final followerRef2 = _firestore.collection('users').doc(currentUserId).collection('followers').doc(friendId);
+      final followingRef2 = _firestore
+          .collection('users')
+          .doc(friendId)
+          .collection('following')
+          .doc(currentUserId);
+      final followerRef2 = _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('followers')
+          .doc(friendId);
       final followingDoc2 = await followingRef2.get();
       if (followingDoc2.exists) {
         batch.delete(followingRef2);
         batch.delete(followerRef2);
-        batch.update(_firestore.collection('users').doc(friendId), {'followingCount': FieldValue.increment(-1)});
-        batch.update(currentUserDoc.reference, {'followerCount': FieldValue.increment(-1)});
+        batch.update(_firestore.collection('users').doc(friendId), {
+          'followingCount': FieldValue.increment(-1),
+        });
+        batch.update(currentUserDoc.reference, {
+          'followerCount': FieldValue.increment(-1),
+        });
       }
 
       // Delete the direct chat room between the users

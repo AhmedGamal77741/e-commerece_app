@@ -124,6 +124,9 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
 
     return followFeedState.when(
       data: (state) {
+        if (state.isLoading) {
+          return const SizedBox.shrink();
+        }
         if (state.currentUser == null) {
           return Center(
             child: Padding(
@@ -251,7 +254,7 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const SizedBox.shrink(),
       error: (e, st) => Center(child: Text('Error: $e')),
     );
   }

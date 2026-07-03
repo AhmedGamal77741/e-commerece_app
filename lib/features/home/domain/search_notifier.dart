@@ -54,13 +54,15 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
   void _initStreams() {
     _postsSub?.cancel();
     _usersSub?.cancel();
-    
+
     if (_query.trim().isEmpty) {
       state = AsyncValue.data(SearchState(posts: [], users: [], query: _query));
       return;
     }
 
-    state = AsyncValue.data((state.value ?? SearchState()).copyWith(isLoading: true, query: _query));
+    state = AsyncValue.data(
+      (state.value ?? SearchState()).copyWith(isLoading: true, query: _query),
+    );
     _listenToData();
   }
 
@@ -69,30 +71,45 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
     final String? currentUserId = currentUser?.uid;
 
     final feedController = ref.read(feedControllerProvider.notifier);
-    
+
     try {
       List<String> blockedUsers = [];
       Set<String> followingSet = {};
-      
+
       if (currentUserId != null) {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
+        final userDoc =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(currentUserId)
+                .get();
         final userData = userDoc.data() ?? {};
         blockedUsers = List<String>.from(userData['blocked'] ?? []);
         final isPremium = userData['isSub'] == true;
 
         if (isPremium) {
-          final followingSnapshot = await FirebaseFirestore.instance.collection('users').doc(currentUserId).collection('following').get();
+          final followingSnapshot =
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(currentUserId)
+                  .collection('following')
+                  .get();
           followingSet = followingSnapshot.docs.map((d) => d.id).toSet();
         }
       }
 
       // We'll combine posts and users in a single state update for simplicity
-      _postsSub = feedController.searchPostsStream().listen((postsSnapshot) async {
+      _postsSub = feedController.searchPostsStream().listen((
+        postsSnapshot,
+      ) async {
         final postsDocs = postsSnapshot.docs;
-        final authorIds = postsDocs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return data['userId'] as String;
-        }).toSet().toList();
+        final authorIds =
+            postsDocs
+                .map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return data['userId'] as String;
+                })
+                .toSet()
+                .toList();
 
         if (authorIds.isEmpty) {
           _updateStatePosts([]);
@@ -100,66 +117,81 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
         }
 
         final sortedAuthorIds = authorIds.toList()..sort();
-        final authorsMap = await ref.read(authorsDataMapProvider(sortedAuthorIds.join(',')).future);
+        final authorsMap = await ref.read(
+          authorsDataMapProvider(sortedAuthorIds.join(',')).future,
+        );
 
-        final filteredPosts = postsDocs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final postAuthorId = data['userId'] as String;
-          final authorData = authorsMap[postAuthorId] ?? {};
+        final filteredPosts =
+            postsDocs
+                .where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final postAuthorId = data['userId'] as String;
+                  final authorData = authorsMap[postAuthorId] ?? {};
 
-          if (blockedUsers.contains(postAuthorId)) return false;
-          
-          if (currentUserId != null) {
-            final authorBlockedUsers = List<dynamic>.from(authorData['blocked'] ?? []);
-            if (authorBlockedUsers.contains(currentUserId)) return false;
-          }
+                  if (blockedUsers.contains(postAuthorId)) return false;
 
-          final postText = data['text']?.toString().toLowerCase() ?? '';
-          if (!postText.contains(_query)) return false;
+                  if (currentUserId != null) {
+                    final authorBlockedUsers = List<dynamic>.from(
+                      authorData['blocked'] ?? [],
+                    );
+                    if (authorBlockedUsers.contains(currentUserId)) {
+                      return false;
+                    }
+                  }
 
-          if (currentUserId != null) {
-            final notInterestedBy = List<dynamic>.from(data['notInterestedBy'] ?? []);
-            if (notInterestedBy.contains(currentUserId)) return false;
+                  final postText = data['text']?.toString().toLowerCase() ?? '';
+                  if (!postText.contains(_query)) return false;
 
-            if (postAuthorId == currentUserId) return true;
-          }
+                  if (currentUserId != null) {
+                    final notInterestedBy = List<dynamic>.from(
+                      data['notInterestedBy'] ?? [],
+                    );
+                    if (notInterestedBy.contains(currentUserId)) return false;
 
-          final bool isPrivate = authorData['isPrivate'] ?? false;
-          if (!isPrivate) return true;
+                    if (postAuthorId == currentUserId) return true;
+                  }
 
-          return followingSet.contains(postAuthorId);
-        }).map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          data['postId'] = data['postId'] ?? doc.id;
-          return data;
-        }).toList();
+                  final bool isPrivate = authorData['isPrivate'] ?? false;
+                  if (!isPrivate) return true;
+
+                  return followingSet.contains(postAuthorId);
+                })
+                .map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  data['postId'] = data['postId'] ?? doc.id;
+                  return data;
+                })
+                .toList();
 
         _updateStatePosts(filteredPosts);
       });
 
       _usersSub = feedController.searchUsersStream().listen((usersSnapshot) {
         final docs = usersSnapshot.docs;
-        final filteredUsers = docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return MyUser.fromDocument(data);
-        }).where((user) {
-          if (blockedUsers.contains(user.userId)) return false;
-          if (currentUserId != null) {
-            final userBlockedList = user.blocked ?? [];
-            if (userBlockedList.contains(currentUserId)) return false;
-            if (user.userId == currentUserId) return false;
-          } else {
-            if (user.isPrivate) return false;
-          }
-          
-          if (!user.name.toLowerCase().contains(_query)) return false;
-          
-          return true;
-        }).toList();
+        final filteredUsers =
+            docs
+                .map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return MyUser.fromDocument(data);
+                })
+                .where((user) {
+                  if (blockedUsers.contains(user.userId)) return false;
+                  if (currentUserId != null) {
+                    final userBlockedList = user.blocked ?? [];
+                    if (userBlockedList.contains(currentUserId)) return false;
+                    if (user.userId == currentUserId) return false;
+                  } else {
+                    if (user.isPrivate) return false;
+                  }
+
+                  if (!user.name.toLowerCase().contains(_query)) return false;
+
+                  return true;
+                })
+                .toList();
 
         _updateStateUsers(filteredUsers);
       });
-
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
@@ -167,15 +199,20 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
 
   void _updateStatePosts(List<Map<String, dynamic>> posts) {
     if (state.value != null) {
-      state = AsyncValue.data(state.value!.copyWith(posts: posts, isLoading: false));
+      state = AsyncValue.data(
+        state.value!.copyWith(posts: posts, isLoading: false),
+      );
     }
   }
 
   void _updateStateUsers(List<MyUser> users) {
     if (state.value != null) {
-      state = AsyncValue.data(state.value!.copyWith(users: users, isLoading: false));
+      state = AsyncValue.data(
+        state.value!.copyWith(users: users, isLoading: false),
+      );
     }
   }
 }
 
-final searchNotifierProvider = AsyncNotifierProvider<SearchNotifier, SearchState>(SearchNotifier.new);
+final searchNotifierProvider =
+    AsyncNotifierProvider<SearchNotifier, SearchState>(SearchNotifier.new);

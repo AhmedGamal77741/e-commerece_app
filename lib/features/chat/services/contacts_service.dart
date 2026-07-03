@@ -89,12 +89,12 @@ class ContactService {
 
     // Now base is the raw mobile number (e.g. 1012345678)
     if (base.isNotEmpty) {
-      results.add("0$base");            // local format: 01012345678
-      results.add("+$base");            // in case it's already an intl format without code
-      results.add("+20$base");          // Egyptian international format: +201012345678
-      results.add("+82$base");          // Korean international format: +821012345678
-      results.add("20$base");           // Egyptian international without +
-      results.add("82$base");           // Korean international without +
+      results.add("0$base"); // local format: 01012345678
+      results.add("+$base"); // in case it's already an intl format without code
+      results.add("+20$base"); // Egyptian international format: +201012345678
+      results.add("+82$base"); // Korean international format: +821012345678
+      results.add("20$base"); // Egyptian international without +
+      results.add("82$base"); // Korean international without +
     }
 
     // Also include the original and cleaned inputs just in case
@@ -238,9 +238,12 @@ class ContactService {
         contactPhoneNumbers,
       );
       await saveContactNameMap(nameMap);
-      
+
       // Save last sync time
-      await prefs.setString('last_contacts_sync_time', DateTime.now().toIso8601String());
+      await prefs.setString(
+        'last_contacts_sync_time',
+        DateTime.now().toIso8601String(),
+      );
 
       final newFriends =
           matchingUsers

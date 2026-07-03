@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
@@ -8,6 +7,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {
   return FeedRepository(
@@ -32,7 +32,10 @@ class FeedRepository {
 
   Stream<QuerySnapshot> getUsersChunkStream(List<String> userIds) {
     if (userIds.isEmpty) return const Stream.empty();
-    return _firestore.collection('users').where('userId', whereIn: userIds).snapshots();
+    return _firestore
+        .collection('users')
+        .where('userId', whereIn: userIds)
+        .snapshots();
   }
 
   Stream<QuerySnapshot> getUserCategoriesStream(String userId) {
@@ -110,10 +113,7 @@ class FeedRepository {
     final chunks = <List<String>>[];
     for (var i = 0; i < userIds.length; i += 10) {
       chunks.add(
-        userIds.sublist(
-          i,
-          i + 10 > userIds.length ? userIds.length : i + 10,
-        ),
+        userIds.sublist(i, i + 10 > userIds.length ? userIds.length : i + 10),
       );
     }
 
@@ -211,7 +211,9 @@ class FeedRepository {
     String currentUserId,
     String targetUserId,
   ) {
-    if (currentUserId.isEmpty || targetUserId.isEmpty) return const Stream.empty();
+    if (currentUserId.isEmpty || targetUserId.isEmpty) {
+      return const Stream.empty();
+    }
     return _firestore
         .collection('users')
         .doc(currentUserId)
@@ -224,7 +226,9 @@ class FeedRepository {
     String targetUserId,
     String currentUserId,
   ) {
-    if (currentUserId.isEmpty || targetUserId.isEmpty) return const Stream.empty();
+    if (currentUserId.isEmpty || targetUserId.isEmpty) {
+      return const Stream.empty();
+    }
     return _firestore
         .collection('users')
         .doc(targetUserId)
@@ -476,10 +480,10 @@ class FeedRepository {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser == null) throw Exception("User not logged in");
-      
+
       final postDoc = await _firestore.collection('posts').doc(postId).get();
       if (!postDoc.exists) return;
-      
+
       if (postDoc.data()?['userId'] != currentUser.uid) {
         throw Exception("You don't have permission to delete this post.");
       }
@@ -490,42 +494,107 @@ class FeedRepository {
     }
   }
 
+  String _lookupMimeType(String extension) {
+    switch (extension.toLowerCase()) {
+      case '.png':
+        return 'image/png';
+      case '.webp':
+        return 'image/webp';
+      case '.gif':
+        return 'image/gif';
+      case '.heic':
+      case '.heif':
+        return 'image/heic';
+      case '.jpeg':
+      case '.jpg':
+      default:
+        return 'image/jpeg';
+    }
+  }
+
+  Future<Map<String, dynamic>> _prepareUploadData({
+    required XFile file,
+    required String uid,
+    int? index,
+  }) async {
+    final String originalName = file.name;
+    final int dotIndex = originalName.lastIndexOf('.');
+    final String baseName =
+        dotIndex != -1 ? originalName.substring(0, dotIndex) : originalName;
+    final String originalExtension =
+        dotIndex != -1 ? originalName.substring(dotIndex).toLowerCase() : '';
+    final String cleanedBaseName = baseName.replaceAll(
+      RegExp(r'[^a-zA-Z0-9]'),
+      '',
+    );
+
+    final Uint8List rawBytes = await file.readAsBytes();
+
+    Uint8List uploadBytes;
+    String finalExtension;
+    String contentType;
+
+    try {
+      final Uint8List compressed = await FlutterImageCompress.compressWithList(
+        rawBytes,
+        minWidth: 1080,
+        minHeight: 1080,
+        quality: 82,
+        format: CompressFormat.jpeg,
+      );
+      uploadBytes = compressed;
+      finalExtension = '.jpg';
+      contentType = 'image/jpeg';
+    } catch (e) {
+      uploadBytes = rawBytes;
+      finalExtension = originalExtension;
+      contentType = _lookupMimeType(originalExtension);
+      if (originalExtension.toLowerCase() == '.heic' ||
+          originalExtension.toLowerCase() == '.heif') {
+        throw Exception('Failed to compress/convert HEIC image to JPEG: $e');
+      }
+    }
+
+    final String timestamp = DateTime.now().microsecondsSinceEpoch.toString();
+    final String indexSuffix = index != null ? '_$index' : '';
+    final String fileName =
+        '$timestamp${indexSuffix}_${uid}_$cleanedBaseName$finalExtension';
+
+    return {
+      'bytes': uploadBytes,
+      'fileName': fileName,
+      'metadata': SettableMetadata(contentType: contentType),
+    };
+  }
+
   /// Upload new images to Firebase Storage concurrently
   Future<List<String>> _uploadNewImages(List<XFile> files) async {
     if (files.isEmpty) return [];
 
+    final currentUserId = _auth.currentUser?.uid;
+    if (currentUserId == null) throw Exception("User not logged in");
+
     // Upload all images concurrently to speed up editing significantly
     final List<Future<String>> uploadTasks =
-        files.map((file) async {
+        files.asMap().entries.map((entry) async {
           try {
-            final String fileName =
-                '${DateTime.now().millisecondsSinceEpoch}_${_auth.currentUser!.uid}_${file.name.replaceAll(RegExp(r'[^a-zA-Z0-9.]'), '')}.jpg';
+            final int index = entry.key;
+            final XFile file = entry.value;
+
+            final uploadData = await _prepareUploadData(
+              file: file,
+              uid: currentUserId,
+              index: index,
+            );
+
             final Reference storageRef = FirebaseStorage.instance
                 .ref()
                 .child('posts')
-                .child(fileName);
-
-            final Uint8List rawBytes = await file.readAsBytes();
-
-            // Compress on both mobile and web using flutter_image_compress (WASM on web)
-            Uint8List uploadBytes;
-            try {
-              final Uint8List compressed =
-                  await FlutterImageCompress.compressWithList(
-                    rawBytes,
-                    minWidth: 1080,
-                    minHeight: 1080,
-                    quality: 82,
-                    format: CompressFormat.jpeg,
-                  );
-              uploadBytes = compressed;
-            } catch (e) {
-              uploadBytes = rawBytes;
-            }
+                .child(uploadData['fileName'] as String);
 
             final UploadTask uploadTask = storageRef.putData(
-              uploadBytes,
-              SettableMetadata(contentType: 'image/jpeg'),
+              uploadData['bytes'] as Uint8List,
+              uploadData['metadata'] as SettableMetadata,
             );
 
             final TaskSnapshot snapshot = await uploadTask;
@@ -577,24 +646,27 @@ class FeedRepository {
       final XFile? image = await ImagePickerHelper.pickImage();
       if (image == null) return "";
 
-      // 2. Prepare storage reference with unique filename
-      final String fileName =
-          '${DateTime.now().millisecondsSinceEpoch}${_auth.currentUser!.uid}.jpg';
+      final currentUserId = _auth.currentUser?.uid;
+      if (currentUserId == null) throw Exception("User not logged in");
+
+      // 2. Prepare upload data
+      final uploadData = await _prepareUploadData(
+        file: image,
+        uid: currentUserId,
+      );
+
       final Reference storageRef = FirebaseStorage.instance
           .ref()
           .child('uploads')
-          .child(fileName);
+          .child(uploadData['fileName'] as String);
 
-      // 3. Read image bytes (works for both mobile and web)
-      final bytes = await image.readAsBytes();
-
-      // 4. Upload to Firebase Storage
+      // 3. Upload to Firebase Storage
       final UploadTask uploadTask = storageRef.putData(
-        bytes,
-        SettableMetadata(contentType: 'image/jpeg'), // Set MIME type
+        uploadData['bytes'] as Uint8List,
+        uploadData['metadata'] as SettableMetadata,
       );
 
-      // 5. Get download URL when upload completes
+      // 4. Get download URL when upload completes
       final TaskSnapshot snapshot = await uploadTask;
       final String downloadUrl = await snapshot.ref.getDownloadURL();
 
@@ -609,41 +681,27 @@ class FeedRepository {
       final List<XFile> images = await ImagePickerHelper.pickMultiImage();
       if (images.isEmpty) return [];
 
+      final currentUserId = _auth.currentUser?.uid ?? 'anonymous';
+
       List<String> downloadUrls = await Future.wait(
-        images.map((image) async {
-          final String timestamp =
-              DateTime.now().millisecondsSinceEpoch.toString();
-          final String uid = _auth.currentUser?.uid ?? 'anonymous';
-          final int index = images.indexOf(image);
-          final String fileName = '${timestamp}_${index}_$uid.jpg';
+        images.asMap().entries.map((entry) async {
+          final int index = entry.key;
+          final XFile image = entry.value;
 
-          final Uint8List rawBytes = await image.readAsBytes();
-
-          // Compress on both mobile and web using flutter_image_compress (WASM on web)
-          Uint8List uploadBytes;
-          try {
-            final Uint8List compressed =
-                await FlutterImageCompress.compressWithList(
-                  rawBytes,
-                  minWidth: 1080,
-                  minHeight: 1080,
-                  quality: 82,
-                  format: CompressFormat.jpeg,
-                );
-            // Fall back to raw bytes if compression somehow returns null
-            uploadBytes = compressed;
-          } catch (e) {
-            uploadBytes = rawBytes;
-          }
+          final uploadData = await _prepareUploadData(
+            file: image,
+            uid: currentUserId,
+            index: index,
+          );
 
           final Reference storageRef = FirebaseStorage.instance
               .ref()
               .child('uploads')
-              .child(fileName);
+              .child(uploadData['fileName'] as String);
 
           final UploadTask uploadTask = storageRef.putData(
-            uploadBytes,
-            SettableMetadata(contentType: 'image/jpeg'),
+            uploadData['bytes'] as Uint8List,
+            uploadData['metadata'] as SettableMetadata,
           );
 
           final TaskSnapshot snapshot = await uploadTask;
@@ -663,37 +721,22 @@ class FeedRepository {
     Function(double)? onProgress,
   }) async {
     try {
-      final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      final String uid = _auth.currentUser?.uid ?? 'anonymous';
-      final String fileName = '${timestamp}_${index}_$uid.jpg';
+      final currentUserId = _auth.currentUser?.uid ?? 'anonymous';
 
-      final Uint8List rawBytes = await image.readAsBytes();
-
-      // Compress on both mobile and web using flutter_image_compress (WASM on web)
-      Uint8List uploadBytes;
-      try {
-        final Uint8List compressed =
-            await FlutterImageCompress.compressWithList(
-              rawBytes,
-              minWidth: 1080,
-              minHeight: 1080,
-              quality: 82,
-              format: CompressFormat.jpeg,
-            );
-        // Fall back to raw bytes if compression somehow returns null
-        uploadBytes = compressed;
-      } catch (e) {
-        uploadBytes = rawBytes;
-      }
+      final uploadData = await _prepareUploadData(
+        file: image,
+        uid: currentUserId,
+        index: index,
+      );
 
       final Reference storageRef = FirebaseStorage.instance
           .ref()
           .child('uploads')
-          .child(fileName);
+          .child(uploadData['fileName'] as String);
 
       final UploadTask uploadTask = storageRef.putData(
-        uploadBytes,
-        SettableMetadata(contentType: 'image/jpeg'),
+        uploadData['bytes'] as Uint8List,
+        uploadData['metadata'] as SettableMetadata,
       );
 
       if (onProgress != null) {
@@ -710,6 +753,85 @@ class FeedRepository {
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
       throw Exception('Failed to upload single image: $e');
+    }
+  }
+
+  Future<void> migrateHeicImagesToJpg() async {
+    debugPrint("Starting HEIC to JPG migration...");
+    try {
+      final postsQuery = await _firestore.collection('posts').get();
+
+      for (final doc in postsQuery.docs) {
+        final data = doc.data();
+        List<dynamic> imgUrls =
+            data['imgUrls'] is List ? List.from(data['imgUrls']) : [];
+        bool wasUpdated = false;
+
+        for (int i = 0; i < imgUrls.length; i++) {
+          final String url = imgUrls[i].toString();
+
+          if (url.toLowerCase().contains('.heic') ||
+              url.toLowerCase().contains('.heif')) {
+            try {
+              debugPrint("Found HEIC image in post ${doc.id}: $url");
+
+              final response = await http.get(Uri.parse(url));
+              if (response.statusCode != 200) {
+                debugPrint("Failed to download image from $url");
+                continue;
+              }
+              final Uint8List heicBytes = response.bodyBytes;
+
+              debugPrint("Converting HEIC to JPEG...");
+              final Uint8List jpgBytes =
+                  await FlutterImageCompress.compressWithList(
+                    heicBytes,
+                    minWidth: 1080,
+                    minHeight: 1080,
+                    quality: 82,
+                    format: CompressFormat.jpeg,
+                  );
+
+              final Reference oldRef = FirebaseStorage.instance.refFromURL(url);
+              final String newPath = oldRef.fullPath.replaceAll(
+                RegExp(r'\.heic|\.heif', caseSensitive: false),
+                '.jpg',
+              );
+              final Reference newRef = FirebaseStorage.instance.ref().child(
+                newPath,
+              );
+
+              debugPrint("Uploading JPEG version to $newPath...");
+              final UploadTask uploadTask = newRef.putData(
+                jpgBytes,
+                SettableMetadata(contentType: 'image/jpeg'),
+              );
+              final TaskSnapshot snapshot = await uploadTask;
+              final String newUrl = await snapshot.ref.getDownloadURL();
+
+              imgUrls[i] = newUrl;
+              wasUpdated = true;
+
+              debugPrint("Deleting old HEIC image from storage...");
+              await oldRef.delete();
+            } catch (e) {
+              debugPrint("Error migrating image $url: $e");
+            }
+          }
+        }
+
+        if (wasUpdated) {
+          final Map<String, dynamic> updateData = {'imgUrls': imgUrls};
+          if (imgUrls.isNotEmpty) {
+            updateData['imgUrl'] = imgUrls[0];
+          }
+          await _firestore.collection('posts').doc(doc.id).update(updateData);
+          debugPrint("Updated Firestore document: ${doc.id}");
+        }
+      }
+      debugPrint("Migration completed successfully!");
+    } catch (e) {
+      debugPrint("Error running migration: $e");
     }
   }
 
@@ -794,14 +916,20 @@ class FeedRepository {
 
   /// Get a user's categories as a simple list.
   Future<List<Map<String, String>>> getUserCategoriesList(String userId) async {
-    final snapshot = await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('categories')
-        .orderBy('order', descending: false)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('categories')
+            .orderBy('order', descending: false)
+            .get();
     return snapshot.docs
-        .map((doc) => <String, String>{'id': doc.id, 'name': doc['name'] as String})
+        .map(
+          (doc) => <String, String>{
+            'id': doc.id,
+            'name': doc['name'] as String,
+          },
+        )
         .toList();
   }
 
@@ -812,7 +940,11 @@ class FeedRepository {
 
   /// Stream users by a list of IDs (Firestore whereIn limit: 30).
   Stream<QuerySnapshot> getUsersByIdsStream(List<String> userIds) {
-    if (userIds.isEmpty) return Stream.value(_firestore.collection('__empty__').snapshots() as QuerySnapshot);
+    if (userIds.isEmpty) {
+      return Stream.value(
+        _firestore.collection('__empty__').snapshots() as QuerySnapshot,
+      );
+    }
     return _firestore
         .collection('users')
         .where(FieldPath.documentId, whereIn: userIds)

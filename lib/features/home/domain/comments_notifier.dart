@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class CommentsState {
   final Map<String, dynamic>? postData;
@@ -85,16 +86,37 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
     String? imageUrl;
     if (imageFile != null || imageBytes != null) {
       try {
-        final fileName = '${DateTime.now().millisecondsSinceEpoch}_$currentUserId.jpg';
+        final String timestamp = DateTime.now().microsecondsSinceEpoch.toString();
+        final String fileName = '${timestamp}_$currentUserId.jpg';
         final storageRef = FirebaseStorage.instance.ref().child('chat_images/$fileName');
-        UploadTask task;
+
+        Uint8List rawBytes;
         if (kIsWeb && imageBytes != null) {
-          task = storageRef.putData(imageBytes, SettableMetadata(contentType: 'image/jpeg'));
+          rawBytes = imageBytes;
         } else if (imageFile != null) {
-          task = storageRef.putFile(imageFile);
+          rawBytes = await imageFile.readAsBytes();
         } else {
           throw Exception("No valid image data");
         }
+
+        Uint8List uploadBytes;
+        try {
+          final Uint8List compressed = await FlutterImageCompress.compressWithList(
+            rawBytes,
+            minWidth: 1080,
+            minHeight: 1080,
+            quality: 82,
+            format: CompressFormat.jpeg,
+          );
+          uploadBytes = compressed;
+        } catch (e) {
+          uploadBytes = rawBytes;
+        }
+
+        final UploadTask task = storageRef.putData(
+          uploadBytes,
+          SettableMetadata(contentType: 'image/jpeg'),
+        );
         imageUrl = await (await task).ref.getDownloadURL();
       } catch (e) {
         debugPrint('Error: $e');

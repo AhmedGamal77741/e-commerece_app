@@ -17,7 +17,7 @@ final currentUserProvider = StreamProvider<MyUser?>((ref) async* {
   } else {
     final authRepo = ref.watch(authRepositoryProvider);
     final docStream = authRepo.usersCollection.doc(user.uid).snapshots();
-    
+
     await for (final snapshot in docStream) {
       if (snapshot.exists && snapshot.data() != null) {
         final data = snapshot.data() as Map<String, dynamic>;
@@ -35,7 +35,10 @@ final isSubscribedProvider = Provider<AsyncValue<bool>>((ref) {
   return userAsync.whenData((user) => user?.isSub ?? false);
 });
 
-final getUserByIdProvider = FutureProvider.family<MyUser, String>((ref, userId) async {
+final getUserByIdProvider = FutureProvider.family<MyUser, String>((
+  ref,
+  userId,
+) async {
   final authRepo = ref.watch(authRepositoryProvider);
   final doc = await authRepo.usersCollection.doc(userId).get();
   if (doc.exists && doc.data() != null) {
@@ -44,7 +47,9 @@ final getUserByIdProvider = FutureProvider.family<MyUser, String>((ref, userId) 
   return MyUser.empty;
 });
 
-final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, void>(AuthNotifier.new);
+final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, void>(
+  AuthNotifier.new,
+);
 
 class AuthNotifier extends AsyncNotifier<void> {
   late AuthRepository _authRepository;
@@ -74,15 +79,22 @@ class AuthNotifier extends AsyncNotifier<void> {
         if (await _authRepository.isNicknameTaken(myUser.name)) {
           throw Exception("userId가 이미 사용 중입니다.");
         }
-        if (myUser.phoneNumber != null && await _authRepository.isPhoneNumberTaken(myUser.phoneNumber!)) {
+        if (myUser.phoneNumber != null &&
+            await _authRepository.isPhoneNumberTaken(myUser.phoneNumber!)) {
           throw Exception("전화번호가 이미 사용 중입니다.");
         }
 
-        final userCredential = await _authRepository.signUpWithEmail(myUser.email, password);
+        final userCredential = await _authRepository.signUpWithEmail(
+          myUser.email,
+          password,
+        );
         myUser.userId = userCredential.user!.uid;
 
         if (image != null) {
-          final imageUrl = await _authRepository.uploadProfileImage(image, myUser.userId);
+          final imageUrl = await _authRepository.uploadProfileImage(
+            image,
+            myUser.userId,
+          );
           myUser.url = imageUrl;
         }
 

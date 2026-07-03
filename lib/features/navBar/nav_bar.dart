@@ -28,7 +28,6 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
   final ScrollController homeScrollController = ScrollController();
   late TabController homeTabController;
-  final List<bool> _tabInitialized = [true, false, true, false, false];
 
   @override
   void initState() {
@@ -108,7 +107,6 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
       }
       setState(() {
         _selectedIndex = 0;
-        _tabInitialized[0] = true;
       });
       return;
     } else if (index == 3) {
@@ -120,7 +118,6 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
         if (isDeleted) {
           setState(() {
             _selectedIndex = index;
-            _tabInitialized[index] = true;
           });
           return;
         }
@@ -170,12 +167,10 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
       }
       setState(() {
         _selectedIndex = index;
-        _tabInitialized[index] = true;
       });
     } else {
       setState(() {
         _selectedIndex = index;
-        _tabInitialized[index] = true;
       });
     }
   }
@@ -186,20 +181,15 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
     final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
 
     final children = [
-      _tabInitialized[0]
-          ? HomeScreen(
-            key: homeKey,
-            scrollController: homeScrollController,
-            tabController: homeTabController,
-          )
-          : const SizedBox.shrink(),
-
-      _tabInitialized[1] ? const ChatsNavbar() : const SizedBox.shrink(),
-      _tabInitialized[2]
-          ? const Center(child: Text('멤버십 라운지'))
-          : const SizedBox.shrink(),
-      _tabInitialized[3] ? Shop(key: shopKey) : const SizedBox.shrink(),
-      _tabInitialized[4] ? const LandingScreen() : const SizedBox.shrink(),
+      HomeScreen(
+        key: homeKey,
+        scrollController: homeScrollController,
+        tabController: homeTabController,
+      ),
+      const ChatsNavbar(),
+      const Center(child: Text('멤버십 라운지')),
+      Shop(key: shopKey),
+      const LandingScreen(),
     ];
 
     return Scaffold(

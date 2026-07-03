@@ -14,7 +14,10 @@ final chatRoomsProvider = StreamProvider<List<ChatRoomModel>>((ref) {
   return chatRepository.getChatRoomsStream();
 });
 
-final messagesProvider = StreamProvider.family<List<MessageModel>, String>((ref, chatRoomId) {
+final messagesProvider = StreamProvider.family<List<MessageModel>, String>((
+  ref,
+  chatRoomId,
+) {
   final chatRepository = ref.watch(chatRepositoryProvider);
   return chatRepository.getMessagesStream(chatRoomId);
 });
@@ -34,17 +37,20 @@ class ChatController extends AsyncNotifier<void> {
   Future<MyUser?> getOtherUserDoc(String otherId, String chatType) async {
     try {
       if (chatType == 'direct') {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(otherId)
-            .get();
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(otherId)
+                .get();
         if (doc.exists) return MyUser.fromDocument(doc.data()!);
       } else if (chatType == 'seller' || chatType == 'admin') {
-        final collectionName = chatType == 'seller' ? 'deliveryManagers' : 'users';
-        final doc = await FirebaseFirestore.instance
-            .collection(collectionName)
-            .doc(otherId)
-            .get();
+        final collectionName =
+            chatType == 'seller' ? 'deliveryManagers' : 'users';
+        final doc =
+            await FirebaseFirestore.instance
+                .collection(collectionName)
+                .doc(otherId)
+                .get();
         if (doc.exists) return MyUser.fromSellerDocument(doc.data()!);
       }
     } catch (e) {
@@ -95,11 +101,20 @@ class ChatController extends AsyncNotifier<void> {
     );
   }
 
-  Future<bool> toggleLoveReaction({required String messageId, required String chatRoomId}) {
-    return _chatRepository.toggleLoveReaction(messageId: messageId, chatRoomId: chatRoomId);
+  Future<bool> toggleLoveReaction({
+    required String messageId,
+    required String chatRoomId,
+  }) {
+    return _chatRepository.toggleLoveReaction(
+      messageId: messageId,
+      chatRoomId: chatRoomId,
+    );
   }
 
-  Future<void> markSpecificMessagesAsRead(String chatRoomId, List<String> messageIds) {
+  Future<void> markSpecificMessagesAsRead(
+    String chatRoomId,
+    List<String> messageIds,
+  ) {
     return _chatRepository.markSpecificMessagesAsRead(chatRoomId, messageIds);
   }
 
@@ -107,10 +122,10 @@ class ChatController extends AsyncNotifier<void> {
     return _chatRepository.resetUnreadCount(chatRoomId);
   }
 
-  
   Future<void> resetDeletedBy(String chatRoomId) {
     return _chatRepository.resetDeletedBy(chatRoomId);
   }
+
   Stream<List<ChatRoomModel>> getChatRoomsStream() {
     return _chatRepository.getChatRoomsStream();
   }
@@ -144,12 +159,16 @@ class ChatController extends AsyncNotifier<void> {
   }
 
   /// Get a reply-to message document.
-  Future<Map<String, dynamic>?> getReplyMessage(String chatRoomId, String messageId) =>
-      _chatRepository.getReplyMessage(chatRoomId, messageId);
+  Future<Map<String, dynamic>?> getReplyMessage(
+    String chatRoomId,
+    String messageId,
+  ) => _chatRepository.getReplyMessage(chatRoomId, messageId);
 
   /// Get the other user's ID from a chat room.
-  Future<String> getChatRoomOtherUserId(String chatRoomId, String currentUserId) =>
-      _chatRepository.getChatRoomOtherUserId(chatRoomId, currentUserId);
+  Future<String> getChatRoomOtherUserId(
+    String chatRoomId,
+    String currentUserId,
+  ) => _chatRepository.getChatRoomOtherUserId(chatRoomId, currentUserId);
 
   /// Get a post document by ID.
   Future<Map<String, dynamic>?> getPostById(String postId) =>

@@ -110,8 +110,35 @@ class AuthRepository {
       uploadBytes = originalBytes;
     }
 
-    final storageRef = _storage.ref().child('user_profile_images').child('$userId.jpg');
-    final uploadTask = await storageRef.putData(uploadBytes);
+    final String originalName = image.name;
+    final int dotIndex = originalName.lastIndexOf('.');
+    final String originalExtension = dotIndex != -1 
+        ? originalName.substring(dotIndex).toLowerCase() 
+        : '';
+
+    String contentType = 'image/jpeg';
+    String finalExtension = '.jpg';
+
+    if (uploadBytes == originalBytes) {
+      if (originalExtension == '.png') {
+        contentType = 'image/png';
+        finalExtension = '.png';
+      } else if (originalExtension == '.webp') {
+        contentType = 'image/webp';
+        finalExtension = '.webp';
+      } else if (originalExtension == '.gif') {
+        contentType = 'image/gif';
+        finalExtension = '.gif';
+      } else if (originalExtension == '.heic' || originalExtension == '.heif') {
+        throw Exception('Failed to compress/convert HEIC profile image to JPEG');
+      }
+    }
+
+    final storageRef = _storage.ref().child('user_profile_images').child('$userId$finalExtension');
+    final uploadTask = await storageRef.putData(
+      uploadBytes,
+      SettableMetadata(contentType: contentType),
+    );
     final downloadUrl = await uploadTask.ref.getDownloadURL();
     return downloadUrl;
   }
