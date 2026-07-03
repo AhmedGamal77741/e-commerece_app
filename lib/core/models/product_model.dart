@@ -70,30 +70,37 @@ class Product {
   });
 
   factory Product.fromMap(Map<String, dynamic> map) {
+    final rawPricePoints = map['pricePoints'] as List?;
+    final List<PricePoint> parsedPricePoints = [];
+    if (rawPricePoints != null) {
+      for (final pp in rawPricePoints) {
+        if (pp is Map) {
+          parsedPricePoints.add(PricePoint.fromMap(Map<String, dynamic>.from(pp)));
+        }
+      }
+    }
+
+    final int calculatedPrice = parsedPricePoints.isNotEmpty 
+        ? parsedPricePoints.first.price 
+        : (map['price'] as num?)?.toInt() ?? 0;
+
     return Product(
-      productId: map['product_id'],
+      productId: map['product_id'] ?? '',
       productName: map['productName'] ?? '',
       instructions: map['instructions'] ?? '',
       stock: map['stock'] ?? 0,
       supplyPrice: map['supplyPrice'] ?? 0,
-
-      price:
-          (map['pricePoints'] as List?)
-              ?.map((pp) => PricePoint.fromMap(pp))
-              .toList()[0]
-              .price ??
-          0,
+      price: calculatedPrice,
       baselineTime: map['baselineTime'] ?? 0,
       meridiem: map['meridiem'] ?? 'AM',
       imgUrl: map['imgUrl'],
-      imgUrls: List<String?>.from(map['imgUrls'] ?? []),
+      imgUrls: (map['imgUrls'] as List?)
+              ?.map((e) => e?.toString())
+              .toList() ??
+          const [],
       sellerName: map['sellerName'] ?? '',
       category: map['category'] ?? '',
-      pricePoints:
-          (map['pricePoints'] as List?)
-              ?.map((pp) => PricePoint.fromMap(pp))
-              .toList() ??
-          [],
+      pricePoints: parsedPricePoints,
       freeShipping: map['freeShipping'] ?? false,
       favBy: List<String>.from(map['favBy'] ?? []),
       deliveryManagerId: map['deliveryManagerId'] ?? '',
@@ -103,7 +110,9 @@ class Product {
               ? (map['marginRate'] as num).toDouble()
               : null,
       shippingFee: map['shippingFee'] ?? 0,
-      address: map['address'],
+      address: map['address'] != null
+          ? Map<String, dynamic>.from(map['address'])
+          : null,
       arrivalDate: map['arrivalDate'],
       description: map['description'],
     );

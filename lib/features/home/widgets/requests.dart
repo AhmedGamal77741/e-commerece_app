@@ -41,7 +41,9 @@ class _RequestsState extends ConsumerState<Requests> {
       final currentUserId = ref.read(currentUserIdProvider);
       if (currentUserId.isEmpty) return;
 
-      final followingIds = await ref.read(feedControllerProvider.notifier).getFollowingIds(currentUserId);
+      final followingIds = await ref
+          .read(feedControllerProvider.notifier)
+          .getFollowingIds(currentUserId);
 
       // Compute recommendations ONCE and cache the Future (includes both recommendations and contacts)
       _recommendationsFuture = _buildFriendRecommendationsWithContacts(
@@ -106,7 +108,10 @@ class _RequestsState extends ConsumerState<Requests> {
         Expanded(
           child: SingleChildScrollView(
             child: StreamBuilder<DocumentSnapshot?>(
-              stream: ref.watch(userProfileDocProvider(currentUserId).future).asStream(),
+              stream:
+                  ref
+                      .watch(userProfileDocProvider(currentUserId).future)
+                      .asStream(),
               builder: (context, userSnapshot) {
                 if (!userSnapshot.hasData) {
                   return const SizedBox.shrink();
@@ -138,7 +143,9 @@ class _RequestsState extends ConsumerState<Requests> {
                       ConstrainedBox(
                         constraints: BoxConstraints(maxHeight: 220.h),
                         child: StreamBuilder<QuerySnapshot>(
-                          stream: ref.watch(feedControllerProvider.notifier).getFollowRequestsStream(currentUserId),
+                          stream: ref
+                              .watch(feedControllerProvider.notifier)
+                              .getFollowRequestsStream(currentUserId),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                     ConnectionState.waiting &&
@@ -174,7 +181,9 @@ class _RequestsState extends ConsumerState<Requests> {
 
                             // Stream all requesting users at once
                             return StreamBuilder<QuerySnapshot>(
-                              stream: ref.read(feedControllerProvider.notifier).getUsersByIdsStream(requestingUserIds),
+                              stream: ref
+                                  .read(feedControllerProvider.notifier)
+                                  .getUsersByIdsStream(requestingUserIds),
                               builder: (context, usersSnapshot) {
                                 if (!usersSnapshot.hasData) {
                                   return const SizedBox.shrink();
@@ -294,10 +303,14 @@ class _RequestsState extends ConsumerState<Requests> {
                                                 // Accept button
                                                 GestureDetector(
                                                   onTap: () async {
-                                                    await ref.read(followControllerProvider).acceptFollowRequest(
-                                                      currentUserId,
-                                                      requestingUserId,
-                                                    );
+                                                    await ref
+                                                        .read(
+                                                          followControllerProvider,
+                                                        )
+                                                        .acceptFollowRequest(
+                                                          currentUserId,
+                                                          requestingUserId,
+                                                        );
                                                   },
                                                   child: Container(
                                                     padding:
@@ -329,10 +342,14 @@ class _RequestsState extends ConsumerState<Requests> {
                                                 // Decline button
                                                 GestureDetector(
                                                   onTap: () async {
-                                                    await ref.read(followControllerProvider).declineFollowRequest(
-                                                      currentUserId,
-                                                      requestingUserId,
-                                                    );
+                                                    await ref
+                                                        .read(
+                                                          followControllerProvider,
+                                                        )
+                                                        .declineFollowRequest(
+                                                          currentUserId,
+                                                          requestingUserId,
+                                                        );
                                                   },
                                                   child: Container(
                                                     padding:
@@ -510,7 +527,15 @@ class _RequestsState extends ConsumerState<Requests> {
                                               // Follow button
                                               Consumer(
                                                 builder: (context, ref, _) {
-                                                  final isFollowing = ref.watch(isFollowingProvider(userId)).value ?? false;
+                                                  final isFollowing =
+                                                      ref
+                                                          .watch(
+                                                            isFollowingProvider(
+                                                              userId,
+                                                            ),
+                                                          )
+                                                          .value ??
+                                                      false;
 
                                                   if (isFollowing) {
                                                     return ElevatedButton(
@@ -536,11 +561,19 @@ class _RequestsState extends ConsumerState<Requests> {
                                                         ),
                                                       ),
                                                       onPressed: () async {
-                                                          ref.read(followControllerProvider).handleFollowAction(
-                                                              targetUserId: user.userId,
-                                                              currentUserId: currentUserId,
-                                                              isPrivate: user.isPrivate,
-                                                              isFollowing: isFollowing,
+                                                        ref
+                                                            .read(
+                                                              followControllerProvider,
+                                                            )
+                                                            .handleFollowAction(
+                                                              targetUserId:
+                                                                  user.userId,
+                                                              currentUserId:
+                                                                  currentUserId,
+                                                              isPrivate:
+                                                                  user.isPrivate,
+                                                              isFollowing:
+                                                                  isFollowing,
                                                               hasRequest: false,
                                                             );
                                                       },
@@ -553,8 +586,20 @@ class _RequestsState extends ConsumerState<Requests> {
 
                                                   if (isPrivate) {
                                                     return Consumer(
-                                                      builder: (context, ref, _) {
-                                                        final hasRequest = ref.watch(hasFollowRequestProvider(userId)).value ?? false;
+                                                      builder: (
+                                                        context,
+                                                        ref,
+                                                        _,
+                                                      ) {
+                                                        final hasRequest =
+                                                            ref
+                                                                .watch(
+                                                                  hasFollowRequestProvider(
+                                                                    userId,
+                                                                  ),
+                                                                )
+                                                                .value ??
+                                                            false;
 
                                                         return ElevatedButton(
                                                           style: ElevatedButton.styleFrom(
@@ -590,13 +635,22 @@ class _RequestsState extends ConsumerState<Requests> {
                                                             ),
                                                           ),
                                                           onPressed: () async {
-                                                            ref.read(followControllerProvider).handleFollowAction(
-                                                              targetUserId: userId,
-                                                              currentUserId: currentUserId,
-                                                              isPrivate: user.isPrivate,
-                                                              isFollowing: isFollowing,
-                                                              hasRequest: hasRequest,
-                                                            );
+                                                            ref
+                                                                .read(
+                                                                  followControllerProvider,
+                                                                )
+                                                                .handleFollowAction(
+                                                                  targetUserId:
+                                                                      userId,
+                                                                  currentUserId:
+                                                                      currentUserId,
+                                                                  isPrivate:
+                                                                      user.isPrivate,
+                                                                  isFollowing:
+                                                                      isFollowing,
+                                                                  hasRequest:
+                                                                      hasRequest,
+                                                                );
                                                           },
                                                           child: Text(
                                                             hasRequest
@@ -632,7 +686,10 @@ class _RequestsState extends ConsumerState<Requests> {
                                                       ),
                                                     ),
                                                     onPressed: () async {
-                                                      ref.read(followControllerProvider)
+                                                      ref
+                                                          .read(
+                                                            followControllerProvider,
+                                                          )
                                                           .toggleFollow(userId);
                                                     },
                                                     child: Text('구독'),
@@ -666,7 +723,12 @@ class _RequestsState extends ConsumerState<Requests> {
                     ConstrainedBox(
                       constraints: BoxConstraints(maxHeight: 220.h),
                       child: StreamBuilder<DocumentSnapshot?>(
-                        stream: ref.watch(userProfileDocProvider(currentUserId).future).asStream(),
+                        stream:
+                            ref
+                                .watch(
+                                  userProfileDocProvider(currentUserId).future,
+                                )
+                                .asStream(),
                         builder: (context, userSnapshot) {
                           if (!userSnapshot.hasData) {
                             return const SizedBox.shrink();
@@ -689,7 +751,9 @@ class _RequestsState extends ConsumerState<Requests> {
                           }
 
                           return StreamBuilder<QuerySnapshot>(
-                            stream: ref.read(feedControllerProvider.notifier).getUsersByIdsStream(blockedList),
+                            stream: ref
+                                .read(feedControllerProvider.notifier)
+                                .getUsersByIdsStream(blockedList),
                             builder: (context, blockedSnapshot) {
                               if (!blockedSnapshot.hasData) {
                                 return const SizedBox.shrink();
@@ -833,17 +897,20 @@ class _RequestsState extends ConsumerState<Requests> {
     );
   }
 
-
   Future<Map<String, Map<String, dynamic>>> _buildFriendRecommendations(
     String currentUserId,
     List<String> followingIds,
   ) async {
-    return await ref.read(followControllerProvider).getFriendRecommendations(currentUserId, followingIds);
+    return await ref
+        .read(followControllerProvider)
+        .getFriendRecommendations(currentUserId, followingIds);
   }
 
   Future<void> _unblockUser(String blockedUserId, String currentUserId) async {
     try {
-      await ref.read(feedControllerProvider.notifier).unblockUser(userIdToUnblock: blockedUserId);
+      await ref
+          .read(feedControllerProvider.notifier)
+          .unblockUser(userIdToUnblock: blockedUserId);
 
       if (mounted) {
         ScaffoldMessenger.of(
@@ -905,7 +972,9 @@ class _RequestsState extends ConsumerState<Requests> {
         phoneNumbers,
       );
 
-      final currentFollowers = await ref.read(feedControllerProvider.notifier).getFollowersIds(currentUserId);
+      final currentFollowers = await ref
+          .read(feedControllerProvider.notifier)
+          .getFollowersIds(currentUserId);
 
       // Filter and build result
       final result = <String, Map<String, dynamic>>{};

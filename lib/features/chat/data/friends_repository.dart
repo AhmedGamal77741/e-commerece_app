@@ -19,29 +19,33 @@ class FriendsRepository {
   FriendsRepository({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
-  })  : _firestore = firestore,
-        _auth = auth;
+  }) : _firestore = firestore,
+       _auth = auth;
 
   String get currentUserId => _auth.currentUser?.uid ?? '';
 
   Future<List<Map<String, String>>> getBlockedFriends() async {
     try {
-      final userDoc = await _firestore.collection('users').doc(currentUserId).get();
+      final userDoc =
+          await _firestore.collection('users').doc(currentUserId).get();
       if (!userDoc.exists) return [];
       final user = MyUser.fromDocument(userDoc.data()!);
       if (user.blocked == null || user.blocked!.isEmpty) return [];
       final blockedIds = user.blocked!;
       if (blockedIds.isEmpty) return [];
-      final blockedQuery = await _firestore
-          .collection('users')
-          .where('userId', whereIn: blockedIds)
-          .get();
+      final blockedQuery =
+          await _firestore
+              .collection('users')
+              .where('userId', whereIn: blockedIds)
+              .get();
       return blockedQuery.docs
-          .map((doc) => {
-                'userId': (doc['userId'] ?? '').toString(),
-                'name': (doc['name'] ?? '').toString(),
-                'url': (doc['url'] ?? '').toString(),
-              })
+          .map(
+            (doc) => {
+              'userId': (doc['userId'] ?? '').toString(),
+              'name': (doc['name'] ?? '').toString(),
+              'url': (doc['url'] ?? '').toString(),
+            },
+          )
           .toList();
     } catch (e) {
       return [];
@@ -53,11 +57,12 @@ class FriendsRepository {
       await _firestore.collection('users').doc(currentUserId).update({
         'blocked': FieldValue.arrayRemove([userId]),
       });
-      final blocksQuery = await _firestore
-          .collection('blocks')
-          .where('blockedBy', isEqualTo: currentUserId)
-          .where('blockedUserId', isEqualTo: userId)
-          .get();
+      final blocksQuery =
+          await _firestore
+              .collection('blocks')
+              .where('blockedBy', isEqualTo: currentUserId)
+              .where('blockedUserId', isEqualTo: userId)
+              .get();
       for (final doc in blocksQuery.docs) {
         await doc.reference.delete();
       }
@@ -77,11 +82,12 @@ class FriendsRepository {
         throw Exception('Cannot add yourself as a friend');
       }
 
-      final userQuery = await _firestore
-          .collection('users')
-          .where('name', isEqualTo: friendName)
-          .limit(1)
-          .get();
+      final userQuery =
+          await _firestore
+              .collection('users')
+              .where('name', isEqualTo: friendName)
+              .limit(1)
+              .get();
 
       if (userQuery.docs.isEmpty) {
         throw Exception('User not found');
@@ -119,11 +125,12 @@ class FriendsRepository {
         throw Exception('Cannot block yourself');
       }
 
-      final userQuery = await _firestore
-          .collection('users')
-          .where('name', isEqualTo: friendName)
-          .limit(1)
-          .get();
+      final userQuery =
+          await _firestore
+              .collection('users')
+              .where('name', isEqualTo: friendName)
+              .limit(1)
+              .get();
 
       if (userQuery.docs.isEmpty) {
         throw Exception('User not found');
@@ -153,24 +160,48 @@ class FriendsRepository {
         'blockId': newBlockRef.id,
       });
 
-      final followingRef1 = _firestore.collection('users').doc(currentUserId).collection('following').doc(friendId);
-      final followerRef1 = _firestore.collection('users').doc(friendId).collection('followers').doc(currentUserId);
+      final followingRef1 = _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('following')
+          .doc(friendId);
+      final followerRef1 = _firestore
+          .collection('users')
+          .doc(friendId)
+          .collection('followers')
+          .doc(currentUserId);
       final followingDoc1 = await followingRef1.get();
       if (followingDoc1.exists) {
         batch.delete(followingRef1);
         batch.delete(followerRef1);
-        batch.update(currentUserDoc.reference, {'followingCount': FieldValue.increment(-1)});
-        batch.update(_firestore.collection('users').doc(friendId), {'followerCount': FieldValue.increment(-1)});
+        batch.update(currentUserDoc.reference, {
+          'followingCount': FieldValue.increment(-1),
+        });
+        batch.update(_firestore.collection('users').doc(friendId), {
+          'followerCount': FieldValue.increment(-1),
+        });
       }
 
-      final followingRef2 = _firestore.collection('users').doc(friendId).collection('following').doc(currentUserId);
-      final followerRef2 = _firestore.collection('users').doc(currentUserId).collection('followers').doc(friendId);
+      final followingRef2 = _firestore
+          .collection('users')
+          .doc(friendId)
+          .collection('following')
+          .doc(currentUserId);
+      final followerRef2 = _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('followers')
+          .doc(friendId);
       final followingDoc2 = await followingRef2.get();
       if (followingDoc2.exists) {
         batch.delete(followingRef2);
         batch.delete(followerRef2);
-        batch.update(_firestore.collection('users').doc(friendId), {'followingCount': FieldValue.increment(-1)});
-        batch.update(currentUserDoc.reference, {'followerCount': FieldValue.increment(-1)});
+        batch.update(_firestore.collection('users').doc(friendId), {
+          'followingCount': FieldValue.increment(-1),
+        });
+        batch.update(currentUserDoc.reference, {
+          'followerCount': FieldValue.increment(-1),
+        });
       }
 
       final participants = [currentUserId, friendId]..sort();
@@ -225,44 +256,48 @@ class FriendsRepository {
         .doc(currentUserId)
         .snapshots()
         .asyncMap((userDoc) async {
-      if (!userDoc.exists) return <MyUser>[];
-      final user = MyUser.fromDocument(userDoc.data()!);
-      if (user.friends.isEmpty) return <MyUser>[];
+          if (!userDoc.exists) return <MyUser>[];
+          final user = MyUser.fromDocument(userDoc.data()!);
+          if (user.friends.isEmpty) return <MyUser>[];
 
-      final friendsQuery = await _firestore
-          .collection('users')
-          .where('userId', whereIn: user.friends)
-          .get();
+          final friendsQuery =
+              await _firestore
+                  .collection('users')
+                  .where('userId', whereIn: user.friends)
+                  .get();
 
-      return friendsQuery.docs
-          .map((doc) => MyUser.fromDocument(doc.data()))
-          .where(
-            (friend) =>
-                !(user.blocked?.contains(friend.userId) ?? false) &&
-                !(friend.blocked?.contains(user.userId) ?? false),
-          )
-          .toList();
-    });
+          return friendsQuery.docs
+              .map((doc) => MyUser.fromDocument(doc.data()))
+              .where(
+                (friend) =>
+                    !(user.blocked?.contains(friend.userId) ?? false) &&
+                    !(friend.blocked?.contains(user.userId) ?? false),
+              )
+              .toList();
+        });
   }
 
   Future<List<MyUser>> getFriendsList({bool includeHidden = true}) async {
-    final userDoc = await _firestore.collection('users').doc(currentUserId).get();
+    final userDoc =
+        await _firestore.collection('users').doc(currentUserId).get();
     if (!userDoc.exists) return <MyUser>[];
     final user = MyUser.fromDocument(userDoc.data()!);
     if (user.friends.isEmpty) return <MyUser>[];
 
-    final friendsQuery = await _firestore
-        .collection('users')
-        .where('userId', whereIn: user.friends)
-        .get();
+    final friendsQuery =
+        await _firestore
+            .collection('users')
+            .where('userId', whereIn: user.friends)
+            .get();
 
     Set<String> hiddenIds = {};
     if (!includeHidden) {
-      final hiddenSnap = await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('hiddenFriends')
-          .get();
+      final hiddenSnap =
+          await _firestore
+              .collection('users')
+              .doc(currentUserId)
+              .collection('hiddenFriends')
+              .get();
       hiddenIds = hiddenSnap.docs.map((d) => d.id).toSet();
     }
 
@@ -279,10 +314,11 @@ class FriendsRepository {
 
   Stream<List<MyUser>> getBrandsStream() {
     return _firestore.collection('users').snapshots().asyncMap((userDoc) async {
-      final friendsQuery = await _firestore
-          .collection('users')
-          .where('type', isEqualTo: 'brand')
-          .get();
+      final friendsQuery =
+          await _firestore
+              .collection('users')
+              .where('type', isEqualTo: 'brand')
+              .get();
       return friendsQuery.docs
           .map((doc) => MyUser.fromDocument(doc.data()))
           .toList();
@@ -290,7 +326,9 @@ class FriendsRepository {
   }
 
   Stream<int> getFriendsCountStream() {
-    return _firestore.collection('users').doc(currentUserId).snapshots().map((snapshot) {
+    return _firestore.collection('users').doc(currentUserId).snapshots().map((
+      snapshot,
+    ) {
       if (!snapshot.exists) return 0;
       final user = MyUser.fromDocument(snapshot.data()!);
       return user.friends.length;
@@ -304,12 +342,13 @@ class FriendsRepository {
           await _firestore.collection('users').doc(currentUserId).get();
       final currentUser = MyUser.fromDocument(currentUserDoc.data()!);
 
-      final usersQuery = await _firestore
-          .collection('users')
-          .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThan: '${query}z')
-          .limit(20)
-          .get();
+      final usersQuery =
+          await _firestore
+              .collection('users')
+              .where('name', isGreaterThanOrEqualTo: query)
+              .where('name', isLessThan: '${query}z')
+              .limit(20)
+              .get();
 
       return usersQuery.docs
           .map((doc) => MyUser.fromDocument(doc.data()))
@@ -326,8 +365,9 @@ class FriendsRepository {
 
   Future<bool> areFriends(String userId) async {
     try {
-      final userDoc = await _firestore.collection('users').doc(currentUserId).get();
-      if(!userDoc.exists) return false;
+      final userDoc =
+          await _firestore.collection('users').doc(currentUserId).get();
+      if (!userDoc.exists) return false;
       final user = MyUser.fromDocument(userDoc.data()!);
       return user.friends.contains(userId);
     } catch (e) {
@@ -341,19 +381,22 @@ class FriendsRepository {
           await _firestore.collection('users').doc(currentUserId).get();
       final currentUser = MyUser.fromDocument(currentUserDoc.data()!);
 
-      final otherUserDoc = await _firestore.collection('users').doc(userId).get();
+      final otherUserDoc =
+          await _firestore.collection('users').doc(userId).get();
       final otherUser = MyUser.fromDocument(otherUserDoc.data()!);
 
-      final mutualFriendIds = currentUser.friends
-          .where((friendId) => otherUser.friends.contains(friendId))
-          .toList();
+      final mutualFriendIds =
+          currentUser.friends
+              .where((friendId) => otherUser.friends.contains(friendId))
+              .toList();
 
       if (mutualFriendIds.isEmpty) return [];
 
-      final mutualFriendsQuery = await _firestore
-          .collection('users')
-          .where('id', whereIn: mutualFriendIds)
-          .get();
+      final mutualFriendsQuery =
+          await _firestore
+              .collection('users')
+              .where('id', whereIn: mutualFriendIds)
+              .get();
 
       return mutualFriendsQuery.docs
           .map((doc) => MyUser.fromDocument(doc.data()))
@@ -418,12 +461,13 @@ class FriendsRepository {
   Future<String?> getAlias(String friendId) async {
     final uid = currentUserId;
     if (uid.isEmpty) return null;
-    final doc = await _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('aliases')
-        .doc(friendId)
-        .get();
+    final doc =
+        await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('aliases')
+            .doc(friendId)
+            .get();
     return doc.data()?['alias'] as String?;
   }
 
@@ -462,12 +506,13 @@ class FriendsRepository {
     final friendIds = currentUser.friends;
 
     Future<List<MyUser>> runQuery(String field, String value) async {
-      final snap = await _firestore
-          .collection('users')
-          .where(field, isGreaterThanOrEqualTo: value)
-          .where(field, isLessThan: '${value}z')
-          .limit(20)
-          .get();
+      final snap =
+          await _firestore
+              .collection('users')
+              .where(field, isGreaterThanOrEqualTo: value)
+              .where(field, isLessThan: '${value}z')
+              .limit(20)
+              .get();
       return snap.docs
           .map((d) => MyUser.fromDocument(d.data()))
           .where((u) => u.userId != uid && !friendIds.contains(u.userId))
@@ -516,31 +561,23 @@ class FriendsRepository {
   /// Stream favorite order map.
   Stream<Map<String, int>> getFavoriteOrderStream(String uid) {
     if (uid.isEmpty) return Stream.value({});
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .map((snap) {
-          if (!snap.exists) return <String, int>{};
-          final raw = snap.data()?['favoritesOrder'];
-          if (raw == null) return <String, int>{};
-          return Map<String, int>.from(raw as Map);
-        });
+    return _firestore.collection('users').doc(uid).snapshots().map((snap) {
+      if (!snap.exists) return <String, int>{};
+      final raw = snap.data()?['favoritesOrder'];
+      if (raw == null) return <String, int>{};
+      return Map<String, int>.from(raw as Map);
+    });
   }
 
   /// Stream group chats order map.
   Stream<Map<String, int>> getGroupChatsOrderStream(String uid) {
     if (uid.isEmpty) return Stream.value({});
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .map((snap) {
-          if (!snap.exists) return <String, int>{};
-          final raw = snap.data()?['groupChatsOrder'];
-          if (raw == null) return <String, int>{};
-          return Map<String, int>.from(raw as Map);
-        });
+    return _firestore.collection('users').doc(uid).snapshots().map((snap) {
+      if (!snap.exists) return <String, int>{};
+      final raw = snap.data()?['groupChatsOrder'];
+      if (raw == null) return <String, int>{};
+      return Map<String, int>.from(raw as Map);
+    });
   }
 
   /// Remove a favorite and delete order entry.

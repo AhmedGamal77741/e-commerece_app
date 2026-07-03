@@ -4,6 +4,7 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 
 class SearchState {
   final List<Map<String, dynamic>> posts;
@@ -38,9 +39,19 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
   StreamSubscription? _postsSub;
   StreamSubscription? _usersSub;
 
+  // Cache for current user's search context
+  String? _cachedUserId;
+  List<String> _cachedBlockedUsers = const [];
+  Set<String> _cachedHiddenFriends = const {};
+  Set<String> _cachedFollowingSet = const {};
+  bool _hasFetchedUserData = false;
+
   @override
-  FutureOr<SearchState> build() async {
-    _initStreams();
+  FutureOr<SearchState> build() {
+    ref.onDispose(() {
+      _postsSub?.cancel();
+      _usersSub?.cancel();
+    });
     return SearchState();
   }
 
@@ -54,128 +65,202 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
   void _initStreams() {
     _postsSub?.cancel();
     _usersSub?.cancel();
-    
+
     if (_query.trim().isEmpty) {
       state = AsyncValue.data(SearchState(posts: [], users: [], query: _query));
       return;
     }
 
-    state = AsyncValue.data((state.value ?? SearchState()).copyWith(isLoading: true, query: _query));
+    state = AsyncValue.data(
+      (state.value ?? SearchState()).copyWith(isLoading: true, query: _query),
+    );
     _listenToData();
   }
 
   Future<void> _listenToData() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     final String? currentUserId = currentUser?.uid;
+    final String currentQuery = _query;
 
     final feedController = ref.read(feedControllerProvider.notifier);
-    
-    try {
-      List<String> blockedUsers = [];
-      Set<String> followingSet = {};
-      
-      if (currentUserId != null) {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
+
+    // Fetch user block list, hidden friends and following list once if not cached for the current session
+    if (currentUserId != null && (!_hasFetchedUserData || _cachedUserId != currentUserId)) {
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .get();
         final userData = userDoc.data() ?? {};
-        blockedUsers = List<String>.from(userData['blocked'] ?? []);
+        _cachedBlockedUsers = List<String>.from(userData['blocked'] ?? []);
+        
+        final hiddenFriendsSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .collection('hiddenFriends')
+            .get();
+        _cachedHiddenFriends = hiddenFriendsSnapshot.docs.map((d) => d.id).toSet();
+
         final isPremium = userData['isSub'] == true;
 
         if (isPremium) {
-          final followingSnapshot = await FirebaseFirestore.instance.collection('users').doc(currentUserId).collection('following').get();
-          followingSet = followingSnapshot.docs.map((d) => d.id).toSet();
+          final followingSnapshot = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUserId)
+              .collection('following')
+              .get();
+          _cachedFollowingSet = followingSnapshot.docs.map((d) => d.id).toSet();
+        } else {
+          _cachedFollowingSet = const {};
         }
+        _cachedUserId = currentUserId;
+        _hasFetchedUserData = true;
+      } catch (e) {
+        debugPrint('Error fetching user search context: $e');
       }
+    }
 
-      // We'll combine posts and users in a single state update for simplicity
+    if (currentQuery != _query) return;
+
+    try {
+      // 1. Subscribe to posts search stream
       _postsSub = feedController.searchPostsStream().listen((postsSnapshot) async {
+        if (currentQuery != _query) return;
+
         final postsDocs = postsSnapshot.docs;
-        final authorIds = postsDocs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return data['userId'] as String;
-        }).toSet().toList();
+        final authorIds = postsDocs
+            .map((doc) {
+              final data = doc.data() as Map<String, dynamic>?;
+              return (data?['userId'] ?? '').toString();
+            })
+            .where((id) => id.isNotEmpty)
+            .toSet()
+            .toList();
 
         if (authorIds.isEmpty) {
-          _updateStatePosts([]);
+          if (currentQuery == _query) {
+            _updateStatePosts([]);
+          }
           return;
         }
 
-        final sortedAuthorIds = authorIds.toList()..sort();
-        final authorsMap = await ref.read(authorsDataMapProvider(sortedAuthorIds.join(',')).future);
+        // Fetch authors in parallel using feedController's optimized loadUser (reads cache or Firestore once)
+        final List<MyUser> authors = await Future.wait(
+          authorIds.map((id) => feedController.loadUser(id)),
+        );
 
-        final filteredPosts = postsDocs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final postAuthorId = data['userId'] as String;
-          final authorData = authorsMap[postAuthorId] ?? {};
+        if (currentQuery != _query) return;
 
-          if (blockedUsers.contains(postAuthorId)) return false;
-          
-          if (currentUserId != null) {
-            final authorBlockedUsers = List<dynamic>.from(authorData['blocked'] ?? []);
-            if (authorBlockedUsers.contains(currentUserId)) return false;
-          }
+        final Map<String, MyUser> authorsMap = {
+          for (final author in authors) author.userId: author
+        };
 
-          final postText = data['text']?.toString().toLowerCase() ?? '';
-          if (!postText.contains(_query)) return false;
+        final filteredPosts = postsDocs
+            .where((doc) {
+              final data = doc.data() as Map<String, dynamic>?;
+              if (data == null) return false;
 
-          if (currentUserId != null) {
-            final notInterestedBy = List<dynamic>.from(data['notInterestedBy'] ?? []);
-            if (notInterestedBy.contains(currentUserId)) return false;
+              final postAuthorId = (data['userId'] ?? '').toString();
+              if (postAuthorId.isEmpty) return false;
 
-            if (postAuthorId == currentUserId) return true;
-          }
+              final author = authorsMap[postAuthorId];
 
-          final bool isPrivate = authorData['isPrivate'] ?? false;
-          if (!isPrivate) return true;
+              // Block lists & hidden friends filtering
+              if (_cachedBlockedUsers.contains(postAuthorId)) return false;
+              if (_cachedHiddenFriends.contains(postAuthorId)) return false;
 
-          return followingSet.contains(postAuthorId);
-        }).map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          data['postId'] = data['postId'] ?? doc.id;
-          return data;
-        }).toList();
+              if (currentUserId != null && author != null) {
+                final authorBlockedUsers = author.blocked ?? [];
+                if (authorBlockedUsers.contains(currentUserId)) {
+                  return false;
+                }
+              }
 
-        _updateStatePosts(filteredPosts);
+              // Text filter
+              final postText = data['text']?.toString().toLowerCase() ?? '';
+              if (!postText.contains(currentQuery)) return false;
+
+              // Interest/Privacy filters
+              if (currentUserId != null) {
+                final notInterestedBy = List<dynamic>.from(data['notInterestedBy'] ?? []);
+                if (notInterestedBy.contains(currentUserId)) return false;
+
+                if (postAuthorId == currentUserId) return true;
+              }
+
+              final bool isPrivate = author?.isPrivate ?? false;
+              if (!isPrivate) return true;
+
+              return _cachedFollowingSet.contains(postAuthorId);
+            })
+            .map((doc) {
+              final data = doc.data() as Map<String, dynamic>? ?? {};
+              final mapped = Map<String, dynamic>.from(data);
+              mapped['postId'] = mapped['postId'] ?? doc.id;
+              return mapped;
+            })
+            .toList();
+
+        if (currentQuery == _query) {
+          _updateStatePosts(filteredPosts);
+        }
       });
 
+      // 2. Subscribe to users search stream
       _usersSub = feedController.searchUsersStream().listen((usersSnapshot) {
+        if (currentQuery != _query) return;
+
         final docs = usersSnapshot.docs;
-        final filteredUsers = docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return MyUser.fromDocument(data);
-        }).where((user) {
-          if (blockedUsers.contains(user.userId)) return false;
-          if (currentUserId != null) {
-            final userBlockedList = user.blocked ?? [];
-            if (userBlockedList.contains(currentUserId)) return false;
-            if (user.userId == currentUserId) return false;
-          } else {
-            if (user.isPrivate) return false;
-          }
-          
-          if (!user.name.toLowerCase().contains(_query)) return false;
-          
-          return true;
-        }).toList();
+        final filteredUsers = docs
+            .map((doc) {
+              final data = doc.data() as Map<String, dynamic>? ?? {};
+              return MyUser.fromDocument(data);
+            })
+            .where((user) {
+              if (user.userId.isEmpty) return false;
+              if (_cachedBlockedUsers.contains(user.userId)) return false;
+              
+              if (currentUserId != null) {
+                final userBlockedList = user.blocked ?? [];
+                if (userBlockedList.contains(currentUserId)) return false;
+                if (user.userId == currentUserId) return false;
+              } else {
+                if (user.isPrivate) return false;
+              }
 
-        _updateStateUsers(filteredUsers);
+              if (!user.name.toLowerCase().contains(currentQuery)) return false;
+
+              return true;
+            })
+            .toList();
+
+        if (currentQuery == _query) {
+          _updateStateUsers(filteredUsers);
+        }
       });
-
     } catch (e) {
-      state = AsyncValue.error(e, StackTrace.current);
+      if (currentQuery == _query) {
+        state = AsyncValue.error(e, StackTrace.current);
+      }
     }
   }
 
   void _updateStatePosts(List<Map<String, dynamic>> posts) {
     if (state.value != null) {
-      state = AsyncValue.data(state.value!.copyWith(posts: posts, isLoading: false));
+      state = AsyncValue.data(
+        state.value!.copyWith(posts: posts, isLoading: false),
+      );
     }
   }
 
   void _updateStateUsers(List<MyUser> users) {
     if (state.value != null) {
-      state = AsyncValue.data(state.value!.copyWith(users: users, isLoading: false));
+      state = AsyncValue.data(
+        state.value!.copyWith(users: users, isLoading: false),
+      );
     }
   }
 }
 
-final searchNotifierProvider = AsyncNotifierProvider<SearchNotifier, SearchState>(SearchNotifier.new);
+final searchNotifierProvider =
+    AsyncNotifierProvider<SearchNotifier, SearchState>(SearchNotifier.new);

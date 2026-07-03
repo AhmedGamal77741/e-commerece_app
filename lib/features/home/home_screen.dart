@@ -27,7 +27,6 @@ class HomeScreenState extends ConsumerState<HomeScreen>
   late final ScrollController _feedTabController;
   late final ProxyScrollController _followingTabController;
   late final ScrollController _myStoryTabController;
-  final List<bool> _tabInitialized = [false, false, false];
 
   void resetToTop() {
     if (mounted) {
@@ -54,15 +53,6 @@ class HomeScreenState extends ConsumerState<HomeScreen>
     _feedTabController = ScrollController();
     _followingTabController = ProxyScrollController();
     _myStoryTabController = ScrollController();
-    // Defer feed initialization to after the first frame so the navbar
-    // and scaffold render fast before firing the Firestore query.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          _tabInitialized[0] = true;
-        });
-      }
-    });
   }
 
   @override
@@ -76,7 +66,6 @@ class HomeScreenState extends ConsumerState<HomeScreen>
   void _onTabSelected(int index) {
     setState(() {
       _selectedIndex = index;
-      _tabInitialized[index] = true;
     });
   }
 
@@ -103,15 +92,9 @@ class HomeScreenState extends ConsumerState<HomeScreen>
               child: IndexedStack(
                 index: _selectedIndex,
                 children: [
-                  _tabInitialized[0]
-                      ? HomeFeedTab(scrollController: _feedTabController)
-                      : const SizedBox.shrink(),
-                  _tabInitialized[1]
-                      ? FollowingTab(scrollController: _followingTabController)
-                      : const SizedBox.shrink(),
-                  _tabInitialized[2]
-                      ? MyStory(scrollController: _myStoryTabController)
-                      : const SizedBox.shrink(),
+                  HomeFeedTab(scrollController: _feedTabController),
+                  FollowingTab(scrollController: _followingTabController),
+                  MyStory(scrollController: _myStoryTabController),
                 ],
               ),
             ),

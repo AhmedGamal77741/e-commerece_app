@@ -31,7 +31,9 @@ class GuestPostItem extends ConsumerStatefulWidget {
   ConsumerState<GuestPostItem> createState() => _GuestPostItemState();
 }
 
-class _GuestPostItemState extends ConsumerState<GuestPostItem> {
+class _GuestPostItemState extends ConsumerState<GuestPostItem> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   final PageController _pageController = PageController();
 
   @override
@@ -80,6 +82,7 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final bool isGuest = ref.watch(currentUserIdProvider).isEmpty;
     final postsProvider = ref.read(feedControllerProvider.notifier);
 
@@ -187,11 +190,9 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
     required String profileUrl,
     required List imgUrls,
   }) {
-    return IgnorePointer(
-      ignoring: isWaiting,
-      child: SizedBox(
-        width: double.infinity,
-        child: Padding(
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
           padding: EdgeInsets.only(top: 5.h, left: 10.w, right: 10.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,7 +237,7 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
                   imgUrls: imgUrls,
                   pageController: _pageController,
                   explicitWidth: widget.imageWidth,
-                  imageRatios: postData['imageRatios'] as Map<String, dynamic>?,
+                  imageRatios: postData['imageRatios'] as Map?,
                 ),
               SizedBox(height: 30.h),
               Row(
@@ -256,9 +257,8 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
             ],
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
   // ── normal feed branch ────────────────────────────────────────────────
   Widget _buildFeedContent({
@@ -273,14 +273,15 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
   }) {
     final screenWidth = MediaQuery.sizeOf(context).width;
 
-    return IgnorePointer(
-      ignoring: isWaiting,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => _openGuestComments(context, postData),
-          child: Row(
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (isWaiting) return;
+          _openGuestComments(context, postData);
+        },
+        child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildAvatar(context, myuser),
@@ -303,7 +304,7 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
                         imgUrls: imgUrls,
                         pageController: _pageController,
                         explicitWidth: screenWidth - 82.w,
-                        imageRatios: postData['imageRatios'] as Map<String, dynamic>?,
+                        imageRatios: postData['imageRatios'] as Map?,
                       ),
                     SizedBox(height: 5.h),
                     GuestPostActions(post: postData),
@@ -320,9 +321,8 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> {
             ],
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
   // ---------------------------------------------------------------------------
   // Shared sub-widgets

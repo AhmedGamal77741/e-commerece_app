@@ -51,7 +51,9 @@ class PostItem extends ConsumerStatefulWidget {
   ConsumerState<PostItem> createState() => _PostItemState();
 }
 
-class _PostItemState extends ConsumerState<PostItem> {
+class _PostItemState extends ConsumerState<PostItem> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   final PageController _pageController = PageController();
 
   @override
@@ -163,6 +165,7 @@ class _PostItemState extends ConsumerState<PostItem> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final postsProvider = ref.read(feedControllerProvider.notifier);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final double fromCommentsImageWidth = screenWidth - 20.w;
@@ -362,14 +365,12 @@ class _PostItemState extends ConsumerState<PostItem> {
     required List imgUrls,
     required double fromCommentsImageWidth,
   }) {
-    return IgnorePointer(
-      ignoring: isWaiting,
-      child: Padding(
-        padding: EdgeInsets.only(top: 5.h, left: 10.w, right: 10.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            PostHeaderSection(
+    return Padding(
+      padding: EdgeInsets.only(top: 5.h, left: 10.w, right: 10.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PostHeaderSection(
               myuser: myuser,
               displayName: displayName,
               profileUrl: profileUrl,
@@ -411,15 +412,14 @@ class _PostItemState extends ConsumerState<PostItem> {
                 imgUrls: imgUrls,
                 pageController: _pageController,
                 explicitWidth: fromCommentsImageWidth,
-                imageRatios: postData['imageRatios'] as Map<String, dynamic>?,
+                imageRatios: postData['imageRatios'] as Map?,
               ),
             SizedBox(height: 30.h),
             PostActionButtons(postId: widget.postId, postData: postData),
           ],
         ),
-      ),
-    );
-  }
+      );
+    }
 
   // ---------------------------------------------------------------------------
   // Feed layout (list item)
@@ -438,44 +438,46 @@ class _PostItemState extends ConsumerState<PostItem> {
     required String? syncName,
     required List imgUrls,
   }) {
-    return IgnorePointer(
-      ignoring: isWaiting,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Avatar
-            GestureDetector(
-              onTap: () {
-                if (myuser != null &&
-                    widget.currentProfileUserId != myuser.userId) {
-                  context.pushNamed(
-                    Routes.profileTabScreen,
-                    extra: {'userId': myuser.userId},
-                  );
-                }
-              },
-              child: Container(
-                width: 48.w,
-                height: 48.h,
-                decoration: ShapeDecoration(
-                  image: DecorationImage(
-                    image: safeNetworkImageProvider(profileUrl),
-                    fit: BoxFit.cover,
-                  ),
-                  shape: const OvalBorder(),
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar
+          GestureDetector(
+            onTap: () {
+              if (isWaiting) return;
+              if (myuser != null &&
+                  widget.currentProfileUserId != myuser.userId) {
+                context.pushNamed(
+                  Routes.profileTabScreen,
+                  extra: {'userId': myuser.userId},
+                );
+              }
+            },
+            child: Container(
+              width: 48.w,
+              height: 48.h,
+              decoration: ShapeDecoration(
+                image: DecorationImage(
+                  image: safeNetworkImageProvider(profileUrl),
+                  fit: BoxFit.cover,
                 ),
+                shape: const OvalBorder(),
               ),
             ),
-            SizedBox(width: 10.w),
+          ),
+          SizedBox(width: 10.w),
 
-            // Content
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _openComments(context),
-                child: Column(
+          // Content
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                if (isWaiting) return;
+                _openComments(context);
+              },
+              child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Name row
@@ -501,7 +503,7 @@ class _PostItemState extends ConsumerState<PostItem> {
                         imgUrls: imgUrls,
                         pageController: _pageController,
                         explicitWidth: screenWidth - 82.w,
-                        imageRatios: postData['imageRatios'] as Map<String, dynamic>?,
+                        imageRatios: postData['imageRatios'] as Map?,
                       ),
                   ],
                 ),
@@ -521,9 +523,8 @@ class _PostItemState extends ConsumerState<PostItem> {
               ),
           ],
         ),
-      ),
-    );
-  }
+      );
+    }
 
   // ---------------------------------------------------------------------------
   // Shared sub-widgets
@@ -618,6 +619,9 @@ class _PostItemState extends ConsumerState<PostItem> {
     required bool isMyPost,
     required List imgUrls,
   }) {
+    if (myuser == null) {
+      return const SizedBox.shrink();
+    }
     if (isMyPost) {
       return OwnPostMenu(
         postId: widget.postId,
@@ -632,7 +636,7 @@ class _PostItemState extends ConsumerState<PostItem> {
     }
     return OtherPostMenu(
       postId: widget.postId,
-      userId: myuser?.userId ?? '',
+      userId: myuser.userId,
       onRunWithLoading: _runWithLoading,
       displayName: displayName,
       profileUrl: profileUrl,

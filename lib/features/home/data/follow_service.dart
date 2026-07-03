@@ -80,9 +80,12 @@ class FollowService {
         batch.delete(followerRef);
 
         // Check if they were friends (mutual follow)
-        final friendsDoc = await _firestore.collection('users').doc(currentUserId).get();
-        final friendsList = List<String>.from(friendsDoc.data()?['friends'] ?? []);
-        
+        final friendsDoc =
+            await _firestore.collection('users').doc(currentUserId).get();
+        final friendsList = List<String>.from(
+          friendsDoc.data()?['friends'] ?? [],
+        );
+
         if (friendsList.contains(targetUserId)) {
           // Remove from friends lists
           batch.update(_firestore.collection('users').doc(currentUserId), {
@@ -95,8 +98,9 @@ class FollowService {
           // Soft delete the chat room for both users
           final participants = [currentUserId, targetUserId]..sort();
           final chatRoomId = participants.join('_');
-          final chatRoomDoc = await _firestore.collection('chatRooms').doc(chatRoomId).get();
-          
+          final chatRoomDoc =
+              await _firestore.collection('chatRooms').doc(chatRoomId).get();
+
           if (chatRoomDoc.exists) {
             batch.update(chatRoomDoc.reference, {
               'deletedBy': FieldValue.arrayUnion([currentUserId, targetUserId]),
@@ -193,7 +197,7 @@ class FollowService {
     // Check if they were friends (mutual follow)
     final friendsDoc = await _firestore.collection('users').doc(userId).get();
     final friendsList = List<String>.from(friendsDoc.data()?['friends'] ?? []);
-    
+
     if (friendsList.contains(followerId)) {
       // Remove from friends lists
       batch.update(userRef, {
@@ -206,8 +210,9 @@ class FollowService {
       // Soft delete the chat room for both users
       final participants = [userId, followerId]..sort();
       final chatRoomId = participants.join('_');
-      final chatRoomDoc = await _firestore.collection('chatRooms').doc(chatRoomId).get();
-      
+      final chatRoomDoc =
+          await _firestore.collection('chatRooms').doc(chatRoomId).get();
+
       if (chatRoomDoc.exists) {
         batch.update(chatRoomDoc.reference, {
           'deletedBy': FieldValue.arrayUnion([userId, followerId]),

@@ -157,12 +157,35 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
               ),
             ),
             Expanded(
-              child: IndexedStack(
-                index: _selectedIndex,
+              child: Stack(
                 children: [
-                  const _FollowingSearchTab(),
-                  _HomeFeedSearchTab(useGuestPostItem: widget.useGuestPostItem),
-                  ShopSearch(),
+                  IndexedStack(
+                    index: _selectedIndex,
+                    children: [
+                      const _FollowingSearchTab(),
+                      _HomeFeedSearchTab(useGuestPostItem: widget.useGuestPostItem),
+                      ShopSearch(),
+                    ],
+                  ),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final searchState = ref.watch(searchNotifierProvider);
+                      final isLoading = searchState.value?.isLoading ?? false;
+                      if (isLoading) {
+                        return const Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: LinearProgressIndicator(
+                            color: Colors.black,
+                            backgroundColor: Colors.transparent,
+                            minHeight: 2,
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 ],
               ),
             ),

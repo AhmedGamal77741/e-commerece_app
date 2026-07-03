@@ -7,6 +7,7 @@ import 'package:ecommerece_app/features/home/widgets/comment_input_box.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/home/widgets/comment_bubble.dart';
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Comments extends ConsumerStatefulWidget {
   const Comments({
@@ -95,14 +96,19 @@ class _CommentsState extends ConsumerState<Comments> {
                       final List<Map<String, dynamic>> chatItems = [];
 
                       for (final comment in comments) {
+                        final dynamic rawTime = comment.createdAt;
+                        final DateTime timestamp = rawTime is DateTime
+                            ? rawTime
+                            : (rawTime is Timestamp ? rawTime.toDate() : DateTime.now());
                         chatItems.add({
                           'id': comment.id,
                           'senderId': comment.userId,
                           'senderName': comment.userName ?? '알 수 없음',
                           'senderImage': comment.userImage ?? '',
                           'content': comment.text,
-                          'timestamp': comment.createdAt is DateTime ? comment.createdAt : DateTime.now(),
+                          'timestamp': timestamp,
                           'imageUrls': comment.imageUrl != null && comment.imageUrl!.isNotEmpty ? [comment.imageUrl!] : null,
+                          'imageRatios': comment.postData != null ? comment.postData!['imageRatios'] as Map? : null,
                           'postData': comment.postData,
                           'productData': comment.productData,
                           'isPost': false,
@@ -113,7 +119,9 @@ class _CommentsState extends ConsumerState<Comments> {
                       final List imgUrls = state.postData!['imgUrls'] as List? ?? [];
                       final List<String> castedUrls = imgUrls.map((e) => e.toString()).toList();
                       final postTimeRaw = state.postData!['createdAt'];
-                      final DateTime postTime = postTimeRaw is DateTime ? postTimeRaw : DateTime.now();
+                      final DateTime postTime = postTimeRaw is DateTime
+                          ? postTimeRaw
+                          : (postTimeRaw is Timestamp ? postTimeRaw.toDate() : DateTime.now());
 
                       chatItems.add({
                         'id': widget.postId,
@@ -123,6 +131,7 @@ class _CommentsState extends ConsumerState<Comments> {
                         'content': postText,
                         'timestamp': postTime,
                         'imageUrls': castedUrls,
+                        'imageRatios': state.postData!['imageRatios'] as Map?,
                         'postData': null,
                         'isPost': true,
                       });

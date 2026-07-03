@@ -55,7 +55,7 @@ class PostHeaderSection extends ConsumerWidget {
           ),
         ),
         const Spacer(),
-        if (!userMissing && !isMyPost)
+        if (!userMissing && myuser != null && !isMyPost)
           _buildActionArea(context, ref),
       ],
     );
@@ -163,6 +163,7 @@ class PostHeaderSection extends ConsumerWidget {
   }
 
   Widget _buildActionArea(BuildContext context, WidgetRef ref) {
+    if (myuser == null) return const SizedBox.shrink();
     final currentUserId = ref.watch(currentUserIdProvider);
     final bool isFollowing = currentUserId.isEmpty
         ? false

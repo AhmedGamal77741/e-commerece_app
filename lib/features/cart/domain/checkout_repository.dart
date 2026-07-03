@@ -119,8 +119,8 @@ class CheckoutRepository {
           throw Exception('Invalid price point for ${prodData['productName']}');
         }
 
-        final pp = pricePoints[pricePointIndex] as Map<String, dynamic>;
-        final requestedQuantity = item['quantity'] as int? ?? pp['quantity'] as int? ?? 1;
+        final pp = Map<String, dynamic>.from(pricePoints[pricePointIndex] as Map);
+        final requestedQuantity = (item['quantity'] as num?)?.toInt() ?? (pp['quantity'] as num?)?.toInt() ?? 1;
         item['quantity'] = requestedQuantity; // Inject for order saving
 
         final productId = item['product_id'] as String;
@@ -130,9 +130,9 @@ class CheckoutRepository {
         if (!isSubed) {
           computedPrice = (computedPrice / 0.8).round();
         }
-        final livePrice = computedPrice is double ? computedPrice.round() : computedPrice.toInt();
+        final livePrice = computedPrice.round();
         
-        final cachedPrice = item['price'] as int?;
+        final cachedPrice = (item['price'] as num?)?.toInt();
         if (cachedPrice != null && livePrice != cachedPrice) {
           throw Exception('Price changed for ${prodData['productName']}. Please refresh the cart. (가격 변동)');
         }
@@ -144,7 +144,7 @@ class CheckoutRepository {
         final productId = item['product_id'] as String;
         final prodSnap = productSnaps[i];
         final prodData = prodSnap.data() as Map<String, dynamic>;
-        final liveStock = prodData['stock'] as int? ?? 0;
+        final liveStock = (prodData['stock'] as num?)?.toInt() ?? 0;
         final totalRequested = productRequestedQuantities[productId]!;
 
         if (liveStock < totalRequested) {

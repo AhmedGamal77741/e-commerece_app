@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
@@ -11,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class ChatRoomState {
   final XFile? pickedImage;
@@ -63,11 +63,15 @@ class ChatRoomState {
   }) {
     return ChatRoomState(
       pickedImage: clearPickedImage ? null : (pickedImage ?? this.pickedImage),
-      pickedImageBytes: clearPickedImageBytes ? null : (pickedImageBytes ?? this.pickedImageBytes),
+      pickedImageBytes:
+          clearPickedImageBytes
+              ? null
+              : (pickedImageBytes ?? this.pickedImageBytes),
       isBlocked: isBlocked ?? this.isBlocked,
       blocked: blocked ?? this.blocked,
       loadingBlockState: loadingBlockState ?? this.loadingBlockState,
-      replyToMessage: clearReplyToMessage ? null : (replyToMessage ?? this.replyToMessage),
+      replyToMessage:
+          clearReplyToMessage ? null : (replyToMessage ?? this.replyToMessage),
       messages: messages ?? this.messages,
       messagesLoaded: messagesLoaded ?? this.messagesLoaded,
       chatRoom: chatRoom ?? this.chatRoom,
@@ -98,15 +102,24 @@ class ChatRoomStateController extends StateNotifier<ChatRoomState> {
 
     _resetUnreadCount();
     _loadChatRoom();
-    _messageSubscription = ref.read(chatControllerProvider.notifier).getMessagesStream(chatRoomId)
+    _messageSubscription = ref
+        .read(chatControllerProvider.notifier)
+        .getMessagesStream(chatRoomId)
         .listen((messages) {
           state = state.copyWith(messages: messages, messagesLoaded: true);
-          final unreadIds = messages
-              .where((m) => m.senderId != currentUserId && !m.readBy.contains(currentUserId))
-              .map((m) => m.id)
-              .toList();
+          final unreadIds =
+              messages
+                  .where(
+                    (m) =>
+                        m.senderId != currentUserId &&
+                        !m.readBy.contains(currentUserId),
+                  )
+                  .map((m) => m.id)
+                  .toList();
           if (unreadIds.isNotEmpty) {
-            ref.read(chatControllerProvider.notifier).markSpecificMessagesAsRead(chatRoomId, unreadIds);
+            ref
+                .read(chatControllerProvider.notifier)
+                .markSpecificMessagesAsRead(chatRoomId, unreadIds);
           }
         });
   }
@@ -133,58 +146,62 @@ class ChatRoomStateController extends StateNotifier<ChatRoomState> {
           .doc(chatRoomId)
           .snapshots()
           .listen((doc) async {
-        if (!doc.exists) {
-          state = state.copyWith(roomDeleted: true, loadingBlockState: false);
-          return;
-        }
+            if (!doc.exists) {
+              state = state.copyWith(
+                roomDeleted: true,
+                loadingBlockState: false,
+              );
+              return;
+            }
 
-        final room = ChatRoomModel.fromMap(doc.data()!);
+            final room = ChatRoomModel.fromMap(doc.data()!);
 
-        if (room.type == 'group') {
-          await _loadAliases(room.participants);
-          state = state.copyWith(
-            chatRoom: room,
-            isGroup: true,
-            loadingBlockState: false,
-          );
-        } else {
-          final otherId = room.participants.firstWhere(
-            (id) => id != currentUserId,
-            orElse: () => '',
-          );
-          state = state.copyWith(otherUserId: otherId);
-          await _loadAliases(room.participants);
-          
-          _currentUserSubscription?.cancel();
-          _currentUserSubscription = FirebaseFirestore.instance
-              .collection('users')
-              .doc(currentUserId)
-              .snapshots()
-              .listen((doc) {
-            state = state.copyWith(
-              blocked: List<String>.from(doc.data()?['blocked'] ?? []).contains(otherId),
-              loadingBlockState: false,
-            );
+            if (room.type == 'group') {
+              await _loadAliases(room.participants);
+              state = state.copyWith(
+                chatRoom: room,
+                isGroup: true,
+                loadingBlockState: false,
+              );
+            } else {
+              final otherId = room.participants.firstWhere(
+                (id) => id != currentUserId,
+                orElse: () => '',
+              );
+              state = state.copyWith(otherUserId: otherId);
+              await _loadAliases(room.participants);
+
+              _currentUserSubscription?.cancel();
+              _currentUserSubscription = FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(currentUserId)
+                  .snapshots()
+                  .listen((doc) {
+                    state = state.copyWith(
+                      blocked: List<String>.from(
+                        doc.data()?['blocked'] ?? [],
+                      ).contains(otherId),
+                      loadingBlockState: false,
+                    );
+                  });
+
+              _otherUserSubscription?.cancel();
+              _otherUserSubscription = FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(otherId)
+                  .snapshots()
+                  .listen((doc) {
+                    state = state.copyWith(
+                      isBlocked: List<String>.from(
+                        doc.data()?['blocked'] ?? [],
+                      ).contains(currentUserId),
+                      loadingBlockState: false,
+                    );
+                  });
+
+              state = state.copyWith(chatRoom: room, isGroup: false);
+            }
           });
-
-          _otherUserSubscription?.cancel();
-          _otherUserSubscription = FirebaseFirestore.instance
-              .collection('users')
-              .doc(otherId)
-              .snapshots()
-              .listen((doc) {
-            state = state.copyWith(
-              isBlocked: List<String>.from(doc.data()?['blocked'] ?? []).contains(currentUserId),
-              loadingBlockState: false,
-            );
-          });
-
-          state = state.copyWith(
-            chatRoom: room,
-            isGroup: false,
-          );
-        }
-      });
     } catch (e) {
       debugPrint('Error loading chat room: $e');
       state = state.copyWith(loadingBlockState: false);
@@ -194,11 +211,12 @@ class ChatRoomStateController extends StateNotifier<ChatRoomState> {
   Future<void> _loadAliases(List<String> userIds) async {
     if (currentUserId.isEmpty) return;
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId)
-          .collection('aliases')
-          .get();
+      final snap =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUserId)
+              .collection('aliases')
+              .get();
       final map = <String, String>{};
       for (final d in snap.docs) {
         final alias = d.data()['alias'] as String?;
@@ -243,8 +261,11 @@ class ChatRoomStateController extends StateNotifier<ChatRoomState> {
 
   Future<void> sendImageMessage() async {
     if (state.pickedImageBytes == null) return;
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}_$currentUserId.jpg';
-    final storageRef = FirebaseStorage.instance.ref().child('chat_images/$fileName');
+    final String timestamp = DateTime.now().microsecondsSinceEpoch.toString();
+    final fileName = '${timestamp}_$currentUserId.jpg';
+    final storageRef = FirebaseStorage.instance.ref().child(
+      'chat_images/$fileName',
+    );
 
     final content = messageController.text.trim();
     final imageBytes = state.pickedImageBytes!;
@@ -258,19 +279,38 @@ class ChatRoomStateController extends StateNotifier<ChatRoomState> {
     );
 
     try {
+      Uint8List uploadBytes;
+      try {
+        final Uint8List compressed =
+            await FlutterImageCompress.compressWithList(
+              imageBytes,
+              minWidth: 1080,
+              minHeight: 1080,
+              quality: 82,
+              format: CompressFormat.jpeg,
+            );
+        uploadBytes = compressed;
+      } catch (e) {
+        uploadBytes = imageBytes;
+      }
+
       final UploadTask task = storageRef.putData(
-        imageBytes,
+        uploadBytes,
         SettableMetadata(contentType: 'image/jpeg'),
       );
       final TaskSnapshot snapshot = await task;
       final url = await snapshot.ref.getDownloadURL();
-      await ref.read(chatControllerProvider.notifier).sendMessage(
-        chatRoomId: chatRoomId,
-        content: content,
-        imageUrl: url,
-        replyToMessageId: replyId,
-      );
-      await ref.read(chatControllerProvider.notifier).resetDeletedBy(chatRoomId);
+      await ref
+          .read(chatControllerProvider.notifier)
+          .sendMessage(
+            chatRoomId: chatRoomId,
+            content: content,
+            imageUrl: url,
+            replyToMessageId: replyId,
+          );
+      await ref
+          .read(chatControllerProvider.notifier)
+          .resetDeletedBy(chatRoomId);
     } catch (e) {
       debugPrint('Error sending image message: $e');
     }
@@ -285,18 +325,23 @@ class ChatRoomStateController extends StateNotifier<ChatRoomState> {
     state = state.copyWith(clearReplyToMessage: true);
 
     try {
-      await ref.read(chatControllerProvider.notifier).sendMessage(
-        chatRoomId: chatRoomId,
-        content: content,
-        replyToMessageId: replyId,
-      );
-      await ref.read(chatControllerProvider.notifier).resetDeletedBy(chatRoomId);
+      await ref
+          .read(chatControllerProvider.notifier)
+          .sendMessage(
+            chatRoomId: chatRoomId,
+            content: content,
+            replyToMessageId: replyId,
+          );
+      await ref
+          .read(chatControllerProvider.notifier)
+          .resetDeletedBy(chatRoomId);
     } catch (e) {
       debugPrint('Error sending message: $e');
     }
   }
 }
 
-final chatRoomStateControllerProvider = StateNotifierProvider.autoDispose.family<ChatRoomStateController, ChatRoomState, String>((ref, id) {
-  return ChatRoomStateController(ref, id);
-});
+final chatRoomStateControllerProvider = StateNotifierProvider.autoDispose
+    .family<ChatRoomStateController, ChatRoomState, String>((ref, id) {
+      return ChatRoomStateController(ref, id);
+    });

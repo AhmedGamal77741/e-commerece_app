@@ -87,6 +87,16 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
       _categoryPageController.jumpToPage(0);
     }
 
+    for (final controller in _pageScrollControllers.values) {
+      if (controller.hasClients) {
+        try {
+          controller.jumpTo(0);
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+
     if (_selectedUserId.value != null) {
       ref
           .read(followFeedNotifierProvider.notifier)
@@ -124,6 +134,34 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
 
     return followFeedState.when(
       data: (state) {
+        if (state.isLoading) {
+          return const SizedBox.shrink();
+        }
+
+        // Keep _selectedUserId synchronized when followingUsers changes (e.g. when unfollowed)
+        final bool selectedUserNotFollowed = _selectedUserId.value != null &&
+            !state.followingUsers.any((u) => u.userId == _selectedUserId.value);
+
+        if (selectedUserNotFollowed || (_selectedUserId.value == null && state.followingUsers.isNotEmpty)) {
+          final String? nextUserId = state.followingUsers.isNotEmpty
+              ? state.followingUsers.first.userId
+              : null;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              if (nextUserId != null) {
+                if (_selectedUserId.value != nextUserId) {
+                  _handleUserSelection(nextUserId);
+                }
+              } else {
+                _selectedUserId.value = null;
+                _selectedCategoryId.value = null;
+                _categoryPages = [null];
+                _currentPageIndex.value = 0;
+              }
+            }
+          });
+        }
+
         if (state.currentUser == null) {
           return Center(
             child: Padding(
@@ -182,16 +220,6 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
                         : ValueListenableBuilder<String?>(
                           valueListenable: _selectedUserId,
                           builder: (context, selectedId, _) {
-                            if (selectedId == null &&
-                                state.followingUsers.isNotEmpty) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (mounted) {
-                                  _handleUserSelection(
-                                    state.followingUsers.first.userId,
-                                  );
-                                }
-                              });
-                            }
                             return FollowingUsersList(
                               followingUsers: state.followingUsers,
                               onUserTap: _handleUserSelection,
@@ -251,7 +279,7 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const SizedBox.shrink(),
       error: (e, st) => Center(child: Text('Error: $e')),
     );
   }

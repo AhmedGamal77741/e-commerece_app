@@ -45,6 +45,28 @@ class _FollowingUsersListState extends ConsumerState<FollowingUsersList> {
   }
 
   @override
+  void didUpdateWidget(FollowingUsersList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedUserId != null) {
+      final index = widget.followingUsers.indexWhere(
+        (u) => u.userId == widget.selectedUserId!,
+      );
+      if (index != -1 && _pageController.hasClients) {
+        final oldIndex = oldWidget.followingUsers.indexWhere(
+          (u) => u.userId == oldWidget.selectedUserId,
+        );
+        if (index != oldIndex || widget.selectedUserId != oldWidget.selectedUserId) {
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
