@@ -6,6 +6,7 @@ import 'package:ecommerece_app/features/home/widgets/category_management_widgets
 import 'package:ecommerece_app/features/home/widgets/post_text_input.dart';
 import 'package:ecommerece_app/features/home/widgets/image_picker_grid.dart';
 import 'package:ecommerece_app/features/home/widgets/add_post_bottom_bar.dart';
+import 'package:ecommerece_app/features/home/domain/add_post_notifier.dart';
 
 class AddPost extends ConsumerStatefulWidget {
   const AddPost({super.key});
@@ -16,6 +17,14 @@ class AddPost extends ConsumerStatefulWidget {
 
 class _AddPostState extends ConsumerState<AddPost> {
   final TextEditingController _textController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(addPostNotifierProvider.notifier).reset();
+    });
+  }
 
   @override
   void dispose() {

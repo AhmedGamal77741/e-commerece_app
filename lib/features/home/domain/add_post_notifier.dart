@@ -106,6 +106,12 @@ class AddPostNotifier extends Notifier<AddPostState> {
     return AddPostState();
   }
 
+  void reset() {
+    state = AddPostState();
+    _loadCategories();
+    _loadPlaceholderText();
+  }
+
   Future<void> _loadPlaceholderText() async {
     try {
       final snapshot = await _firestore.collection('widgets').doc('placeholders').get();
