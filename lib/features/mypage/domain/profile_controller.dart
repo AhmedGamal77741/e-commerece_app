@@ -94,23 +94,21 @@ class ProfileController extends AsyncNotifier<void> {
       throw Exception("변경된 내용이 없습니다");
     }
 
-    if (isUpdatingName) {
-      final name = newNickname.trim();
-      final existing = await ref
-          .read(authRepositoryProvider)
-          .isNicknameTaken(name);
-      if (existing && name != currentUser.name) {
-        throw Exception("이미 사용 중인 닉네임입니다");
-      }
-    }
+    final authRepo = ref.read(authRepositoryProvider);
 
-    if (isUpdatingPhone) {
-      final existingPhone = await ref
-          .read(authRepositoryProvider)
-          .isPhoneNumberTaken(phone);
-      if (existingPhone && phone != (currentUser.phoneNumber ?? '')) {
-        throw Exception("이미 사용 중인 전화번호입니다");
-      }
+    final results = await Future.wait([
+      if (isUpdatingName) authRepo.isNicknameTaken(newNickname.trim()) else Future.value(false),
+      if (isUpdatingPhone) authRepo.isPhoneNumberTaken(phone) else Future.value(false),
+    ]);
+
+    final existingName = results[0];
+    final existingPhone = results[1];
+
+    if (isUpdatingName && existingName && newNickname.trim() != currentUser.name) {
+      throw Exception("이미 사용 중인 닉네임입니다");
+    }
+    if (isUpdatingPhone && existingPhone && phone != (currentUser.phoneNumber ?? '')) {
+      throw Exception("이미 사용 중인 전화번호입니다");
     }
 
     final updatedUser = currentUser.copyWith(

@@ -76,11 +76,18 @@ class AuthNotifier extends AsyncNotifier<void> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       try {
-        if (await _authRepository.isNicknameTaken(myUser.name)) {
+        final results = await Future.wait([
+          _authRepository.isNicknameTaken(myUser.name),
+          if (myUser.phoneNumber != null)
+            _authRepository.isPhoneNumberTaken(myUser.phoneNumber!)
+          else
+            Future.value(false),
+        ]);
+
+        if (results[0]) {
           throw Exception("이미 사용 중인 닉네임입니다.");
         }
-        if (myUser.phoneNumber != null &&
-            await _authRepository.isPhoneNumberTaken(myUser.phoneNumber!)) {
+        if (results[1]) {
           throw Exception("전화번호가 이미 사용 중입니다.");
         }
 
