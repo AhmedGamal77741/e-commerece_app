@@ -190,15 +190,6 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
                         horizontalSpace(12),
                         InkWell(
                           onTap: () {
-                            final currentUser = ref.read(currentUserProvider).value;
-                            if (currentUser != null && currentUser.type != 'guest') {
-                              if (currentUser.defaultAddressId == null || currentUser.defaultAddressId!.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('주소를 먼저 등록해주세요.')),
-                                );
-                                return;
-                              }
-                            }
                             context.go(Routes.shopSearchScreen);
                           },
                           child: Image.asset(
