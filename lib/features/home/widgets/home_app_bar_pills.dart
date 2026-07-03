@@ -5,6 +5,7 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart' show hasUnreadNotificationsProvider;
 
 class HomeAppBarPills extends ConsumerWidget {
@@ -92,6 +93,15 @@ class HomeAppBarPills extends ConsumerWidget {
               ),
               InkWell(
                 onTap: () {
+                  final currentUser = ref.read(currentUserProvider).value;
+                  if (currentUser != null && currentUser.type != 'guest') {
+                    if (currentUser.defaultAddressId == null || currentUser.defaultAddressId!.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('주소를 먼저 등록해주세요.')),
+                      );
+                      return;
+                    }
+                  }
                   context.pushNamed(Routes.shopSearchScreen, extra: {'initialTabIndex': 1});
                 },
                 child: ImageIcon(
