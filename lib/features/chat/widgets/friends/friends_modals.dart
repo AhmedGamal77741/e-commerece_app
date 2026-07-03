@@ -848,6 +848,7 @@ Future<void> showCreateGroupDialog({
   final nameController = TextEditingController();
   final searchCtrl = TextEditingController();
   final searchFocusNode = FocusNode();
+  Timer? debounce;
   List<String> selectedUserIds = [];
   String? groupImagePath;
   String groupSearch = '';
@@ -1080,7 +1081,12 @@ Future<void> showCreateGroupDialog({
                               ),
                               isDense: true,
                             ),
-                            onChanged: (val) => setDialogState(() => groupSearch = val),
+                            onChanged: (val) {
+                              if (debounce?.isActive ?? false) debounce!.cancel();
+                              debounce = Timer(const Duration(milliseconds: 300), () {
+                                setDialogState(() => groupSearch = val);
+                              });
+                            },
                           ),
                         ),
                       ),
