@@ -12,6 +12,7 @@ import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_po
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
+import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'dart:async';
 
 class HomeSearch extends ConsumerStatefulWidget {
@@ -41,6 +42,23 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialTabIndex;
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_selectedIndex == 2) {
+        final currentUser = ref.read(currentUserProvider).value;
+        if (currentUser != null && currentUser.type != 'guest') {
+          if (currentUser.defaultAddressId == null || currentUser.defaultAddressId!.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('주소를 먼저 등록해주세요.')),
+            );
+            setState(() {
+              _selectedIndex = 1;
+            });
+          }
+        }
+      }
+    });
+
     _searchController.addListener(() {
       if (_debounce?.isActive ?? false) _debounce!.cancel();
       _debounce = Timer(const Duration(milliseconds: 300), () {
@@ -62,7 +80,20 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
     final theme = Theme.of(context);
     final bool isSelected = _selectedIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
+      onTap: () {
+        if (index == 2) {
+          final currentUser = ref.read(currentUserProvider).value;
+          if (currentUser != null && currentUser.type != 'guest') {
+            if (currentUser.defaultAddressId == null || currentUser.defaultAddressId!.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('주소를 먼저 등록해주세요.')),
+              );
+              return;
+            }
+          }
+        }
+        setState(() => _selectedIndex = index);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 6.h),
