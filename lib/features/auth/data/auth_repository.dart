@@ -38,9 +38,9 @@ class AuthRepository {
     );
   }
 
-  /// Check if a nickname (tag) is taken
+  /// Check if a nickname (name) is taken
   Future<bool> isNicknameTaken(String name) async {
-    final query = await usersCollection.where('tag', isEqualTo: name).limit(1).get();
+    final query = await usersCollection.where('name', isEqualTo: name).limit(1).get();
     return query.docs.isNotEmpty;
   }
 
