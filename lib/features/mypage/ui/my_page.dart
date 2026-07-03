@@ -180,7 +180,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          "업데이트 중 오류가 발생했습니다: $e",
+                          e.toString().replaceAll('Exception: ', ''),
                           style: TextStyle(fontSize: 14.sp),
                         ),
                       ),
