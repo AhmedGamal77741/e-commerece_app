@@ -5,8 +5,7 @@ import 'package:ecommerece_app/features/home/domain/search_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
-import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
+import 'package:ecommerece_app/features/shop/widgets/shop_product_card.dart';
 
 class ShopSearch extends ConsumerWidget {
   const ShopSearch({super.key});
@@ -111,63 +110,32 @@ class ShopSearch extends ConsumerWidget {
 
     final sortedProducts = [...sameRegion, ...otherRegion, ...soldOutList];
 
-    return ListView.builder(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      findChildIndexCallback: (Key key) {
-        final valueKey = key as ValueKey<String>;
-        final index = sortedProducts.indexWhere(
-          (p) => p.productId == valueKey.value,
-        );
-        return index == -1 ? null : index;
-      },
-      itemCount: sortedProducts.length,
-      itemBuilder: (context, index) {
-        final product = sortedProducts[index];
-        final displayPrice = isSub ? product.price : (product.price / 0.8);
-        final formatCurrency = NumberFormat('#,###');
-        
-        return ListTile(
-          title: Text(product.productName),
-          subtitle: Text('${formatCurrency.format(displayPrice)} 원'),
-          leading: Stack(
-            children: [
-              SafeNetworkImage(
-                url: product.imgUrl ?? '',
-                width: 50.w,
-                height: 50.h,
-                fit: BoxFit.cover,
-                placeholder: const ColoredBox(
-                  color: Color(0xFFEEEEEE),
-                ),
-                errorWidget: const ColoredBox(
-                  color: Color(0xFFEEEEEE),
-                  child: Center(
-                    child: Icon(
-                      Icons.broken_image,
-                      color: Colors.grey,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ),
-              if (product.stock == 0)
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.transparent,
-                    child: Center(
-                      child: Image.asset(
-                        'assets/sold_out.png',
-                        fit: BoxFit.contain,
-                        cacheWidth: 100,
-                        cacheHeight: 100,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      child: ListView.separated(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        findItemIndexCallback: (Key key) {
+          final valueKey = key as ValueKey<String>;
+          final index = sortedProducts.indexWhere(
+            (p) => p.productId == valueKey.value,
+          );
+          return index == -1 ? null : index;
+        },
+        separatorBuilder: (context, index) {
+          if (index == sortedProducts.length - 1) {
+            return const SizedBox.shrink();
+          }
+          return const Divider();
+        },
+        itemCount: sortedProducts.length,
+        itemBuilder: (context, index) {
+          return ShopProductCard(
+            key: ValueKey(sortedProducts[index].productId),
+            product: sortedProducts[index],
+            isSub: isSub,
+          );
+        },
+      ),
     );
   }
 }
