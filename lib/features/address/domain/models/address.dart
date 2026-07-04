@@ -30,7 +30,7 @@ class Address {
       address: map['address'] ?? '',
       detailAddress: map['detailAddress'] ?? '',
       isDefault: map['isDefault'] ?? false,
-      addressMap: map['addressMap'],
+      addressMap: map['addressMap'] != null ? Map<String, dynamic>.from(map['addressMap'] as Map) : null,
       createdAt: map['createdAt'],
     );
   }

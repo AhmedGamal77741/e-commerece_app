@@ -66,7 +66,7 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
       final result = await widget.kakaoService.searchAddress(query);
 
       setState(() {
-        _searchResults = result['documents'] as List;
+        _searchResults = result['documents'] as List? ?? [];
         _isLoading = false;
       });
     } catch (e) {
@@ -278,20 +278,20 @@ class _AddressSearchDialogState extends State<AddressSearchDialog> {
                             : item['address'] != null
                             ? '지번: ${item['address']['main_address_no']}${item['address']['sub_address_no'] != '' ? '-${item['address']['sub_address_no']}' : ''}'
                             : '';
-                    bool isIsland;
+                    bool isIsland = false;
                     final addressData = item['address'] ?? item['road_address'];
-                    final region1depth =
-                        addressData['region_1depth_name'] as String;
-                    final region2depth =
-                        addressData['region_2depth_name'] as String;
-                    final region3depth =
-                        addressData['region_3depth_name'] as String;
-                    if (likelyIsland(region1depth) ||
-                        likelyIsland(region2depth) ||
-                        likelyIsland(region3depth)) {
-                      isIsland = true;
-                    } else {
-                      isIsland = false;
+                    if (addressData != null) {
+                      final region1depth =
+                          addressData['region_1depth_name']?.toString() ?? '';
+                      final region2depth =
+                          addressData['region_2depth_name']?.toString() ?? '';
+                      final region3depth =
+                          addressData['region_3depth_name']?.toString() ?? '';
+                      if (likelyIsland(region1depth) ||
+                          likelyIsland(region2depth) ||
+                          likelyIsland(region3depth)) {
+                        isIsland = true;
+                      }
                     }
                     return ListTile(
                       contentPadding: const EdgeInsets.symmetric(

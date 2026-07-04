@@ -95,19 +95,20 @@ class CheckoutAddressCard extends ConsumerWidget {
                       return _buildNoAddress();
                     }
                     final d = snapshot.data!;
+                    final fullAddress = '${d['address'] ?? ''} ${d['detailAddress'] ?? ''}'.trim();
                     return _buildAddressText(
                       label: '배송지 정보 (기본 배송지)',
                       name: d['name'] ?? '',
                       phone: d['phone'] ?? '',
-                      addressStr: d['address'] ?? '',
+                      addressStr: fullAddress,
                     );
                   },
                 )
               : _buildAddressText(
-                  label: '배송지 정보 (기본 배송지)',
+                  label: address.isDefault ? '배송지 정보 (기본 배송지)' : '배송지 정보',
                   name: address.name,
                   phone: address.phone,
-                  addressStr: address.detailAddress,
+                  addressStr: '${address.address} ${address.detailAddress}'.trim(),
                 ),
         ),
         IconButton(

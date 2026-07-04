@@ -100,7 +100,16 @@ class AddressListItem extends ConsumerWidget {
                               );
 
                               if (confirm == true) {
-                                ref.read(addressControllerProvider.notifier).deleteAddress(address.id);
+                                try {
+                                  await ref.read(addressControllerProvider.notifier).deleteAddress(address.id);
+                                } catch (error) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('삭제 중 오류가 발생했습니다'),
+                                    ),
+                                  );
+                                }
                               }
                             },
                       style: TextButton.styleFrom(
