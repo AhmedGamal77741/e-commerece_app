@@ -9,12 +9,14 @@ import 'package:ecommerece_app/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 late AppLinks _appLinks;
 late GoRouter _router;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ScreenUtil.ensureScreenSize();
 
   // Set production-ready image cache limits (200 MB and 1000 images max)
   // This balances seamless scroll-up caching (holding ~100-130 downsampled images) with RAM safety on low-end devices.

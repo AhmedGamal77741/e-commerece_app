@@ -81,6 +81,8 @@ class _EcommerceAppState extends State<EcommerceApp> {
               child: ScreenUtilInit(
                 designSize: const Size(700, 926),
                 minTextAdapt: true,
+                splitScreenMode: true,
+                ensureScreenSize: true,
                 builder:
                     (context, child) => MaterialApp.router(
                       // scaffoldMessengerKey: scaffoldMessengerKey,
@@ -144,6 +146,8 @@ class _EcommerceAppState extends State<EcommerceApp> {
       return ScreenUtilInit(
         designSize: const Size(428, 926),
         minTextAdapt: true,
+        splitScreenMode: true,
+        ensureScreenSize: true,
         builder:
             (context, child) => MaterialApp.router(
               // scaffoldMessengerKey: scaffoldMessengerKey,
