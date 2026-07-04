@@ -25,6 +25,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
   final shopKey = GlobalKey<ShopState>();
   final homeKey = GlobalKey<HomeScreenState>();
   int _selectedIndex = 0;
+  DateTime? _lastBackPressTime;
 
   final ScrollController homeScrollController = ScrollController();
   late TabController homeTabController;
@@ -192,7 +193,35 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
       const LandingScreen(),
     ];
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        // On a non-home tab → navigate to home first
+        if (_selectedIndex != 0) {
+          setState(() => _selectedIndex = 0);
+          return;
+        }
+        // On home tab → require double-tap to exit
+        final now = DateTime.now();
+        if (_lastBackPressTime == null ||
+            now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('한 번 더 누르면 종료됩니다'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+        // Double-tap confirmed → exit
+        // ignore: use_build_context_synchronously
+        Navigator.of(context).pop();
+      },
+      child: Scaffold(
       // Isolated Consumer: only this subtree rebuilds when auth/profile streams emit.
       // The BottomNavigationBar and outer Scaffold are untouched.
       body: RepaintBoundary(
@@ -294,6 +323,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
+    ),
     );
   }
 }
