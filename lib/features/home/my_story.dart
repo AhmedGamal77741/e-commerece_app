@@ -13,10 +13,23 @@ import 'package:ecommerece_app/features/auth/data/auth_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/home/widgets/home_app_bar_pills.dart';
 
 class MyStory extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
-  const MyStory({super.key, this.scrollController});
+  final User? firebaseUser;
+  final int selectedIndex;
+  final ValueChanged<int> onTabSelected;
+
+  const MyStory({
+    super.key,
+    this.scrollController,
+    required this.firebaseUser,
+    required this.selectedIndex,
+    required this.onTabSelected,
+  });
+
   @override
   ConsumerState<MyStory> createState() => _MyStoryState();
 }
@@ -116,6 +129,11 @@ class _MyStoryState extends ConsumerState<MyStory> {
                   SliverToBoxAdapter(
                     child: Column(
                       children: [
+                        HomeAppBarPills(
+                          firebaseUser: widget.firebaseUser,
+                          selectedIndex: widget.selectedIndex,
+                          onTabSelected: widget.onTabSelected,
+                        ),
                         verticalSpace(10),
                         InkWell(
                           onTap: () async {

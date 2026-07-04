@@ -4,7 +4,6 @@ import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/home/follow_feed_screen.dart';
 import 'package:ecommerece_app/features/home/my_story.dart';
 import 'package:ecommerece_app/features/home/widgets/home_feed_tab.dart';
-import 'package:ecommerece_app/features/home/widgets/home_app_bar_pills.dart';
 import 'package:ecommerece_app/features/home/widgets/home_fab.dart';
 
 import 'package:ecommerece_app/features/home/widgets/proxy_scroll_controller.dart';
@@ -81,22 +80,26 @@ class HomeScreenState extends ConsumerState<HomeScreen>
           firebaseUser: firebaseUser,
           selectedIndex: _selectedIndex,
         ),
-        body: Column(
+        body: IndexedStack(
+          index: _selectedIndex,
           children: [
-            HomeAppBarPills(
+            HomeFeedTab(
+              scrollController: _feedTabController,
               firebaseUser: firebaseUser,
               selectedIndex: _selectedIndex,
               onTabSelected: _onTabSelected,
             ),
-            Expanded(
-              child: IndexedStack(
-                index: _selectedIndex,
-                children: [
-                  HomeFeedTab(scrollController: _feedTabController),
-                  FollowingTab(scrollController: _followingTabController),
-                  MyStory(scrollController: _myStoryTabController),
-                ],
-              ),
+            FollowingTab(
+              scrollController: _followingTabController,
+              firebaseUser: firebaseUser,
+              selectedIndex: _selectedIndex,
+              onTabSelected: _onTabSelected,
+            ),
+            MyStory(
+              scrollController: _myStoryTabController,
+              firebaseUser: firebaseUser,
+              selectedIndex: _selectedIndex,
+              onTabSelected: _onTabSelected,
             ),
           ],
         ),

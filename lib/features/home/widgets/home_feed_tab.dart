@@ -5,11 +5,22 @@ import 'package:ecommerece_app/features/home/widgets/post_item.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/home/widgets/home_app_bar_pills.dart';
 
 class HomeFeedTab extends ConsumerWidget {
   final ScrollController? scrollController;
+  final User? firebaseUser;
+  final int selectedIndex;
+  final ValueChanged<int> onTabSelected;
 
-  const HomeFeedTab({super.key, this.scrollController});
+  const HomeFeedTab({
+    super.key,
+    this.scrollController,
+    required this.firebaseUser,
+    required this.selectedIndex,
+    required this.onTabSelected,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,18 +44,21 @@ class HomeFeedTab extends ConsumerWidget {
       );
     }
 
-    if (postIds.isEmpty) {
-      return const Center(child: Text('No posts available.'));
-    }
-
     return ListView.builder(
       controller: scrollController,
       cacheExtent: 1200,
       addAutomaticKeepAlives: true,
       addRepaintBoundaries: false,
-      itemCount: postIds.length,
+      itemCount: postIds.length + 1,
       itemBuilder: (context, index) {
-        final postId = postIds[index];
+        if (index == 0) {
+          return HomeAppBarPills(
+            firebaseUser: firebaseUser,
+            selectedIndex: selectedIndex,
+            onTabSelected: onTabSelected,
+          );
+        }
+        final postId = postIds[index - 1];
 
         return RepaintBoundary(
           key: ValueKey(postId),

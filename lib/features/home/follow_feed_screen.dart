@@ -4,13 +4,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/home/domain/follow_feed_notifier.dart';
 import 'package:ecommerece_app/features/home/widgets/following_users_list.dart';
 import 'package:ecommerece_app/features/home/widgets/follow_feed_list.dart';
-import 'package:ecommerece_app/features/home/widgets/proxy_scroll_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/features/home/widgets/home_app_bar_pills.dart';
 
 class FollowingTab extends ConsumerStatefulWidget {
   final String? preselectedUser;
   final ScrollController? scrollController;
+  final User? firebaseUser;
+  final int selectedIndex;
+  final ValueChanged<int> onTabSelected;
 
-  const FollowingTab({super.key, this.preselectedUser, this.scrollController});
+  const FollowingTab({
+    super.key,
+    this.preselectedUser,
+    this.scrollController,
+    required this.firebaseUser,
+    required this.selectedIndex,
+    required this.onTabSelected,
+  });
 
   @override
   ConsumerState<FollowingTab> createState() => _FollowingTabState();
@@ -19,27 +30,11 @@ class FollowingTab extends ConsumerStatefulWidget {
 class _FollowingTabState extends ConsumerState<FollowingTab>
     with AutomaticKeepAliveClientMixin {
   late ScrollController _scrollController;
-  final Map<int, ScrollController> _pageScrollControllers = {};
   final ValueNotifier<String?> _selectedUserId = ValueNotifier(null);
   final ValueNotifier<String?> _selectedCategoryId = ValueNotifier(null);
   late PageController _categoryPageController;
   List<String?> _categoryPages = [null];
   final ValueNotifier<int> _currentPageIndex = ValueNotifier(0);
-
-  ScrollController _getScrollControllerForPage(int index) {
-    final controller = _pageScrollControllers.putIfAbsent(index, () => ScrollController());
-    if (index == _currentPageIndex.value) {
-      _updateActiveController(index);
-    }
-    return controller;
-  }
-
-  void _updateActiveController(int index) {
-    if (widget.scrollController is ProxyScrollController) {
-      final proxy = widget.scrollController as ProxyScrollController;
-      proxy.activeController = _pageScrollControllers[index];
-    }
-  }
 
   @override
   bool get wantKeepAlive => true;
@@ -50,7 +45,6 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
     _scrollController = widget.scrollController ?? ScrollController();
     _categoryPageController = PageController();
     _selectedUserId.value = widget.preselectedUser;
-    _updateActiveController(0);
   }
 
   @override
@@ -70,9 +64,6 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
     _selectedUserId.dispose();
     _selectedCategoryId.dispose();
     _currentPageIndex.dispose();
-    for (final controller in _pageScrollControllers.values) {
-      controller.dispose();
-    }
     super.dispose();
   }
 
@@ -81,19 +72,16 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
     _selectedCategoryId.value = null;
     _categoryPages = [null];
     _currentPageIndex.value = 0;
-    _updateActiveController(0);
 
     if (_categoryPageController.hasClients) {
       _categoryPageController.jumpToPage(0);
     }
 
-    for (final controller in _pageScrollControllers.values) {
-      if (controller.hasClients) {
-        try {
-          controller.jumpTo(0);
-        } catch (e) {
-          // ignore
-        }
+    if (_scrollController.hasClients) {
+      try {
+        _scrollController.jumpTo(0);
+      } catch (e) {
+        // ignore
       }
     }
 
@@ -115,7 +103,6 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
         curve: Curves.easeInOut,
       );
       _currentPageIndex.value = index;
-      _updateActiveController(index);
     }
   }
 
@@ -123,7 +110,6 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
     final categoryId = _categoryPages[index];
     _selectedCategoryId.value = categoryId;
     _currentPageIndex.value = index;
-    _updateActiveController(index);
   }
 
   @override
@@ -190,92 +176,99 @@ class _FollowingTabState extends ConsumerState<FollowingTab>
           );
         }
 
-        return Padding(
-          padding: EdgeInsets.only(top: 10.h),
-          child: Column(
-            children: [
-              SizedBox(
-                height: 100.h,
-                child:
-                    state.followingUsers.isEmpty
-                        ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.people_outline,
-                                size: 32,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                '팔로우한 사용자가 없습니다',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                        : ValueListenableBuilder<String?>(
-                          valueListenable: _selectedUserId,
-                          builder: (context, selectedId, _) {
-                            return FollowingUsersList(
-                              followingUsers: state.followingUsers,
-                              onUserTap: _handleUserSelection,
-                              selectedUserId: selectedId,
-                            );
-                          },
-                        ),
-              ),
-              Expanded(
+        return NestedScrollView(
+          controller: widget.scrollController,
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverToBoxAdapter(
                 child: ValueListenableBuilder<String?>(
                   valueListenable: _selectedUserId,
                   builder: (context, selectedId, _) {
-                    if (selectedId == null ||
-                        state.effectiveBlockedUsers.contains(selectedId)) {
-                      return const SizedBox.shrink();
-                    }
-
-                    _categoryPages = [
-                      null,
-                      ...state.categories.map((c) => c['id'] as String?),
-                    ];
+                    final bool hasCategories = selectedId != null &&
+                        !state.effectiveBlockedUsers.contains(selectedId);
 
                     return Column(
                       children: [
-                        ValueListenableBuilder<String?>(
-                          valueListenable: _selectedCategoryId,
-                          builder: (context, selectedCategoryId, _) {
-                            return UserCategoriesBar(
-                              categories: state.categories,
-                              selectedCategoryId: selectedCategoryId,
-                              onCategorySelected: _handleCategorySelection,
-                            );
-                          },
+                        HomeAppBarPills(
+                          firebaseUser: widget.firebaseUser,
+                          selectedIndex: widget.selectedIndex,
+                          onTabSelected: widget.onTabSelected,
                         ),
-                        Expanded(
-                          child: PageView.builder(
-                            controller: _categoryPageController,
-                            onPageChanged: _onCategoryPageChanged,
-                            itemCount: _categoryPages.length,
-                            itemBuilder: (context, index) {
-                              final catId = _categoryPages[index];
-                              
-                              return FollowingPostsList(
-                                userId: selectedId,
-                                categoryId: catId,
-                                scrollController: _getScrollControllerForPage(index),
+                        SizedBox(
+                          height: 100.h,
+                          child: state.followingUsers.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.people_outline,
+                                        size: 32,
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                      SizedBox(height: 8.h),
+                                      Text(
+                                        '팔로우한 사용자가 없습니다',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : FollowingUsersList(
+                                  followingUsers: state.followingUsers,
+                                  onUserTap: _handleUserSelection,
+                                  selectedUserId: selectedId,
+                                ),
+                        ),
+                        if (hasCategories) ...[
+                          ValueListenableBuilder<String?>(
+                            valueListenable: _selectedCategoryId,
+                            builder: (context, selectedCategoryId, _) {
+                              return UserCategoriesBar(
+                                categories: state.categories,
+                                selectedCategoryId: selectedCategoryId,
+                                onCategorySelected: _handleCategorySelection,
                               );
                             },
                           ),
-                        ),
+                        ],
                       ],
                     );
                   },
                 ),
               ),
-            ],
+            ];
+          },
+          body: ValueListenableBuilder<String?>(
+            valueListenable: _selectedUserId,
+            builder: (context, selectedId, _) {
+              if (selectedId == null ||
+                  state.effectiveBlockedUsers.contains(selectedId)) {
+                return const SizedBox.shrink();
+              }
+
+              _categoryPages = [
+                null,
+                ...state.categories.map((c) => c['id'] as String?),
+              ];
+
+              return PageView.builder(
+                controller: _categoryPageController,
+                onPageChanged: _onCategoryPageChanged,
+                itemCount: _categoryPages.length,
+                itemBuilder: (context, index) {
+                  final catId = _categoryPages[index];
+
+                  return FollowingPostsList(
+                    key: PageStorageKey('follow_${selectedId}_$catId'),
+                    userId: selectedId,
+                    categoryId: catId,
+                  );
+                },
+              );
+            },
           ),
         );
       },
