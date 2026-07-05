@@ -111,13 +111,14 @@ class DirectChatTile extends ConsumerWidget {
                     _buildMenuOption(
                       label: '차단하기',
                       onTap: () async {
-                        Navigator.pop(tileContext);
+                        final navigator = Navigator.of(tileContext);
+                        navigator.pop();
                         if (userId.isEmpty) return;
                         showLoadingDialog(tileContext);
                         await ref
                             .read(feedControllerProvider.notifier)
                             .blockUser(userIdToBlock: userId);
-                        if (tileContext.mounted) Navigator.pop(tileContext);
+                        navigator.pop();
                       },
                     ),
                     Divider(
@@ -131,12 +132,13 @@ class DirectChatTile extends ConsumerWidget {
                       label: '나가기',
                       isLast: true,
                       onTap: () async {
-                        Navigator.pop(tileContext);
+                        final navigator = Navigator.of(tileContext);
+                        navigator.pop();
                         showLoadingDialog(tileContext);
                         await ref
                             .read(chatControllerProvider.notifier)
                             .softDeleteChatForCurrentUser(chat.id);
-                        if (tileContext.mounted) Navigator.pop(tileContext);
+                        navigator.pop();
                       },
                     ),
                     SizedBox(height: 8.h),
