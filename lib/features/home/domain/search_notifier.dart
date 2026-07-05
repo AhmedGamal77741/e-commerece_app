@@ -54,18 +54,21 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
       ref.listen(currentUserProfileProvider, (previous, next) {
         if (next.value != null) {
           _cachedBlockedUsers = List<String>.from(next.value!['blocked'] ?? []);
+          if (previous != null) _initStreams();
         }
       }, fireImmediately: true);
 
       ref.listen(hiddenFriendsListProvider(currentUserId), (previous, next) {
         if (next.value != null) {
           _cachedHiddenFriends = next.value!.toSet();
+          if (previous != null) _initStreams();
         }
       }, fireImmediately: true);
 
       ref.listen(followingSetProvider(currentUserId), (previous, next) {
         if (next.value != null) {
           _cachedFollowingSet = next.value!.toSet();
+          if (previous != null) _initStreams();
         }
       }, fireImmediately: true);
     }
