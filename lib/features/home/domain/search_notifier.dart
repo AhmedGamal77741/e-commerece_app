@@ -48,6 +48,28 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
       _postsSub?.cancel();
       _usersSub?.cancel();
     });
+
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId != null) {
+      ref.listen(currentUserProfileProvider, (previous, next) {
+        if (next.value != null) {
+          _cachedBlockedUsers = List<String>.from(next.value!['blocked'] ?? []);
+        }
+      }, fireImmediately: true);
+
+      ref.listen(hiddenFriendsListProvider(currentUserId), (previous, next) {
+        if (next.value != null) {
+          _cachedHiddenFriends = next.value!.toSet();
+        }
+      }, fireImmediately: true);
+
+      ref.listen(followingSetProvider(currentUserId), (previous, next) {
+        if (next.value != null) {
+          _cachedFollowingSet = next.value!.toSet();
+        }
+      }, fireImmediately: true);
+    }
+
     return SearchState();
   }
 
@@ -79,23 +101,6 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
     final String currentQuery = _query;
 
     final feedController = ref.read(feedControllerProvider.notifier);
-
-    // Always fetch latest block list, hidden friends and following list from providers
-    if (currentUserId != null) {
-      try {
-        final userProfile = await ref.read(currentUserProfileProvider.future);
-        if (userProfile != null) {
-          _cachedBlockedUsers = List<String>.from(userProfile['blocked'] ?? []);
-        }
-        final hiddenList = await ref.read(hiddenFriendsListProvider(currentUserId).future);
-        _cachedHiddenFriends = hiddenList.toSet();
-
-        final followingList = await ref.read(followingSetProvider(currentUserId).future);
-        _cachedFollowingSet = followingList.toSet();
-      } catch (e) {
-        debugPrint('Error fetching user search context: $e');
-      }
-    }
 
     if (currentQuery != _query) return;
 
