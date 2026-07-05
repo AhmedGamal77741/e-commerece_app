@@ -104,8 +104,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       validator: (val) {
                         if (val == null || val.isEmpty) {
                           return '이름을 입력하세요';
-                        } else if (val.length > 30) {
-                          return '이름이 너무 깁니다';
+                        } else if (val.length > 7) {
+                          return '이름은 최대 7자까지 가능합니다';
+                        } else if (!RegExp(r'^[가-힣]+$').hasMatch(val)) {
+                          return '띄어쓰기, 숫자, 기호 없이 한글만 가능합니다';
                         }
                         return null;
                       },

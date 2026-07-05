@@ -106,6 +106,21 @@ class _MyPageState extends ConsumerState<MyPage> {
                   WideTextButton(
                     txt: '저장',
                     func: () async {
+                      final newName = _nicknameController.text.trim();
+                      if (newName.isEmpty || newName.length > 7 || !RegExp(r'^[가-힣]+$').hasMatch(newName)) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '이름은 띄어쓰기, 숫자, 기호 없이 한글 최대 7자까지 가능합니다',
+                                style: TextStyle(fontSize: 14.sp),
+                              ),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+
                       String? currentPassword;
                       if (_passwordController.text.isNotEmpty) {
                         currentPassword = await showDialog<String>(
