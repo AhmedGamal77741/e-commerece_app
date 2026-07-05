@@ -183,29 +183,34 @@ class FollowController {
       final currentFollowers =
           currentFollowersSnapshot.docs.map((doc) => doc.id).toSet();
 
-      // For each person the current user follows, get their following list
-      for (final followingId in followingIds) {
-        try {
-          final theirFollowingSnapshot = await _firestore
-              .collection('users')
-              .doc(followingId)
-              .collection('following')
-              .get();
-
-          for (final doc in theirFollowingSnapshot.docs) {
-            final userId = doc.id;
-            // Skip current user
-            if (userId == currentUserId) continue;
-            // Skip people already following or followers
-            if (currentFollowers.contains(userId)) continue;
-            // Skip people current user already follows
-            if (followingIds.contains(userId)) continue;
-
-            // Count occurrences
-            recommendations[userId] = (recommendations[userId] ?? 0) + 1;
+      // For each person the current user follows, get their following list concurrently
+      final followingSnapshots = await Future.wait(
+        followingIds.map((followingId) async {
+          try {
+            return await _firestore
+                .collection('users')
+                .doc(followingId)
+                .collection('following')
+                .get();
+          } catch (_) {
+            return null;
           }
-        } catch (e) {
-          continue;
+        }),
+      );
+
+      for (final theirFollowingSnapshot in followingSnapshots) {
+        if (theirFollowingSnapshot == null) continue;
+        for (final doc in theirFollowingSnapshot.docs) {
+          final userId = doc.id;
+          // Skip current user
+          if (userId == currentUserId) continue;
+          // Skip people already following or followers
+          if (currentFollowers.contains(userId)) continue;
+          // Skip people current user already follows
+          if (followingIds.contains(userId)) continue;
+
+          // Count occurrences
+          recommendations[userId] = (recommendations[userId] ?? 0) + 1;
         }
       }
 
@@ -214,16 +219,25 @@ class FollowController {
         ..sort((a, b) => b.value.compareTo(a.value));
 
       final result = <String, Map<String, dynamic>>{};
-      for (final entry in sortedRecs.take(20)) {
-        try {
-          final userDoc = await _firestore.collection('users').doc(entry.key).get();
+      final topRecs = sortedRecs.take(20).toList();
 
-          if (userDoc.exists) {
-            final user = MyUser.fromDocument(userDoc.data() as Map<String, dynamic>);
-            result[entry.key] = {'user': user, 'count': entry.value};
+      if (topRecs.isNotEmpty) {
+        // Fetch user documents concurrently
+        final userDocFutures = topRecs.map((entry) async {
+          try {
+            return await _firestore.collection('users').doc(entry.key).get();
+          } catch (_) {
+            return null;
           }
-        } catch (e) {
-          continue;
+        });
+        final userDocs = await Future.wait(userDocFutures);
+
+        for (int i = 0; i < topRecs.length; i++) {
+          final doc = userDocs[i];
+          if (doc != null && doc.exists) {
+            final user = MyUser.fromDocument(doc.data() as Map<String, dynamic>);
+            result[topRecs[i].key] = {'user': user, 'count': topRecs[i].value};
+          }
         }
       }
 

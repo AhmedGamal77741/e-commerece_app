@@ -3,7 +3,6 @@ import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -22,7 +21,6 @@ class _RequestsState extends ConsumerState<Requests> {
   String searchQuery = '';
   late Future<Map<String, Map<String, dynamic>>> _recommendationsFuture;
   bool _recommendationsInitialized = false;
-  final ContactService _contactService = ContactService();
 
   @override
   void initState() {
@@ -46,10 +44,9 @@ class _RequestsState extends ConsumerState<Requests> {
           .getFollowingIds(currentUserId);
 
       // Compute recommendations ONCE and cache the Future (includes both recommendations and contacts)
-      _recommendationsFuture = _buildFriendRecommendationsWithContacts(
-        currentUserId,
-        followingIds,
-      );
+      _recommendationsFuture = ref
+          .read(followControllerProvider)
+          .getFriendRecommendations(currentUserId, followingIds);
       _recommendationsInitialized = true;
 
       // Trigger rebuild
@@ -897,15 +894,6 @@ class _RequestsState extends ConsumerState<Requests> {
     );
   }
 
-  Future<Map<String, Map<String, dynamic>>> _buildFriendRecommendations(
-    String currentUserId,
-    List<String> followingIds,
-  ) async {
-    return await ref
-        .read(followControllerProvider)
-        .getFriendRecommendations(currentUserId, followingIds);
-  }
-
   Future<void> _unblockUser(String blockedUserId, String currentUserId) async {
     try {
       await ref
@@ -923,76 +911,6 @@ class _RequestsState extends ConsumerState<Requests> {
           context,
         ).showSnackBar(SnackBar(content: Text('오류: $e')));
       }
-    }
-  }
-
-  Future<Map<String, Map<String, dynamic>>>
-  _buildFriendRecommendationsWithContacts(
-    String currentUserId,
-    List<String> followingIds,
-  ) async {
-    try {
-      // Get friend recommendations first
-      final recommendations = await _buildFriendRecommendations(
-        currentUserId,
-        followingIds,
-      );
-
-      // Get contact matches
-      final contactMatches = await _getContactMatches(
-        currentUserId,
-        followingIds,
-      );
-
-      // Merge contacts with recommendations (contacts won't override recommendations)
-      for (final entry in contactMatches.entries) {
-        if (!recommendations.containsKey(entry.key)) {
-          recommendations[entry.key] = entry.value;
-        }
-      }
-
-      return recommendations;
-    } catch (e) {
-      debugPrint('Error building recommendations with contacts: $e');
-      return {};
-    }
-  }
-
-  Future<Map<String, Map<String, dynamic>>> _getContactMatches(
-    String currentUserId,
-    List<String> followingIds,
-  ) async {
-    try {
-      // Get phone contacts
-      final contacts = await _contactService.getPhoneContacts();
-      final phoneNumbers = _contactService.extractPhoneNumbers(contacts);
-
-      // Find users matching phone numbers
-      final matchingUsers = await _contactService.findUsersByPhoneNumbers(
-        phoneNumbers,
-      );
-
-      final currentFollowers = await ref
-          .read(feedControllerProvider.notifier)
-          .getFollowersIds(currentUserId);
-
-      // Filter and build result
-      final result = <String, Map<String, dynamic>>{};
-      for (final user in matchingUsers) {
-        // Skip self
-        if (user.userId == currentUserId) continue;
-        // Skip if already following
-        if (followingIds.contains(user.userId)) continue;
-        // Skip if already a follower
-        if (currentFollowers.contains(user.userId)) continue;
-
-        result[user.userId] = {'user': user, 'count': 0, 'isContact': true};
-      }
-
-      return result;
-    } catch (e) {
-      debugPrint('Error getting contact matches: $e');
-      return {};
     }
   }
 }
