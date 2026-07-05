@@ -1,4 +1,4 @@
-import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
@@ -114,11 +114,9 @@ class DirectChatTile extends ConsumerWidget {
                         final navigator = Navigator.of(tileContext);
                         navigator.pop();
                         if (userId.isEmpty) return;
-                        showLoadingDialog(tileContext);
                         await ref
                             .read(feedControllerProvider.notifier)
                             .blockUser(userIdToBlock: userId);
-                        navigator.pop();
                       },
                     ),
                     Divider(
@@ -134,11 +132,9 @@ class DirectChatTile extends ConsumerWidget {
                       onTap: () async {
                         final navigator = Navigator.of(tileContext);
                         navigator.pop();
-                        showLoadingDialog(tileContext);
                         await ref
                             .read(chatControllerProvider.notifier)
                             .softDeleteChatForCurrentUser(chat.id);
-                        navigator.pop();
                       },
                     ),
                     SizedBox(height: 8.h),
