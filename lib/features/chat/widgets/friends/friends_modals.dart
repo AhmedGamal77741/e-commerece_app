@@ -852,7 +852,7 @@ Future<void> showCreateGroupDialog({
   List<String> selectedUserIds = [];
   String? groupImagePath;
   String groupSearch = '';
-  final friends = ref.read(friendsProvider).value ?? <MyUser>[];
+  final friends = await ref.read(friendsProvider.future);
   if (!context.mounted) return;
 
   await showDialog(
