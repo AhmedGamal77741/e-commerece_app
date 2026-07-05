@@ -101,7 +101,7 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                       child: Container(
                         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
+                          color: const Color(0xFFEEEEEE),
                           borderRadius: BorderRadius.all(Radius.circular(16.r)),
                         ),
                         child: Column(
