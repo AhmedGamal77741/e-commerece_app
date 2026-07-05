@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
 
 const _kBgColor = Color(0xFFF2F2F2);
 const _kInputBg = Color(0xFFE8E8E8);
@@ -21,6 +24,11 @@ class InputBar extends StatelessWidget {
     required this.onSend,
     this.autofocus = false,
   });
+
+  bool get _isDesktopOrWeb {
+    if (kIsWeb) return true;
+    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,24 +65,43 @@ class InputBar extends StatelessWidget {
                       ),
                     ),
                     Expanded(
-                      child: TextField(
-                        controller: controller,
-                        autofocus: autofocus,
-                        maxLines: 4,
-                        minLines: 1,
-                        style: TextStyle(fontSize: 14.sp, color: Colors.black),
-                        decoration: InputDecoration(
-                          hintText: '메시지 입력',
-                          hintStyle: TextStyle(
-                            fontSize: 14.sp,
-                            color: Colors.grey[400],
-                          ),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.only(
-                            right: 12.w,
-                            top: 10.h,
-                            bottom: 10.h,
+                      child: Focus(
+                        onKeyEvent: (node, event) {
+                          if (_isDesktopOrWeb) {
+                            if (event is KeyDownEvent &&
+                                event.logicalKey == LogicalKeyboardKey.enter) {
+                              if (HardwareKeyboard.instance.isShiftPressed) {
+                                return KeyEventResult.ignored; // Add a new line
+                              } else {
+                                final text = controller.text.trim();
+                                if (text.isNotEmpty || pickedImage != null) {
+                                  onSend();
+                                }
+                                return KeyEventResult.handled; // Prevent default new line
+                              }
+                            }
+                          }
+                          return KeyEventResult.ignored;
+                        },
+                        child: TextField(
+                          controller: controller,
+                          autofocus: autofocus,
+                          maxLines: 4,
+                          minLines: 1,
+                          style: TextStyle(fontSize: 14.sp, color: Colors.black),
+                          decoration: InputDecoration(
+                            hintText: '메시지 입력',
+                            hintStyle: TextStyle(
+                              fontSize: 14.sp,
+                              color: Colors.grey[400],
+                            ),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.only(
+                              right: 12.w,
+                              top: 10.h,
+                              bottom: 10.h,
+                            ),
                           ),
                         ),
                       ),

@@ -22,15 +22,7 @@ class UserCategoriesBar extends StatelessWidget {
     final theme = Theme.of(context);
     
     if (categories.isEmpty) {
-      return SizedBox(
-        height: 50.h,
-        child: Center(
-          child: Text(
-            '카테고리가 없습니다',
-            style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     return Container(
