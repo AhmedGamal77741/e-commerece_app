@@ -3,7 +3,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/theming/colors.dart';
+
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/home/widgets/guest_preview.dart/guest_post_item.dart';
@@ -263,24 +263,21 @@ class _PostsPageState extends ConsumerState<_PostsPage>
             }
             return RepaintBoundary(
               key: ValueKey(doc.id),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                child: Column(
-                  children: [
-                    if (index != 0) Divider(color: ColorsManager.primary100),
-                    isGuest
-                        ? GuestPostItem(
-                          post: post,
-                          currentProfileUserId: widget.userId,
-                        )
-                        : PostItem(
-                          postId: doc.id,
-                          fromComments: false,
-                          currentProfileUserId: widget.userId,
-                          postData: post,
-                        ),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  isGuest
+                      ? GuestPostItem(
+                        post: post,
+                        currentProfileUserId: widget.userId,
+                      )
+                      : PostItem(
+                        postId: doc.id,
+                        fromComments: false,
+                        currentProfileUserId: widget.userId,
+                        postData: post,
+                      ),
+                  SizedBox(height: 10.h),
+                ],
               ),
             );
           },
