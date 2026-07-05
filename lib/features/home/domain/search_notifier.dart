@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -39,12 +38,9 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
   StreamSubscription? _postsSub;
   StreamSubscription? _usersSub;
 
-  // Cache for current user's search context
-  String? _cachedUserId;
   List<String> _cachedBlockedUsers = const [];
   Set<String> _cachedHiddenFriends = const {};
   Set<String> _cachedFollowingSet = const {};
-  bool _hasFetchedUserData = false;
 
   @override
   FutureOr<SearchState> build() {
@@ -84,37 +80,18 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
 
     final feedController = ref.read(feedControllerProvider.notifier);
 
-    // Fetch user block list, hidden friends and following list once if not cached for the current session
-    if (currentUserId != null && (!_hasFetchedUserData || _cachedUserId != currentUserId)) {
+    // Always fetch latest block list, hidden friends and following list from providers
+    if (currentUserId != null) {
       try {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUserId)
-            .get();
-        final userData = userDoc.data() ?? {};
-        _cachedBlockedUsers = List<String>.from(userData['blocked'] ?? []);
-        
-        final hiddenFriendsSnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUserId)
-            .collection('hiddenFriends')
-            .get();
-        _cachedHiddenFriends = hiddenFriendsSnapshot.docs.map((d) => d.id).toSet();
-
-        final isPremium = userData['isSub'] == true;
-
-        if (isPremium) {
-          final followingSnapshot = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(currentUserId)
-              .collection('following')
-              .get();
-          _cachedFollowingSet = followingSnapshot.docs.map((d) => d.id).toSet();
-        } else {
-          _cachedFollowingSet = const {};
+        final userProfile = await ref.read(currentUserProfileProvider.future);
+        if (userProfile != null) {
+          _cachedBlockedUsers = List<String>.from(userProfile['blocked'] ?? []);
         }
-        _cachedUserId = currentUserId;
-        _hasFetchedUserData = true;
+        final hiddenList = await ref.read(hiddenFriendsListProvider(currentUserId).future);
+        _cachedHiddenFriends = hiddenList.toSet();
+
+        final followingList = await ref.read(followingSetProvider(currentUserId).future);
+        _cachedFollowingSet = followingList.toSet();
       } catch (e) {
         debugPrint('Error fetching user search context: $e');
       }
@@ -219,6 +196,7 @@ class SearchNotifier extends AsyncNotifier<SearchState> {
             .where((user) {
               if (user.userId.isEmpty) return false;
               if (_cachedBlockedUsers.contains(user.userId)) return false;
+              if (_cachedHiddenFriends.contains(user.userId)) return false;
               
               if (currentUserId != null) {
                 final userBlockedList = user.blocked ?? [];

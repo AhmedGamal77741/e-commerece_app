@@ -184,6 +184,10 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
   FutureOr<List<Map<String, dynamic>>> build() async {
     ref.watch(authStateProvider);
     ref.watch(currentUserProfileProvider);
+    final user = ref.read(authStateProvider).value;
+    if (user != null) {
+      ref.watch(hiddenFriendsListProvider(user.uid));
+    }
 
     final postsAsync = ref.watch(allPostsStreamProvider);
 
