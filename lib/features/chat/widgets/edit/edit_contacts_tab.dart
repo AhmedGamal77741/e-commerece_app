@@ -215,12 +215,7 @@ class _EditContactsTabState extends ConsumerState<EditContactsTab> {
                                 .where((u) => hiddenIds.contains(u.userId))
                                 .toList();
 
-                        return FutureBuilder<List<MyUser>>(
-                          future: _fetchBlockedUsers(blockedIds),
-                          builder: (ctx, blockedUsersSnap) {
-                            final blockedUsers = blockedUsersSnap.data ?? [];
-
-                            return ListView(
+                        return ListView(
                               children: [
                                 if (favorites.isNotEmpty) ...[
                                   _sectionHeader('즐겨찾기'),
@@ -348,24 +343,19 @@ class _EditContactsTabState extends ConsumerState<EditContactsTab> {
                                     ),
                                   ),
                                 ],
-                                if (blockedUsers.isNotEmpty) ...[
+                                if (blockedIds.isNotEmpty) ...[
                                   _sectionHeader('차단된 친구'),
-                                  ...blockedUsers.map(
-                                    (u) => _friendRow(
-                                      user: u,
-                                      trailing: _pillButton(
-                                        '해제',
-                                        () => _unblock(u.userId),
-                                        color: Colors.red[400],
-                                      ),
+                                  ...blockedIds.map(
+                                    (id) => BlockedUserRow(
+                                      userId: id,
+                                      onUnblock: () => _unblock(id),
+                                      buildRow: (user, trailing) => _friendRow(user: user, trailing: trailing),
                                     ),
                                   ),
                                 ],
                                 SizedBox(height: 40.h),
                               ],
                             );
-                          },
-                        );
                       },
                     );
                   },
@@ -378,19 +368,47 @@ class _EditContactsTabState extends ConsumerState<EditContactsTab> {
     );
   }
 
-  Future<List<MyUser>> _fetchBlockedUsers(List<String> ids) async {
-    if (ids.isEmpty) return [];
-    final results = await Future.wait(
-      ids.map((id) async {
-        try {
-          final doc = await ref.read(userProfileDocProvider(id).future);
-          if (doc != null && doc.exists) {
-            return MyUser.fromDocument(doc.data() as Map<String, dynamic>);
-          }
-        } catch (_) {}
-        return null;
-      }),
+}
+
+class BlockedUserRow extends ConsumerWidget {
+  final String userId;
+  final VoidCallback onUnblock;
+  final Widget Function(MyUser user, Widget trailing) buildRow;
+
+  const BlockedUserRow({
+    super.key,
+    required this.userId,
+    required this.onUnblock,
+    required this.buildRow,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final docAsync = ref.watch(userProfileDocProvider(userId));
+    return docAsync.when(
+      data: (doc) {
+        if (doc == null || !doc.exists) return const SizedBox.shrink();
+        final user = MyUser.fromDocument(doc.data() as Map<String, dynamic>);
+        return buildRow(
+          user,
+          GestureDetector(
+            onTap: onUnblock,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Text(
+                '해제',
+                style: TextStyle(fontSize: 12.sp, color: Colors.red[400]),
+              ),
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
-    return results.whereType<MyUser>().toList();
   }
 }
