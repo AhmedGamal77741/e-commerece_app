@@ -20,7 +20,10 @@ import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_re
 import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_bottom_bar.dart';
 import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_bottom_sheets.dart';
 
-final _cartRefreshProvider = FutureProvider.autoDispose.family<void, String>((ref, uid) async {
+final _cartRefreshProvider = FutureProvider.autoDispose.family<void, String>((
+  ref,
+  uid,
+) async {
   ref.read(cartRepositoryProvider).refreshCartPrices(uid);
 });
 
@@ -31,9 +34,7 @@ class PlaceOrder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
-      overrides: [
-        checkoutFormPaymentIdProvider.overrideWithValue(paymentId),
-      ],
+      overrides: [checkoutFormPaymentIdProvider.overrideWithValue(paymentId)],
       child: PlaceOrderContent(),
     );
   }
@@ -47,7 +48,9 @@ class PlaceOrderContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = ref.watch(currentUserIdProvider);
-    if (uid.isEmpty) return const Scaffold(body: Center(child: Text('로그인이 필요합니다.')));
+    if (uid.isEmpty) {
+      return const Scaffold(body: Center(child: Text('로그인이 필요합니다.')));
+    }
 
     // Trigger cart price refresh on load
     ref.watch(_cartRefreshProvider(uid));
@@ -72,7 +75,8 @@ class PlaceOrderContent extends ConsumerWidget {
         ),
         body: asyncState.when(
           data: (state) {
-            final bankAccounts = ref.watch(bankAccountsStreamProvider).value ?? [];
+            final bankAccounts =
+                ref.watch(bankAccountsStreamProvider).value ?? [];
 
             return Padding(
               padding: EdgeInsets.only(left: 15.w, top: 10.h, right: 15.w),
@@ -87,9 +91,16 @@ class PlaceOrderContent extends ConsumerWidget {
                       uid: uid,
                       address: state.address,
                       onSelectAddress: () async {
-                        final dynamic result = await context.pushNamed(Routes.addressListScreen);
+                        final dynamic result = await context.pushNamed(
+                          Routes.addressListScreen,
+                        );
                         if (result != null) {
-                          ref.read(checkoutFormControllerProvider.notifier).setAddress(result, ref.read(checkoutFormPaymentIdProvider) ?? '');
+                          ref
+                              .read(checkoutFormControllerProvider.notifier)
+                              .setAddress(
+                                result,
+                                ref.read(checkoutFormPaymentIdProvider) ?? '',
+                              );
                         }
                       },
                     ),
@@ -100,9 +111,15 @@ class PlaceOrderContent extends ConsumerWidget {
                       selectedRequest: state.selectedRequest,
                       manualRequest: state.manualRequest,
                       onManualRequestChanged: (text) {
-                        ref.read(checkoutFormControllerProvider.notifier).setManualRequest(text);
+                        ref
+                            .read(checkoutFormControllerProvider.notifier)
+                            .setManualRequest(text);
                       },
-                      onShowSheet: () => CheckoutBottomSheets.showDeliveryRequestSheet(context, ref),
+                      onShowSheet:
+                          () => CheckoutBottomSheets.showDeliveryRequestSheet(
+                            context,
+                            ref,
+                          ),
                     ),
                   ),
                   verticalSpace(10),
@@ -110,14 +127,23 @@ class PlaceOrderContent extends ConsumerWidget {
                     child: CheckoutPaymentSelector(
                       bankAccounts: bankAccounts,
                       selectedBankIndex: state.selectedBankIndex,
-                      onShowBottomSheet: () => CheckoutBottomSheets.showBankAccountBottomSheet(context, ref),
+                      onShowBottomSheet:
+                          () => CheckoutBottomSheets.showBankAccountBottomSheet(
+                            context,
+                            ref,
+                          ),
                     ),
                   ),
                   verticalSpace(10),
                   CheckoutSectionCard(
                     child: CheckoutReceiptOption(
                       selectedOption: state.selectedOption,
-                      onShowBottomSheet: () => CheckoutBottomSheets.showReceiptBottomSheet(context, ref, _bottomSheetFormKey),
+                      onShowBottomSheet:
+                          () => CheckoutBottomSheets.showReceiptBottomSheet(
+                            context,
+                            ref,
+                            _bottomSheetFormKey,
+                          ),
                     ),
                   ),
                   verticalSpace(15.h),
@@ -125,12 +151,16 @@ class PlaceOrderContent extends ConsumerWidget {
               ),
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator(color: Colors.black)),
+          loading:
+              () => const Center(
+                child: CircularProgressIndicator(color: Colors.black),
+              ),
           error: (e, st) => Center(child: Text('오류가 발생했습니다: $e')),
         ),
         bottomNavigationBar: asyncState.maybeWhen(
           data: (state) {
-            final bankAccounts = ref.watch(bankAccountsStreamProvider).value ?? [];
+            final bankAccounts =
+                ref.watch(bankAccountsStreamProvider).value ?? [];
             final cartSnapshot = ref.watch(userCartStreamProvider).value;
             final totalPrice = ref.watch(cartTotalProvider);
 
@@ -142,8 +172,10 @@ class PlaceOrderContent extends ConsumerWidget {
               pendingPrice: totalPrice,
               isProcessing: state.isProcessing,
               onValidate: () async {
-                final controller = ref.read(checkoutFormControllerProvider.notifier);
-                
+                final controller = ref.read(
+                  checkoutFormControllerProvider.notifier,
+                );
+
                 if (state.selectedOption != 1 && state.selectedOption != 2) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -153,11 +185,15 @@ class PlaceOrderContent extends ConsumerWidget {
                   );
                   return false;
                 }
-                
-                if (!controller.validateReceiptTypeFields(context)) return false;
-                
+
+                if (!controller.validateReceiptTypeFields(context)) {
+                  return false;
+                }
+
                 if (state.address.id.isEmpty) {
-                  final result = await context.pushNamed(Routes.addAddressScreen);
+                  final result = await context.pushNamed(
+                    Routes.addAddressScreen,
+                  );
                   if (result != true) {
                     return false;
                   }
@@ -165,13 +201,16 @@ class PlaceOrderContent extends ConsumerWidget {
                   await controller.reloadAddressAndInstructions();
                   return false;
                 }
-                
+
                 if (bankAccounts.isEmpty || state.selectedBankIndex < 0) {
                   CheckoutBottomSheets.showBankAccountBottomSheet(context, ref);
                   return false;
                 }
-                
-                final payerId = bankAccounts[state.selectedBankIndex]['payerId'] as String? ?? '';
+
+                final payerId =
+                    bankAccounts[state.selectedBankIndex]['payerId']
+                        as String? ??
+                    '';
                 if (payerId.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -185,22 +224,33 @@ class PlaceOrderContent extends ConsumerWidget {
               },
               onSlideComplete: () {
                 _showLoadingModal(context);
-                ref.read(checkoutFormControllerProvider.notifier).handlePlaceOrder(
-                  context: context,
-                  uid: uid,
-                  bankAccounts: bankAccounts,
-                  isCartCheckout: true,
-                  onSuccess: () {
-                    Navigator.of(context, rootNavigator: true).pop(); // pop loading modal
-                    context.go(Routes.orderCompleteScreen);
-                  },
-                  onError: (msg) {
-                    Navigator.of(context, rootNavigator: true).pop(); // pop loading modal
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+                ref
+                    .read(checkoutFormControllerProvider.notifier)
+                    .handlePlaceOrder(
+                      context: context,
+                      uid: uid,
+                      bankAccounts: bankAccounts,
+                      isCartCheckout: true,
+                      onSuccess: () {
+                        Navigator.of(
+                          context,
+                          rootNavigator: true,
+                        ).pop(); // pop loading modal
+                        context.go(Routes.orderCompleteScreen);
+                      },
+                      onError: (msg) {
+                        Navigator.of(
+                          context,
+                          rootNavigator: true,
+                        ).pop(); // pop loading modal
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(msg),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      },
                     );
-                  },
-                );
               },
             );
           },
@@ -214,43 +264,44 @@ class PlaceOrderContent extends ConsumerWidget {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const PopScope(
-        canPop: false,
-        child: Center(
-          child: Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox.shrink(),
-                  SizedBox(height: 16),
-                  Text(
-                    '결제 처리 중입니다...',
-                    style: TextStyle(
-                      fontFamily: 'NotoSans',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
+      builder:
+          (_) => const PopScope(
+            canPop: false,
+            child: Center(
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox.shrink(),
+                      SizedBox(height: 16),
+                      Text(
+                        '결제 처리 중입니다...',
+                        style: TextStyle(
+                          fontFamily: 'NotoSans',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '잠시만 기다려 주세요',
+                        style: TextStyle(
+                          fontFamily: 'NotoSans',
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    '잠시만 기다려 주세요',
-                    style: TextStyle(
-                      fontFamily: 'NotoSans',
-                      color: Colors.grey,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
     );
   }
 }

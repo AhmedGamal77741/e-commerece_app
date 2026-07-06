@@ -19,8 +19,27 @@ class AddressRepository {
     final snapshot =
         await _addressesCollection.orderBy('createdAt', descending: true).get();
     return snapshot.docs
-        .map((doc) => Address.fromMap(doc.data() as Map<String, dynamic>))
+        .map(
+          (doc) => Address.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+        )
         .toList();
+  }
+
+  Stream<List<Address>> addressesStream() {
+    return _addressesCollection
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => Address.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   Future<void> addAddress({
@@ -38,7 +57,8 @@ class AddressRepository {
     final batch = _firestore.batch();
 
     if (shouldBeDefault && !isFirstAddress) {
-      final defaultAddresses = await _addressesCollection.where('isDefault', isEqualTo: true).get();
+      final defaultAddresses =
+          await _addressesCollection.where('isDefault', isEqualTo: true).get();
       for (var doc in defaultAddresses.docs) {
         batch.update(doc.reference, {'isDefault': false});
       }
@@ -59,7 +79,9 @@ class AddressRepository {
     batch.set(docRef, addressData);
 
     if (shouldBeDefault) {
-      batch.update(_userDocument, {'defaultAddressId': docRef.id});
+      batch.set(_userDocument, {
+        'defaultAddressId': docRef.id,
+      }, SetOptions(merge: true));
     }
 
     await batch.commit();
@@ -89,10 +111,16 @@ class AddressRepository {
         }
 
         if (nextDefault != null) {
-          batch.update(_userDocument, {'defaultAddressId': nextDefault.id});
-          batch.update(nextDefault.reference, {'isDefault': true});
+          batch.set(_userDocument, {
+            'defaultAddressId': nextDefault.id,
+          }, SetOptions(merge: true));
+          batch.set(nextDefault.reference, {
+            'isDefault': true,
+          }, SetOptions(merge: true));
         } else {
-          batch.update(_userDocument, {'defaultAddressId': null});
+          batch.set(_userDocument, {
+            'defaultAddressId': null,
+          }, SetOptions(merge: true));
         }
       }
 
@@ -112,12 +140,18 @@ class AddressRepository {
 
       for (var doc in defaultAddresses.docs) {
         if (doc.id != addressId) {
-          batch.update(doc.reference, {'isDefault': false});
+          batch.set(doc.reference, {
+            'isDefault': false,
+          }, SetOptions(merge: true));
         }
       }
 
-      batch.update(_addressesCollection.doc(addressId), {'isDefault': true});
-      batch.update(_userDocument, {'defaultAddressId': addressId});
+      batch.set(_addressesCollection.doc(addressId), {
+        'isDefault': true,
+      }, SetOptions(merge: true));
+      batch.set(_userDocument, {
+        'defaultAddressId': addressId,
+      }, SetOptions(merge: true));
 
       await batch.commit();
       return true;
@@ -132,7 +166,7 @@ class AddressRepository {
     WriteBatch batch = _firestore.batch();
     for (var doc in addressesSnapshot.docs) {
       if (doc.get('isDefault') == true) {
-        batch.update(doc.reference, {'isDefault': false});
+        batch.set(doc.reference, {'isDefault': false}, SetOptions(merge: true));
       }
     }
 
@@ -151,7 +185,10 @@ class AddressRepository {
         DocumentSnapshot addressDoc =
             await _addressesCollection.doc(defaultAddressId).get();
         if (addressDoc.exists) {
-          return Address.fromMap(addressDoc.data() as Map<String, dynamic>);
+          return Address.fromMap(
+            addressDoc.data() as Map<String, dynamic>,
+            addressDoc.id,
+          );
         }
       }
 

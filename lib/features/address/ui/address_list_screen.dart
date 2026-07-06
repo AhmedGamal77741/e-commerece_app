@@ -58,33 +58,40 @@ class _AddressListScreenState extends ConsumerState<AddressListScreen> {
             ),
           ),
 
-          // Address List
           Expanded(
-            child: addressesAsync.when(
-              loading:
-                  () => const Center(
+            child: () {
+              final addresses = addressesAsync.value;
+              if (addresses == null) {
+                if (addressesAsync.isLoading) {
+                  return const Center(
                     child: CircularProgressIndicator(color: Colors.black),
-                  ),
-              error: (err, stack) => Center(child: Text('오류가 발생했습니다: $err')),
-              data: (addresses) {
-                if (addresses.isEmpty) {
-                  return const Center(child: Text('등록된 배송지가 없습니다'));
+                  );
                 }
+                if (addressesAsync.hasError) {
+                  return Center(
+                    child: Text('오류가 발생했습니다: ${addressesAsync.error}'),
+                  );
+                }
+                return const SizedBox.shrink();
+              }
 
-                return ListView.separated(
-                  itemCount: addresses.length,
-                  separatorBuilder:
-                      (context, index) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final address = addresses[index];
-                    return AddressListItem(
-                      address: address,
-                      onTap: () => _selectAddress(address),
-                    );
-                  },
-                );
-              },
-            ),
+              if (addresses.isEmpty) {
+                return const Center(child: Text('등록된 배송지가 없습니다'));
+              }
+
+              return ListView.separated(
+                key: ValueKey(addresses.map((a) => a.id).join(',')),
+                itemCount: addresses.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final address = addresses[index];
+                  return AddressListItem(
+                    address: address,
+                    onTap: () => _selectAddress(address),
+                  );
+                },
+              );
+            }(),
           ),
         ],
       ),
@@ -105,6 +112,16 @@ class _AddressListScreenState extends ConsumerState<AddressListScreen> {
   }
 
   void _selectAddress(Address address) {
+    try {
+      ref
+          .read(addressControllerProvider.notifier)
+          .setAsDefaultAddress(address.id);
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('오류가 발생했습니다')));
+    }
     Navigator.pop(context, address);
   }
 }

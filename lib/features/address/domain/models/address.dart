@@ -22,9 +22,9 @@ class Address {
   });
 
   // Create Address from Firestore document
-  factory Address.fromMap(Map<String, dynamic> map) {
+  factory Address.fromMap(Map<String, dynamic> map, [String? docId]) {
     return Address(
-      id: map['id'] ?? '',
+      id: map['id'] ?? docId ?? '',
       name: map['name'] ?? '',
       phone: map['phone'] ?? '',
       address: map['address'] ?? '',

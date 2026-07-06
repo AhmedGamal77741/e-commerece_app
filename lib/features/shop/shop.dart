@@ -130,51 +130,60 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
                   children: [
                     Row(
                       children: [
-                        Padding(
-                          padding: EdgeInsets.only(left: 8.w),
-                          child: TextButton(
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 2.w,
-                                vertical: 0,
-                              ),
-                              minimumSize: const Size(0, 0),
-                              maximumSize: Size(200.w, 80.h),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            onPressed:
-                                ref.read(authStateProvider).value == null
-                                    ? null
-                                    : () async {
-                                      await context.pushNamed(
-                                        Routes.addressListScreen,
-                                      );
-                                    },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: _buildAddressText(userAddressAsync),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: 8.w),
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 2.w,
+                                  vertical: 0,
                                 ),
-                                if (ref.watch(authStateProvider).value !=
-                                    null) ...[
-                                  SizedBox(width: 6.w),
-                                  const Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Colors.black,
-                                    size: 18,
-                                  ),
-                                ],
-                              ],
+                                minimumSize: const Size(0, 0),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed:
+                                  ref.read(authStateProvider).value == null
+                                      ? null
+                                      : () async {
+                                        await context.pushNamed(
+                                          Routes.addressListScreen,
+                                        );
+                                      },
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: _buildAddressText(
+                                        userAddressAsync,
+                                      ),
+                                    ),
+                                    if (ref.watch(authStateProvider).value !=
+                                        null) ...[
+                                      const Icon(
+                                        Icons.arrow_drop_down,
+                                        color: Colors.black,
+                                        size: 18,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                        const Spacer(),
+                        horizontalSpace(12),
+
                         InkWell(
                           onTap: () {
                             if (ref.read(authStateProvider).value == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('주문 내역을 보시려면 로그인이 필요합니다')),
+                                const SnackBar(
+                                  content: Text('주문 내역을 보시려면 로그인이 필요합니다'),
+                                ),
                               );
                               return;
                             }
@@ -277,9 +286,9 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
           }
           return Text(
             displayName,
+            style: textStyle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: textStyle,
           );
         },
       ),
