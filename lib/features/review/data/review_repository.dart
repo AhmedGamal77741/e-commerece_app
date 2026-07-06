@@ -38,35 +38,28 @@ class ReviewRepository {
         .map((doc) => doc.exists ? doc.data() : null);
   }
 
-  Future<void> submitExchangeRequest(String userId, String orderId, String reason) async {
-    final docRef = _firestore.collection('exchanges').doc();
-    final exchangeData = {
-      'exchangeId': docRef.id,
+  Future<void> submitRequest(String userId, String orderId, Map<String, dynamic> requestData) async {
+    final type = requestData['type'] == 'exchange' ? 'exchanges' : 'refunds';
+    final docRef = _firestore.collection(type).doc();
+    
+    final payload = {
+      ...requestData,
+      'requestId': docRef.id,
       'userId': userId,
       'orderId': orderId,
-      'reason': reason.trim(),
       'createdAt': DateTime.now().toIso8601String(),
     };
     
-    await _firestore.runTransaction((transaction) async {
-      transaction.set(docRef, exchangeData);
-      transaction.update(_firestore.collection('orders').doc(orderId), {'isRequested': true});
-    });
-  }
+    // Find the settlement document to pause it (so seller doesn't get automatically paid while disputed)
+    final settlementQuery = await _firestore.collection('order_settlement').where('orderId', isEqualTo: orderId).get();
+    final settlementDocs = settlementQuery.docs;
 
-  Future<void> submitRefundRequest(String userId, String orderId, String reason) async {
-    final docRef = _firestore.collection('refunds').doc();
-    final refundData = {
-      'refundId': docRef.id,
-      'userId': userId,
-      'orderId': orderId,
-      'reason': reason.trim(),
-      'createdAt': DateTime.now().toIso8601String(),
-    };
-    
     await _firestore.runTransaction((transaction) async {
-      transaction.set(docRef, refundData);
+      transaction.set(docRef, payload);
       transaction.update(_firestore.collection('orders').doc(orderId), {'isRequested': true});
+      for (var doc in settlementDocs) {
+        transaction.update(doc.reference, {'status': 'disputed'});
+      }
     });
   }
 
