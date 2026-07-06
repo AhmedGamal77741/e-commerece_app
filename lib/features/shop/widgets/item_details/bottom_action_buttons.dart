@@ -63,7 +63,7 @@ class _BottomActionButtonsState extends ConsumerState<BottomActionButtons> {
 
     if (paymentId != null && mounted) {
       Navigator.pop(context); // Dismiss loading dialog
-      context.go('/buy-now?paymentId=$paymentId');
+      context.push('/buy-now?paymentId=$paymentId');
     }
   }
 

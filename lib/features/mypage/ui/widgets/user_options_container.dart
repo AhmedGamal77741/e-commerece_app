@@ -232,12 +232,12 @@ class _UserOptionsContainerState extends ConsumerState<UserOptionsContainer>
                       );
                       if (confirmed == true) {
                         if (context.mounted) {
-                          context.go(Routes.deleteAccount);
+                          context.push(Routes.deleteAccount);
                         }
                       }
                     } else {
                       if (context.mounted) {
-                        context.go(Routes.deleteAccount);
+                        context.push(Routes.deleteAccount);
                       }
                     }
                   },

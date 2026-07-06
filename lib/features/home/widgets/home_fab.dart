@@ -35,7 +35,7 @@ class HomeFAB extends ConsumerWidget {
       elevation: 0,
       highlightElevation: 0,
       onPressed: () {
-        context.go(Routes.addPostScreen);
+        context.push(Routes.addPostScreen);
       },
       child: ClipOval(
         child: Image.asset(

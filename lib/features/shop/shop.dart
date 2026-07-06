@@ -187,7 +187,7 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
                               );
                               return;
                             }
-                            context.go(Routes.reviewScreen);
+                            context.push(Routes.reviewScreen);
                           },
                           child: Image.asset(
                             'assets/order_history.png',
@@ -199,7 +199,7 @@ class ShopState extends ConsumerState<Shop> with TickerProviderStateMixin {
                         horizontalSpace(12),
                         InkWell(
                           onTap: () {
-                            context.go(Routes.shopSearchScreen);
+                            context.push(Routes.shopSearchScreen);
                           },
                           child: Image.asset(
                             'assets/010no_cropped.png',

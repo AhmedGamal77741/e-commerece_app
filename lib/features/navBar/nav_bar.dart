@@ -222,108 +222,114 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
         Navigator.of(context).pop();
       },
       child: Scaffold(
-      // Isolated Consumer: only this subtree rebuilds when auth/profile streams emit.
-      // The BottomNavigationBar and outer Scaffold are untouched.
-      body: RepaintBoundary(
-        child: Consumer(
-          builder: (context, ref, _) {
-            final user = ref.watch(authStateProvider).value;
-            if (user == null) {
-              return IndexedStack(index: _selectedIndex, children: children);
-            }
-            final userProfileAsync = ref.watch(userProfileStreamProvider);
-            if (userProfileAsync.hasValue) {
-              final userData = userProfileAsync.value;
-              if (userData != null && userData['deleted'] == true) {
-                return DeletedAccount(
-                  deletedAt: userData['deletedAt']?.toString() ?? '',
-                  onRecover: () async {
-                    await ref
-                        .read(navBarServiceProvider)
-                        .recoverAccount(user.uid);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('계정이 복구되었습니다.')),
-                      );
-                    }
-                  },
-                  onSignOut: () async {
-                    await ref.read(navBarServiceProvider).signOut();
-                  },
-                );
+        // Isolated Consumer: only this subtree rebuilds when auth/profile streams emit.
+        // The BottomNavigationBar and outer Scaffold are untouched.
+        body: RepaintBoundary(
+          child: Consumer(
+            builder: (context, ref, _) {
+              final user = ref.watch(authStateProvider).value;
+              if (user == null) {
+                return IndexedStack(index: _selectedIndex, children: children);
               }
-            }
-            return IndexedStack(index: _selectedIndex, children: children);
-          },
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: theme.colorScheme.surface,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
-          fontSize: 10.sp,
-        ),
-        unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
-          fontSize: 10.sp,
-        ),
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Image.asset(
-              _selectedIndex == 0 ? 'assets/001m.png' : 'assets/grey_001m.png',
-              width: 30.r,
-              height: 30.r,
-              gaplessPlayback: true,
-              cacheWidth: (30 * devicePixelRatio).toInt(),
-            ),
-            label: '상점',
+              final userProfileAsync = ref.watch(userProfileStreamProvider);
+              if (userProfileAsync.hasValue) {
+                final userData = userProfileAsync.value;
+                if (userData != null && userData['deleted'] == true) {
+                  return DeletedAccount(
+                    deletedAt: userData['deletedAt']?.toString() ?? '',
+                    onRecover: () async {
+                      await ref
+                          .read(navBarServiceProvider)
+                          .recoverAccount(user.uid);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('계정이 복구되었습니다.')),
+                        );
+                      }
+                    },
+                    onSignOut: () async {
+                      await ref.read(navBarServiceProvider).signOut();
+                    },
+                  );
+                }
+              }
+              return IndexedStack(index: _selectedIndex, children: children);
+            },
           ),
-          const BottomNavigationBarItem(
-            icon: ChatNavIcon(isActive: false),
-            activeIcon: ChatNavIcon(isActive: true),
-            label: '채팅',
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: theme.colorScheme.surface,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          type: BottomNavigationBarType.fixed,
+          selectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
+            fontSize: 10.sp,
           ),
-          BottomNavigationBarItem(
-            icon: CircleAvatar(
-              radius: 30.r,
-              backgroundColor: Colors.transparent,
-              backgroundImage: const AssetImage(
-                'assets/mypage_avatar_grey.png',
+          unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
+            fontSize: 10.sp,
+          ),
+          items: <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Image.asset(
+                _selectedIndex == 0
+                    ? 'assets/001m.png'
+                    : 'assets/grey_001m.png',
+                width: 30.r,
+                height: 30.r,
+                gaplessPlayback: true,
+                cacheWidth: (30 * devicePixelRatio).toInt(),
               ),
+              label: '상점',
             ),
-            activeIcon: CircleAvatar(
-              radius: 30.r,
-              backgroundColor: Colors.transparent,
-              backgroundImage: const AssetImage('assets/mypage_avatar.png'),
+            const BottomNavigationBarItem(
+              icon: ChatNavIcon(isActive: false),
+              activeIcon: ChatNavIcon(isActive: true),
+              label: '채팅',
             ),
-            label: '홈',
-          ),
-          BottomNavigationBarItem(
-            icon: Image.asset(
-              _selectedIndex == 3 ? 'assets/002m.png' : 'assets/grey_002m.png',
-              width: 30.r,
-              height: 30.r,
-              gaplessPlayback: true,
-              cacheWidth: (30 * devicePixelRatio).toInt(),
+            BottomNavigationBarItem(
+              icon: CircleAvatar(
+                radius: 30.r,
+                backgroundColor: Colors.transparent,
+                backgroundImage: const AssetImage(
+                  'assets/mypage_avatar_grey.png',
+                ),
+              ),
+              activeIcon: CircleAvatar(
+                radius: 30.r,
+                backgroundColor: Colors.transparent,
+                backgroundImage: const AssetImage('assets/mypage_avatar.png'),
+              ),
+              label: '홈',
             ),
-            label: '장바구니',
-          ),
-          BottomNavigationBarItem(
-            icon: Image.asset(
-              _selectedIndex == 4 ? 'assets/005m.png' : 'assets/grey_005m.png',
-              width: 30.r,
-              height: 30.r,
-              gaplessPlayback: true,
-              cacheWidth: (30 * devicePixelRatio).toInt(),
+            BottomNavigationBarItem(
+              icon: Image.asset(
+                _selectedIndex == 3
+                    ? 'assets/002m.png'
+                    : 'assets/grey_002m.png',
+                width: 30.r,
+                height: 30.r,
+                gaplessPlayback: true,
+                cacheWidth: (30 * devicePixelRatio).toInt(),
+              ),
+              label: '장바구니',
             ),
-            label: '내페이지',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+            BottomNavigationBarItem(
+              icon: Image.asset(
+                _selectedIndex == 4
+                    ? 'assets/005m.png'
+                    : 'assets/grey_005m.png',
+                width: 30.r,
+                height: 30.r,
+                gaplessPlayback: true,
+                cacheWidth: (30 * devicePixelRatio).toInt(),
+              ),
+              label: '내페이지',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+        ),
       ),
-    ),
     );
   }
 }

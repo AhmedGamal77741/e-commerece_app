@@ -74,7 +74,7 @@ class CartCheckoutBar extends ConsumerWidget {
                   if (context.mounted) Navigator.pop(context); // Dismiss loading
 
                   if (context.mounted) {
-                    context.go(Routes.placeOrderScreen);
+                    context.push(Routes.placeOrderScreen);
                   }
                 } catch (e) {
                   if (context.mounted) {
