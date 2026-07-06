@@ -1229,8 +1229,9 @@ Future<void> showCreateGroupDialog({
                                             isDense: true,
                                           ),
                                           onChanged: (val) {
-                                            if (debounce?.isActive ?? false)
+                                            if (debounce?.isActive ?? false) {
                                               debounce!.cancel();
+                                            }
                                             debounce = Timer(
                                               const Duration(milliseconds: 300),
                                               () {

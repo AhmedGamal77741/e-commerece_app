@@ -1,4 +1,4 @@
-
+// ignore_for_file: deprecated_member_use
 import 'package:ecommerece_app/core/helpers/extensions.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
@@ -51,6 +51,7 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
 
   Future<void> _fetchData() async {
     try {
+
       final repo = ref.read(reviewRepositoryProvider);
       final order = await repo.getOrder(widget.orderId);
       if (order != null) {
@@ -63,7 +64,9 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('데이터를 불러오지 못했습니다.')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('데이터를 불러오지 못했습니다.')));
         context.pop();
       }
     }
@@ -72,11 +75,15 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
   void _nextStep() {
     if (_currentStep == 1) {
       if (_reasonType == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('사유를 선택해주세요.')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('사유를 선택해주세요.')));
         return;
       }
       if (_detailReasonController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('상세 사유를 입력해주세요.')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('상세 사유를 입력해주세요.')));
         return;
       }
       if (_reasonType == 'change_mind') {
@@ -84,23 +91,34 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
       }
     } else if (_currentStep == 2) {
       if (_resolutionType == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('해결 방법을 선택해주세요.')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('해결 방법을 선택해주세요.')));
         return;
       }
       if (_collectionSpot == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('상품 회수지를 선택해주세요.')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('상품 회수지를 선택해주세요.')));
         return;
       }
-      if (_collectionSpot == '그 외 장소' && _otherSpotController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('상세 장소를 입력해주세요.')));
+      if (_collectionSpot == '그 외 장소' &&
+          _otherSpotController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('상세 장소를 입력해주세요.')));
         return;
       }
       if (_collectionDate == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('회수 예정일을 선택해주세요.')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('회수 예정일을 선택해주세요.')));
         return;
       }
       if (_collectionDate == '다른 날 선택하기' && _customDate == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('날짜를 선택해주세요.')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('날짜를 선택해주세요.')));
         return;
       }
     }
@@ -129,23 +147,31 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
         'type': _resolutionType,
         'reasonType': _reasonType,
         'detailReason': _detailReasonController.text.trim(),
-        'collectionSpot': _collectionSpot == '그 외 장소' ? _otherSpotController.text.trim() : _collectionSpot,
-        'collectionDate': _collectionDate == '내일' ? '내일' : _customDate?.toIso8601String(),
+        'collectionSpot':
+            _collectionSpot == '그 외 장소'
+                ? _otherSpotController.text.trim()
+                : _collectionSpot,
+        'collectionDate':
+            _collectionDate == '내일' ? '내일' : _customDate?.toIso8601String(),
         'expectedRefund': expectedRefund,
       };
 
-      await ref.read(reviewControllerProvider.notifier).submitRequest(widget.orderId, requestData);
+      await ref
+          .read(reviewControllerProvider.notifier)
+          .submitRequest(widget.orderId, requestData);
 
       if (!mounted) return;
       Navigator.pop(context); // close dialog
-      
+
       setState(() {
         _currentStep = 4; // completion step
       });
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -162,8 +188,13 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: Text('교환/반품 요청', style: TextStyles.abeezee16px400wPblack), centerTitle: true),
-        body: Center(child: CircularProgressIndicator(color: ColorsManager.primary500)),
+        appBar: AppBar(
+          title: Text('교환/반품 요청', style: TextStyles.abeezee16px400wPblack),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: CircularProgressIndicator(color: ColorsManager.primary500),
+        ),
       );
     }
 
@@ -196,7 +227,10 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
                         margin: EdgeInsets.symmetric(horizontal: 4.w),
                         height: 4.h,
                         decoration: BoxDecoration(
-                          color: _currentStep > index ? ColorsManager.primary500 : ColorsManager.primary100,
+                          color:
+                              _currentStep > index
+                                  ? ColorsManager.primary500
+                                  : ColorsManager.primary100,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -205,7 +239,7 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
                 ),
                 verticalSpace(20),
               ],
-              
+
               if (_currentStep == 1) _buildStep1(),
               if (_currentStep == 2) _buildStep2(),
               if (_currentStep == 3) _buildStep3(),
@@ -223,7 +257,7 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
       children: [
         Text('사유 선택', style: TextStyles.abeezee20px400wPblack),
         verticalSpace(20),
-        
+
         RadioListTile<String>(
           title: Text('단순변심으로 반품하기', style: TextStyles.abeezee16px400wPblack),
           value: 'change_mind',
@@ -235,10 +269,16 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
         if (_reasonType == 'change_mind') ...[
           Padding(
             padding: EdgeInsets.only(left: 32.w),
-            child: Text('* 제품의 훼손ㆍ사용 흔적이 있을 경우 단순변심으로 반품은 불가합니다.', style: TextStyle(color: ColorsManager.primary400, fontSize: 12.sp)),
+            child: Text(
+              '* 제품의 훼손ㆍ사용 흔적이 있을 경우 단순변심으로 반품은 불가합니다.',
+              style: TextStyle(
+                color: ColorsManager.primary400,
+                fontSize: 12.sp,
+              ),
+            ),
           ),
         ],
-        
+
         RadioListTile<String>(
           title: Text('기타 사유', style: TextStyles.abeezee16px400wPblack),
           value: 'other',
@@ -250,7 +290,13 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
         if (_reasonType == 'other') ...[
           Padding(
             padding: EdgeInsets.only(left: 32.w),
-            child: Text('* 상품하자, 오배송, 파손 등', style: TextStyle(color: ColorsManager.primary400, fontSize: 12.sp)),
+            child: Text(
+              '* 상품하자, 오배송, 파손 등',
+              style: TextStyle(
+                color: ColorsManager.primary400,
+                fontSize: 12.sp,
+              ),
+            ),
           ),
         ],
 
@@ -325,11 +371,20 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('이름: ${_orderData?['customerName'] ?? ''}', style: TextStyles.abeezee13px400wPblack),
+              Text(
+                '이름: ${_orderData?['customerName'] ?? ''}',
+                style: TextStyles.abeezee13px400wPblack,
+              ),
               verticalSpace(5),
-              Text('전화번호: ${_orderData?['phoneNo'] ?? ''}', style: TextStyles.abeezee13px400wPblack),
+              Text(
+                '전화번호: ${_orderData?['phoneNo'] ?? ''}',
+                style: TextStyles.abeezee13px400wPblack,
+              ),
               verticalSpace(5),
-              Text('주소: ${_orderData?['deliveryAddress'] ?? ''} ${_orderData?['deliveryAddressDetail'] ?? ''}', style: TextStyles.abeezee13px400wPblack),
+              Text(
+                '주소: ${_orderData?['deliveryAddress'] ?? ''} ${_orderData?['deliveryAddressDetail'] ?? ''}',
+                style: TextStyles.abeezee13px400wPblack,
+              ),
             ],
           ),
         ),
@@ -373,7 +428,10 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
               decoration: InputDecoration(
                 hintText: '장소를 정확히 입력해주세요',
                 hintStyle: TextStyles.abeezee14px400wP600,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 border: InputBorder.none,
               ),
             ),
@@ -383,7 +441,10 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
         verticalSpace(30),
         Text('회수 예정일', style: TextStyles.abeezee20px400wPblack),
         verticalSpace(5),
-        Text('* 상품은 회수 예정일 오전 09시까지 회수지에 놓아주세요.', style: TextStyle(color: ColorsManager.primary400, fontSize: 12.sp)),
+        Text(
+          '* 상품은 회수 예정일 오전 09시까지 회수지에 놓아주세요.',
+          style: TextStyle(color: ColorsManager.primary400, fontSize: 12.sp),
+        ),
         verticalSpace(10),
         RadioListTile<String>(
           title: Text('내일', style: TextStyles.abeezee16px400wPblack),
@@ -427,7 +488,10 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
         if (_collectionDate == '다른 날 선택하기' && _customDate != null) ...[
           Padding(
             padding: EdgeInsets.only(left: 32.w, bottom: 10.h),
-            child: Text('선택됨: ${DateFormat('yyyy-MM-dd').format(_customDate!)}', style: TextStyles.abeezee13px400wPblack),
+            child: Text(
+              '선택됨: ${DateFormat('yyyy-MM-dd').format(_customDate!)}',
+              style: TextStyles.abeezee13px400wPblack,
+            ),
           ),
         ],
 
@@ -452,9 +516,15 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
         if (_reasonType == 'change_mind') ...[
           Text('단순변심 환불 규정 안내', style: TextStyles.abeezee20px400wPblack),
           verticalSpace(10),
-          Text('* 제품의 훼손ㆍ사용 흔적이 있을 경우 단순변심으로 반품은 불가합니다.', style: TextStyles.abeezee13px400wPblack),
+          Text(
+            '* 제품의 훼손ㆍ사용 흔적이 있을 경우 단순변심으로 반품은 불가합니다.',
+            style: TextStyles.abeezee13px400wPblack,
+          ),
           verticalSpace(5),
-          Text('* 제품의 훼손ㆍ사용 흔적 여부 검수 후 상품 금액에서 반품 배송비를 차감한 금액이 환불 됩니다.', style: TextStyles.abeezee13px400wPblack),
+          Text(
+            '* 제품의 훼손ㆍ사용 흔적 여부 검수 후 상품 금액에서 반품 배송비를 차감한 금액이 환불 됩니다.',
+            style: TextStyles.abeezee13px400wPblack,
+          ),
           verticalSpace(30),
         ],
 
@@ -474,7 +544,10 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('상품 금액', style: TextStyles.abeezee13px400wPblack),
-                    Text('${NumberFormat('#,###').format(totalPrice)}원', style: TextStyles.abeezee13px400wPblack),
+                    Text(
+                      '${NumberFormat('#,###').format(totalPrice)}원',
+                      style: TextStyles.abeezee13px400wPblack,
+                    ),
                   ],
                 ),
                 verticalSpace(10),
@@ -482,7 +555,10 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('반품 배송비', style: TextStyles.abeezee13px400wPblack),
-                    Text('- ${NumberFormat('#,###').format(totalPrice - expectedRefund)}원', style: TextStyle(color: Colors.red, fontSize: 14.sp)),
+                    Text(
+                      '- ${NumberFormat('#,###').format(totalPrice - expectedRefund)}원',
+                      style: TextStyle(color: Colors.red, fontSize: 14.sp),
+                    ),
                   ],
                 ),
                 verticalSpace(10),
@@ -492,8 +568,16 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('예상 환불금액', style: TextStyles.abeezee16px400wPblack.copyWith(fontWeight: FontWeight.bold)),
-                  Text('${NumberFormat('#,###').format(expectedRefund)}원', style: TextStyles.abeezee18px400wPblack),
+                  Text(
+                    '예상 환불금액',
+                    style: TextStyles.abeezee16px400wPblack.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '${NumberFormat('#,###').format(expectedRefund)}원',
+                    style: TextStyles.abeezee18px400wPblack,
+                  ),
                 ],
               ),
             ],
@@ -517,10 +601,16 @@ class _ExchangeOrRefundState extends ConsumerState<ExchangeOrRefund> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           verticalSpace(50),
-          Icon(Icons.check_circle, color: ColorsManager.primary500, size: 80.sp),
+          Icon(
+            Icons.check_circle,
+            color: ColorsManager.primary500,
+            size: 80.sp,
+          ),
           verticalSpace(20),
           Text(
-            _resolutionType == 'exchange' ? '교환 요청이 완료되었습니다.' : '반품 요청이 완료되었습니다.',
+            _resolutionType == 'exchange'
+                ? '교환 요청이 완료되었습니다.'
+                : '반품 요청이 완료되었습니다.',
             style: TextStyles.abeezee20px400wPblack,
           ),
           verticalSpace(40),
