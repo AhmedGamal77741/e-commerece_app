@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element, unused_field, unused_local_variable
 import 'package:ecommerece_app/features/mypage/domain/profile_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +25,7 @@ class _ReceiptSetupScreenState extends ConsumerState<ReceiptSetupScreen> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
 
-  int selectedOption = 1; // 1 = cash receipt, 2 = tax invoice
+  int selectedOption = 1;
 
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
@@ -145,20 +146,7 @@ class _ReceiptSetupScreenState extends ConsumerState<ReceiptSetupScreen> {
               SizedBox(height: 24.h),
 
               // ── Option selector ─────────────────────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildRadioOption(value: 1, label: '현금 영수증'),
-                  _buildRadioOption(value: 2, label: '세금 계산서'),
-                ],
-              ),
-              SizedBox(height: 24.h),
-
-              // ── Fields ──────────────────────────────────────────────────
-              if (selectedOption == 1)
-                ..._buildCashReceiptFields()
-              else
-                ..._buildTaxInvoiceFields(),
+              ..._buildCashReceiptFields(),
 
               SizedBox(height: 32.h),
             ],

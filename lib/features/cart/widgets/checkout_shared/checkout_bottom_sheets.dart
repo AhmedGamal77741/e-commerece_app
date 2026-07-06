@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element, unused_field, unused_local_variable
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -192,27 +193,7 @@ class CheckoutBottomSheets {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildRadioOption(
-                            value: 1,
-                            label: '현금 영수증',
-                            currentValue: state.selectedOption,
-                            onChanged: (v) => controller.setSelectedOption(v),
-                          ),
-                          _buildRadioOption(
-                            value: 2,
-                            label: '세금 계산서',
-                            currentValue: state.selectedOption,
-                            onChanged: (v) => controller.setSelectedOption(v),
-                          ),
-                        ],
-                      ),
-                      if (state.selectedOption == 1)
-                        ..._buildCashReceiptFields(controller)
-                      else
-                        ..._buildTaxInvoiceFields(controller, state.invoiceeType),
+                      ..._buildCashReceiptFields(controller),
                       verticalSpace(10),
                       WideTextButton(
                         txt: '저장',
