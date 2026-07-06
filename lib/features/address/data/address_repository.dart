@@ -79,9 +79,9 @@ class AddressRepository {
     batch.set(docRef, addressData);
 
     if (shouldBeDefault) {
-      batch.set(_userDocument, {
+      batch.update(_userDocument, {
         'defaultAddressId': docRef.id,
-      }, SetOptions(merge: true));
+      });
     }
 
     await batch.commit();
@@ -111,16 +111,16 @@ class AddressRepository {
         }
 
         if (nextDefault != null) {
-          batch.set(_userDocument, {
+          batch.update(_userDocument, {
             'defaultAddressId': nextDefault.id,
-          }, SetOptions(merge: true));
-          batch.set(nextDefault.reference, {
+          });
+          batch.update(nextDefault.reference, {
             'isDefault': true,
-          }, SetOptions(merge: true));
+          });
         } else {
-          batch.set(_userDocument, {
+          batch.update(_userDocument, {
             'defaultAddressId': null,
-          }, SetOptions(merge: true));
+          });
         }
       }
 
@@ -140,18 +140,18 @@ class AddressRepository {
 
       for (var doc in defaultAddresses.docs) {
         if (doc.id != addressId) {
-          batch.set(doc.reference, {
+          batch.update(doc.reference, {
             'isDefault': false,
-          }, SetOptions(merge: true));
+          });
         }
       }
 
-      batch.set(_addressesCollection.doc(addressId), {
+      batch.update(_addressesCollection.doc(addressId), {
         'isDefault': true,
-      }, SetOptions(merge: true));
-      batch.set(_userDocument, {
+      });
+      batch.update(_userDocument, {
         'defaultAddressId': addressId,
-      }, SetOptions(merge: true));
+      });
 
       await batch.commit();
       return true;
@@ -166,7 +166,7 @@ class AddressRepository {
     WriteBatch batch = _firestore.batch();
     for (var doc in addressesSnapshot.docs) {
       if (doc.get('isDefault') == true) {
-        batch.set(doc.reference, {'isDefault': false}, SetOptions(merge: true));
+        batch.update(doc.reference, {'isDefault': false});
       }
     }
 
