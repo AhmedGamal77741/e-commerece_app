@@ -14,7 +14,6 @@ import 'package:ecommerece_app/features/home/add_post.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
 import 'package:ecommerece_app/features/chat/ui/edit_screen.dart';
-import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:ecommerece_app/features/home/notifications.dart';
 import 'package:ecommerece_app/features/review/ui/track_order.dart';
 import 'package:ecommerece_app/features/review/ui/exchange_or_refund.dart';
@@ -294,31 +293,27 @@ class AppRouter {
         path: '/product/:productId',
         builder: (context, state) {
           final productId = state.pathParameters['productId'] ?? '';
-          return FutureBuilder(
-            future: Future.wait([
-              FirebaseFirestore.instance.collection('products').doc(productId).get(),
-              isUserSubscribed(),
-            ]),
-            builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
+          return FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance.collection('products').doc(productId).get(),
+            builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(
                   body: SizedBox.shrink(),
                 );
               }
-              if (!snapshot.hasData || snapshot.data![0] == null || !(snapshot.data![0] as DocumentSnapshot).exists) {
+              if (!snapshot.hasData || snapshot.data == null || !snapshot.data!.exists) {
                 return const Scaffold(
                   body: Center(child: Text('Product not found')),
                 );
               }
-              final productDoc = snapshot.data![0] as DocumentSnapshot;
+              final productDoc = snapshot.data!;
               final productMap = productDoc.data() as Map<String, dynamic>;
               final product = Product.fromMap(productMap);
-              final isSub = snapshot.data![1] as bool;
 
               return ItemDetails(
                 product: product,
                 arrivalDay: productMap['arrivalDay'] ?? '',
-                isSub: isSub,
+                isSub: false,
               );
             },
           );

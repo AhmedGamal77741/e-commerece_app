@@ -1,6 +1,7 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/theming/styles.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -23,10 +24,12 @@ class ShopProductCard extends StatelessWidget {
     
     return InkWell(
       onTap: () {
-        GoRouter.of(context).pushNamed(
-          'productDetails',
-          pathParameters: {
-            'productId': product.productId.toString(),
+        context.pushNamed(
+          Routes.itemDetailsScreen,
+          extra: {
+            'product': product,
+            'arrivalDay': product.arrivalDate ?? '',
+            'isSub': isSub,
           },
         );
       },
