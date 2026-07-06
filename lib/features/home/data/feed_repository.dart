@@ -783,14 +783,13 @@ class FeedRepository {
               final Uint8List heicBytes = response.bodyBytes;
 
               debugPrint("Converting HEIC to JPEG...");
-              final Uint8List jpgBytes =
-                  await FlutterImageCompress.compressWithList(
-                    heicBytes,
-                    minWidth: 1080,
-                    minHeight: 1080,
-                    quality: 82,
-                    format: CompressFormat.jpeg,
-                  );
+              final Uint8List jpgBytes = await FlutterImageCompress.compressWithList(
+                heicBytes,
+                minWidth: 1080,
+                minHeight: 1080,
+                quality: 82,
+                format: CompressFormat.jpeg,
+              );
 
               final Reference oldRef = FirebaseStorage.instance.refFromURL(url);
               final String newPath = oldRef.fullPath.replaceAll(

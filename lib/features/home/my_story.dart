@@ -138,31 +138,41 @@ class _MyStoryState extends ConsumerState<MyStory> {
                         InkWell(
                           onTap: () async {
                             LoadingService().showLoading();
-                            final image = await ImagePickerHelper.pickImage();
-                            if (image != null) {
-                              final newUrl = await ref.read(authRepositoryProvider).uploadProfileImage(image, currentUser.userId);
-                              
-                              final updatedUser = MyUser(
-                                userId: currentUser.userId,
-                                email: currentUser.email,
-                                name: currentUser.name,
-                                url: newUrl,
-                                isSub: currentUser.isSub,
-                                defaultAddressId: currentUser.defaultAddressId,
-                                blocked: currentUser.blocked,
-                                payerId: currentUser.payerId,
-                                isOnline: currentUser.isOnline,
-                                lastSeen: currentUser.lastSeen,
-                                chatRooms: currentUser.chatRooms,
-                                friends: currentUser.friends,
-                                friendRequestsSent: currentUser.friendRequestsSent,
-                                friendRequestsReceived: currentUser.friendRequestsReceived,
-                                phoneNumber: currentUser.phoneNumber,
-                              );
-                              
-                              await ref.read(authNotifierProvider.notifier).updateUser(updatedUser, '');
+                            try {
+                              final image = await ImagePickerHelper.pickImage();
+                              if (image != null) {
+                                final newUrl = await ref.read(authRepositoryProvider).uploadProfileImage(image, currentUser.userId);
+                                
+                                final updatedUser = MyUser(
+                                  userId: currentUser.userId,
+                                  email: currentUser.email,
+                                  name: currentUser.name,
+                                  url: newUrl,
+                                  isSub: currentUser.isSub,
+                                  defaultAddressId: currentUser.defaultAddressId,
+                                  blocked: currentUser.blocked,
+                                  payerId: currentUser.payerId,
+                                  isOnline: currentUser.isOnline,
+                                  lastSeen: currentUser.lastSeen,
+                                  chatRooms: currentUser.chatRooms,
+                                  friends: currentUser.friends,
+                                  friendRequestsSent: currentUser.friendRequestsSent,
+                                  friendRequestsReceived: currentUser.friendRequestsReceived,
+                                  phoneNumber: currentUser.phoneNumber,
+                                );
+                                
+                                await ref.read(authNotifierProvider.notifier).updateUser(updatedUser, '');
+                              }
+                            } catch (e) {
+                              debugPrint('Error updating profile picture: $e');
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('프로필 사진 변경 실패: $e')),
+                                );
+                              }
+                            } finally {
+                              LoadingService().hideLoading();
                             }
-                            LoadingService().hideLoading();
                           },
                           child: ClipOval(
                             child: SafeNetworkImage(

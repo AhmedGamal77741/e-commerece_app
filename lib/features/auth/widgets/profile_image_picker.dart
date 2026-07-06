@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
@@ -32,12 +33,19 @@ class ProfileImagePicker extends StatelessWidget {
         onTap: _pickImage,
         child: selectedImage != null
             ? ClipOval(
-                child: Image.file(
-                  File(selectedImage!.path),
-                  height: 80.h,
-                  width: 80.h,
-                  fit: BoxFit.cover,
-                ),
+                child: kIsWeb
+                    ? Image.network(
+                        selectedImage!.path,
+                        height: 80.h,
+                        width: 80.h,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.file(
+                        File(selectedImage!.path),
+                        height: 80.h,
+                        width: 80.h,
+                        fit: BoxFit.cover,
+                      ),
               )
             : Container(
                 height: 80.h,

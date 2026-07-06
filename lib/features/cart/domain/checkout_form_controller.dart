@@ -431,7 +431,10 @@ class CheckoutFormController
       onError('현금 영수증 또는 세금 계산서를 선택해주세요');
       return;
     }
-    if (!validateReceiptTypeFields(context)) return;
+    if (!validateReceiptTypeFields(context)) {
+      onError('');
+      return;
+    }
 
     if (stateValue.address.id.isEmpty) {
       onError('배송지를 먼저 등록해주세요');

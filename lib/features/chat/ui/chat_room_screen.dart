@@ -243,8 +243,11 @@ class ChatScreen extends ConsumerWidget {
                       onSend: () async {
                         if (state.pickedImage != null) {
                           showLoadingDialog(context);
-                          await controller.sendImageMessage();
-                          if (context.mounted) Navigator.pop(context);
+                          try {
+                            await controller.sendImageMessage();
+                          } finally {
+                            if (context.mounted) Navigator.pop(context);
+                          }
                         } else {
                           await controller.sendMessage();
                         }
