@@ -21,18 +21,20 @@ void main() async {
 
   // Set production-ready image cache limits (200 MB and 1000 images max)
   // This balances seamless scroll-up caching (holding ~100-130 downsampled images) with RAM safety on low-end devices.
-  PaintingBinding.instance.imageCache.maximumSize = 1000; 
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 200 * 1024 * 1024; 
+  PaintingBinding.instance.imageCache.maximumSize = 1000;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 200 * 1024 * 1024;
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
+
   // Pre-load contact name map on startup to prevent async disk I/O during list scrolling
   await ContactService().loadContactNameMap();
 
-  FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-    appleProvider: AppleProvider.debug,
-  );
+  if (!kIsWeb) {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+      appleProvider: AppleProvider.debug,
+    );
+  }
 
   _router = AppRouter.router;
 

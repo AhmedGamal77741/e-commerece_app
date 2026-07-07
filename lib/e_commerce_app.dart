@@ -68,86 +68,80 @@ class _EcommerceAppState extends State<EcommerceApp> {
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      return Center(
-        child: SizedBox(
-          width: 428,
-          height: 926,
-          child: ClipRect(
-            child: MediaQuery(
-              data: MediaQueryData(
-                size: const Size(428, 926),
-                devicePixelRatio: MediaQuery.of(context).devicePixelRatio,
-              ),
-              child: ScreenUtilInit(
-                designSize: const Size(428, 926),
-                minTextAdapt: true,
-                splitScreenMode: true,
-                ensureScreenSize: true,
-                builder:
-                    (context, child) => MaterialApp.router(
-                      // scaffoldMessengerKey: scaffoldMessengerKey,
-                      title: 'E-commerce App (Web)',
-                      theme: ThemeData(
-                        useMaterial3: true,
-                        colorScheme: ColorScheme.fromSeed(
-                          seedColor: Colors.black,
-                          primary: Colors.black,
-                          onPrimary: Colors.white,
-                          secondary: Colors.black,
-                          onSecondary: Colors.white,
-                        ),
-                        textSelectionTheme: const TextSelectionThemeData(
-                          cursorColor: Colors.black,
-                          selectionColor: Colors.black12,
-                          selectionHandleColor: Colors.black,
-                        ),
-                        scaffoldBackgroundColor: ColorsManager.primary,
-                        appBarTheme: AppBarTheme(
-                          backgroundColor: ColorsManager.primary,
-                        ),
-                        unselectedWidgetColor: Colors.grey,
-                        radioTheme: RadioThemeData(
-                          fillColor: WidgetStateColor.resolveWith(
-                            (states) => Colors.black,
-                          ),
-                        ),
-                        dialogTheme: const DialogThemeData(
-                          backgroundColor: Colors.white,
-                          surfaceTintColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(16),
-                            ),
-                          ),
-                          titleTextStyle: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                          contentTextStyle: TextStyle(
-                            color: Colors.black,
-                            fontSize: 15,
-                          ),
-                        ),
-                        progressIndicatorTheme:
-                            const ProgressIndicatorThemeData(
-                              color: Colors.black,
-                            ),
-                      ),
-                      debugShowCheckedModeBanner: false,
-                      routerConfig: AppRouter.router,
-                    ),
-              ),
+      return MaterialApp.router(
+        title: 'E-commerce App (Web)',
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.black,
+            primary: Colors.black,
+            onPrimary: Colors.white,
+            secondary: Colors.black,
+            onSecondary: Colors.white,
+          ),
+          textSelectionTheme: const TextSelectionThemeData(
+            cursorColor: Colors.black,
+            selectionColor: Colors.black12,
+            selectionHandleColor: Colors.black,
+          ),
+          scaffoldBackgroundColor: ColorsManager.primary,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: ColorsManager.primary,
+          ),
+          unselectedWidgetColor: Colors.grey,
+          radioTheme: RadioThemeData(
+            fillColor: WidgetStateColor.resolveWith(
+              (states) => Colors.black,
             ),
           ),
+          dialogTheme: const DialogThemeData(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+            ),
+            titleTextStyle: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+            contentTextStyle: TextStyle(
+              color: Colors.black,
+              fontSize: 15,
+            ),
+          ),
+          progressIndicatorTheme: const ProgressIndicatorThemeData(
+            color: Colors.black,
+          ),
         ),
-      );
-    } else {
+        debugShowCheckedModeBanner: false,
+        routerConfig: AppRouter.router,
+        builder: (context, child) {
+          // Initialize ScreenUtil to match the exact size of the browser, making scale factor 1.0!
+          // This safely disables ScreenUtil's dynamic scaling on the web.
+          ScreenUtil.init(
+            context,
+            designSize: MediaQuery.of(context).size,
+            minTextAdapt: true,
+            splitScreenMode: true,
+          );
+          
+          return Center(
+            child: SizedBox(
+              width: 428,
+              child: ClipRect(
+                child: child!,
+              ),
+            ),
+          );
+        },
+      );    } else {
       return ScreenUtilInit(
         designSize: const Size(428, 926),
         minTextAdapt: true,
         splitScreenMode: true,
         ensureScreenSize: true,
+                useInheritedMediaQuery: true,
         builder:
             (context, child) => MaterialApp.router(
               // scaffoldMessengerKey: scaffoldMessengerKey,
