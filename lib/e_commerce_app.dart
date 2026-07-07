@@ -69,7 +69,7 @@ class _EcommerceAppState extends State<EcommerceApp> {
   Widget build(BuildContext context) {
     if (kIsWeb) {
       return MaterialApp.router(
-        title: 'E-commerce App (Web)',
+        title: '팽이초콜릿',
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
@@ -145,7 +145,7 @@ class _EcommerceAppState extends State<EcommerceApp> {
         builder:
             (context, child) => MaterialApp.router(
               // scaffoldMessengerKey: scaffoldMessengerKey,
-              title: 'E-commerce App',
+              title: '팽이초콜릿',
               theme: ThemeData(
                 useMaterial3: true,
                 colorScheme: ColorScheme.fromSeed(
