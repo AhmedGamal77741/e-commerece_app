@@ -70,16 +70,16 @@ class _EcommerceAppState extends State<EcommerceApp> {
     if (kIsWeb) {
       return Center(
         child: SizedBox(
-          width: 700,
+          width: 428,
           height: 926,
           child: ClipRect(
             child: MediaQuery(
               data: MediaQueryData(
-                size: const Size(700, 926),
+                size: const Size(428, 926),
                 devicePixelRatio: MediaQuery.of(context).devicePixelRatio,
               ),
               child: ScreenUtilInit(
-                designSize: const Size(700, 926),
+                designSize: const Size(428, 926),
                 minTextAdapt: true,
                 splitScreenMode: true,
                 ensureScreenSize: true,

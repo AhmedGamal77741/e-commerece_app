@@ -1,4 +1,5 @@
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -33,11 +34,13 @@ void main() async {
     appleProvider: AppleProvider.debug,
   );
 
-  _appLinks = AppLinks();
   _router = AppRouter.router;
 
-  _handleInitialDeepLink();
-  _handleDeepLinks();
+  if (!kIsWeb) {
+    _appLinks = AppLinks();
+    _handleInitialDeepLink();
+    _handleDeepLinks();
+  }
 
   runApp(ProviderScope(child: EcommerceApp(appRouter: AppRouter())));
 }
