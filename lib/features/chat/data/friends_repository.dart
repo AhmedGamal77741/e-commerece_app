@@ -33,12 +33,21 @@ class FriendsRepository {
       if (user.blocked == null || user.blocked!.isEmpty) return [];
       final blockedIds = user.blocked!;
       if (blockedIds.isEmpty) return [];
-      final blockedQuery =
-          await _firestore
-              .collection('users')
-              .where('userId', whereIn: blockedIds)
-              .get();
-      return blockedQuery.docs
+      List<QueryDocumentSnapshot<Map<String, dynamic>>> allDocs = [];
+      List<Future<QuerySnapshot<Map<String, dynamic>>>> futures = [];
+      for (var i = 0; i < blockedIds.length; i += 30) {
+        final chunk = blockedIds.sublist(
+            i, i + 30 > blockedIds.length ? blockedIds.length : i + 30);
+        futures.add(_firestore
+            .collection('users')
+            .where('userId', whereIn: chunk)
+            .get());
+      }
+      final snapshots = await Future.wait(futures);
+      for (var snap in snapshots) {
+        allDocs.addAll(snap.docs);
+      }
+      return allDocs
           .map(
             (doc) => {
               'userId': (doc['userId'] ?? '').toString(),
@@ -260,14 +269,23 @@ class FriendsRepository {
           final user = MyUser.fromDocument(userDoc.data()!);
           if (user.friends.isEmpty) return <MyUser>[];
 
-          final friendsQuery =
-              await _firestore
-                  .collection('users')
-                  .where('userId', whereIn: user.friends)
-                  .get();
+          List<MyUser> allFriends = [];
+          List<Future<QuerySnapshot<Map<String, dynamic>>>> futures = [];
+          for (var i = 0; i < user.friends.length; i += 30) {
+            final chunk = user.friends.sublist(
+                i, i + 30 > user.friends.length ? user.friends.length : i + 30);
+            futures.add(_firestore
+                .collection('users')
+                .where('userId', whereIn: chunk)
+                .get());
+          }
+          final snapshots = await Future.wait(futures);
+          for (var snap in snapshots) {
+            allFriends.addAll(
+                snap.docs.map((doc) => MyUser.fromDocument(doc.data())));
+          }
 
-          return friendsQuery.docs
-              .map((doc) => MyUser.fromDocument(doc.data()))
+          return allFriends
               .where(
                 (friend) =>
                     !(user.blocked?.contains(friend.userId) ?? false) &&
@@ -284,11 +302,21 @@ class FriendsRepository {
     final user = MyUser.fromDocument(userDoc.data()!);
     if (user.friends.isEmpty) return <MyUser>[];
 
-    final friendsQuery =
-        await _firestore
-            .collection('users')
-            .where('userId', whereIn: user.friends)
-            .get();
+    List<MyUser> allFriends = [];
+    List<Future<QuerySnapshot<Map<String, dynamic>>>> futures = [];
+    for (var i = 0; i < user.friends.length; i += 30) {
+      final chunk = user.friends.sublist(
+          i, i + 30 > user.friends.length ? user.friends.length : i + 30);
+      futures.add(_firestore
+          .collection('users')
+          .where('userId', whereIn: chunk)
+          .get());
+    }
+    final snapshots = await Future.wait(futures);
+    for (var snap in snapshots) {
+      allFriends.addAll(
+          snap.docs.map((doc) => MyUser.fromDocument(doc.data())));
+    }
 
     Set<String> hiddenIds = {};
     if (!includeHidden) {
@@ -301,8 +329,7 @@ class FriendsRepository {
       hiddenIds = hiddenSnap.docs.map((d) => d.id).toSet();
     }
 
-    return friendsQuery.docs
-        .map((doc) => MyUser.fromDocument(doc.data()))
+    return allFriends
         .where(
           (friend) =>
               !(user.blocked?.contains(friend.userId) ?? false) &&
@@ -392,15 +419,23 @@ class FriendsRepository {
 
       if (mutualFriendIds.isEmpty) return [];
 
-      final mutualFriendsQuery =
-          await _firestore
-              .collection('users')
-              .where('id', whereIn: mutualFriendIds)
-              .get();
+      List<MyUser> mutualFriends = [];
+      List<Future<QuerySnapshot<Map<String, dynamic>>>> futures = [];
+      for (var i = 0; i < mutualFriendIds.length; i += 30) {
+        final chunk = mutualFriendIds.sublist(
+            i, i + 30 > mutualFriendIds.length ? mutualFriendIds.length : i + 30);
+        futures.add(_firestore
+            .collection('users')
+            .where('userId', whereIn: chunk)
+            .get());
+      }
+      final snapshots = await Future.wait(futures);
+      for (var snap in snapshots) {
+        mutualFriends.addAll(
+            snap.docs.map((doc) => MyUser.fromDocument(doc.data())));
+      }
 
-      return mutualFriendsQuery.docs
-          .map((doc) => MyUser.fromDocument(doc.data()))
-          .toList();
+      return mutualFriends;
     } catch (e) {
       return [];
     }
