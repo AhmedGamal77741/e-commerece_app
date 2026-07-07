@@ -9,7 +9,8 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateMixin {
+class _AuthScreenState extends State<AuthScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -43,9 +44,15 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     _tabController.animateTo(0);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
-                      color: _tabController.index == 0 ? Colors.white : Colors.transparent,
+                      color:
+                          _tabController.index == 0
+                              ? Colors.white
+                              : Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -53,7 +60,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: _tabController.index == 0 ? Colors.black : Colors.black87,
+                        color:
+                            _tabController.index == 0
+                                ? Colors.black
+                                : Colors.black87,
                       ),
                     ),
                   ),
@@ -64,9 +74,15 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     _tabController.animateTo(1);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
-                      color: _tabController.index == 1 ? Colors.white : Colors.transparent,
+                      color:
+                          _tabController.index == 1
+                              ? Colors.white
+                              : Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -74,7 +90,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: _tabController.index == 1 ? Colors.black : Colors.black87,
+                        color:
+                            _tabController.index == 1
+                                ? Colors.black
+                                : Colors.black87,
                       ),
                     ),
                   ),
@@ -85,10 +104,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: const [
-                  LoginScreen(),
-                  SignupScreen(),
-                ],
+                children: const [LoginScreen(), SignupScreen()],
               ),
             ),
           ],
