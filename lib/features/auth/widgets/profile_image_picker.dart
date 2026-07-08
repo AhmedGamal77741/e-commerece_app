@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -31,35 +32,33 @@ class ProfileImagePicker extends StatelessWidget {
     return Center(
       child: GestureDetector(
         onTap: _pickImage,
-        child: selectedImage != null
-            ? ClipOval(
-                child: kIsWeb
-                    ? Image.network(
-                        selectedImage!.path,
-                        height: 80.h,
-                        width: 80.h,
-                        fit: BoxFit.cover,
-                      )
-                    : Image.file(
-                        File(selectedImage!.path),
-                        height: 80.h,
-                        width: 80.h,
-                        fit: BoxFit.cover,
-                      ),
-              )
-            : Container(
-                height: 80.h,
-                width: 80.h,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  shape: BoxShape.circle,
+        child:
+            selectedImage != null
+                ? ClipOval(
+                  child:
+                      kIsWeb
+                          ? Image.network(
+                            selectedImage!.path,
+                            height: 80.h,
+                            width: 80.h,
+                            fit: BoxFit.cover,
+                          )
+                          : Image.file(
+                            File(selectedImage!.path),
+                            height: 80.h,
+                            width: 80.h,
+                            fit: BoxFit.cover,
+                          ),
+                )
+                : Container(
+                  height: 80.h,
+                  width: 80.h,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.person, size: 50.h, color: Colors.white),
                 ),
-                child: Icon(
-                  Icons.person, 
-                  size: 50.h, 
-                  color: Colors.white,
-                ),
-              ),
       ),
     );
   }
