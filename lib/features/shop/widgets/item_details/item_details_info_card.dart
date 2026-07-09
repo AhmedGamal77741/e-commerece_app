@@ -5,10 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class ItemDetailsInfoCard extends StatelessWidget {
   final Product product;
 
-  const ItemDetailsInfoCard({
-    super.key,
-    required this.product,
-  });
+  const ItemDetailsInfoCard({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +41,7 @@ class ItemDetailsInfoCard extends StatelessWidget {
             SizedBox(height: 10.h),
             const Divider(height: 1, thickness: 0.40, color: Color(0xFF747474)),
             SizedBox(height: 10.h),
-            _buildInfoRow('제품안내', product.description ?? ''),
+            _buildInfoRow('제품안내', product.description),
           ],
         ),
       ),

@@ -135,7 +135,7 @@ class CartController extends Notifier<void> {
     final user = ref.read(authStateProvider).value;
     if (user == null) return null;
 
-    final finalPrice = isSub ? pricePoint.price : (pricePoint.price / 0.8).round();
+    final int finalPrice = (isSub ? pricePoint.price : (pricePoint.price / 0.8)).round();
 
     return await ref.read(cartRepositoryProvider).processBuyNow(
       userId: user.uid,

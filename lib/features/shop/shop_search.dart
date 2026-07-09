@@ -10,38 +10,6 @@ import 'package:ecommerece_app/features/shop/widgets/shop_product_card.dart';
 class ShopSearch extends ConsumerWidget {
   const ShopSearch({super.key});
 
-  bool _isSameRegion(
-    Map<String, dynamic>? userAddress,
-    Map<String, dynamic>? productAddress,
-  ) {
-    if (userAddress == null || productAddress == null) return false;
-    final userRegion1 =
-        userAddress['road_address']?['region_1depth_name'] ??
-        userAddress['address']?['region_1depth_name'] ??
-        userAddress['region_1depth_name'];
-    final userRegion2 =
-        userAddress['road_address']?['region_2depth_name'] ??
-        userAddress['address']?['region_2depth_name'] ??
-        userAddress['region_2depth_name'];
-    final productRegion1 =
-        productAddress['road_address']?['region_1depth_name'] ??
-        productAddress['address']?['region_1depth_name'] ??
-        productAddress['region_1depth_name'];
-    final productRegion2 =
-        productAddress['road_address']?['region_2depth_name'] ??
-        productAddress['address']?['region_2depth_name'] ??
-        productAddress['region_2depth_name'];
-    if (userRegion1 == null || productRegion1 == null) return false;
-    if (userRegion1 != productRegion1) return false;
-    if (userRegion2 != null &&
-        userRegion2.isNotEmpty &&
-        productRegion2 != null &&
-        productRegion2.isNotEmpty) {
-      if (userRegion2 != productRegion2) return false;
-    }
-    return true;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final productsAsync = ref.watch(categoryProductsStreamProvider('all'));
@@ -78,7 +46,7 @@ class ShopSearch extends ConsumerWidget {
     final filteredProducts =
         allProducts
             .where(
-              (p) => p.productName.toLowerCase().contains(query.toLowerCase()),
+                (p) => p.productName.toLowerCase().contains(query.toLowerCase()),
             )
             .toList();
 
@@ -93,7 +61,7 @@ class ShopSearch extends ConsumerWidget {
     final bool hasUserAddress = userAddress != null && userAddress.isNotEmpty;
 
     for (var product in filteredProducts) {
-      if (hasUserAddress && !_isSameRegion(userAddress, product.address)) {
+      if (hasUserAddress && !product.isDeliverableTo(userAddress)) {
         continue;
       }
 
