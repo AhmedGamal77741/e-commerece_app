@@ -87,12 +87,7 @@ final checkoutFormControllerProvider = AsyncNotifierProvider<
 
 class CheckoutFormController
     extends AsyncNotifier<CheckoutFormState> {
-  final invoiceeCorpNumController = TextEditingController();
-  final invoiceeCorpNameController = TextEditingController();
-  final invoiceeCEONameController = TextEditingController();
   final deliveryAddressController = TextEditingController();
-  final phoneController = TextEditingController();
-  final nameController = TextEditingController();
   final emailController = TextEditingController();
 
   final List<String> deliveryRequests = [
@@ -106,12 +101,7 @@ class CheckoutFormController
   @override
   FutureOr<CheckoutFormState> build() async {
     ref.onDispose(() {
-      invoiceeCorpNumController.dispose();
-      invoiceeCorpNameController.dispose();
-      invoiceeCEONameController.dispose();
       deliveryAddressController.dispose();
-      phoneController.dispose();
-      nameController.dispose();
       emailController.dispose();
     });
 
@@ -151,18 +141,14 @@ class CheckoutFormController
         .read(checkoutControllerProvider.notifier)
         .loadCachedValues(uid);
     if (cachedData != null) {
-      nameController.text = cachedData['name'] ?? '';
       emailController.text = cachedData['email'] ?? '';
-      phoneController.text = cachedData['phone'] ?? '';
 
       state = state.copyWith(
         invoiceeType: cachedData['invoiceeType'] ?? '사업자',
         selectedOption: cachedData['selectedOption'] ?? 1,
       );
 
-      invoiceeCorpNumController.text = cachedData['invoiceeCorpNum'] ?? '';
-      invoiceeCorpNameController.text = cachedData['invoiceeCorpName'] ?? '';
-      invoiceeCEONameController.text = cachedData['invoiceeCEOName'] ?? '';
+
 
       final cachedInstr = cachedData['deliveryInstructions'] as String? ?? '';
       if (deliveryRequests.contains(cachedInstr)) {
@@ -290,11 +276,7 @@ class CheckoutFormController
         .catchError((e) => debugPrint('Failed to patch pending_buynow: $e'));
   }
 
-  void setInvoiceeType(String type) {
-    if (state.value != null) {
-      state = AsyncData(state.value!.copyWith(invoiceeType: type));
-    }
-  }
+
 
   void setSelectedRequest(String request) {
     if (state.value != null) {
@@ -351,14 +333,8 @@ class CheckoutFormController
     if (uid == null || stateValue == null) return false;
 
     final fields = {
-      'name': nameController.text.trim(),
       'email': emailController.text.trim(),
-      'phone': phoneController.text.trim(),
-      'invoiceeType': stateValue.invoiceeType,
-      'invoiceeCorpNum': invoiceeCorpNumController.text.trim(),
-      'invoiceeCorpName': invoiceeCorpNameController.text.trim(),
-      'invoiceeCEOName': invoiceeCEONameController.text.trim(),
-      'selectedOption': stateValue.selectedOption,
+      'selectedOption': 1,
       'deliveryAddressId': stateValue.address.id,
       'deliveryAddress': stateValue.address.address,
       'deliveryAddressDetail': stateValue.address.detailAddress,
@@ -379,28 +355,11 @@ class CheckoutFormController
     final stateValue = state.value;
     if (stateValue == null) return false;
 
-    if (stateValue.selectedOption == 1) {
-      if (nameController.text.trim().isEmpty ||
-          emailController.text.trim().isEmpty ||
-          phoneController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('현금 영수증: 이름, 이메일, 전화번호를 모두 입력해주세요')),
-        );
-        return false;
-      }
-    } else if (stateValue.selectedOption == 2) {
-      if (nameController.text.trim().isEmpty ||
-          emailController.text.trim().isEmpty ||
-          phoneController.text.trim().isEmpty ||
-          stateValue.invoiceeType.isEmpty ||
-          invoiceeCorpNumController.text.trim().isEmpty ||
-          invoiceeCorpNameController.text.trim().isEmpty ||
-          invoiceeCEONameController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('세금 계산서: 모든 필수 필드를 입력해주세요')),
-        );
-        return false;
-      }
+    if (emailController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('현금 영수증 수령 이메일을 입력해주세요')),
+      );
+      return false;
     }
     return true;
   }
@@ -411,8 +370,8 @@ class CheckoutFormController
     ref
         .read(bankControllerProvider.notifier)
         .launchBankRegistration(
-          phoneNo: phoneController.text.trim(),
-          option: stateValue.selectedOption.toString(),
+          phoneNo: stateValue.address.phone,
+          option: '1',
         );
   }
 
@@ -427,10 +386,7 @@ class CheckoutFormController
     final stateValue = state.value;
     if (stateValue == null) return;
 
-    if (stateValue.selectedOption != 1 && stateValue.selectedOption != 2) {
-      onError('현금 영수증 또는 세금 계산서를 선택해주세요');
-      return;
-    }
+
     if (!validateReceiptTypeFields(context)) {
       onError('');
       return;
@@ -496,7 +452,7 @@ class CheckoutFormController
           'userId': uid,
           'paymentId': paymentId,
           'payerId': payerId,
-          'option': stateValue.selectedOption.toString(),
+          'option': '1',
           if (dm.isNotEmpty && !isCartCheckout) 'dm': dm,
         }),
       );
@@ -530,9 +486,9 @@ class CheckoutFormController
           final orderData = {
             'address': stateValue.address.toFirestore(),
             'totalPrice': totalPrice,
-            'buyerName': nameController.text.trim(),
+            'buyerName': stateValue.address.name,
             'buyerEmail': emailController.text.trim(),
-            'buyerPhone': phoneController.text.trim(),
+            'buyerPhone': stateValue.address.phone,
             'deliveryInstructions':
                 stateValue.selectedRequest == '직접입력'
                     ? stateValue.manualRequest
@@ -548,13 +504,26 @@ class CheckoutFormController
                 orderData: orderData,
                 isCartCheckout: isCartCheckout,
               );
+
+          if (result['cashReceiptIssued'] == true && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('현금 영수증이 성공적으로 발급되었습니다.'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+
           onSuccess();
         } catch (e) {
           state = AsyncData(stateValue.copyWith(isProcessing: false));
           onError(e.toString().replaceAll('Exception: ', ''));
         }
       } else {
-        final msg = result['message'] as String? ?? '결제에 실패했습니다. 다시 시도해 주세요.';
+        String msg = result['message'] as String? ?? '결제에 실패했습니다. 다시 시도해 주세요.';
+        msg = msg.replaceAll(RegExp(r'^\[.*?\]\s*'), '').replaceAll(RegExp(r'^\d+\s*-\s*'), '');
+        
         state = AsyncData(stateValue.copyWith(isProcessing: false));
         onError(msg);
       }

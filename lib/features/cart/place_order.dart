@@ -78,6 +78,12 @@ class PlaceOrderContent extends ConsumerWidget {
             final bankAccounts =
                 ref.watch(bankAccountsStreamProvider).value ?? [];
 
+            if (bankAccounts.isNotEmpty && state.selectedBankIndex == -1) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ref.read(checkoutFormControllerProvider.notifier).setSelectedBankIndex(0);
+              });
+            }
+
             return Padding(
               padding: EdgeInsets.only(left: 15.w, top: 10.h, right: 15.w),
               child: ListView(
@@ -137,7 +143,6 @@ class PlaceOrderContent extends ConsumerWidget {
                   verticalSpace(10),
                   CheckoutSectionCard(
                     child: CheckoutReceiptOption(
-                      selectedOption: state.selectedOption,
                       onShowBottomSheet:
                           () => CheckoutBottomSheets.showReceiptBottomSheet(
                             context,
@@ -176,15 +181,7 @@ class PlaceOrderContent extends ConsumerWidget {
                   checkoutFormControllerProvider.notifier,
                 );
 
-                if (state.selectedOption != 1 && state.selectedOption != 2) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('현금 영수증 또는 세금 계산서를 선택해주세요'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return false;
-                }
+
 
                 if (!controller.validateReceiptTypeFields(context)) {
                   return false;

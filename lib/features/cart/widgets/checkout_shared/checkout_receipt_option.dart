@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class CheckoutReceiptOption extends StatelessWidget {
-  final int selectedOption;
   final VoidCallback onShowBottomSheet;
 
   const CheckoutReceiptOption({
     super.key,
-    required this.selectedOption,
     required this.onShowBottomSheet,
   });
 
@@ -22,7 +20,7 @@ class CheckoutReceiptOption extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '현금영수증 · 세금계산서',
+                '현금영수증 수령 이메일',
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 16.sp,
@@ -33,11 +31,7 @@ class CheckoutReceiptOption extends StatelessWidget {
               ),
               verticalSpace(5),
               Text(
-                selectedOption == 1
-                    ? '현금 영수증'
-                    : selectedOption == 2
-                        ? '세금 계산서'
-                        : '필요 없음',
+                '현금영수증 발급',
                 style: TextStyle(
                   fontSize: 15.sp,
                   color: Colors.grey[800],
