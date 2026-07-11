@@ -492,6 +492,17 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               SlideToPayButton(
                 isProcessing: _isProcessing,
                 onValidate: () async {
+                  final user = ref.read(authStateProvider).value;
+                  if (user == null || user.email == null || user.email!.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('현금영수증 발급을 위해 이메일이 필요합니다. 내 정보에서 이메일을 등록해주세요.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return false;
+                  }
+
                   if (bankAccounts.isEmpty || selectedBankIndex < 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
