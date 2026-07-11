@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -263,6 +264,53 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  // ── Ask for email dialog ──────────────────────────────────────────────────
+  Future<String?> _askForEmailDialog() async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text('이메일 입력', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 17)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('현금영수증 발급을 위해 이메일을 입력해주세요.', style: TextStyle(color: Colors.black, fontSize: 14)),
+            SizedBox(height: 16.h),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: '이메일 (예: example@gmail.com)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('취소', style: TextStyle(color: Colors.black)),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(backgroundColor: Colors.black),
+            onPressed: () {
+              final val = controller.text.trim();
+              if (RegExp(r'^.+@.+\..+$').hasMatch(val)) {
+                Navigator.pop(ctx, val);
+              } else {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(content: Text('유효한 이메일을 입력해주세요.'), backgroundColor: Colors.red),
+                );
+              }
+            },
+            child: const Text('저장', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Loading modal ─────────────────────────────────────────────────────────
   void _showLoadingModal() {
     showDialog(
@@ -493,14 +541,23 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 isProcessing: _isProcessing,
                 onValidate: () async {
                   final user = ref.read(authStateProvider).value;
-                  if (user == null || user.email == null || user.email!.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('현금영수증 발급을 위해 이메일이 필요합니다. 내 정보에서 이메일을 등록해주세요.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                    return false;
+                  String? userEmail = user?.email;
+                  
+                  if (userEmail == null || userEmail.trim().isEmpty) {
+                    final uid = ref.read(currentUserIdProvider);
+                    final doc = await ref.read(firestoreProvider).collection('users').doc(uid).get();
+                    userEmail = doc.data()?['email'] as String? ?? doc.data()?['receiptEmail'] as String?;
+                    
+                    if (userEmail == null || userEmail.trim().isEmpty) {
+                       final enteredEmail = await _askForEmailDialog();
+                       if (enteredEmail == null) return false;
+                       
+                       // Save the new email so the cloud function can use it
+                       await ref.read(firestoreProvider).collection('users').doc(uid).set(
+                         {'receiptEmail': enteredEmail}, 
+                         SetOptions(merge: true)
+                       );
+                    }
                   }
 
                   if (bankAccounts.isEmpty || selectedBankIndex < 0) {
