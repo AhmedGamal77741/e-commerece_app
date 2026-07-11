@@ -561,6 +561,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                   }
 
                   if (bankAccounts.isEmpty || selectedBankIndex < 0) {
+                    if (!context.mounted) return false;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('결제할 계좌를 선택해주세요.'),
@@ -573,6 +574,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                       bankAccounts[selectedBankIndex]['payerId'] as String? ??
                       '';
                   if (payerId.isEmpty) {
+                    if (!context.mounted) return false;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('계좌 정보가 올바르지 않습니다.'),
