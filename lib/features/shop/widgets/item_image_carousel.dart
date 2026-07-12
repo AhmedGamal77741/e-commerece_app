@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ItemImageCarousel extends StatefulWidget {
   final Product product;
@@ -15,6 +16,20 @@ class ItemImageCarousel extends StatefulWidget {
 
 class _ItemImageCarouselState extends State<ItemImageCarousel> {
   final PageController _pageController = PageController();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final List<dynamic> imageUrls = [
+      if (widget.product.imgUrl != null) widget.product.imgUrl,
+      ...widget.product.imgUrls,
+    ];
+    for (final url in imageUrls) {
+      if (url is String && url.isNotEmpty) {
+        precacheImage(CachedNetworkImageProvider(url), context);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -38,16 +53,20 @@ class _ItemImageCarouselState extends State<ItemImageCarousel> {
               controller: _pageController,
               itemCount: imageUrls.length,
               physics: const BouncingScrollPhysics(),
-              itemBuilder: (context, index) => SafeNetworkImage(
-                url: imageUrls[index],
-                width: MediaQuery.of(context).size.width,
-                height: 428,
-                fit: BoxFit.cover,
-                placeholder: const ColoredBox(color: Color(0xFFEEEEEE)),
-                errorWidget: const ColoredBox(
-                  color: Color(0xFFEEEEEE),
-                  child: Center(
-                    child: Icon(Icons.broken_image, color: Colors.grey),
+              itemBuilder: (context, index) => KeepAliveWrapper(
+                child: SafeNetworkImage(
+                  url: imageUrls[index],
+                  width: MediaQuery.of(context).size.width,
+                  height: 428,
+                  fit: BoxFit.cover,
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
+                  placeholder: const ColoredBox(color: Color(0xFFEEEEEE)),
+                  errorWidget: const ColoredBox(
+                    color: Color(0xFFEEEEEE),
+                    child: Center(
+                      child: Icon(Icons.broken_image, color: Colors.grey),
+                    ),
                   ),
                 ),
               ),
@@ -118,4 +137,24 @@ class _ItemImageCarouselState extends State<ItemImageCarousel> {
       ),
     );
   }
+}
+
+class KeepAliveWrapper extends StatefulWidget {
+  final Widget child;
+  const KeepAliveWrapper({super.key, required this.child});
+
+  @override
+  State<KeepAliveWrapper> createState() => _KeepAliveWrapperState();
+}
+
+class _KeepAliveWrapperState extends State<KeepAliveWrapper>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 }

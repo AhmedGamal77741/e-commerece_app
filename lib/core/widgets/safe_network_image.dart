@@ -12,6 +12,8 @@ class SafeNetworkImage extends StatelessWidget {
   final Widget? errorWidget;
   final BorderRadius? borderRadius;
   final Function(double ratio)? onRatioResolved;
+  final Duration? fadeInDuration;
+  final Duration? fadeOutDuration;
 
   const SafeNetworkImage({
     super.key,
@@ -23,6 +25,8 @@ class SafeNetworkImage extends StatelessWidget {
     this.errorWidget,
     this.borderRadius,
     this.onRatioResolved,
+    this.fadeInDuration,
+    this.fadeOutDuration,
   });
 
   @override
@@ -64,8 +68,8 @@ class SafeNetworkImage extends StatelessWidget {
       fit: fit,
       memCacheWidth: cacheWidth,
       memCacheHeight: cacheHeight,
-      fadeInDuration: const Duration(milliseconds: 150),
-      fadeOutDuration: const Duration(milliseconds: 150),
+      fadeInDuration: fadeInDuration ?? const Duration(milliseconds: 150),
+      fadeOutDuration: fadeOutDuration ?? const Duration(milliseconds: 150),
       imageBuilder: (context, imageProvider) {
         if (onRatioResolved != null) {
           final stream = imageProvider.resolve(ImageConfiguration.empty);

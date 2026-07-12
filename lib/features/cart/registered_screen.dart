@@ -60,8 +60,11 @@ class _BankRegisteredScreenState extends State<BankRegisteredScreen> {
 
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
-    // Always go to NavBar — gates will re-run from there
-    context.go(Routes.navBar);
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(Routes.navBar);
+    }
   }
 
   @override

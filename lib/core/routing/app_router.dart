@@ -66,28 +66,6 @@ class AppRouter {
         },
       ),
 
-      // ── Bank registered deep link landing ─────────────────────────────────
-      // Reached when OS intercepts www.pang2chocolate.com/bank-registered
-      // after Payple bank account registration callback redirects here.
-      // Top-level route (not nested under navBar) so it works from cold start.
-      GoRoute(
-        name: 'bankRegisteredScreen',
-        path: Routes.bankRegisteredScreen, // '/bank-registered'
-        builder: (context, state) {
-          final success = state.uri.queryParameters['success'] ?? 'false';
-          final userId = state.uri.queryParameters['userId'] ?? '';
-          final paymentId = state.uri.queryParameters['paymentId'] ?? '';
-          final message = state.uri.queryParameters['message'] ?? '';
-
-          return BankRegisteredScreen(
-            success: success == 'true',
-            userId: userId,
-            paymentId: paymentId,
-            message: message,
-            source: state.uri.queryParameters['source'] ?? 'shop',
-          );
-        },
-      ),
       GoRoute(
         name: Routes.noBankAccountScreen,
         path: Routes.noBankAccountScreen,
@@ -112,6 +90,24 @@ class AppRouter {
         path: Routes.navBar,
         builder: (context, state) => const NavBar(),
         routes: [
+          GoRoute(
+            name: 'bankRegisteredScreen',
+            path: Routes.bankRegisteredScreen,
+            builder: (context, state) {
+              final success = state.uri.queryParameters['success'] ?? 'false';
+              final userId = state.uri.queryParameters['userId'] ?? '';
+              final paymentId = state.uri.queryParameters['paymentId'] ?? '';
+              final message = state.uri.queryParameters['message'] ?? '';
+
+              return BankRegisteredScreen(
+                success: success == 'true',
+                userId: userId,
+                paymentId: paymentId,
+                message: message,
+                source: state.uri.queryParameters['source'] ?? 'shop',
+              );
+            },
+          ),
           GoRoute(
             name: Routes.reviewScreen,
             path: Routes.reviewScreen,

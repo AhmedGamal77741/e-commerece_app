@@ -73,6 +73,44 @@ class NavBarService {
         data['defaultAddressId'] != '';
   }
 
+  Future<ShopPrerequisites> getShopPrerequisites(String uid) async {
+    final firestore = ref.read(firestoreProvider);
+
+    final results = await Future.wait([
+      firestore.collection('users').doc(uid).get(),
+      firestore.collection('usercached_values').doc(uid).get(),
+    ]);
+
+    final userDoc = results[0];
+    final cacheDoc = results[1];
+
+    final userData = userDoc.data();
+    final cacheData = cacheDoc.data();
+
+    final isDeleted = userData != null && userData['deleted'] == true;
+
+    final accounts = userData?['bankAccounts'];
+    final hasBankAccount = accounts != null && accounts is List && accounts.isNotEmpty;
+
+    final hasDefaultAddress = userData != null &&
+        userData['defaultAddressId'] != null &&
+        userData['defaultAddressId'] != '';
+
+    final hasReceiptData = cacheData != null &&
+        (cacheData['selectedOption'] == 1 ||
+            cacheData['selectedOption'] == 2) &&
+        (cacheData['name'] as String? ?? '').isNotEmpty &&
+        (cacheData['email'] as String? ?? '').isNotEmpty &&
+        (cacheData['phone'] as String? ?? '').isNotEmpty;
+
+    return ShopPrerequisites(
+      isDeleted: isDeleted,
+      hasBankAccount: hasBankAccount,
+      hasReceiptData: hasReceiptData,
+      hasDefaultAddress: hasDefaultAddress,
+    );
+  }
+
   Future<void> recoverAccount(String uid) async {
     final firestore = ref.read(firestoreProvider);
     await firestore.collection('users').doc(uid).update({
@@ -84,4 +122,18 @@ class NavBarService {
   Future<void> signOut() async {
     await ref.read(authProvider).signOut();
   }
+}
+
+class ShopPrerequisites {
+  final bool isDeleted;
+  final bool hasBankAccount;
+  final bool hasReceiptData;
+  final bool hasDefaultAddress;
+
+  ShopPrerequisites({
+    required this.isDeleted,
+    required this.hasBankAccount,
+    required this.hasReceiptData,
+    required this.hasDefaultAddress,
+  });
 }

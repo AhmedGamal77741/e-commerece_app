@@ -78,6 +78,7 @@ class _EcommerceAppState extends State<EcommerceApp> {
             onPrimary: Colors.white,
             secondary: Colors.black,
             onSecondary: Colors.white,
+            surface: ColorsManager.primary,
           ),
           textSelectionTheme: const TextSelectionThemeData(
             cursorColor: Colors.black,
@@ -87,6 +88,7 @@ class _EcommerceAppState extends State<EcommerceApp> {
           scaffoldBackgroundColor: ColorsManager.primary,
           appBarTheme: const AppBarTheme(
             backgroundColor: ColorsManager.primary,
+            surfaceTintColor: Colors.transparent,
           ),
           unselectedWidgetColor: Colors.grey,
           radioTheme: RadioThemeData(
@@ -154,6 +156,7 @@ class _EcommerceAppState extends State<EcommerceApp> {
                   onPrimary: Colors.white,
                   secondary: Colors.black,
                   onSecondary: Colors.white,
+                  surface: ColorsManager.primary,
                 ),
                 textSelectionTheme: const TextSelectionThemeData(
                   cursorColor: Colors.black,
@@ -161,8 +164,9 @@ class _EcommerceAppState extends State<EcommerceApp> {
                   selectionHandleColor: Colors.black,
                 ),
                 scaffoldBackgroundColor: ColorsManager.primary,
-                appBarTheme: AppBarTheme(
+                appBarTheme: const AppBarTheme(
                   backgroundColor: ColorsManager.primary,
+                  surfaceTintColor: Colors.transparent,
                 ),
                 unselectedWidgetColor: Colors.grey,
                 radioTheme: RadioThemeData(

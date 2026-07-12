@@ -41,6 +41,53 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final List<String> localAssets = [
+      'assets/001m.png',
+      'assets/grey_001m.png',
+      'assets/002m.png',
+      'assets/grey_002m.png',
+      'assets/003m.png',
+      'assets/005m.png',
+      'assets/grey_005m.png',
+      'assets/006m.png',
+      'assets/grey_006m.png',
+      'assets/007m.png',
+      'assets/grey_007m.png',
+      'assets/black_007m.png',
+      'assets/logo.png',
+      'assets/avatar.png',
+      'assets/mypage_avatar.png',
+      'assets/mypage_avatar_grey.png',
+      'assets/order_history.png',
+      'assets/010no_cropped.png',
+      'assets/Frame 4.png',
+      'assets/sold_out.png',
+      'assets/search_icon.png',
+      'assets/settings.png',
+      'assets/icon=link.png',
+      'assets/icon=no_interest.png',
+      'assets/person_off.png',
+      'assets/report.png',
+      'assets/009.png',
+      'assets/add_post_transparent.png',
+      'assets/swiper_logo.png',
+      'assets/chat_with_seller.png',
+      'assets/chat_with_seller_grey.png',
+      'assets/icon=like,status=off (1).png',
+      'assets/icon=like,status=off.png',
+      'assets/notification.png',
+      'assets/notification_bell_transparent.png',
+      'assets/notification_dot.png',
+      'assets/rev_icon.png',
+    ];
+    for (final asset in localAssets) {
+      precacheImage(AssetImage(asset), context);
+    }
+  }
+
+  @override
   void dispose() {
     homeTabController.dispose();
     homeScrollController.dispose();
@@ -67,9 +114,9 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
     final navBarService = ref.read(navBarServiceProvider);
 
-    final hasBankAccount = await navBarService.hasBankAccount(user.uid);
+    final prereqs = await navBarService.getShopPrerequisites(user.uid);
 
-    if (!hasBankAccount) {
+    if (!prereqs.hasBankAccount) {
       if (!mounted) return;
       await context.pushNamed(
         Routes.noBankAccountScreen,
@@ -79,9 +126,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
       if (!nowHasAccount) return;
     }
 
-    final hasReceiptData = await navBarService.hasReceiptData(user.uid);
-
-    if (!hasReceiptData) {
+    if (!prereqs.hasReceiptData) {
       if (!mounted) return;
       final result = await context.pushNamed<bool>(
         Routes.receiptSetupScreen,
@@ -115,17 +160,17 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
       if (user != null) {
         final navBarService = ref.read(navBarServiceProvider);
 
-        final isDeleted = await navBarService.isAccountDeleted(user.uid);
-        if (isDeleted) {
+        // Fetch all shop prerequisites in a single parallel call
+        final prereqs = await navBarService.getShopPrerequisites(user.uid);
+
+        if (prereqs.isDeleted) {
           setState(() {
             _selectedIndex = index;
           });
           return;
         }
 
-        final hasBankAccount = await navBarService.hasBankAccount(user.uid);
-
-        if (!hasBankAccount) {
+        if (!prereqs.hasBankAccount) {
           if (!mounted) return;
           final result = await context.pushNamed<bool>(
             Routes.noBankAccountScreen,
@@ -137,9 +182,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
           }
         }
 
-        final hasReceiptData = await navBarService.hasReceiptData(user.uid);
-
-        if (!hasReceiptData) {
+        if (!prereqs.hasReceiptData) {
           if (!mounted) return;
           final result = await context.pushNamed<dynamic>(
             Routes.receiptSetupScreen,
@@ -148,10 +191,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
           if (result != true && result != 'skip') return;
         }
 
-        final hasDefaultAddress = await navBarService.hasDefaultAddress(
-          user.uid,
-        );
-        if (!hasDefaultAddress) {
+        if (!prereqs.hasDefaultAddress) {
           if (!mounted) return;
           final result = await context.pushNamed<bool>(
             Routes.addAddressScreen,

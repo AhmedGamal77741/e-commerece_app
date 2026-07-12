@@ -31,21 +31,34 @@ final categoryProductsStreamProvider = StreamProvider.family<List<Product>, Stri
   });
 });
 
-final userDefaultAddressStreamProvider = StreamProvider<Map<String, dynamic>?>((ref) {
+final defaultAddressIdProvider = StreamProvider<String?>((ref) {
   final user = ref.watch(authStateProvider).value;
   if (user == null) return Stream.value(null);
 
   final repository = ref.watch(shopRepositoryProvider);
-  return repository.userStream(user.uid).asyncMap((userDoc) async {
-    if (!userDoc.exists) return null;
-    final defaultAddressId = userDoc.data()?['defaultAddressId'] as String?;
-    if (defaultAddressId == null || defaultAddressId.isEmpty) return null;
+  return repository.userStream(user.uid).map((doc) {
+    return doc.data()?['defaultAddressId'] as String?;
+  }).distinct();
+});
 
-    final addressDoc = await repository.getAddress(user.uid, defaultAddressId);
-        
-    if (!addressDoc.exists) return null;
-    return addressDoc.data();
-  });
+final userDefaultAddressStreamProvider = StreamProvider<Map<String, dynamic>?>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return Stream.value(null);
+
+  final addressIdAsync = ref.watch(defaultAddressIdProvider);
+  final addressId = addressIdAsync.value;
+
+  if (addressId == null || addressId.isEmpty) {
+    return Stream.value(null);
+  }
+
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(user.uid)
+      .collection('addresses')
+      .doc(addressId)
+      .snapshots()
+      .map((doc) => doc.data());
 });
 
 class ShopController extends AsyncNotifier<void> {

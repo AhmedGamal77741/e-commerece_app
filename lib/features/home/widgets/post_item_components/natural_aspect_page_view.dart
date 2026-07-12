@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class NaturalAspectPageView extends ConsumerStatefulWidget {
   final List imgUrls;
@@ -48,6 +49,21 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _precacheImages();
+  }
+
+  void _precacheImages() {
+    for (final urlObj in widget.imgUrls) {
+      final url = urlObj?.toString() ?? '';
+      if (url.isNotEmpty) {
+        precacheImage(CachedNetworkImageProvider(url), context);
+      }
+    }
+  }
+
+  @override
   void didUpdateWidget(NaturalAspectPageView oldWidget) {
     super.didUpdateWidget(oldWidget);
 
@@ -80,6 +96,7 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
           _ratios[i] = _globalRatioCache[url];
         }
       }
+      _precacheImages();
     }
   }
 
@@ -133,6 +150,8 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
           height: availableWidth / currentRatio,
           fit: BoxFit.cover,
           borderRadius: BorderRadius.circular(25),
+          fadeInDuration: Duration.zero,
+          fadeOutDuration: Duration.zero,
           onRatioResolved: (ratio) => _onRatioResolved(0, ratio),
           placeholder: const DecoratedBox(
             decoration: BoxDecoration(
@@ -175,31 +194,35 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
                         ? _ratios[index]!
                         : 1.1;
 
-                return AspectRatio(
-                  aspectRatio: ratio,
-                  child: SafeNetworkImage(
-                    url: widget.imgUrls[index]?.toString() ?? '',
-                    width: availableWidth,
-                    height: availableWidth / ratio,
-                    fit: BoxFit.cover,
-                    borderRadius: BorderRadius.circular(25),
-                    onRatioResolved: (ratio) => _onRatioResolved(index, ratio),
-                    placeholder: const DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Color(0xFFEEEEEE),
-                        borderRadius: BorderRadius.all(Radius.circular(25)),
+                return KeepAliveWrapper(
+                  child: AspectRatio(
+                    aspectRatio: ratio,
+                    child: SafeNetworkImage(
+                      url: widget.imgUrls[index]?.toString() ?? '',
+                      width: availableWidth,
+                      height: availableWidth / ratio,
+                      fit: BoxFit.cover,
+                      borderRadius: BorderRadius.circular(25),
+                      fadeInDuration: Duration.zero,
+                      fadeOutDuration: Duration.zero,
+                      onRatioResolved: (ratio) => _onRatioResolved(index, ratio),
+                      placeholder: const DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Color(0xFFEEEEEE),
+                          borderRadius: BorderRadius.all(Radius.circular(25)),
+                        ),
                       ),
-                    ),
-                    errorWidget: const DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Color(0xFFEEEEEE),
-                        borderRadius: BorderRadius.all(Radius.circular(25)),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          color: Colors.grey,
-                          size: 48,
+                      errorWidget: const DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Color(0xFFEEEEEE),
+                          borderRadius: BorderRadius.all(Radius.circular(25)),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.grey,
+                            size: 48,
+                          ),
                         ),
                       ),
                     ),
@@ -234,4 +257,24 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
       ],
     );
   }
+}
+
+class KeepAliveWrapper extends StatefulWidget {
+  final Widget child;
+  const KeepAliveWrapper({super.key, required this.child});
+
+  @override
+  State<KeepAliveWrapper> createState() => _KeepAliveWrapperState();
+}
+
+class _KeepAliveWrapperState extends State<KeepAliveWrapper>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 }
