@@ -25,7 +25,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
 
   final ContactService _contactService = ContactService();
 
-  bool _isSyncing = false;
   bool editMode = false;
   Set<String> selectedChatIds = {};
 
@@ -57,6 +56,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
     return ref.read(friendsControllerProvider.notifier).getFollowingIdsStream();
   }
 
+  late final Stream<Set<String>> _followingIdsStreamInstance;
+  late final Stream<Set<String>> _hiddenIdsStreamInstance;
+  late final Stream<Map<String, String>> _aliasesStreamInstance;
+  late final Stream<List<MyUser>> _friendsStreamInstance;
+
   void toggleEditMode() {
     setState(() {
       editMode = !editMode;
@@ -67,6 +71,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
   @override
   void initState() {
     super.initState();
+    _followingIdsStreamInstance = _getFollowingIdsStream();
+    _hiddenIdsStreamInstance = _getHiddenIdsStream();
+    _aliasesStreamInstance = _getAliasesStream();
+    _friendsStreamInstance = ref.read(friendsControllerProvider.notifier).getFriendsStream();
     _loadCurrentUser();
     _loadContactNicknameMap();
     _syncContactsOnEnter();
@@ -97,15 +105,21 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
     }
   }
 
+  static DateTime? _lastSyncTime;
+
   Future<void> _syncContactsOnEnter() async {
-    if (mounted) setState(() => _isSyncing = true);
+    final now = DateTime.now();
+    if (_lastSyncTime != null &&
+        now.difference(_lastSyncTime!) < const Duration(minutes: 5)) {
+      return;
+    }
+    _lastSyncTime = now;
+
     try {
       await _contactService.syncAndAddFriendsFromContacts();
       await _loadContactNicknameMap();
     } catch (e) {
       debugPrint('Contact sync error: $e');
-    } finally {
-      if (mounted) setState(() => _isSyncing = false);
     }
   }
 
@@ -115,28 +129,25 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
     return SafeArea(
       top: false,
       child: StreamBuilder<Set<String>>(
-        stream: _getFollowingIdsStream(),
+        stream: _followingIdsStreamInstance,
         builder: (context, followingSnapshot) {
           final followingIds = followingSnapshot.data ?? {};
 
           return StreamBuilder<Set<String>>(
-            stream: _getHiddenIdsStream(),
+            stream: _hiddenIdsStreamInstance,
             builder: (context, hiddenSnapshot) {
               final hiddenIds = hiddenSnapshot.data ?? {};
 
               return StreamBuilder<Map<String, String>>(
-                stream: _getAliasesStream(),
+                stream: _aliasesStreamInstance,
                 builder: (context, aliasSnapshot) {
                   final aliases = aliasSnapshot.data ?? {};
                   _latestAliases = aliases;
 
                   return StreamBuilder<List<MyUser>>(
-                    stream:
-                        ref
-                            .read(friendsControllerProvider.notifier)
-                            .getFriendsStream(),
+                    stream: _friendsStreamInstance,
                     builder: (context, snapshot) {
-                      if (!snapshot.hasData || _isSyncing) {
+                      if (!snapshot.hasData) {
                         return const SizedBox.shrink();
                       }
 

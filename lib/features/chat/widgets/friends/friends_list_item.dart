@@ -34,16 +34,15 @@ class FriendsListItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final GlobalKey itemKey = GlobalKey();
     final String displayName = aliases[friend.userId] ?? friend.name;
     final bool hasAlias =
         aliases.containsKey(friend.userId) &&
         aliases[friend.userId]!.isNotEmpty;
 
-    void showFriendMenu() {
+    void showFriendMenu(BuildContext menuContext) {
       if (isBrand) return;
       final RenderBox box =
-          itemKey.currentContext!.findRenderObject() as RenderBox;
+          menuContext.findRenderObject() as RenderBox;
       final Offset offset = box.localToGlobal(Offset.zero);
       final screenWidth = MediaQuery.of(context).size.width;
       const double popupWidth = 220;
@@ -169,10 +168,11 @@ class FriendsListItem extends ConsumerWidget {
       );
     }
 
-    return Container(
-      key: itemKey,
-      margin: EdgeInsets.only(bottom: 16.h),
-      child: Row(
+    return Builder(
+      builder: (tileContext) {
+        return Container(
+          margin: EdgeInsets.only(bottom: 16.h),
+          child: Row(
         children: [
           Stack(
             clipBehavior: Clip.none,
@@ -184,7 +184,7 @@ class FriendsListItem extends ConsumerWidget {
                     extra: {'userId': friend.userId},
                   );
                 },
-                onLongPress: showFriendMenu,
+                onLongPress: () => showFriendMenu(tileContext),
                 child: CircleAvatar(
                   backgroundColor: Colors.grey[300],
                   radius: 25.r,
@@ -220,7 +220,7 @@ class FriendsListItem extends ConsumerWidget {
                           }
                         }
                       },
-                      onLongPress: showFriendMenu,
+                      onLongPress: () => showFriendMenu(tileContext),
                       child: Row(
                         children: [
                           _buildHighlightedName(displayName, effectiveQuery),
@@ -260,7 +260,7 @@ class FriendsListItem extends ConsumerWidget {
                           }
                         }
                       },
-                      onLongPress: showFriendMenu,
+                      onLongPress: () => showFriendMenu(tileContext),
                       child: Row(
                         children: [
                           Text(
@@ -308,6 +308,8 @@ class FriendsListItem extends ConsumerWidget {
             ),
         ],
       ),
+    );
+      },
     );
   }
 

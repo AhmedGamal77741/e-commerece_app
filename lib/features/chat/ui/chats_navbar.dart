@@ -39,7 +39,23 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
   late final _directChatsScreen = DirectChatsScreen();
   late final _groupChatsScreen = GroupChatsScreen();
 
-  Widget get _friendsScreen => FriendsScreen(searchQuery: _searchQuery);
+  Widget? _friendsScreenCache;
+  String? _lastSearchQuery;
+
+  Widget get _friendsScreen {
+    if (_friendsScreenCache == null || _lastSearchQuery != _searchQuery) {
+      _lastSearchQuery = _searchQuery;
+      _friendsScreenCache = FriendsScreen(searchQuery: _searchQuery);
+    }
+    return _friendsScreenCache!;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const AssetImage('assets/search_icon.png'), context);
+    precacheImage(const AssetImage('assets/settings.png'), context);
+  }
 
   @override
   void dispose() {
@@ -73,7 +89,9 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
     _groupChatsScreen,
   ];
   void _onPageChanged(int index) {
-    setState(() => _selectedIndex = index);
+    if (_selectedIndex != index) {
+      setState(() => _selectedIndex = index);
+    }
   }
 
   void _onSettingsTapped() {
@@ -200,12 +218,10 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
               onFriendsTab
                   ? IconButton(
                     onPressed: _enterSearchMode,
-                    icon: CircleAvatar(
-                      radius: 15.r,
-                      backgroundColor: Colors.transparent,
-                      backgroundImage: const AssetImage(
-                        'assets/search_icon.png',
-                      ),
+                    icon: Image.asset(
+                      'assets/search_icon.png',
+                      width: 30.r,
+                      height: 30.r,
                     ),
                     padding: EdgeInsets.zero,
                     constraints: BoxConstraints(
@@ -236,10 +252,10 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
         ),
         IconButton(
           onPressed: _onSettingsTapped,
-          icon: CircleAvatar(
-            radius: 15.r,
-            backgroundColor: Colors.transparent,
-            backgroundImage: const AssetImage('assets/settings.png'),
+          icon: Image.asset(
+            'assets/settings.png',
+            width: 30.r,
+            height: 30.r,
           ),
           padding: EdgeInsets.zero,
           constraints: BoxConstraints(minWidth: 28.w, minHeight: 28.h),

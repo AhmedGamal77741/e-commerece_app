@@ -182,97 +182,97 @@ class DirectChatTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUserUid = ref.watch(currentUserIdProvider);
     final int unread = chat.unreadCount[currentUserUid] ?? 0;
-    final tileKey = GlobalKey();
 
-    return Container(
-      key: tileKey,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          context.pushNamed(
-            Routes.chatScreen,
-            pathParameters: {'id': chat.id},
-            extra: {
-              'name': displayName,
-              'isDeleted': isDeleted,
+    return Builder(
+      builder: (tileContext) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              context.pushNamed(
+                Routes.chatScreen,
+                pathParameters: {'id': chat.id},
+                extra: {
+                  'name': displayName,
+                  'isDeleted': isDeleted,
+                },
+              );
             },
-          );
-        },
-        onLongPress: () {
-          final tileCtx = tileKey.currentContext;
-          if (tileCtx == null) return;
-          _showChatMenu(tileContext: tileCtx, ref: ref);
-        },
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 25,
-              backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
-                  ? safeNetworkImageProvider(avatarUrl!)
-                  : isDeleted
-                      ? const AssetImage('assets/avatar.png') as ImageProvider
+            onLongPress: () {
+              _showChatMenu(tileContext: tileContext, ref: ref);
+            },
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 25,
+                  backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                      ? safeNetworkImageProvider(avatarUrl!)
+                      : isDeleted
+                          ? const AssetImage('assets/avatar.png') as ImageProvider
+                          : null,
+                  backgroundColor: Colors.grey[200],
+                  child: avatarUrl == null && !isDeleted
+                      ? Text(
+                          displayName.isNotEmpty ? displayName[0] : '?',
+                          style: const TextStyle(color: Colors.black),
+                        )
                       : null,
-              backgroundColor: Colors.grey[200],
-              child: avatarUrl == null && !isDeleted
-                  ? Text(
-                      displayName.isNotEmpty ? displayName[0] : '?',
-                      style: const TextStyle(color: Colors.black),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(
-                          displayName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              displayName,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                          if (realName != null) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              '($realName)',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[400],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      if (realName != null) ...[
-                        const SizedBox(width: 4),
+                      if (chat.lastMessage != null &&
+                          chat.lastMessage!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
                         Text(
-                          '($realName)',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey[400],
-                          ),
+                          chat.lastMessage!,
+                          style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ],
                   ),
-                  if (chat.lastMessage != null &&
-                      chat.lastMessage!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      chat.lastMessage!,
-                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
+                ),
+                if (unread > 0)
+                  Image.asset(
+                    'assets/notification_dot.png',
+                    width: 25.w,
+                    height: 25.h,
+                  ),
+              ],
             ),
-            if (unread > 0)
-              Image.asset(
-                'assets/notification_dot.png',
-                width: 25.w,
-                height: 25.h,
-              ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

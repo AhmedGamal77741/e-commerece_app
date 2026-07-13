@@ -18,9 +18,6 @@ class EditContactsTab extends ConsumerStatefulWidget {
 class _EditContactsTabState extends ConsumerState<EditContactsTab> {
   final FavoritesService _favoritesService = FavoritesService();
 
-  Stream<List<String>> get _favoriteIdsStream =>
-      _favoritesService.getFavoriteIdsStream();
-
   Stream<Set<String>> _hiddenIdsStream(String uid) {
     return ref.read(friendsControllerProvider.notifier).getHiddenIdsStreamForUser(uid);
   }
@@ -55,6 +52,23 @@ class _EditContactsTabState extends ConsumerState<EditContactsTab> {
       orderMap[newOrder[i].userId] = i;
     }
     await ref.read(friendsControllerProvider.notifier).reorderFavorites(uid, orderMap);
+  }
+
+  late final Stream<List<String>> _favoriteIdsStreamInstance;
+  late final Stream<Map<String, int>> _favoriteOrderStreamInstance;
+  late final Stream<Set<String>> _hiddenIdsStreamInstance;
+  late final Stream<List<String>> _blockedIdsStreamInstance;
+  late final Stream<List<MyUser>> _friendsStreamInstance;
+
+  @override
+  void initState() {
+    super.initState();
+    final uid = ref.read(editScreenControllerProvider(0).notifier).uid;
+    _favoriteIdsStreamInstance = _favoritesService.getFavoriteIdsStream();
+    _favoriteOrderStreamInstance = _favoriteOrderStream(uid);
+    _hiddenIdsStreamInstance = _hiddenIdsStream(uid);
+    _blockedIdsStreamInstance = _blockedIdsStream(uid);
+    _friendsStreamInstance = ref.read(friendsControllerProvider.notifier).getFriendsStream();
   }
 
   Widget _sectionHeader(String title) {
@@ -146,27 +160,27 @@ class _EditContactsTabState extends ConsumerState<EditContactsTab> {
     final uid = ref.read(editScreenControllerProvider(0).notifier).uid;
 
     return StreamBuilder<List<String>>(
-      stream: _favoriteIdsStream,
+      stream: _favoriteIdsStreamInstance,
       builder: (ctx, favSnap) {
         final favIds = favSnap.data ?? [];
 
         return StreamBuilder<Map<String, int>>(
-          stream: _favoriteOrderStream(uid),
+          stream: _favoriteOrderStreamInstance,
           builder: (ctx, orderSnap) {
             final orderMap = orderSnap.data ?? {};
 
             return StreamBuilder<Set<String>>(
-              stream: _hiddenIdsStream(uid),
+              stream: _hiddenIdsStreamInstance,
               builder: (ctx, hiddenSnap) {
                 final hiddenIds = hiddenSnap.data ?? {};
 
                 return StreamBuilder<List<String>>(
-                  stream: _blockedIdsStream(uid),
+                  stream: _blockedIdsStreamInstance,
                   builder: (ctx, blockedSnap) {
                     final blockedIds = blockedSnap.data ?? [];
 
                     return StreamBuilder<List<MyUser>>(
-                      stream: ref.read(friendsControllerProvider.notifier).getFriendsStream(),
+                      stream: _friendsStreamInstance,
                       builder: (ctx, friendsSnap) {
                         if (!friendsSnap.hasData) {
                           return const SizedBox.shrink();

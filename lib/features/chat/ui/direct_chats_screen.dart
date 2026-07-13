@@ -21,8 +21,8 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
 
   String get currentUserId => ref.watch(currentUserIdProvider);
 
-  final Map<String, MyUser?> _usersCache = {};
-  final Set<String> _fetchingIds = {};
+  static final Map<String, MyUser?> _usersCache = {};
+  static final Set<String> _fetchingIds = {};
 
   // ─── Hidden IDs stream ────────────────────────────────────────────────────
   Stream<Set<String>> _getHiddenIdsStream() {
@@ -32,6 +32,18 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
   // ─── Alias map stream ─────────────────────────────────────────────────────
   Stream<Map<String, String>> _getAliasesStream() {
     return ref.read(friendsControllerProvider.notifier).getAliasesStream();
+  }
+
+  late final Stream<Set<String>> _hiddenIdsStreamInstance;
+  late final Stream<Map<String, String>> _aliasesStreamInstance;
+  late final Stream<List<ChatRoomModel>> _chatRoomsStreamInstance;
+
+  @override
+  void initState() {
+    super.initState();
+    _hiddenIdsStreamInstance = _getHiddenIdsStream();
+    _aliasesStreamInstance = _getAliasesStream();
+    _chatRoomsStreamInstance = ref.read(chatControllerProvider.notifier).getChatRoomsStream();
   }
 
   // ─── Resolve other participant ────────────────────────────────────────────
@@ -77,20 +89,17 @@ class _DirectChatsScreenState extends ConsumerState<DirectChatsScreen>
   Widget build(BuildContext context) {
     super.build(context);
     return StreamBuilder<Set<String>>(
-      stream: _getHiddenIdsStream(),
+      stream: _hiddenIdsStreamInstance,
       builder: (context, hiddenSnapshot) {
         final hiddenIds = hiddenSnapshot.data ?? {};
 
         return StreamBuilder<Map<String, String>>(
-          stream: _getAliasesStream(),
+          stream: _aliasesStreamInstance,
           builder: (context, aliasSnapshot) {
             final aliases = aliasSnapshot.data ?? {};
 
             return StreamBuilder<List<ChatRoomModel>>(
-              stream:
-                  ref
-                      .read(chatControllerProvider.notifier)
-                      .getChatRoomsStream(),
+              stream: _chatRoomsStreamInstance,
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const SizedBox.shrink();

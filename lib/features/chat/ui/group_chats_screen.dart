@@ -1,5 +1,4 @@
 import 'package:ecommerece_app/features/chat/widgets/group_chat_tile.dart';
-import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/chat_room_model.dart';
@@ -17,21 +16,27 @@ class _GroupChatsScreenState extends ConsumerState<GroupChatsScreen>
   @override
   bool get wantKeepAlive => true;
 
-  String get currentUserId => ref.watch(currentUserIdProvider);
+  late final Stream<Map<String, int>> _groupChatsOrderStreamInstance;
+  late final Stream<List<ChatRoomModel>> _chatRoomsStreamInstance;
+
+  @override
+  void initState() {
+    super.initState();
+    _groupChatsOrderStreamInstance = ref.read(chatControllerProvider.notifier).getGroupChatsOrderStream();
+    _chatRoomsStreamInstance = ref.read(chatControllerProvider.notifier).getChatRoomsStream();
+  }
 
   // ─── Build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     super.build(context);
     return StreamBuilder<Map<String, int>>(
-      stream:
-          ref.read(chatControllerProvider.notifier).getGroupChatsOrderStream(),
+      stream: _groupChatsOrderStreamInstance,
       builder: (context, orderSnapshot) {
         final orderMap = orderSnapshot.data ?? {};
 
         return StreamBuilder<List<ChatRoomModel>>(
-          stream:
-              ref.read(chatControllerProvider.notifier).getChatRoomsStream(),
+          stream: _chatRoomsStreamInstance,
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return const SizedBox.shrink();

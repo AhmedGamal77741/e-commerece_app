@@ -131,6 +131,14 @@ class _EditDirectChatsTabState extends ConsumerState<EditDirectChatsTab> {
     }
   }
 
+  late final Stream<List<ChatRoomModel>> _chatRoomsStreamInstance;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatRoomsStreamInstance = ref.read(chatControllerProvider.notifier).getChatRoomsStream();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(editScreenControllerProvider(0));
@@ -144,8 +152,7 @@ class _EditDirectChatsTabState extends ConsumerState<EditDirectChatsTab> {
       children: [
         Expanded(
           child: StreamBuilder<List<ChatRoomModel>>(
-            stream:
-                ref.read(chatControllerProvider.notifier).getChatRoomsStream(),
+            stream: _chatRoomsStreamInstance,
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const SizedBox.shrink();

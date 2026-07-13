@@ -108,6 +108,17 @@ class _EditGroupChatsTabState extends ConsumerState<EditGroupChatsTab> {
     }
   }
 
+  late final Stream<Map<String, int>> _groupOrderStreamInstance;
+  late final Stream<List<ChatRoomModel>> _chatRoomsStreamInstance;
+
+  @override
+  void initState() {
+    super.initState();
+    final uid = ref.read(editScreenControllerProvider(0).notifier).uid;
+    _groupOrderStreamInstance = _groupOrderStream(uid);
+    _chatRoomsStreamInstance = ref.read(chatControllerProvider.notifier).getChatRoomsStream();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(editScreenControllerProvider(0));
@@ -120,11 +131,11 @@ class _EditGroupChatsTabState extends ConsumerState<EditGroupChatsTab> {
       children: [
         Expanded(
           child: StreamBuilder<Map<String, int>>(
-            stream: _groupOrderStream(uid),
+            stream: _groupOrderStreamInstance,
             builder: (ctx, orderSnap) {
               final orderMap = orderSnap.data ?? {};
               return StreamBuilder<List<ChatRoomModel>>(
-                stream: ref.read(chatControllerProvider.notifier).getChatRoomsStream(),
+                stream: _chatRoomsStreamInstance,
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const SizedBox.shrink();

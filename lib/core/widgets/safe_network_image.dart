@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 /// A thin wrapper around [CachedNetworkImage] that guards against empty URLs,
@@ -33,6 +34,41 @@ class SafeNetworkImage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (url.isEmpty) {
       return errorWidget ?? const Icon(Icons.image_not_supported);
+    }
+
+    if (kIsWeb) {
+      final imageProvider = NetworkImage(url);
+      if (onRatioResolved != null) {
+        final stream = imageProvider.resolve(ImageConfiguration.empty);
+        late ImageStreamListener listener;
+        listener = ImageStreamListener((info, _) {
+          stream.removeListener(listener);
+          final ratio = info.image.width / info.image.height;
+          onRatioResolved!(ratio);
+        });
+        stream.addListener(listener);
+      }
+
+      Widget imageWidget = Image(
+        image: imageProvider,
+        width: width,
+        height: height,
+        fit: fit ?? BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            errorWidget ?? const Icon(Icons.image_not_supported),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return placeholder ?? const SizedBox.shrink();
+        },
+      );
+
+      if (borderRadius != null) {
+        return ClipRRect(
+          borderRadius: borderRadius!,
+          child: imageWidget,
+        );
+      }
+      return imageWidget;
     }
 
     final double devicePixelRatio = MediaQuery.maybeDevicePixelRatioOf(context) ?? 1.0;
@@ -120,6 +156,9 @@ ImageProvider safeNetworkImageProvider(
 }) {
   if (url.isEmpty) {
     return const AssetImage('assets/avatar.png');
+  }
+  if (kIsWeb) {
+    return NetworkImage(url);
   }
   final provider = CachedNetworkImageProvider(url);
   return ResizeImage(provider, width: maxCacheWidth, height: maxCacheHeight);

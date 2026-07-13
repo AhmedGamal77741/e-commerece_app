@@ -427,28 +427,26 @@ class GroupChatTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tileKey = GlobalKey();
     final currentUserId = ref.watch(currentUserIdProvider);
     final int unread = chat.unreadCount[currentUserId] ?? 0;
 
-    return Container(
-      key: tileKey,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          context.pushNamed(
-            Routes.chatScreen,
-            pathParameters: {'id': chat.id},
-            extra: {'name': chat.name},
-          );
-        },
-        onLongPress: () {
-          final tileCtx = tileKey.currentContext;
-          if (tileCtx == null) return;
-          _showGroupMenu(tileContext: tileCtx, ref: ref);
-        },
-        child: Row(
+    return Builder(
+      builder: (tileContext) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              context.pushNamed(
+                Routes.chatScreen,
+                pathParameters: {'id': chat.id},
+                extra: {'name': chat.name},
+              );
+            },
+            onLongPress: () {
+              _showGroupMenu(tileContext: tileContext, ref: ref);
+            },
+            child: Row(
           children: [
             Container(
               width: 50.w,
@@ -472,9 +470,14 @@ class GroupChatTile extends ConsumerWidget {
                               (context, url, error) => Image.asset(
                                 'assets/009.png',
                                 fit: BoxFit.cover,
+                                cacheWidth: 150,
                               ),
                         )
-                        : Image.asset('assets/009.png', fit: BoxFit.cover),
+                        : Image.asset(
+                            'assets/009.png',
+                            fit: BoxFit.cover,
+                            cacheWidth: 150,
+                          ),
               ),
             ),
             SizedBox(width: 12.w),
@@ -505,6 +508,8 @@ class GroupChatTile extends ConsumerWidget {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }
@@ -595,7 +600,7 @@ class FadingText extends ConsumerWidget {
   }
 }
 
-class GroupChatNameText extends ConsumerWidget {
+class GroupChatNameText extends ConsumerStatefulWidget {
   final ChatRoomModel chat;
   final String currentUserId;
   final TextStyle style;
@@ -610,46 +615,51 @@ class GroupChatNameText extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (chat.name.trim().isNotEmpty) {
-      return Text(
-        chat.name,
-        style: style,
-        textAlign: textAlign,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      );
+  ConsumerState<GroupChatNameText> createState() => _GroupChatNameTextState();
+}
+
+class _GroupChatNameTextState extends ConsumerState<GroupChatNameText> {
+  Future<List<String>>? _fetchFuture;
+  List<String>? _resolvedNames;
+
+  @override
+  void initState() {
+    super.initState();
+    _initFuture();
+  }
+
+  @override
+  void didUpdateWidget(GroupChatNameText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.chat.participants.length != oldWidget.chat.participants.length ||
+        !widget.chat.participants.every((id) => oldWidget.chat.participants.contains(id))) {
+      _resolvedNames = null;
+      _initFuture();
     }
+  }
+
+  void _initFuture() {
+    if (widget.chat.name.trim().isNotEmpty) return;
 
     final otherParticipants =
-        chat.participants.where((id) => id != currentUserId).toList();
+        widget.chat.participants.where((id) => id != widget.currentUserId).toList();
     final targetIds =
-        otherParticipants.isEmpty ? chat.participants : otherParticipants;
+        otherParticipants.isEmpty ? widget.chat.participants : otherParticipants;
 
     final allCached = targetIds.every(
       (id) => UserCache.getUserCached(id) != null,
     );
-    if (allCached) {
-      final names =
-          targetIds.map((id) {
-            final doc = UserCache.getUserCached(id)!;
-            if (doc.exists) {
-              return doc.get('name') as String? ?? '알 수 없음';
-            }
-            return '알 수 없음';
-          }).toList();
-      final nameStr = names.join(', ');
-      return Text(
-        nameStr,
-        style: style,
-        textAlign: textAlign,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      );
-    }
 
-    return FutureBuilder<List<String>>(
-      future: Future.wait(
+    if (allCached) {
+      _resolvedNames = targetIds.map((id) {
+        final doc = UserCache.getUserCached(id)!;
+        if (doc.exists) {
+          return doc.get('name') as String? ?? '알 수 없음';
+        }
+        return '알 수 없음';
+      }).toList();
+    } else {
+      _fetchFuture = Future.wait(
         targetIds.map((id) async {
           try {
             final doc = await UserCache.getUser(id);
@@ -659,19 +669,46 @@ class GroupChatNameText extends ConsumerWidget {
           } catch (_) {}
           return '알 수 없음';
         }),
-      ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.chat.name.trim().isNotEmpty) {
+      return Text(
+        widget.chat.name,
+        style: widget.style,
+        textAlign: widget.textAlign,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
+    if (_resolvedNames != null) {
+      return Text(
+        _resolvedNames!.join(', '),
+        style: widget.style,
+        textAlign: widget.textAlign,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
+    return FutureBuilder<List<String>>(
+      future: _fetchFuture,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return Text('...', style: style, textAlign: textAlign);
+        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+          _resolvedNames = snapshot.data;
+          return Text(
+            _resolvedNames!.join(', '),
+            style: widget.style,
+            textAlign: widget.textAlign,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
         }
-        final nameStr = snapshot.data!.join(', ');
-        return Text(
-          nameStr,
-          style: style,
-          textAlign: textAlign,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        );
+        return Text('...', style: widget.style, textAlign: widget.textAlign);
       },
     );
   }
