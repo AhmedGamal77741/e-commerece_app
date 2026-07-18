@@ -8,6 +8,7 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 // ─── Multi-field user search ──────────────────────────────────────────────
 
@@ -807,7 +808,7 @@ void showAddFriendDialog(BuildContext context, WidgetRef ref) {
                                                   radius: 22.r,
                                                   backgroundImage:
                                                       user.url.isNotEmpty
-                                                          ? NetworkImage(
+                                                          ? safeNetworkImageProvider(
                                                             user.url,
                                                           )
                                                           : null,
@@ -1003,7 +1004,7 @@ Future<void> showCreateGroupDialog({
                                         backgroundColor: Colors.grey[200],
                                         backgroundImage:
                                             groupImagePath != null
-                                                ? NetworkImage(groupImagePath!)
+                                                ? safeNetworkImageProvider(groupImagePath!)
                                                 : null,
                                         child:
                                             groupImagePath == null
@@ -1093,7 +1094,7 @@ Future<void> showCreateGroupDialog({
                                                           radius: 22.r,
                                                           backgroundImage:
                                                               user.url.isNotEmpty
-                                                                  ? NetworkImage(
+                                                                  ? safeNetworkImageProvider(
                                                                     user.url,
                                                                   )
                                                                   : null,
@@ -1335,7 +1336,7 @@ Future<void> showCreateGroupDialog({
                                                 radius: 22.r,
                                                 backgroundImage:
                                                     user.url.isNotEmpty
-                                                        ? NetworkImage(user.url)
+                                                        ? safeNetworkImageProvider(user.url)
                                                         : null,
                                                 backgroundColor:
                                                     Colors.grey[200],

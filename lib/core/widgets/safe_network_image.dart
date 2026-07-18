@@ -37,7 +37,8 @@ class SafeNetworkImage extends StatelessWidget {
     }
 
     if (kIsWeb) {
-      final imageProvider = NetworkImage(url);
+      final webUrl = _getWebCorsUrl(url);
+      final imageProvider = NetworkImage(webUrl, webHtmlElementStrategy: WebHtmlElementStrategy.fallback);
       if (onRatioResolved != null) {
         final stream = imageProvider.resolve(ImageConfiguration.empty);
         late ImageStreamListener listener;
@@ -54,8 +55,9 @@ class SafeNetworkImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit ?? BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            errorWidget ?? const Icon(Icons.image_not_supported),
+        errorBuilder:
+            (context, error, stackTrace) =>
+                errorWidget ?? const Icon(Icons.image_not_supported),
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return placeholder ?? const SizedBox.shrink();
@@ -63,20 +65,19 @@ class SafeNetworkImage extends StatelessWidget {
       );
 
       if (borderRadius != null) {
-        return ClipRRect(
-          borderRadius: borderRadius!,
-          child: imageWidget,
-        );
+        return ClipRRect(borderRadius: borderRadius!, child: imageWidget);
       }
       return imageWidget;
     }
 
-    final double devicePixelRatio = MediaQuery.maybeDevicePixelRatioOf(context) ?? 1.0;
+    final double devicePixelRatio =
+        MediaQuery.maybeDevicePixelRatioOf(context) ?? 1.0;
     final double logicalWidth = width ?? MediaQuery.sizeOf(context).width;
     int cacheWidth = (logicalWidth * devicePixelRatio).round();
-    int cacheHeight = height != null
-        ? (height! * devicePixelRatio).round()
-        : (MediaQuery.sizeOf(context).height * devicePixelRatio).round();
+    int cacheHeight =
+        height != null
+            ? (height! * devicePixelRatio).round()
+            : (MediaQuery.sizeOf(context).height * devicePixelRatio).round();
 
     // Cap the maximum physical decode size to 1080x1920 (Full HD bounds) to prevent
     // massive memory usage and decoding lag on extremely tall or uncompressed images.
@@ -151,15 +152,28 @@ class SafeNetworkImage extends StatelessWidget {
 /// Automatically caches the image and downsamples its decode resolution to prevent main thread lag.
 ImageProvider safeNetworkImageProvider(
   String url, {
-  int maxCacheWidth = 200, // Default to 200 physical pixels wide for crisp yet small avatars
+  int maxCacheWidth =
+      200, // Default to 200 physical pixels wide for crisp yet small avatars
   int? maxCacheHeight,
 }) {
   if (url.isEmpty) {
     return const AssetImage('assets/avatar.png');
   }
   if (kIsWeb) {
-    return NetworkImage(url);
+    return NetworkImage(_getWebCorsUrl(url), webHtmlElementStrategy: WebHtmlElementStrategy.fallback);
   }
   final provider = CachedNetworkImageProvider(url);
   return ResizeImage(provider, width: maxCacheWidth, height: maxCacheHeight);
+}
+
+String _getWebCorsUrl(String url) {
+  if (url.isEmpty) return url;
+  try {
+    final uri = Uri.parse(url);
+    final queryParams = Map<String, String>.from(uri.queryParameters);
+    queryParams['cors'] = '1';
+    return uri.replace(queryParameters: queryParams).toString();
+  } catch (_) {
+    return url;
+  }
 }

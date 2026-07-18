@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
@@ -252,22 +252,22 @@ class _EditGroupChatsTabState extends ConsumerState<EditGroupChatsTab> {
                                     child:
                                         (chat.groupImage != null &&
                                                 chat.groupImage!.isNotEmpty)
-                                            ? CachedNetworkImage(
-                                              imageUrl: chat.groupImage!,
-                                              fit: BoxFit.cover,
-                                              fadeInDuration: Duration.zero,
-                                              fadeOutDuration: Duration.zero,
-                                              placeholder:
-                                                  (context, url) => Container(
-                                                    color: Colors.grey[200],
-                                                  ),
-                                              errorWidget:
-                                                  (context, url, error) => Icon(
-                                                    Icons.group,
-                                                    size: 20.sp,
-                                                    color: Colors.grey,
-                                                  ),
-                                            )
+                                            ? SafeNetworkImage(
+                                                url: chat.groupImage!,
+                                                width: 44.w,
+                                                height: 44.w,
+                                                fit: BoxFit.cover,
+                                                fadeInDuration: Duration.zero,
+                                                fadeOutDuration: Duration.zero,
+                                                placeholder: Container(
+                                                  color: Colors.grey[200],
+                                                ),
+                                                errorWidget: Icon(
+                                                  Icons.group,
+                                                  size: 20.sp,
+                                                  color: Colors.grey,
+                                                ),
+                                              )
                                             : Icon(
                                               Icons.group,
                                               size: 20.sp,

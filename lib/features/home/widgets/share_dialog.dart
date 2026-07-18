@@ -7,6 +7,7 @@ import 'package:ecommerece_app/features/chat/services/friends_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 
 Widget _buildSquareAction({
@@ -95,7 +96,7 @@ Widget _buildFriendItem({
           CircleAvatar(
             radius: 25,
             backgroundColor: Colors.grey[300],
-            backgroundImage: NetworkImage(friend.url),
+            backgroundImage: safeNetworkImageProvider(friend.url),
           ),
           const SizedBox(width: 12),
           Expanded(

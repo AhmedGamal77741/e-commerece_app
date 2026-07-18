@@ -3,6 +3,7 @@ import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/domain/edit_screen_controller.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/widgets/edit/edit_bottom_bar.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -136,7 +137,8 @@ class _EditDirectChatsTabState extends ConsumerState<EditDirectChatsTab> {
   @override
   void initState() {
     super.initState();
-    _chatRoomsStreamInstance = ref.read(chatControllerProvider.notifier).getChatRoomsStream();
+    _chatRoomsStreamInstance =
+        ref.read(chatControllerProvider.notifier).getChatRoomsStream();
   }
 
   @override
@@ -254,7 +256,7 @@ class _EditDirectChatsTabState extends ConsumerState<EditDirectChatsTab> {
                             radius: 22.r,
                             backgroundImage:
                                 avatarUrl.isNotEmpty
-                                    ? NetworkImage(avatarUrl)
+                                    ? safeNetworkImageProvider(avatarUrl)
                                     : null,
                             backgroundColor: Colors.grey[200],
                             child:

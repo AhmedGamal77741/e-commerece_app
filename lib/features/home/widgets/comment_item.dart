@@ -13,7 +13,6 @@ import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class CommentItem extends ConsumerStatefulWidget {
@@ -58,11 +57,9 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                 height: 40.h,
                 decoration: ShapeDecoration(
                   image: DecorationImage(
-                    image: ResizeImage(
-                      CachedNetworkImageProvider(
-                        widget.comment.userImage.toString(),
-                      ),
-                      width: 120,
+                    image: safeNetworkImageProvider(
+                      widget.comment.userImage.toString(),
+                      maxCacheWidth: 120,
                     ),
                     fit: BoxFit.cover,
                   ),

@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class EditPostDialogResult {
   final String text;
@@ -414,16 +414,14 @@ class _EditPostDialogState extends ConsumerState<EditPostDialog> {
                               ),
                               child:
                                   isNetworkImage
-                                      ? CachedNetworkImage(
-                                        imageUrl: _networkImgUrls[index],
-                                        fit: BoxFit.cover,
-                                        placeholder:
-                                            (context, url) =>
-                                                const SizedBox.shrink(),
-                                        errorWidget:
-                                            (context, url, error) =>
-                                                Icon(Icons.error),
-                                      )
+                                      ? SafeNetworkImage(
+                                          url: _networkImgUrls[index],
+                                          width: 100.w,
+                                          height: 100.w,
+                                          fit: BoxFit.cover,
+                                          placeholder: const SizedBox.shrink(),
+                                          errorWidget: const Icon(Icons.error),
+                                        )
                                       : kIsWeb
                                       ? Image.network(
                                         localFile!.path,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_room_state_controller.dart';
 import 'package:ecommerece_app/core/cache/user_cache.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class ChatRoomAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String chatRoomName;
@@ -148,7 +149,7 @@ class ChatRoomAppBar extends ConsumerWidget implements PreferredSizeWidget {
                                   CircleAvatar(
                                     radius: 20.r,
                                     backgroundImage:
-                                        url.isNotEmpty ? NetworkImage(url) : null,
+                                        url.isNotEmpty ? safeNetworkImageProvider(url) : null,
                                     backgroundColor: Colors.grey[200],
                                     child:
                                         url.isEmpty

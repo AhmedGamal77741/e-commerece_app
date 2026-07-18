@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
 class UserSearchTile extends StatelessWidget {
   final MyUser user;
@@ -89,7 +90,7 @@ class UserSearchTile extends StatelessWidget {
           CircleAvatar(
             backgroundColor: theme.colorScheme.surfaceContainerHighest,
             radius: 25.sp,
-            backgroundImage: NetworkImage(user.url),
+            backgroundImage: safeNetworkImageProvider(user.url),
           ),
           SizedBox(width: 12.w),
           Expanded(

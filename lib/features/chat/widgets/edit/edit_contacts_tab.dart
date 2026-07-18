@@ -4,6 +4,7 @@ import 'package:ecommerece_app/features/chat/domain/edit_screen_controller.dart'
 import 'package:ecommerece_app/features/chat/services/favorites_service.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
+import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -101,7 +102,7 @@ class _EditContactsTabState extends ConsumerState<EditContactsTab> {
           CircleAvatar(
             radius: 22.r,
             backgroundImage:
-                user.url.isNotEmpty ? NetworkImage(user.url) : null,
+                user.url.isNotEmpty ? safeNetworkImageProvider(user.url) : null,
             backgroundColor: Colors.grey[200],
             child:
                 user.url.isEmpty
@@ -273,7 +274,7 @@ class _EditContactsTabState extends ConsumerState<EditContactsTab> {
                                                 radius: 22.r,
                                                 backgroundImage:
                                                     u.url.isNotEmpty
-                                                        ? NetworkImage(u.url)
+                                                        ? safeNetworkImageProvider(u.url)
                                                         : null,
                                                 backgroundColor:
                                                     Colors.grey[200],
