@@ -274,7 +274,9 @@ class Product {
         '';
 
     // 1. Construct user's local Sigungu matching key (inclusion check)
-    final String userSigungu = r2.isNotEmpty ? '$r1 $r2' : r1;
+    final String userSigungu = r2.isNotEmpty
+        ? (r3.isNotEmpty ? '$r1 $r2 $r3' : '$r1 $r2')
+        : (r3.isNotEmpty ? '$r1 $r3' : r1);
 
     // 2. Check if the user is in an included city/district
     // Matches "경남 김해시" or "서울"
