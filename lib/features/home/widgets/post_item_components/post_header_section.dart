@@ -47,9 +47,7 @@ class PostHeaderSection extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildNameAndNickname(),
-              if (!userMissing &&
-                  myuser != null &&
-                  myuser!.userId.isNotEmpty)
+              if (!userMissing && myuser != null && myuser!.userId.isNotEmpty)
                 _buildFollowerCount(),
             ],
           ),
@@ -64,23 +62,25 @@ class PostHeaderSection extends ConsumerWidget {
   Widget _buildAvatar(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        if (myuser != null &&
-            currentProfileUserId != myuser!.userId) {
+        if (myuser != null && currentProfileUserId != myuser!.userId) {
           context.pushNamed(
             Routes.profileTabScreen,
             extra: {'userId': myuser!.userId},
           );
         }
       },
-      child: Container(
-        width: 48.w,
-        height: 48.h,
-        decoration: ShapeDecoration(
-          image: DecorationImage(
-            image: safeNetworkImageProvider(profileUrl),
+      child: ClipOval(
+        child: SafeNetworkImage(
+          url: profileUrl,
+          width: 48.w,
+          height: 48.h,
+          fit: BoxFit.cover,
+          errorWidget: Image.asset(
+            'assets/avatar.png',
+            width: 48.w,
+            height: 48.h,
             fit: BoxFit.cover,
           ),
-          shape: const OvalBorder(),
         ),
       ),
     );
@@ -165,9 +165,10 @@ class PostHeaderSection extends ConsumerWidget {
   Widget _buildActionArea(BuildContext context, WidgetRef ref) {
     if (myuser == null) return const SizedBox.shrink();
     final currentUserId = ref.watch(currentUserIdProvider);
-    final bool isFollowing = currentUserId.isEmpty
-        ? false
-        : (ref.watch(isFollowingProvider(myuser!.userId)).value ?? false);
+    final bool isFollowing =
+        currentUserId.isEmpty
+            ? false
+            : (ref.watch(isFollowingProvider(myuser!.userId)).value ?? false);
 
     if (isFollowing) {
       return PopupMenuButton<String>(
@@ -189,18 +190,23 @@ class PostHeaderSection extends ConsumerWidget {
         },
         color: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        itemBuilder: (_) => [
-          PopupMenuItem<String>(
-            value: 'share',
-            child: Text('공유',
-                style: TextStyle(color: Colors.black, fontSize: 13.sp)),
-          ),
-          PopupMenuItem<String>(
-            value: 'unfollow',
-            child: Text('구독 취소',
-                style: TextStyle(color: Colors.black, fontSize: 13.sp)),
-          ),
-        ],
+        itemBuilder:
+            (_) => [
+              PopupMenuItem<String>(
+                value: 'share',
+                child: Text(
+                  '공유',
+                  style: TextStyle(color: Colors.black, fontSize: 13.sp),
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'unfollow',
+                child: Text(
+                  '구독 취소',
+                  style: TextStyle(color: Colors.black, fontSize: 13.sp),
+                ),
+              ),
+            ],
         child: Icon(Icons.more_horiz, color: Colors.black, size: 22.sp),
       );
     }

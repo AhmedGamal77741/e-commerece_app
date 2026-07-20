@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:ecommerece_app/core/helpers/error_logger.dart';
 
 /// A thin wrapper around [CachedNetworkImage] that guards against empty URLs,
 /// caches images automatically, and optimizes memory consumption using dynamic cache sizes.
@@ -38,15 +39,23 @@ class SafeNetworkImage extends StatelessWidget {
 
     if (kIsWeb) {
       final webUrl = _getWebCorsUrl(url);
-      final imageProvider = NetworkImage(webUrl, webHtmlElementStrategy: WebHtmlElementStrategy.fallback);
+      final imageProvider = NetworkImage(
+        webUrl,
+        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+      );
       if (onRatioResolved != null) {
         final stream = imageProvider.resolve(ImageConfiguration.empty);
         late ImageStreamListener listener;
-        listener = ImageStreamListener((info, _) {
-          stream.removeListener(listener);
-          final ratio = info.image.width / info.image.height;
-          onRatioResolved!(ratio);
-        });
+        listener = ImageStreamListener(
+          (info, _) {
+            stream.removeListener(listener);
+            final ratio = info.image.width / info.image.height;
+            onRatioResolved!(ratio);
+          },
+          onError: (exception, stackTrace) {
+            stream.removeListener(listener);
+          },
+        );
         stream.addListener(listener);
       }
 
@@ -55,9 +64,14 @@ class SafeNetworkImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit ?? BoxFit.cover,
-        errorBuilder:
-            (context, error, stackTrace) =>
-                errorWidget ?? const Icon(Icons.image_not_supported),
+        errorBuilder: (context, error, stackTrace) {
+          ErrorLogger.logImageError(
+            url: url,
+            error: error,
+            stackTrace: stackTrace,
+          );
+          return errorWidget ?? const Icon(Icons.image_not_supported);
+        },
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return placeholder ?? const SizedBox.shrink();
@@ -105,8 +119,8 @@ class SafeNetworkImage extends StatelessWidget {
       fit: fit,
       memCacheWidth: cacheWidth,
       memCacheHeight: cacheHeight,
-      fadeInDuration: fadeInDuration ?? const Duration(milliseconds: 150),
-      fadeOutDuration: fadeOutDuration ?? const Duration(milliseconds: 150),
+      fadeInDuration: fadeInDuration ?? const Duration(milliseconds: 0),
+      fadeOutDuration: fadeOutDuration ?? const Duration(milliseconds: 0),
       imageBuilder: (context, imageProvider) {
         if (onRatioResolved != null) {
           final stream = imageProvider.resolve(ImageConfiguration.empty);
@@ -141,9 +155,10 @@ class SafeNetworkImage extends StatelessWidget {
         );
       },
       placeholder: (ctx, url) => placeholder ?? const SizedBox.shrink(),
-      errorWidget:
-          (ctx, url, error) =>
-              errorWidget ?? const Icon(Icons.image_not_supported),
+      errorWidget: (ctx, url, error) {
+        ErrorLogger.logImageError(url: url, error: error);
+        return errorWidget ?? const Icon(Icons.image_not_supported);
+      },
     );
   }
 }
@@ -160,7 +175,10 @@ ImageProvider safeNetworkImageProvider(
     return const AssetImage('assets/avatar.png');
   }
   if (kIsWeb) {
-    return NetworkImage(_getWebCorsUrl(url), webHtmlElementStrategy: WebHtmlElementStrategy.fallback);
+    return NetworkImage(
+      _getWebCorsUrl(url),
+      webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+    );
   }
   final provider = CachedNetworkImageProvider(url);
   return ResizeImage(provider, width: maxCacheWidth, height: maxCacheHeight);

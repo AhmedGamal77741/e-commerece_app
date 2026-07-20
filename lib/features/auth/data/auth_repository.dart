@@ -96,6 +96,28 @@ class AuthRepository {
   /// Upload an image to Firebase Storage and return the download URL
   Future<String> uploadProfileImage(XFile image, String userId) async {
     final originalBytes = await image.readAsBytes();
+    
+    // Detect HEIC/HEIF magic bytes (even if extension is renamed/incorrect)
+    bool isHeic = false;
+    if (originalBytes.length >= 12) {
+      try {
+        final ftyp = String.fromCharCodes(originalBytes.sublist(4, 8));
+        final brand = String.fromCharCodes(originalBytes.sublist(8, 12));
+        if (ftyp == 'ftyp' && 
+            (brand.startsWith('hei') || 
+             brand.startsWith('mif1') || 
+             brand.startsWith('msf1') || 
+             brand.startsWith('hvc') || 
+             brand.startsWith('hevc'))) {
+          isHeic = true;
+        }
+      } catch (_) {}
+    }
+
+    if (isHeic && kIsWeb) {
+      throw Exception('HEIC/HEIF 이미지 형식은 웹에서 지원되지 않습니다. JPG나 PNG 이미지를 업로드해 주세요.');
+    }
+
     Uint8List uploadBytes;
     try {
       final compressedBytes = await FlutterImageCompress.compressWithList(
@@ -119,6 +141,8 @@ class AuthRepository {
     String contentType = 'image/jpeg';
     String finalExtension = '.jpg';
 
+    // If it was HEIC and compressed successfully to JPEG, it is now image/jpeg.
+    // Otherwise, check other formats or throw.
     if (uploadBytes == originalBytes) {
       if (originalExtension == '.png') {
         contentType = 'image/png';
@@ -129,7 +153,7 @@ class AuthRepository {
       } else if (originalExtension == '.gif') {
         contentType = 'image/gif';
         finalExtension = '.gif';
-      } else if (originalExtension == '.heic' || originalExtension == '.heif') {
+      } else if (isHeic || originalExtension == '.heic' || originalExtension == '.heif') {
         throw Exception('Failed to compress/convert HEIC profile image to JPEG');
       }
     }

@@ -11,6 +11,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ecommerece_app/core/helpers/error_logger.dart';
 
 late AppLinks _appLinks;
 late GoRouter _router;
@@ -25,6 +26,23 @@ void main() async {
   PaintingBinding.instance.imageCache.maximumSizeBytes = 200 * 1024 * 1024;
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Set up global error logging for the app.
+  FlutterError.onError = (errorDetails) {
+    ErrorLogger.logGeneralError(
+      message: 'Unhandled Flutter Error',
+      error: errorDetails.exception,
+      stackTrace: errorDetails.stack,
+    );
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    ErrorLogger.logGeneralError(
+      message: 'Unhandled Platform/Async Error',
+      error: error,
+      stackTrace: stack,
+    );
+    return true;
+  };
 
   // Pre-load contact name map on startup to prevent async disk I/O during list scrolling
   await ContactService().loadContactNameMap();

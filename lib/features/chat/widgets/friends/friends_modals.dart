@@ -1004,7 +1004,9 @@ Future<void> showCreateGroupDialog({
                                         backgroundColor: Colors.grey[200],
                                         backgroundImage:
                                             groupImagePath != null
-                                                ? safeNetworkImageProvider(groupImagePath!)
+                                                ? safeNetworkImageProvider(
+                                                  groupImagePath!,
+                                                )
                                                 : null,
                                         child:
                                             groupImagePath == null
@@ -1336,7 +1338,9 @@ Future<void> showCreateGroupDialog({
                                                 radius: 22.r,
                                                 backgroundImage:
                                                     user.url.isNotEmpty
-                                                        ? safeNetworkImageProvider(user.url)
+                                                        ? safeNetworkImageProvider(
+                                                          user.url,
+                                                        )
                                                         : null,
                                                 backgroundColor:
                                                     Colors.grey[200],

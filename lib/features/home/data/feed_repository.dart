@@ -530,6 +530,27 @@ class FeedRepository {
 
     final Uint8List rawBytes = await file.readAsBytes();
 
+    // Detect HEIC/HEIF magic bytes (even if extension is renamed/incorrect)
+    bool isHeic = false;
+    if (rawBytes.length >= 12) {
+      try {
+        final ftyp = String.fromCharCodes(rawBytes.sublist(4, 8));
+        final brand = String.fromCharCodes(rawBytes.sublist(8, 12));
+        if (ftyp == 'ftyp' && 
+            (brand.startsWith('hei') || 
+             brand.startsWith('mif1') || 
+             brand.startsWith('msf1') || 
+             brand.startsWith('hvc') || 
+             brand.startsWith('hevc'))) {
+          isHeic = true;
+        }
+      } catch (_) {}
+    }
+
+    if (isHeic && kIsWeb) {
+      throw Exception('HEIC/HEIF 이미지 형식은 웹에서 지원되지 않습니다. JPG나 PNG 이미지를 업로드해 주세요.');
+    }
+
     Uint8List uploadBytes;
     String finalExtension;
     String contentType;
@@ -549,7 +570,7 @@ class FeedRepository {
       uploadBytes = rawBytes;
       finalExtension = originalExtension;
       contentType = _lookupMimeType(originalExtension);
-      if (originalExtension.toLowerCase() == '.heic' ||
+      if (isHeic || originalExtension.toLowerCase() == '.heic' ||
           originalExtension.toLowerCase() == '.heif') {
         throw Exception('Failed to compress/convert HEIC image to JPEG: $e');
       }

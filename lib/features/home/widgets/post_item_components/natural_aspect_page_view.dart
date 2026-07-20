@@ -56,13 +56,30 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
   }
 
   void _precacheImages() {
-    for (final urlObj in widget.imgUrls) {
-      final url = urlObj?.toString() ?? '';
+    for (int i = 0; i < widget.imgUrls.length; i++) {
+      final url = widget.imgUrls[i]?.toString() ?? '';
       if (url.isNotEmpty) {
-        final provider = kIsWeb
-            ? NetworkImage(url)
-            : CachedNetworkImageProvider(url) as ImageProvider;
-        precacheImage(provider, context);
+        final provider =
+            kIsWeb
+                ? safeNetworkImageProvider(url)
+                : CachedNetworkImageProvider(url) as ImageProvider;
+        precacheImage(provider, context).catchError((_) {});
+
+        if (_ratios[i] == null) {
+          final stream = provider.resolve(ImageConfiguration.empty);
+          late ImageStreamListener listener;
+          listener = ImageStreamListener(
+            (info, _) {
+              stream.removeListener(listener);
+              final ratio = info.image.width / info.image.height;
+              _onRatioResolved(i, ratio);
+            },
+            onError: (exception, stackTrace) {
+              stream.removeListener(listener);
+            },
+          );
+          stream.addListener(listener);
+        }
       }
     }
   }
@@ -209,7 +226,8 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
                       borderRadius: BorderRadius.circular(25),
                       fadeInDuration: Duration.zero,
                       fadeOutDuration: Duration.zero,
-                      onRatioResolved: (ratio) => _onRatioResolved(index, ratio),
+                      onRatioResolved:
+                          (ratio) => _onRatioResolved(index, ratio),
                       placeholder: const DecoratedBox(
                         decoration: BoxDecoration(
                           color: Color(0xFFEEEEEE),
