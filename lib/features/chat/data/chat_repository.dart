@@ -97,7 +97,7 @@ class ChatRepository {
 
       final otherUser = otherUserDoc.data()!;
       final now = DateTime.now();
-      otherUserName = otherUser['name'];
+      otherUserName = otherUser['brandName'] ?? otherUser['name'] ?? '';
 
       final chatRoom = ChatRoomModel(
         id: chatRoomId,
