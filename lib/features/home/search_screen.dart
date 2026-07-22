@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -122,105 +123,114 @@ class _HomeSearchState extends ConsumerState<HomeSearch> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Colors.grey[100],
-        body: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
-              child: Row(
-                children: [
-                  InkWell(
-                    onTap: () => Navigator.pop(context),
-                    borderRadius: BorderRadius.circular(30.r),
-                    child: Icon(
-                      Icons.arrow_back,
-                      size: 36.r,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      height: 42.h,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(25),
+    return PopScope(
+      canPop: kIsWeb,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (context.mounted) {
+          context.pop();
+        }
+      },
+      child: SafeArea(
+        child: Scaffold(
+          backgroundColor: Colors.grey[100],
+          body: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () => context.pop(),
+                      borderRadius: BorderRadius.circular(30.r),
+                      child: Icon(
+                        Icons.arrow_back,
+                        size: 36.r,
+                        color: theme.colorScheme.onSurface,
                       ),
-                      child: TextField(
-                        controller: _searchController,
-                        autofocus: true,
-                        textAlignVertical: TextAlignVertical.center,
-                        decoration: InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20.h,
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 42.h,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          autofocus: true,
+                          textAlignVertical: TextAlignVertical.center,
+                          decoration: InputDecoration(
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 20.h,
+                            ),
+                            border: InputBorder.none,
+                            isDense: true,
                           ),
-                          border: InputBorder.none,
-                          isDense: true,
-                        ),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(5.w, 0, 5.w, 5.h),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        for (int i = 0; i < _userTabs.length; i++) ...[
-                          _buildPill(context, i),
-                          if (i < _userTabs.length - 1) SizedBox(width: 8.w),
+              Padding(
+                padding: EdgeInsets.fromLTRB(5.w, 0, 5.w, 5.h),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (int i = 0; i < _userTabs.length; i++) ...[
+                            _buildPill(context, i),
+                            if (i < _userTabs.length - 1) SizedBox(width: 8.w),
+                          ],
                         ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Stack(
+                  children: [
+                    IndexedStack(
+                      index: _selectedIndex,
+                      children: [
+                        const _FollowingSearchTab(),
+                        _HomeFeedSearchTab(useGuestPostItem: widget.useGuestPostItem),
+                        ShopSearch(),
                       ],
                     ),
-                  ),
-                ],
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final searchState = ref.watch(searchNotifierProvider);
+                        final isLoading = searchState.value?.isLoading ?? false;
+                        if (isLoading) {
+                          return const Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            child: LinearProgressIndicator(
+                              color: Colors.black,
+                              backgroundColor: Colors.transparent,
+                              minHeight: 2,
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: Stack(
-                children: [
-                  IndexedStack(
-                    index: _selectedIndex,
-                    children: [
-                      const _FollowingSearchTab(),
-                      _HomeFeedSearchTab(useGuestPostItem: widget.useGuestPostItem),
-                      ShopSearch(),
-                    ],
-                  ),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final searchState = ref.watch(searchNotifierProvider);
-                      final isLoading = searchState.value?.isLoading ?? false;
-                      if (isLoading) {
-                        return const Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          child: LinearProgressIndicator(
-                            color: Colors.black,
-                            backgroundColor: Colors.transparent,
-                            minHeight: 2,
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_room_state_controller.dart';
 import 'package:ecommerece_app/core/cache/user_cache.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
@@ -394,7 +395,7 @@ class ChatRoomAppBar extends ConsumerWidget implements PreferredSizeWidget {
       forceMaterialTransparency: true,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => context.pop(),
       ),
       title: GestureDetector(
         onTap: state.isGroup ? showMembersDialog : null,

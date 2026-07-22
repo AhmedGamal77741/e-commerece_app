@@ -186,18 +186,25 @@ class ChatRoomStateController extends StateNotifier<ChatRoomState> {
                   });
 
               _otherUserSubscription?.cancel();
-              _otherUserSubscription = FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(otherId)
-                  .snapshots()
-                  .listen((doc) {
-                    state = state.copyWith(
-                      isBlocked: List<String>.from(
-                        doc.data()?['blocked'] ?? [],
-                      ).contains(currentUserId),
-                      loadingBlockState: false,
-                    );
-                  });
+              if (room.type == 'seller') {
+                state = state.copyWith(
+                  isBlocked: false,
+                  loadingBlockState: false,
+                );
+              } else {
+                _otherUserSubscription = FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(otherId)
+                    .snapshots()
+                    .listen((doc) {
+                      state = state.copyWith(
+                        isBlocked: List<String>.from(
+                          doc.data()?['blocked'] ?? [],
+                        ).contains(currentUserId),
+                        loadingBlockState: false,
+                      );
+                    });
+              }
 
               state = state.copyWith(chatRoom: room, isGroup: false);
             }

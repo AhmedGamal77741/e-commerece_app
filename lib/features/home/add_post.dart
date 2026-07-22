@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/helpers/spacing.dart';
 import 'package:ecommerece_app/features/home/widgets/category_management_widgets.dart';
 import 'package:ecommerece_app/features/home/widgets/post_text_input.dart';
@@ -37,30 +39,38 @@ class _AddPostState extends ConsumerState<AddPost> {
     // We only need to listen to _textController changes to update the button state
     // We could use a hook, but a simple ListenableBuilder is fine.
 
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        bottomNavigationBar: ListenableBuilder(
-          listenable: _textController,
-          builder: (context, _) {
-            return AddPostBottomBar(textController: _textController);
-          },
-        ),
-        appBar: AppBar(
+    return PopScope(
+      canPop: kIsWeb,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (context.mounted) {
+          context.pop();
+        }
+      },
+      child: SafeArea(
+        child: Scaffold(
           backgroundColor: Theme.of(context).colorScheme.surface,
-          titleSpacing: 0,
-          automaticallyImplyLeading: false,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: Icon(
-                  Icons.arrow_back_ios,
-                  color: Theme.of(context).colorScheme.onSurface,
+          bottomNavigationBar: ListenableBuilder(
+            listenable: _textController,
+            builder: (context, _) {
+              return AddPostBottomBar(textController: _textController);
+            },
+          ),
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            titleSpacing: 0,
+            automaticallyImplyLeading: false,
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                IconButton(
+                  onPressed: () => context.pop(),
+                  icon: Icon(
+                    Icons.arrow_back_ios,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
-              ),
               Text(
                 "오늘의 이야기",
                 style: Theme.of(
@@ -103,6 +113,7 @@ class _AddPostState extends ConsumerState<AddPost> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

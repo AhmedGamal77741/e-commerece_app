@@ -41,7 +41,7 @@ class FriendsMyProfile extends ConsumerWidget {
                   radius: 28.r,
                   backgroundImage:
                       currentUser!.url.isNotEmpty
-                          ? NetworkImage(currentUser!.url)
+                          ? safeNetworkImageProvider(currentUser!.url)
                           : null,
                   backgroundColor: Colors.grey[200],
                   child:

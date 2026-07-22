@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class NaturalAspectPageView extends ConsumerStatefulWidget {
   final List imgUrls;
@@ -59,10 +57,7 @@ class NaturalAspectPageViewState extends ConsumerState<NaturalAspectPageView> {
     for (int i = 0; i < widget.imgUrls.length; i++) {
       final url = widget.imgUrls[i]?.toString() ?? '';
       if (url.isNotEmpty) {
-        final provider =
-            kIsWeb
-                ? safeNetworkImageProvider(url)
-                : CachedNetworkImageProvider(url) as ImageProvider;
+        final provider = safeNetworkImageProvider(url);
         precacheImage(provider, context).catchError((_) {});
 
         if (_ratios[i] == null) {

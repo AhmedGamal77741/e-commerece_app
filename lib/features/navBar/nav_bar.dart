@@ -1,4 +1,5 @@
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/chat/ui/chats_navbar.dart';
@@ -11,6 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:ecommerece_app/core/widgets/no_account_screen.dart';
+import 'package:ecommerece_app/core/widgets/receipt_setup_screen.dart';
 import 'providers/nav_bar_providers.dart';
 import 'widgets/chat_nav_icon.dart';
 
@@ -118,9 +121,10 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
     if (!prereqs.hasBankAccount) {
       if (!mounted) return;
-      await context.pushNamed(
-        Routes.noBankAccountScreen,
-        queryParameters: {'source': 'sub'},
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const NoBankAccountScreen(source: 'sub'),
+        ),
       );
       final nowHasAccount = await navBarService.hasBankAccount(user.uid);
       if (!nowHasAccount) return;
@@ -128,9 +132,10 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
     if (!prereqs.hasReceiptData) {
       if (!mounted) return;
-      final result = await context.pushNamed<bool>(
-        Routes.receiptSetupScreen,
-        queryParameters: {'source': 'sub'},
+      final result = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (context) => const ReceiptSetupScreen(source: 'sub'),
+        ),
       );
       if (result != true) return;
     }
@@ -172,9 +177,10 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
         if (!prereqs.hasBankAccount) {
           if (!mounted) return;
-          final result = await context.pushNamed<bool>(
-            Routes.noBankAccountScreen,
-            queryParameters: {'source': 'shop'},
+          final result = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (context) => const NoBankAccountScreen(source: 'shop'),
+            ),
           );
           if (result != true) {
             final nowHasAccount = await navBarService.hasBankAccount(user.uid);
@@ -184,9 +190,10 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
 
         if (!prereqs.hasReceiptData) {
           if (!mounted) return;
-          final result = await context.pushNamed<dynamic>(
-            Routes.receiptSetupScreen,
-            queryParameters: {'source': 'shop'},
+          final result = await Navigator.of(context).push<dynamic>(
+            MaterialPageRoute(
+              builder: (context) => const ReceiptSetupScreen(source: 'shop'),
+            ),
           );
           if (result != true && result != 'skip') return;
         }
@@ -234,7 +241,7 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
     ];
 
     return PopScope(
-      canPop: false,
+      canPop: kIsWeb,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         // On a non-home tab → navigate to home first

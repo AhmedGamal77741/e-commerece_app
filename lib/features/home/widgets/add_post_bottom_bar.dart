@@ -5,6 +5,7 @@ import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/features/home/domain/add_post_notifier.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
+import 'package:go_router/go_router.dart';
 
 class AddPostBottomBar extends ConsumerWidget {
   final TextEditingController textController;
@@ -66,7 +67,7 @@ class AddPostBottomBar extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('성공')),
                 );
-                Navigator.pop(context); // Close screen
+                context.pop(); // Close screen
               } catch (e) {
                 if (!context.mounted) return;
                 Navigator.pop(context); // Close dialog

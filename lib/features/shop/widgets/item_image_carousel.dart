@@ -1,11 +1,9 @@
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class ItemImageCarousel extends StatefulWidget {
   final Product product;
@@ -27,9 +25,7 @@ class _ItemImageCarouselState extends State<ItemImageCarousel> {
     ];
     for (final url in imageUrls) {
       if (url is String && url.isNotEmpty) {
-        final provider = kIsWeb
-            ? safeNetworkImageProvider(url)
-            : CachedNetworkImageProvider(url) as ImageProvider;
+        final provider = safeNetworkImageProvider(url);
         precacheImage(provider, context).catchError((_) {});
       }
     }

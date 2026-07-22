@@ -212,11 +212,20 @@ class AppRouter {
             name: Routes.itemDetailsScreen,
             path: Routes.itemDetailsScreen,
             builder: (context, state) {
-              final extra = state.extra as Map<String, dynamic>;
+              final extra = state.extra as Map<String, dynamic>?;
+              if (extra != null && extra['product'] != null) {
+                RouteStateCache.product = extra['product'] as Product;
+                RouteStateCache.arrivalDay = extra['arrivalDay'] as String?;
+                RouteStateCache.isSub = extra['isSub'] as bool?;
+              }
+              final product = RouteStateCache.product;
+              if (product == null) {
+                return const NavBar();
+              }
               return ItemDetails(
-                product: extra['product'] as Product,
-                arrivalDay: extra['arrivalDay'] as String,
-                isSub: extra['isSub'] as bool,
+                product: product,
+                arrivalDay: RouteStateCache.arrivalDay ?? '',
+                isSub: RouteStateCache.isSub ?? false,
               );
             },
           ),
@@ -242,10 +251,18 @@ class AppRouter {
             name: Routes.trackorder,
             path: Routes.trackorder,
             builder: (context, state) {
-              final extra = state.extra as Map<String, dynamic>;
+              final extra = state.extra as Map<String, dynamic>?;
+              if (extra != null && extra['order'] != null) {
+                RouteStateCache.order = extra['order'];
+                RouteStateCache.arrivalDate = extra['arrivalDate'] as String?;
+              }
+              final order = RouteStateCache.order;
+              if (order == null) {
+                return const NavBar();
+              }
               return TrackOrder(
-                order: extra['order'],
-                arrivalDate: extra['arrivalDate'],
+                order: order,
+                arrivalDate: RouteStateCache.arrivalDate ?? '',
               );
             },
           ),
@@ -253,10 +270,18 @@ class AppRouter {
             name: Routes.exchangeOrRefund,
             path: Routes.exchangeOrRefund,
             builder: (context, state) {
-              final extra = state.extra as Map<String, dynamic>;
+              final extra = state.extra as Map<String, dynamic>?;
+              if (extra != null && extra['userId'] != null) {
+                RouteStateCache.userId = extra['userId'] as String?;
+                RouteStateCache.orderId = extra['orderId'] as String?;
+              }
+              final userId = RouteStateCache.userId;
+              if (userId == null) {
+                return const NavBar();
+              }
               return ExchangeOrRefund(
-                userId: extra['userId'],
-                orderId: extra['orderId'],
+                userId: userId,
+                orderId: RouteStateCache.orderId ?? '',
               );
             },
           ),
@@ -321,4 +346,16 @@ class AppRouter {
           body: Center(child: Text('No route defined for ${state.uri.path}')),
         ),
   );
+}
+
+class RouteStateCache {
+  static Product? product;
+  static String? arrivalDay;
+  static bool? isSub;
+
+  static dynamic order;
+  static String? arrivalDate;
+
+  static String? userId;
+  static String? orderId;
 }

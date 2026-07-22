@@ -38,9 +38,8 @@ class SafeNetworkImage extends StatelessWidget {
     }
 
     if (kIsWeb) {
-      final webUrl = _getWebCorsUrl(url);
       final imageProvider = NetworkImage(
-        webUrl,
+        url,
         webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
       );
       if (onRatioResolved != null) {
@@ -176,22 +175,10 @@ ImageProvider safeNetworkImageProvider(
   }
   if (kIsWeb) {
     return NetworkImage(
-      _getWebCorsUrl(url),
+      url,
       webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
     );
   }
   final provider = CachedNetworkImageProvider(url);
   return ResizeImage(provider, width: maxCacheWidth, height: maxCacheHeight);
-}
-
-String _getWebCorsUrl(String url) {
-  if (url.isEmpty) return url;
-  try {
-    final uri = Uri.parse(url);
-    final queryParams = Map<String, String>.from(uri.queryParameters);
-    queryParams['cors'] = '1';
-    return uri.replace(queryParameters: queryParams).toString();
-  } catch (_) {
-    return url;
-  }
 }
