@@ -43,7 +43,15 @@ class _CommentInputBoxState extends State<CommentInputBox> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16.r),
                   child: kIsWeb
-                      ? Image.network(_pickedImage!.path, fit: BoxFit.cover)
+                      ? FutureBuilder<Uint8List>(
+                          future: _pickedImage!.readAsBytes(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              return Image.memory(snapshot.data!, fit: BoxFit.cover);
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        )
                       : Image.file(File(_pickedImage!.path), fit: BoxFit.cover),
                 ),
                 Positioned(

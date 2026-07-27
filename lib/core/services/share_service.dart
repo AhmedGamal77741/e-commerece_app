@@ -1,27 +1,58 @@
-import 'package:share_plus/share_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ShareService {
   static const String _appDomain = 'https://www.pang2chocolate.com';
 
-  static Future<void> shareProduct(String productId, String productName) async {
+  static Future<void> copyProductLink(BuildContext context, String productId) async {
     final link = '$_appDomain/product/$productId';
-    await SharePlus.instance.share(
-      ShareParams(
-        text: '이 상품 확인해보세요! 🛍️\n$link',
-        subject: '$productName을(를) 공유했습니다',
-      ),
-    );
-    /*     await Share.share(
-      '이 상품 확인해보세요! 🛍️\n$link',
-      subject: '$productName을(를) 공유했습니다',
-    ); */
+    await Clipboard.setData(ClipboardData(text: link));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('링크가 클립보드에 복사되었습니다.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
-  static Future<void> sharePost(String postId) async {
+  static Future<void> copyPostLink(BuildContext context, String postId) async {
     final link = '$_appDomain/comment?postId=$postId';
-    await SharePlus.instance.share(
-      ShareParams(text: '이 게시물을 확인해보세요! 👇\n$link', subject: '게시물 공유'),
-    );
-    /*     await Share.share('이 게시물을 확인해보세요! 👇\n$link', subject: '게시물 공유'); */
+    await Clipboard.setData(ClipboardData(text: link));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('링크가 클립보드에 복사되었습니다.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  static Future<void> shareProduct(String productId, String productName, {BuildContext? context}) async {
+    final link = '$_appDomain/product/$productId';
+    await Clipboard.setData(ClipboardData(text: link));
+    if (context != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('링크가 클립보드에 복사되었습니다.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  static Future<void> sharePost(String postId, {BuildContext? context}) async {
+    final link = '$_appDomain/comment?postId=$postId';
+    await Clipboard.setData(ClipboardData(text: link));
+    if (context != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('링크가 클립보드에 복사되었습니다.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 }

@@ -37,12 +37,20 @@ class ProfileImagePicker extends StatelessWidget {
                 ? ClipOval(
                   child:
                       kIsWeb
-                          ? Image.network(
-                            selectedImage!.path,
-                            height: 80.h,
-                            width: 80.h,
-                            fit: BoxFit.cover,
-                          )
+                          ? FutureBuilder<Uint8List>(
+                              future: selectedImage!.readAsBytes(),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData) {
+                                  return Image.memory(
+                                    snapshot.data!,
+                                    height: 80.h,
+                                    width: 80.h,
+                                    fit: BoxFit.cover,
+                                  );
+                                }
+                                return SizedBox(height: 80.h, width: 80.h);
+                              },
+                            )
                           : Image.file(
                             File(selectedImage!.path),
                             height: 80.h,

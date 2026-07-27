@@ -46,7 +46,8 @@ void showPostMenu(BuildContext context, String postId, String userId) {
                     children: [
                       InkWell(
                         onTap: () {
-                          ShareService.sharePost(postId);
+                          Navigator.pop(context);
+                          ShareService.copyPostLink(context, postId);
                         },
                         child: Container(
                           width: double.infinity,

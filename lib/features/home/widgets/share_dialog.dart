@@ -197,11 +197,14 @@ void showShareDialog(
                           label: '링크 복사',
                           onTap: () {
                             if (type == 'post') {
-                              ShareService.sharePost(id);
+                              ShareService.sharePost(id, context: context);
                             } else if (type == 'product') {
-                              ShareService.shareProduct(id, name);
+                              ShareService.shareProduct(id, name, context: context);
                             }
-                          } /* _copyToClipboard(postUrl) */,
+                            if (Navigator.canPop(context)) {
+                              Navigator.pop(context);
+                            }
+                          },
                         ),
                       ],
                     ),

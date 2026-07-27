@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 class UploadableImage extends ChangeNotifier {
   final String id = UniqueKey().toString();
   final XFile localFile;
+  Uint8List? _bytes;
   String? _networkUrl;
   bool _isUploading;
   bool _hasError;
@@ -16,14 +17,29 @@ class UploadableImage extends ChangeNotifier {
 
   UploadableImage({
     required this.localFile,
+    Uint8List? bytes,
     String? networkUrl,
     bool isUploading = true,
     bool hasError = false,
     double? progress,
-  }) : _networkUrl = networkUrl,
+  }) : _bytes = bytes,
+       _networkUrl = networkUrl,
        _isUploading = isUploading,
        _hasError = hasError,
-       _progress = progress;
+       _progress = progress {
+    if (_bytes == null && kIsWeb) {
+      _loadBytes();
+    }
+  }
+
+  Uint8List? get bytes => _bytes;
+
+  Future<void> _loadBytes() async {
+    try {
+      _bytes = await localFile.readAsBytes();
+      notifyListeners();
+    } catch (_) {}
+  }
 
   String? get networkUrl => _networkUrl;
   set networkUrl(String? value) {

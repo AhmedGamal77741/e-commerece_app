@@ -41,13 +41,31 @@ class ImagePickerGrid extends ConsumerWidget {
                   cacheWidth: 300,
                 );
               } else if (kIsWeb) {
-                imgWidget = Image.network(
-                  imageItem.localFile.path,
-                  height: 160.h,
-                  width: 120.w,
-                  fit: BoxFit.cover,
-                  cacheWidth: 300,
-                );
+                if (imageItem.bytes != null) {
+                  imgWidget = Image.memory(
+                    imageItem.bytes!,
+                    height: 160.h,
+                    width: 120.w,
+                    fit: BoxFit.cover,
+                    cacheWidth: 300,
+                  );
+                } else {
+                  imgWidget = FutureBuilder<Uint8List>(
+                    future: imageItem.localFile.readAsBytes(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return Image.memory(
+                          snapshot.data!,
+                          height: 160.h,
+                          width: 120.w,
+                          fit: BoxFit.cover,
+                          cacheWidth: 300,
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  );
+                }
               } else {
                 imgWidget = Image.file(
                   File(imageItem.localFile.path),

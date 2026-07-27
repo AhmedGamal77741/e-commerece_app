@@ -423,10 +423,18 @@ class _EditPostDialogState extends ConsumerState<EditPostDialog> {
                                           errorWidget: const Icon(Icons.error),
                                         )
                                       : kIsWeb
-                                      ? Image.network(
-                                        localFile!.path,
-                                        fit: BoxFit.cover,
-                                      )
+                                      ? FutureBuilder<Uint8List>(
+                                          future: localFile!.readAsBytes(),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.hasData) {
+                                              return Image.memory(
+                                                snapshot.data!,
+                                                fit: BoxFit.cover,
+                                              );
+                                            }
+                                            return const SizedBox.shrink();
+                                          },
+                                        )
                                       : Image.file(
                                         File(localFile!.path),
                                         fit: BoxFit.cover,
