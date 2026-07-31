@@ -352,7 +352,7 @@ class _MyPageState extends ConsumerState<MyPage> {
 
 void _launchTermsPage() async {
   final url = Uri.parse(
-    'https://flowery-tub-f11.notion.site/1d938af9230b80fa9d64ce280f6eacbd',
+    'https://magnetic-sole-873.notion.site/397afcb4acdd80ab88efc859537cf396',
   );
 
   if (await canLaunchUrl(url)) {
