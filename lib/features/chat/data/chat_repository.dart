@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:ecommerece_app/core/models/product_model.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -226,46 +227,47 @@ class ChatRepository {
     return chatRoomId;
   }
 
-  Future<Map<String, dynamic>?> _fetchProductFromUrl(String urlString) async {
+  Future<Map<String, dynamic>?> _fetchProductFromUrl(String text) async {
     try {
-      final uri = Uri.parse(urlString);
-      if (uri.pathSegments.length < 2) return null;
-
-      String productId = uri.pathSegments[1];
-      DocumentSnapshot doc =
-          await _firestore.collection('products').doc(productId).get();
-
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id;
-        return data;
+      final match =
+          RegExp(r'(?:/product/|productId=)([a-zA-Z0-9_-]+)').firstMatch(text);
+      if (match != null) {
+        final productId = match.group(1);
+        if (productId != null && productId.isNotEmpty) {
+          final doc =
+              await _firestore.collection('products').doc(productId).get();
+          if (doc.exists && doc.data() != null) {
+            final data = Map<String, dynamic>.from(doc.data() as Map);
+            data['product_id'] = doc.id;
+            data['id'] = doc.id;
+            return data;
+          }
+        }
       }
     } catch (e) {
-      // ignore
+      debugPrint('Error fetching product from text: $e');
     }
     return null;
   }
 
-  Future<Map<String, dynamic>?> _fetchPostFromUrl(String urlString) async {
+  Future<Map<String, dynamic>?> _fetchPostFromUrl(String text) async {
     try {
-      final uri = Uri.parse(urlString);
-      String? linkedPostId = uri.queryParameters['postId'];
-      if (linkedPostId == null && uri.pathSegments.length >= 2) {
-        linkedPostId = uri.pathSegments[1];
-      }
-
-      if (linkedPostId == null) return null;
-
-      DocumentSnapshot doc =
-          await _firestore.collection('posts').doc(linkedPostId).get();
-
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id;
-        return data;
+      final match =
+          RegExp(r'(?:/post/|postId=)([a-zA-Z0-9_-]+)').firstMatch(text);
+      if (match != null) {
+        final postId = match.group(1);
+        if (postId != null && postId.isNotEmpty) {
+          final doc = await _firestore.collection('posts').doc(postId).get();
+          if (doc.exists && doc.data() != null) {
+            final data = Map<String, dynamic>.from(doc.data() as Map);
+            data['id'] = doc.id;
+            data['postId'] = doc.id;
+            return data;
+          }
+        }
       }
     } catch (e) {
-      // ignore
+      debugPrint('Error fetching post from text: $e');
     }
     return null;
   }
@@ -307,18 +309,11 @@ class ChatRepository {
     }
 
     if (postData == null && productData == null && content.isNotEmpty) {
-      final urlRegExp = RegExp(r'(https?://[^\s]+)');
-      final match = urlRegExp.firstMatch(content);
-      if (match != null) {
-        String url = match.group(0)!;
-        if (url.contains('pang2chocolate.com/product/')) {
-          final pData = await _fetchProductFromUrl(url);
-          if (pData != null) {
-            productData = Product.fromMap(pData);
-          }
-        } else if (url.contains('/comment') || url.contains('/post/')) {
-          postData = await _fetchPostFromUrl(url);
-        }
+      final pData = await _fetchProductFromUrl(content);
+      if (pData != null) {
+        productData = Product.fromMap(pData);
+      } else {
+        postData = await _fetchPostFromUrl(content);
       }
     }
 
@@ -358,12 +353,19 @@ class ChatRepository {
             ? '[사진]'
             : content;
 
-    await _firestore.collection('chatRooms').doc(chatRoomId).update({
+    final Map<String, dynamic> roomUpdates = {
       'lastMessage': lastMessageText,
       'lastMessageTime': message.timestamp.millisecondsSinceEpoch,
       'lastMessageSenderId': currentUserId,
-      'lastMessageSenderName': user.name, 
-    });
+      'lastMessageSenderName': user.name,
+    };
+
+    final currentStatus = chatRoomDoc.data()?['status'] as String?;
+    if (currentStatus != null && currentStatus.toLowerCase() == 'completed') {
+      roomUpdates['status'] = 'In Progress';
+    }
+
+    await _firestore.collection('chatRooms').doc(chatRoomId).update(roomUpdates);
 
     final updatedUnreadCount = Map<String, int>.from(chatRoom.unreadCount);
     for (String participantId in chatRoom.participants) {
@@ -376,6 +378,13 @@ class ChatRepository {
     await _firestore.collection('chatRooms').doc(chatRoomId).update({
       'unreadCount': updatedUnreadCount,
     });
+  }
+
+  Future<void> updateChatRoomStatus(String chatRoomId, String status) async {
+    await _firestore
+        .collection('chatRooms')
+        .doc(chatRoomId)
+        .update({'status': status});
   }
 
   Future<void> resetDeletedBy(String chatRoomId) async {

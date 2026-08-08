@@ -1,5 +1,4 @@
 import 'package:ecommerece_app/core/helpers/spacing.dart';
-import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 
@@ -14,6 +13,8 @@ import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
+import 'package:ecommerece_app/core/widgets/user_name_header.dart';
+import 'package:ecommerece_app/core/widgets/full_screen_image_viewer.dart';
 
 class CommentItem extends ConsumerStatefulWidget {
   final Comment comment;
@@ -77,30 +78,11 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     verticalSpace(3),
-                    Text(
-                      widget.comment.userName ?? '',
-                      style: TextStyles.abeezee16px400wPblack,
-                    ),
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final nickname = ref.watch(contactNicknameProvider(widget.comment.userId));
-                        if (nickname == null || nickname.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-                        return Padding(
-                          padding: EdgeInsets.only(top: 2.h),
-                          child: Text(
-                            '@$nickname',
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w400,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      },
+                    UserNameHeader(
+                      userId: widget.comment.userId,
+                      accountName: widget.comment.userName ?? '',
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w400,
                     ),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -117,6 +99,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(6.r),
                                     color: Colors.white,
+                                    border: Border.all(color: const Color(0xFFE0E0E0), width: 1.0),
                                   ),
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(
@@ -214,11 +197,19 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                   widget.comment.imageUrl!.isNotEmpty) ...[
                                 if (widget.comment.text.isNotEmpty)
                                   SizedBox(height: 6.h),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: SafeNetworkImage(
-                                    url: widget.comment.imageUrl!,
-                                    fit: BoxFit.cover,
+                                GestureDetector(
+                                  onTap: () {
+                                    FullScreenImageViewer.openSingle(
+                                      context,
+                                      widget.comment.imageUrl!,
+                                    );
+                                  },
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: SafeNetworkImage(
+                                      url: widget.comment.imageUrl!,
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                 ),
                               ],

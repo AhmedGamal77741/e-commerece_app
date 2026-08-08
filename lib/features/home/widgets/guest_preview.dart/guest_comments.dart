@@ -10,9 +10,9 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/natural_aspect_page_view.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
-import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ecommerece_app/core/widgets/user_name_header.dart';
 
 const _kBgColor = Color(0xFFF2F2F2);
 
@@ -322,22 +322,12 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
                 if (!isMe)
                   Padding(
                     padding: EdgeInsets.only(left: 4.w, bottom: 3.h),
-                    child: Consumer(
-                      builder: (context, ref, _) {
-                        final String senderId = item.senderId;
-                        final nickname = ref.watch(contactNicknameProvider(senderId));
-                        final display = nickname != null && nickname.isNotEmpty
-                            ? '${item.senderName} (@$nickname)'
-                            : item.senderName;
-                        return Text(
-                          display,
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        );
-                      },
+                    child: UserNameHeader(
+                      userId: item.senderId,
+                      accountName: item.senderName,
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w500,
+                      textColor: Colors.grey[500],
                     ),
                   ),
                 Row(

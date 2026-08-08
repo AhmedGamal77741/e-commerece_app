@@ -83,7 +83,8 @@ class _ForgotPasswordDialogState extends ConsumerState<ForgotPasswordDialog> {
               authState.isLoading
                   ? null
                   : () async {
-                    if (resetEmailController.text.isEmpty) {
+                    final email = resetEmailController.text.trim();
+                    if (email.isEmpty) {
                       setState(() {
                         dialogError = '이메일을 입력해주세요.';
                       });
@@ -93,7 +94,7 @@ class _ForgotPasswordDialogState extends ConsumerState<ForgotPasswordDialog> {
                     try {
                       await ref
                           .read(authNotifierProvider.notifier)
-                          .sendPasswordReset(resetEmailController.text);
+                          .sendPasswordReset(email);
                       if (context.mounted) {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(

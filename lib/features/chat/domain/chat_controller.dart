@@ -177,4 +177,8 @@ class ChatController extends AsyncNotifier<void> {
   /// Fetch a user's display name.
   Future<String> fetchUserName(String userId) =>
       _chatRepository.fetchUserName(userId);
+
+  /// Update chat room consultation status.
+  Future<void> updateChatRoomStatus(String chatRoomId, String status) =>
+      _chatRepository.updateChatRoomStatus(chatRoomId, status);
 }

@@ -213,6 +213,7 @@ class AppRouter {
             path: Routes.itemDetailsScreen,
             builder: (context, state) {
               final extra = state.extra as Map<String, dynamic>?;
+              final productIdQuery = state.uri.queryParameters['productId'];
               if (extra != null && extra['product'] != null) {
                 RouteStateCache.product = extra['product'] as Product;
                 RouteStateCache.arrivalDay = extra['arrivalDay'] as String?;
@@ -220,6 +221,9 @@ class AppRouter {
               }
               final product = RouteStateCache.product;
               if (product == null) {
+                if (productIdQuery != null && productIdQuery.isNotEmpty) {
+                  return _buildProductFromId(productIdQuery);
+                }
                 return const NavBar();
               }
               return ItemDetails(
@@ -313,31 +317,13 @@ class AppRouter {
         name: 'productDetails',
         path: '/product/:productId',
         builder: (context, state) {
-          final productId = state.pathParameters['productId'] ?? '';
-          return FutureBuilder<DocumentSnapshot>(
-            future: FirebaseFirestore.instance.collection('products').doc(productId).get(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: SizedBox.shrink(),
-                );
-              }
-              if (!snapshot.hasData || snapshot.data == null || !snapshot.data!.exists) {
-                return const Scaffold(
-                  body: Center(child: Text('Product not found')),
-                );
-              }
-              final productDoc = snapshot.data!;
-              final productMap = productDoc.data() as Map<String, dynamic>;
-              final product = Product.fromMap(productMap);
-
-              return ItemDetails(
-                product: product,
-                arrivalDay: productMap['arrivalDay'] ?? '',
-                isSub: false,
-              );
-            },
-          );
+          final productId = state.pathParameters['productId'] ??
+              state.uri.queryParameters['productId'] ??
+              '';
+          if (productId.isEmpty) {
+            return const NavBar();
+          }
+          return _buildProductFromId(productId);
         },
       ),
     ],
@@ -345,6 +331,59 @@ class AppRouter {
         (context, state) => Scaffold(
           body: Center(child: Text('No route defined for ${state.uri.path}')),
         ),
+  );
+}
+
+Widget _buildProductFromId(String productId) {
+  return FutureBuilder<DocumentSnapshot>(
+    future:
+        FirebaseFirestore.instance.collection('products').doc(productId).get(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(color: Colors.black),
+          ),
+        );
+      }
+      if (!snapshot.hasData ||
+          snapshot.data == null ||
+          !snapshot.data!.exists ||
+          snapshot.data!.data() == null) {
+        return Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                if (GoRouter.of(context).canPop()) {
+                  GoRouter.of(context).pop();
+                } else {
+                  GoRouter.of(context).go(Routes.navBar);
+                }
+              },
+            ),
+          ),
+          body: const Center(child: Text('상품을 찾을 수 없습니다.')),
+        );
+      }
+      try {
+        final productDoc = snapshot.data!;
+        final productMap =
+            Map<String, dynamic>.from(productDoc.data() as Map);
+        productMap['product_id'] = productDoc.id;
+        productMap['id'] = productDoc.id;
+        final product = Product.fromMap(productMap);
+
+        return ItemDetails(
+          product: product,
+          arrivalDay: productMap['arrivalDay'] ?? '',
+          isSub: false,
+        );
+      } catch (e) {
+        debugPrint('Error parsing product from deep link: $e');
+        return const NavBar();
+      }
+    },
   );
 }
 

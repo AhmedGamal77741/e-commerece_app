@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
+import 'package:ecommerece_app/core/widgets/user_name_header.dart';
 
 class DirectChatTile extends ConsumerWidget {
   final ChatRoomModel chat;
@@ -224,30 +225,11 @@ class DirectChatTile extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              displayName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (realName != null) ...[
-                            const SizedBox(width: 4),
-                            Text(
-                              '($realName)',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey[400],
-                              ),
-                            ),
-                          ],
-                        ],
+                      UserNameHeader(
+                        userId: userId,
+                        accountName: realName ?? displayName,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
                       if (chat.lastMessage != null &&
                           chat.lastMessage!.isNotEmpty) ...[

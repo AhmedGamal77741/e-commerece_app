@@ -8,8 +8,9 @@ import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
-import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/natural_aspect_page_view.dart';
+import 'package:ecommerece_app/core/widgets/user_name_header.dart';
+import 'package:ecommerece_app/core/widgets/full_screen_image_viewer.dart';
 
 class CommentBubble extends ConsumerStatefulWidget {
   final Map<String, dynamic> item;
@@ -79,18 +80,12 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                 if (!isMe)
                   Padding(
                     padding: EdgeInsets.only(left: 4.w, bottom: 3.h),
-                    child: Consumer(
-                      builder: (context, ref, _) {
-                        final String senderId = item['senderId'] ?? '';
-                        final nickname = ref.watch(contactNicknameProvider(senderId));
-                        final display = nickname != null && nickname.isNotEmpty
-                            ? '${item['senderName']} (@$nickname)'
-                            : item['senderName'];
-                        return Text(
-                          display,
-                          style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
-                        );
-                      },
+                    child: UserNameHeader(
+                      userId: item['senderId'] ?? '',
+                      accountName: item['senderName'] ?? '',
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w500,
+                      textColor: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 Row(
@@ -103,6 +98,7 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                         decoration: BoxDecoration(
                           color: const Color(0xFFEEEEEE),
                           borderRadius: BorderRadius.all(Radius.circular(16.r)),
+                          border: Border.all(color: const Color(0xFFE0E0E0), width: 1.0),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,15 +162,23 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                             ],
                             if (item['imageUrls'] != null && (item['imageUrls'] as List).isNotEmpty && item['postData'] == null) ...[
                               if ((item['content'] as String).isNotEmpty) SizedBox(height: 6.h),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10.r),
-                                child: SizedBox(
-                                  width: maxW,
-                                  child: NaturalAspectPageView(
-                                    imgUrls: item['imageUrls'] as List,
-                                    pageController: _pageController,
-                                    explicitWidth: maxW,
-                                    imageRatios: item['imageRatios'] as Map?,
+                              GestureDetector(
+                                onTap: () {
+                                  final List rawUrls = item['imageUrls'] as List;
+                                  final List<String> urls = rawUrls.map((e) => e.toString()).toList();
+                                  final int currentIdx = _pageController.hasClients ? (_pageController.page?.round() ?? 0) : 0;
+                                  FullScreenImageViewer.open(context, imageUrls: urls, initialIndex: currentIdx);
+                                },
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10.r),
+                                  child: SizedBox(
+                                    width: maxW,
+                                    child: NaturalAspectPageView(
+                                      imgUrls: item['imageUrls'] as List,
+                                      pageController: _pageController,
+                                      explicitWidth: maxW,
+                                      imageRatios: item['imageRatios'] as Map?,
+                                    ),
                                   ),
                                 ),
                               )

@@ -84,10 +84,11 @@ class _CommentInputBoxState extends State<CommentInputBox> {
               }
             }
             
+            _commentController.clear();
+            if (mounted) setState(() => _pickedImage = null);
+            
             try {
               await widget.onSubmit(text, imageFile: imageFile, imageBytes: imageBytes);
-              _commentController.clear();
-              if (mounted) setState(() => _pickedImage = null);
             } catch (e) {
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('댓글 추가에 실패했습니다: $e')));

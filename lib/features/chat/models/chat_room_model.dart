@@ -13,6 +13,8 @@ class ChatRoomModel {
   final DateTime createdAt;
   final Map<String, int> unreadCount; // userId -> unread count
   final String? lastMessageSenderName;
+  final String? status;
+
   ChatRoomModel({
     required this.id,
     required this.name,
@@ -27,6 +29,7 @@ class ChatRoomModel {
     required this.createdAt,
     this.unreadCount = const {},
     this.lastMessageSenderName,
+    this.status,
   });
 
   factory ChatRoomModel.fromMap(Map<String, dynamic> map) {
@@ -46,6 +49,7 @@ class ChatRoomModel {
       unreadCount: Map<String, int>.from(map['unreadCount'] ?? {}),
       deletedBy: List<String>.from(map['deletedBy'] ?? []),
       lastMessageSenderName: map['lastMessageSenderName'],
+      status: map['status'],
     );
   }
 
@@ -64,6 +68,7 @@ class ChatRoomModel {
       'unreadCount': unreadCount,
       'deletedBy': deletedBy,
       'lastMessageSenderName': lastMessageSenderName,
+      'status': status,
     };
   }
 }

@@ -172,7 +172,7 @@ class Product {
             : toDouble(map['price']);
 
     return Product(
-      product_id: map['product_id'] ?? '',
+      product_id: map['product_id'] ?? map['id'] ?? '',
       productName: map['productName'] ?? '',
       instructions: map['instructions'] ?? '',
       description: map['description'] ?? map['storageInfo'] ?? '',

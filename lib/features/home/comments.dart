@@ -6,7 +6,6 @@ import 'package:ecommerece_app/features/home/domain/comments_notifier.dart';
 import 'package:ecommerece_app/features/home/widgets/comment_input_box.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/home/widgets/comment_bubble.dart';
-import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Comments extends ConsumerStatefulWidget {
@@ -92,7 +91,8 @@ class _CommentsState extends ConsumerState<Comments> {
                 Expanded(
                   child: Consumer(
                     builder: (context, ref, child) {
-                      final comments = ref.watch(feedControllerProvider.notifier).getComments(widget.postId);
+                      final commentsAsync = ref.watch(postCommentsStreamProvider(widget.postId));
+                      final comments = commentsAsync.value ?? [];
                       final List<Map<String, dynamic>> chatItems = [];
 
                       for (final comment in comments) {
@@ -199,11 +199,16 @@ class _CommentsState extends ConsumerState<Comments> {
                         )
                       : CommentInputBox(
                           onSubmit: (text, {imageFile, imageBytes}) async {
-                            showLoadingDialog(context);
                             try {
-                              await ref.read(commentsNotifierProvider(widget.postId).notifier).submitComment(text, imageFile: imageFile, imageBytes: imageBytes);
-                            } finally {
-                              if (context.mounted) Navigator.of(context).pop();
+                              await ref
+                                  .read(commentsNotifierProvider(widget.postId).notifier)
+                                  .submitComment(text, imageFile: imageFile, imageBytes: imageBytes);
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('댓글 작성에 실패했습니다: $e')),
+                                );
+                              }
                             }
                           },
                         ),

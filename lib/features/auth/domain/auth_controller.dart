@@ -125,14 +125,32 @@ class AuthNotifier extends AsyncNotifier<void> {
   Future<void> sendPasswordReset(String email) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      final cleanEmail = email.trim();
+      if (cleanEmail.isEmpty) {
+        throw Exception('이메일을 입력해주세요.');
+      }
+
+      final isRegistered = await _authRepository.isEmailRegistered(cleanEmail);
+      if (!isRegistered) {
+        throw Exception('가입되지 않은 이메일입니다.');
+      }
+
       try {
-        await _authRepository.sendPasswordReset(email);
+        await _authRepository.sendPasswordReset(cleanEmail);
       } on FirebaseAuthException catch (e) {
+        if (e.code == 'user-not-found') {
+          throw Exception('가입되지 않은 이메일입니다.');
+        }
         throw Exception(getFriendlyAuthError(e.code));
       } catch (e) {
+        if (e is Exception) rethrow;
         throw Exception('알 수 없는 오류가 발생했습니다');
       }
     });
+
+    if (state.hasError) {
+      throw state.error!;
+    }
   }
 
   Future<void> updateUser(MyUser myUser, String password) async {

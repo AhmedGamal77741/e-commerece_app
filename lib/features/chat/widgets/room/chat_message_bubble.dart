@@ -13,6 +13,8 @@ import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ecommerece_app/core/widgets/user_name_header.dart';
+import 'package:ecommerece_app/core/widgets/full_screen_image_viewer.dart';
 
 const _kBubbleColor = Color(0xFFEEEEEE);
 
@@ -64,14 +66,23 @@ class MessageBubble extends ConsumerWidget {
                   if (!isMe)
                     Padding(
                       padding: EdgeInsets.only(left: 4.w, bottom: 3.h),
-                      child: Text(
-                        isDeleted ? '삭제된 사용자' : resolvedSenderName,
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: isDeleted
+                          ? Text(
+                              '삭제된 사용자',
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                color: Colors.grey[500],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            )
+                          : UserNameHeader(
+                              userId: message.senderId,
+                              accountName: message.senderName,
+                              aliases: aliases,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w500,
+                              textColor: Colors.grey[600],
+                            ),
                     ),
 
                   Row(
@@ -203,9 +214,10 @@ class _BubbleContent extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: _kBubbleColor,
-        borderRadius: BorderRadius.all(Radius.circular(16)),
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
+        border: Border.all(color: const Color(0xFFE0E0E0), width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,9 +269,10 @@ class _BubbleContent extends ConsumerWidget {
             if (message.content.isNotEmpty) SizedBox(height: 6.h),
             ChatPostShareWidget(
               type: 'product',
-              imageUrl: message.productData!.imgUrl!,
-              postTitle:
-                  '${message.productData!.pricePoints[0].price.toString()} 원',
+              imageUrl: message.productData!.imgUrl ?? '',
+              postTitle: message.productData!.pricePoints.isNotEmpty
+                  ? '${message.productData!.pricePoints[0].price} 원'
+                  : '${message.productData!.price} 원',
               authorName: message.productData!.productName,
               onTap: () async {
                 bool isSub = await isUserSubscribed();
@@ -269,7 +282,7 @@ class _BubbleContent extends ConsumerWidget {
                   extra: {
                     'product': message.productData!,
                     'isSub': isSub,
-                    'arrivalDay': message.productData!.arrivalDate!,
+                    'arrivalDay': message.productData!.arrivalDate ?? '',
                   },
                 );
               },
@@ -277,9 +290,14 @@ class _BubbleContent extends ConsumerWidget {
           ],
           if (message.imageUrl != null && message.imageUrl!.isNotEmpty) ...[
             if (message.content.isNotEmpty) SizedBox(height: 6.h),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: SafeNetworkImage(url: message.imageUrl!, fit: BoxFit.cover),
+            GestureDetector(
+              onTap: () {
+                FullScreenImageViewer.openSingle(context, message.imageUrl!);
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SafeNetworkImage(url: message.imageUrl!, fit: BoxFit.cover),
+              ),
             ),
           ],
         ],

@@ -50,6 +50,34 @@ class AuthRepository {
     return query.docs.isNotEmpty;
   }
 
+  /// Check if an email is registered
+  Future<bool> isEmailRegistered(String email) async {
+    final cleanEmail = email.trim();
+    if (cleanEmail.isEmpty) return false;
+
+    final query =
+        await usersCollection
+            .where('email', isEqualTo: cleanEmail)
+            .limit(1)
+            .get();
+    if (query.docs.isNotEmpty) {
+      return true;
+    }
+
+    if (cleanEmail != cleanEmail.toLowerCase()) {
+      final queryLower =
+          await usersCollection
+              .where('email', isEqualTo: cleanEmail.toLowerCase())
+              .limit(1)
+              .get();
+      if (queryLower.docs.isNotEmpty) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   /// Sign up user
   Future<UserCredential> signUpWithEmail(String email, String password) async {
     return await _firebaseAuth.createUserWithEmailAndPassword(

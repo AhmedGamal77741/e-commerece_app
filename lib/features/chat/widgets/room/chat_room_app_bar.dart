@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_room_state_controller.dart';
 import 'package:ecommerece_app/core/cache/user_cache.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
+import 'package:ecommerece_app/core/widgets/user_name_header.dart';
 
 class ChatRoomAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String chatRoomName;
@@ -25,13 +26,6 @@ class ChatRoomAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
     String resolveDisplayName(String userId, String realName) {
       return state.aliases[userId] ?? realName;
-    }
-
-    String getAppBarTitle() {
-      if (!state.isGroup && state.otherUserId.isNotEmpty) {
-        return state.aliases[state.otherUserId] ?? chatRoomName;
-      }
-      return chatRoomName;
     }
 
     Future<List<Map<String, dynamic>>> fetchMemberDetails(List<String> ids) async {
@@ -128,17 +122,6 @@ class ChatRoomAppBar extends ConsumerWidget implements PreferredSizeWidget {
                             final isMe = m['id'] == currentUserId;
                             final url = m['url'] as String? ?? '';
                             final realName = m['name'] as String? ?? '알 수 없음';
-                            final displayName =
-                                isMe
-                                    ? '$realName (나)'
-                                    : resolveDisplayName(
-                                      m['id'] as String,
-                                      realName,
-                                    );
-                            final hasAlias =
-                                !isMe &&
-                                state.aliases.containsKey(m['id']) &&
-                                state.aliases[m['id']]!.isNotEmpty;
 
                             return Padding(
                               padding: EdgeInsets.symmetric(
@@ -163,30 +146,21 @@ class ChatRoomAppBar extends ConsumerWidget implements PreferredSizeWidget {
                                   ),
                                   SizedBox(width: 12.w),
                                   Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          displayName,
-                                          style: TextStyle(
-                                            fontSize: 14.sp,
-                                            fontWeight:
-                                                isMe
-                                                    ? FontWeight.w600
-                                                    : FontWeight.w400,
-                                          ),
-                                        ),
-                                        if (hasAlias)
-                                          Text(
-                                            realName,
+                                    child: isMe
+                                        ? Text(
+                                            '$realName (나)',
                                             style: TextStyle(
-                                              fontSize: 11.sp,
-                                              color: Colors.grey[400],
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w600,
                                             ),
+                                          )
+                                        : UserNameHeader(
+                                            userId: m['id'] as String,
+                                            accountName: realName,
+                                            aliases: state.aliases,
+                                            fontSize: 14.sp,
+                                            fontWeight: FontWeight.w400,
                                           ),
-                                      ],
-                                    ),
                                   ),
                                 ],
                               ),
@@ -215,13 +189,12 @@ class ChatRoomAppBar extends ConsumerWidget implements PreferredSizeWidget {
       final currentUserId = ref.read(chatRoomStateControllerProvider(chatRoomId).notifier).currentUserId;
 
       if (!state.isGroup) {
-        return Text(
-          getAppBarTitle(),
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w600,
-          ),
+        return UserNameHeader(
+          userId: state.otherUserId,
+          accountName: chatRoomName,
+          aliases: state.aliases,
+          fontSize: 16.sp,
+          fontWeight: FontWeight.w600,
         );
       }
 
