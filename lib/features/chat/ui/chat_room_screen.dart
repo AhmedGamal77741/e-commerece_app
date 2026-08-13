@@ -1,5 +1,6 @@
 // screens/chat_screen.dart
 
+import 'package:ecommerece_app/features/chat/models/message_model.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_room_state_controller.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_input_bar.dart';
 import 'package:ecommerece_app/features/chat/widgets/room/blocked_bar.dart';
@@ -221,34 +222,41 @@ class ChatScreen extends ConsumerWidget {
                                       : (state.aliases[message.senderId] ??
                                           message.senderName);
   
-                              final showDate =
-                                  index == messages.length - 1 ||
-                                  !_isSameDay(
-                                    messages[index].timestamp,
-                                    messages[index + 1].timestamp,
-                                  );
+                              // Find previous visible message (older message, above on screen)
+                              MessageModel? prevVisibleMessage;
+                              for (int i = index + 1; i < messages.length; i++) {
+                                if (!messages[i].deletedBy.contains(controller.currentUserId)) {
+                                  prevVisibleMessage = messages[i];
+                                  break;
+                                }
+                              }
 
-                              // Grouping: show avatar/name only on the oldest message of a consecutive sequence
-                              final bool showAvatarAndName =
-                                  index == messages.length - 1 ||
+                              // Find next visible message (newer message, below on screen)
+                              MessageModel? nextVisibleMessage;
+                              for (int i = index - 1; i >= 0; i--) {
+                                if (!messages[i].deletedBy.contains(controller.currentUserId)) {
+                                  nextVisibleMessage = messages[i];
+                                  break;
+                                }
+                              }
+
+                              final showDate = prevVisibleMessage == null ||
+                                  !_isSameDay(message.timestamp, prevVisibleMessage.timestamp);
+
+                              // Grouping: show avatar/name only on the oldest (top-most) message of a consecutive sequence
+                              final bool showAvatarAndName = prevVisibleMessage == null ||
                                   showDate ||
-                                  messages[index + 1].senderId != message.senderId;
+                                  prevVisibleMessage.senderId != message.senderId;
 
-                              // Grouping: show timestamp only on the newest message of a minute sequence
+                              // Grouping: show timestamp only on the newest (bottom-most) message of a minute sequence
                               bool showTime = true;
-                              if (index > 0) {
-                                final nextNewerMessage = messages[index - 1];
-                                final isSameSenderAsNext =
-                                    nextNewerMessage.senderId == message.senderId;
-                                final isSameMinuteAsNext =
-                                    nextNewerMessage.timestamp.hour == message.timestamp.hour &&
-                                    nextNewerMessage.timestamp.minute == message.timestamp.minute;
-                                final isNextDateSeparator =
-                                    !_isSameDay(nextNewerMessage.timestamp, message.timestamp);
+                              if (nextVisibleMessage != null) {
+                                final isSameSenderAsNext = nextVisibleMessage.senderId == message.senderId;
+                                final isSameMinuteAsNext = nextVisibleMessage.timestamp.hour == message.timestamp.hour &&
+                                    nextVisibleMessage.timestamp.minute == message.timestamp.minute;
+                                final isSameDateAsNext = _isSameDay(message.timestamp, nextVisibleMessage.timestamp);
 
-                                if (isSameSenderAsNext &&
-                                    isSameMinuteAsNext &&
-                                    !isNextDateSeparator) {
+                                if (isSameSenderAsNext && isSameMinuteAsNext && isSameDateAsNext) {
                                   showTime = false;
                                 }
                               }

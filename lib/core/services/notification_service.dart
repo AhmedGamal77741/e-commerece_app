@@ -4,6 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:ecommerece_app/core/routing/app_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -31,7 +33,9 @@ class NotificationService {
     try {
       // 0. Register background messaging handler
       if (!kIsWeb) {
-        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+        FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler,
+        );
       }
 
       // 1. Explicitly request Android runtime notification permission (POST_NOTIFICATIONS)
@@ -85,7 +89,9 @@ class NotificationService {
       // 6. Handle foreground messages
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         if (kDebugMode) {
-          print('Foreground FCM Message received: ${message.notification?.title}');
+          print(
+            'Foreground FCM Message received: ${message.notification?.title}',
+          );
         }
       });
 
@@ -94,10 +100,58 @@ class NotificationService {
         if (kDebugMode) {
           print('FCM Message opened app: ${message.notification?.title}');
         }
+        _handleMessageNavigation(message);
       });
+
+      // 8. Handle message when user taps notification while app was terminated
+      final initialMessage = await _fcm.getInitialMessage();
+      if (initialMessage != null) {
+        if (kDebugMode) {
+          print(
+            'FCM Initial message opened app: ${initialMessage.notification?.title}',
+          );
+        }
+        _handleMessageNavigation(initialMessage);
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Error initializing NotificationService: $e');
+      }
+    }
+  }
+
+  void _handleMessageNavigation(RemoteMessage message) {
+    final data = message.data;
+    if (data.isEmpty) return;
+
+    final type = data['type']?.toString();
+    final postId = data['postId']?.toString();
+    final commentId = data['commentId']?.toString();
+    final chatRoomId = data['chatRoomId']?.toString();
+
+    if (kDebugMode) {
+      print(
+        'Navigating from FCM notification payload: type=$type, postId=$postId, chatRoomId=$chatRoomId',
+      );
+    }
+
+    // Set root location to Main Feed first so popping target route returns to feed
+    AppRouter.router.go(Routes.navBar);
+
+    if (type == 'chat' || (chatRoomId != null && chatRoomId.isNotEmpty)) {
+      if (chatRoomId != null && chatRoomId.isNotEmpty) {
+        AppRouter.router.push('/chat/$chatRoomId');
+      }
+    } else if (type == 'comment' ||
+        type == 'post' ||
+        (postId != null && postId.isNotEmpty)) {
+      if (postId != null && postId.isNotEmpty) {
+        final queryParams = <String, String>{
+          'postId': postId,
+          if (commentId != null && commentId.isNotEmpty) 'commentId': commentId,
+        };
+        final uri = Uri(path: '/comment', queryParameters: queryParams);
+        AppRouter.router.push(uri.toString());
       }
     }
   }
@@ -143,13 +197,10 @@ class NotificationService {
     final user = _auth.currentUser;
     if (user == null) return;
     try {
-      await _firestore.collection('users').doc(user.uid).set(
-        {
-          'fcmToken': token,
-          'lastTokenUpdate': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      await _firestore.collection('users').doc(user.uid).set({
+        'fcmToken': token,
+        'lastTokenUpdate': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     } catch (e) {
       if (kDebugMode) {
         print('Error saving FCM token to Firestore: $e');
@@ -172,11 +223,12 @@ class NotificationService {
     if (recipientId.isEmpty || recipientId == currentUserId) return;
 
     try {
-      final notifRef = _firestore
-          .collection('users')
-          .doc(recipientId)
-          .collection('notifications')
-          .doc();
+      final notifRef =
+          _firestore
+              .collection('users')
+              .doc(recipientId)
+              .collection('notifications')
+              .doc();
 
       final data = <String, dynamic>{
         'id': notifRef.id,

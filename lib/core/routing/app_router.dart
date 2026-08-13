@@ -155,10 +155,39 @@ class AppRouter {
           GoRoute(
             name: Routes.commentsScreen,
             path: '/${Routes.commentsScreen}',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final postId = state.uri.queryParameters['postId'] ?? '';
               final commentId = state.uri.queryParameters['commentId'];
-              return Comments(postId: postId, commentId: commentId);
+              return CustomTransitionPage(
+                key: state.pageKey,
+                opaque: false,
+                barrierDismissible: true,
+                barrierColor: Colors.black54,
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 1),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                    ),
+                    child: child,
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(top: 48),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF2F2F2),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                    child: Comments(postId: postId, commentId: commentId),
+                  ),
+                ),
+              );
             },
           ),
           GoRoute(

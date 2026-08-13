@@ -189,11 +189,39 @@ class _GuestCommentsState extends ConsumerState<GuestComments> {
                             chatItems[index + 1].timestamp,
                           );
 
+                      // Grouping: show avatar/name only on the oldest (top-most) comment of a consecutive sequence
+                      final bool showAvatarAndName = index == chatItems.length - 1 ||
+                          item.isPost ||
+                          chatItems[index + 1].isPost ||
+                          showDate ||
+                          chatItems[index + 1].senderId != item.senderId;
+
+                      // Grouping: show timestamp only on the newest (bottom-most) comment of a minute sequence
+                      bool showTime = true;
+                      if (index > 0) {
+                        final nextNewerItem = chatItems[index - 1];
+                        if (!nextNewerItem.isPost) {
+                          final isSameSenderAsNext = nextNewerItem.senderId == item.senderId;
+                          final isSameMinuteAsNext = nextNewerItem.timestamp.hour == item.timestamp.hour &&
+                              nextNewerItem.timestamp.minute == item.timestamp.minute;
+                          final isSameDateAsNext = _isSameDay(item.timestamp, nextNewerItem.timestamp);
+
+                          if (isSameSenderAsNext && isSameMinuteAsNext && isSameDateAsNext && !item.isPost) {
+                            showTime = false;
+                          }
+                        }
+                      }
+
                       return Column(
                         children: [
                           if (showDate)
                             _DateSeparator(date: item.timestamp),
-                          _CommentBubble(item: item, isMe: isMe),
+                          _CommentBubble(
+                            item: item,
+                            isMe: isMe,
+                            showAvatarAndName: showAvatarAndName,
+                            showTime: showTime,
+                          ),
                         ],
                       );
                     },
@@ -245,8 +273,15 @@ class _GuestCommentsState extends ConsumerState<GuestComments> {
 class _CommentBubble extends ConsumerStatefulWidget {
   final ChatMessageItem item;
   final bool isMe;
+  final bool showAvatarAndName;
+  final bool showTime;
 
-  const _CommentBubble({required this.item, required this.isMe});
+  const _CommentBubble({
+    required this.item,
+    required this.isMe,
+    this.showAvatarAndName = true,
+    this.showTime = true,
+  });
 
   @override
   ConsumerState<_CommentBubble> createState() => _CommentBubbleState();
@@ -274,6 +309,8 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
   Widget build(BuildContext context) {
     final item = widget.item;
     final isMe = widget.isMe;
+    final showAvatarAndName = widget.showAvatarAndName;
+    final showTime = widget.showTime;
     double maxW = MediaQuery.of(context).size.width - 120.w;
     if (maxW > 400.w) maxW = 400.w;
     return Padding(
@@ -288,37 +325,40 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
             isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           if (!isMe) ...[
-            GestureDetector(
-              onTap: () {
-                context.pushNamed(
-                  Routes.profileTabScreen,
-                  extra: {'userId': item.senderId},
-                );
-              },
-              child: Container(
-                width: 40.w,
-                height: 40.h,
-                decoration: ShapeDecoration(
-                  image: DecorationImage(
-                    image:
-                        item.senderImage.isNotEmpty
-                            ? safeNetworkImageProvider(item.senderImage)
-                            : const AssetImage('assets/avatar.png')
-                                as ImageProvider,
-                    fit: BoxFit.cover,
+            if (showAvatarAndName) ...[
+              GestureDetector(
+                onTap: () {
+                  context.pushNamed(
+                    Routes.profileTabScreen,
+                    extra: {'userId': item.senderId},
+                  );
+                },
+                child: Container(
+                  width: 40.w,
+                  height: 40.h,
+                  decoration: ShapeDecoration(
+                    image: DecorationImage(
+                      image:
+                          item.senderImage.isNotEmpty
+                              ? safeNetworkImageProvider(item.senderImage)
+                              : const AssetImage('assets/avatar.png')
+                                  as ImageProvider,
+                      fit: BoxFit.cover,
+                    ),
+                    shape: const OvalBorder(),
                   ),
-                  shape: const OvalBorder(),
                 ),
               ),
-            ),
-            SizedBox(width: 6.w),
+              SizedBox(width: 6.w),
+            ] else
+              SizedBox(width: 46.w),
           ],
           Flexible(
             child: Column(
               crossAxisAlignment:
                   isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                if (!isMe)
+                if (!isMe && showAvatarAndName)
                   Padding(
                     padding: EdgeInsets.only(left: 4.w, bottom: 3.h),
                     child: UserNameHeader(
@@ -463,17 +503,18 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
                     ),
                   ],
                 ),
-                Padding(
-                  padding: EdgeInsets.only(
-                    top: 3.h,
-                    left: isMe ? 0 : 4.w,
-                    right: isMe ? 4.w : 0,
+                if (showTime)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: 3.h,
+                      left: isMe ? 0 : 4.w,
+                      right: isMe ? 4.w : 0,
+                    ),
+                    child: Text(
+                      _formatTime(item.timestamp),
+                      style: TextStyle(fontSize: 10.sp, color: Colors.grey[400]),
+                    ),
                   ),
-                  child: Text(
-                    _formatTime(item.timestamp),
-                    style: TextStyle(fontSize: 10.sp, color: Colors.grey[400]),
-                  ),
-                ),
               ],
             ),
           ),

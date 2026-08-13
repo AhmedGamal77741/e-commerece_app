@@ -143,27 +143,30 @@ class _CommentsState extends ConsumerState<Comments> {
                             !_isSameDay(item['timestamp'], chatItems[index + 1]['timestamp']);
                         final key = _bubbleKeys.putIfAbsent(item['id'], () => GlobalKey());
 
-                        // Grouping: show avatar/name only on the oldest comment of a consecutive sequence
-                        final bool showAvatarAndName = index == 0 ||
+                        // Grouping: show avatar/name only on the oldest (top-most) comment of a consecutive sequence
+                        final bool showAvatarAndName = index == chatItems.length - 1 ||
                             item['isPost'] == true ||
-                            chatItems[index - 1]['isPost'] == true ||
-                            chatItems[index - 1]['senderId'] != item['senderId'];
+                            chatItems[index + 1]['isPost'] == true ||
+                            showDate ||
+                            chatItems[index + 1]['senderId'] != item['senderId'];
 
-                        // Grouping: show timestamp only on the newest comment of a minute sequence
+                        // Grouping: show timestamp only on the newest (bottom-most) comment of a minute sequence
                         bool showTime = true;
-                        if (index < chatItems.length - 1) {
-                          final nextNewerItem = chatItems[index + 1];
-                          final DateTime itemTs = item['timestamp'];
-                          final DateTime nextTs = nextNewerItem['timestamp'];
-                          final isSameSenderAsNext = nextNewerItem['senderId'] == item['senderId'];
-                          final isSameMinuteAsNext = nextTs.hour == itemTs.hour && nextTs.minute == itemTs.minute;
+                        if (index > 0) {
+                          final nextNewerItem = chatItems[index - 1];
+                          if (nextNewerItem['isPost'] != true) {
+                            final DateTime itemTs = item['timestamp'];
+                            final DateTime nextTs = nextNewerItem['timestamp'];
+                            final isSameSenderAsNext = nextNewerItem['senderId'] == item['senderId'];
+                            final isSameMinuteAsNext = nextTs.hour == itemTs.hour && nextTs.minute == itemTs.minute;
+                            final isSameDateAsNext = _isSameDay(itemTs, nextTs);
 
-                          if (isSameSenderAsNext &&
-                              isSameMinuteAsNext &&
-                              !showDate &&
-                              item['isPost'] != true &&
-                              nextNewerItem['isPost'] != true) {
-                            showTime = false;
+                            if (isSameSenderAsNext &&
+                                isSameMinuteAsNext &&
+                                isSameDateAsNext &&
+                                item['isPost'] != true) {
+                              showTime = false;
+                            }
                           }
                         }
 
