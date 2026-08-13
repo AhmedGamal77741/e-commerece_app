@@ -9,7 +9,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
-
 Widget _buildSquareAction({
   required IconData icon,
   String? asset,
@@ -84,7 +83,7 @@ Widget _buildFriendItem({
             pathParameters: {'id': chatRoomId},
             extra: {'name': friend.name},
           );
-                } catch (e) {
+        } catch (e) {
           if (!context.mounted) return;
           ScaffoldMessenger.of(
             context,
@@ -187,7 +186,7 @@ void showShareDialog(
                     ),
                   ),
 
-                  // 1. Horizontal Actions (Add to Story, Copy Link)
+                  // 1. Horizontal Actions (Copy Link, KakaoTalk Share)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
@@ -197,9 +196,29 @@ void showShareDialog(
                           label: '링크 복사',
                           onTap: () {
                             if (type == 'post') {
+                              ShareService.copyPostLink(context, id);
+                            } else if (type == 'product') {
+                              ShareService.copyProductLink(context, id);
+                            }
+                            if (Navigator.canPop(context)) {
+                              Navigator.pop(context);
+                            }
+                          },
+                        ),
+                        SizedBox(width: 12.w),
+                        _buildSquareAction(
+                          icon: Icons.share,
+                          label: '카카오톡 공유',
+                          onTap: () {
+                            if (type == 'post') {
                               ShareService.sharePost(id, context: context);
                             } else if (type == 'product') {
-                              ShareService.shareProduct(id, name, context: context);
+                              ShareService.shareProduct(
+                                id,
+                                name,
+                                imageUrl: imgUrl,
+                                context: context,
+                              );
                             }
                             if (Navigator.canPop(context)) {
                               Navigator.pop(context);

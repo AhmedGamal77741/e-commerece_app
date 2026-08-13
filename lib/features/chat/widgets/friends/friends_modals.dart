@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
+import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
@@ -1546,5 +1547,419 @@ Widget _buildHighlightedNameGroup(String name, String query) {
           TextSpan(text: name.substring(matchIndex + query.length)),
       ],
     ),
+  );
+}
+
+// ─── Invite Friends to existing Group Chat ──────────────────────────────────
+
+Future<void> showInviteFriendsDialog({
+  required BuildContext context,
+  required WidgetRef ref,
+  required ChatRoomModel chat,
+  required Map<String, String> aliases,
+}) async {
+  final searchCtrl = TextEditingController();
+  final searchFocusNode = FocusNode();
+  Timer? debounce;
+  List<String> selectedUserIds = [];
+  String groupSearch = '';
+
+  await showDialog(
+    context: context,
+    builder:
+        (ctx) => Consumer(
+          builder:
+              (context, consumerRef, child) => StatefulBuilder(
+                builder: (context, setDialogState) {
+                  final friends =
+                      consumerRef.watch(friendsProvider).value ?? <MyUser>[];
+                  final invitableFriends =
+                      friends
+                          .where((u) => !chat.participants.contains(u.userId))
+                          .toList();
+
+                  final filteredFriends =
+                      groupSearch.isEmpty
+                          ? invitableFriends
+                          : invitableFriends.where((u) {
+                            final q = groupSearch.toLowerCase();
+                            final alias =
+                                aliases[u.userId]?.toLowerCase() ?? '';
+                            return u.name.toLowerCase().contains(q) ||
+                                alias.contains(q);
+                          }).toList();
+
+                  final selectedFriends =
+                      invitableFriends
+                          .where((u) => selectedUserIds.contains(u.userId))
+                          .toList();
+
+                  return Dialog(
+                    backgroundColor: Colors.white,
+                    insetPadding: EdgeInsets.only(
+                      left: 16.w,
+                      right: 16.w,
+                      top: 60.h,
+                      bottom: 20.h,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30.r),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(top: 24.h, bottom: 12.h),
+                          child: Text(
+                            '친구 초대',
+                            style: TextStyle(
+                              fontSize: 20.sp,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+
+                        // Search Bar
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16.w),
+                          child: Container(
+                            height: 40.h,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: TextField(
+                              controller: searchCtrl,
+                              focusNode: searchFocusNode,
+                              onChanged: (val) {
+                                if (debounce?.isActive ?? false) {
+                                  debounce!.cancel();
+                                }
+                                debounce = Timer(
+                                  const Duration(milliseconds: 200),
+                                  () {
+                                    setDialogState(() {
+                                      groupSearch = val.trim();
+                                    });
+                                  },
+                                );
+                              },
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: Colors.black,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: '친구 이름 검색',
+                                hintStyle: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.grey[400],
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  size: 20.sp,
+                                  color: Colors.grey[400],
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 10.h,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+
+                        // Selected friends horizontal avatars
+                        if (selectedFriends.isNotEmpty)
+                          Container(
+                            height: 60.h,
+                            padding: EdgeInsets.symmetric(horizontal: 16.w),
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: selectedFriends.length,
+                              separatorBuilder:
+                                  (ctx, idx) => SizedBox(width: 12.w),
+                              itemBuilder: (ctx, idx) {
+                                final user = selectedFriends[idx];
+                                return Stack(
+                                  children: [
+                                    Column(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 20.r,
+                                          backgroundImage:
+                                              user.url.isNotEmpty
+                                                  ? safeNetworkImageProvider(
+                                                    user.url,
+                                                  )
+                                                  : null,
+                                          child:
+                                              user.url.isEmpty
+                                                  ? Text(
+                                                    user.name.isNotEmpty
+                                                        ? user.name[0]
+                                                        : '?',
+                                                  )
+                                                  : null,
+                                        ),
+                                      ],
+                                    ),
+                                    Positioned(
+                                      right: 0,
+                                      top: 0,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setDialogState(() {
+                                            selectedUserIds.remove(user.userId);
+                                          });
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.all(2.r),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.grey,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.close,
+                                            size: 10.sp,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+
+                        // Invitable friends list
+                        Flexible(
+                          child:
+                              invitableFriends.isEmpty
+                                  ? Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 30.h,
+                                    ),
+                                    child: Text(
+                                      '초대할 수 있는 친구가 없습니다',
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        color: Colors.grey[400],
+                                      ),
+                                    ),
+                                  )
+                                  : CustomScrollView(
+                                    shrinkWrap: true,
+                                    slivers: [
+                                      SliverList(
+                                        delegate: SliverChildBuilderDelegate((
+                                          context,
+                                          index,
+                                        ) {
+                                          final user = filteredFriends[index];
+                                          final isSelected = selectedUserIds
+                                              .contains(user.userId);
+                                          final displayName =
+                                              aliases[user.userId] ?? user.name;
+                                          final hasAlias =
+                                              aliases.containsKey(user.userId);
+
+                                          return InkWell(
+                                            onTap: () {
+                                              setDialogState(() {
+                                                if (isSelected) {
+                                                  selectedUserIds.remove(
+                                                    user.userId,
+                                                  );
+                                                } else {
+                                                  selectedUserIds.add(
+                                                    user.userId,
+                                                  );
+                                                }
+                                              });
+                                            },
+                                            child: Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 20.w,
+                                                vertical: 10.h,
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  CircleAvatar(
+                                                    radius: 22.r,
+                                                    backgroundImage:
+                                                        user.url.isNotEmpty
+                                                            ? safeNetworkImageProvider(
+                                                              user.url,
+                                                            )
+                                                            : null,
+                                                    child:
+                                                        user.url.isEmpty
+                                                            ? Text(
+                                                              user.name.isNotEmpty
+                                                                  ? user.name[0]
+                                                                  : '?',
+                                                              style: TextStyle(
+                                                                fontSize: 14.sp,
+                                                                color:
+                                                                    Colors.black,
+                                                              ),
+                                                            )
+                                                            : null,
+                                                  ),
+                                                  SizedBox(width: 12.w),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          displayName,
+                                                          style: TextStyle(
+                                                            fontSize: 15.sp,
+                                                            color: Colors.black,
+                                                            fontWeight:
+                                                                FontWeight.w400,
+                                                          ),
+                                                        ),
+                                                        if (hasAlias)
+                                                          Text(
+                                                            user.name,
+                                                            style: TextStyle(
+                                                              fontSize: 11.sp,
+                                                              color:
+                                                                  Colors.grey[400],
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Container(
+                                                    width: 22.w,
+                                                    height: 22.w,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color:
+                                                          isSelected
+                                                              ? Colors.black
+                                                              : Colors
+                                                                  .transparent,
+                                                      border: Border.all(
+                                                        color:
+                                                            isSelected
+                                                                ? Colors.black
+                                                                : Colors
+                                                                    .grey[400]!,
+                                                        width: 1.5,
+                                                      ),
+                                                    ),
+                                                    child:
+                                                        isSelected
+                                                            ? Icon(
+                                                              Icons.check,
+                                                              size: 13.sp,
+                                                              color:
+                                                                  Colors.white,
+                                                            )
+                                                            : null,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        }, childCount: filteredFriends.length),
+                                      ),
+                                    ],
+                                  ),
+                        ),
+
+                        // Bottom buttons
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 12.h,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: Text(
+                                  '취소',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 14.sp,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  backgroundColor:
+                                      selectedUserIds.isEmpty
+                                          ? Colors.grey[300]
+                                          : Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 24.w,
+                                    vertical: 10.h,
+                                  ),
+                                ),
+                                onPressed:
+                                    selectedUserIds.isEmpty
+                                        ? null
+                                        : () async {
+                                          Navigator.pop(ctx);
+                                          final controller = consumerRef.read(
+                                            chatControllerProvider.notifier,
+                                          );
+                                          for (final uid in selectedUserIds) {
+                                            await controller
+                                                .addParticipantToGroup(
+                                                  chat.id,
+                                                  uid,
+                                                );
+                                          }
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  '${selectedUserIds.length}명의 친구를 초대했습니다',
+                                                ),
+                                                duration: const Duration(
+                                                  seconds: 2,
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                child: Text(
+                                  '초대',
+                                  style: TextStyle(
+                                    color:
+                                        selectedUserIds.isEmpty
+                                            ? Colors.grey[500]
+                                            : Colors.white,
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+        ),
   );
 }

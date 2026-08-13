@@ -136,6 +136,31 @@ class ChatScreen extends ConsumerWidget {
                                     messages[index].timestamp,
                                     messages[index + 1].timestamp,
                                   );
+
+                              // Grouping: show avatar/name only on the oldest message of a consecutive sequence
+                              final bool showAvatarAndName =
+                                  index == messages.length - 1 ||
+                                  showDate ||
+                                  messages[index + 1].senderId != message.senderId;
+
+                              // Grouping: show timestamp only on the newest message of a minute sequence
+                              bool showTime = true;
+                              if (index > 0) {
+                                final nextNewerMessage = messages[index - 1];
+                                final isSameSenderAsNext =
+                                    nextNewerMessage.senderId == message.senderId;
+                                final isSameMinuteAsNext =
+                                    nextNewerMessage.timestamp.hour == message.timestamp.hour &&
+                                    nextNewerMessage.timestamp.minute == message.timestamp.minute;
+                                final isNextDateSeparator =
+                                    !_isSameDay(nextNewerMessage.timestamp, message.timestamp);
+
+                                if (isSameSenderAsNext &&
+                                    isSameMinuteAsNext &&
+                                    !isNextDateSeparator) {
+                                  showTime = false;
+                                }
+                              }
   
                               return Column(
                                 children: [
@@ -153,6 +178,8 @@ class ChatScreen extends ConsumerWidget {
                                         !(state.blocked || state.isBlocked) &&
                                         !isDeleted,
                                     isDeleted: isDeleted,
+                                    showAvatarAndName: showAvatarAndName,
+                                    showTime: showTime,
                                   ),
                                 ],
                               );

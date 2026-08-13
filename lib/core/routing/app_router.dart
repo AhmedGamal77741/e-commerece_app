@@ -215,22 +215,28 @@ class AppRouter {
               final extra = state.extra as Map<String, dynamic>?;
               final productIdQuery = state.uri.queryParameters['productId'];
               if (extra != null && extra['product'] != null) {
-                RouteStateCache.product = extra['product'] as Product;
+                final product = extra['product'] as Product;
+                RouteStateCache.product = product;
                 RouteStateCache.arrivalDay = extra['arrivalDay'] as String?;
                 RouteStateCache.isSub = extra['isSub'] as bool?;
+                return ItemDetails(
+                  product: product,
+                  arrivalDay: extra['arrivalDay'] as String? ?? product.arrivalDate ?? '',
+                  isSub: extra['isSub'] as bool? ?? false,
+                );
               }
-              final product = RouteStateCache.product;
-              if (product == null) {
-                if (productIdQuery != null && productIdQuery.isNotEmpty) {
-                  return _buildProductFromId(productIdQuery);
-                }
-                return const NavBar();
+              final cachedProduct = RouteStateCache.product;
+              if (cachedProduct != null) {
+                return ItemDetails(
+                  product: cachedProduct,
+                  arrivalDay: RouteStateCache.arrivalDay ?? '',
+                  isSub: RouteStateCache.isSub ?? false,
+                );
               }
-              return ItemDetails(
-                product: product,
-                arrivalDay: RouteStateCache.arrivalDay ?? '',
-                isSub: RouteStateCache.isSub ?? false,
-              );
+              if (productIdQuery != null && productIdQuery.isNotEmpty) {
+                return _buildProductFromId(productIdQuery);
+              }
+              return const NavBar();
             },
           ),
           GoRoute(
@@ -320,6 +326,18 @@ class AppRouter {
           final productId = state.pathParameters['productId'] ??
               state.uri.queryParameters['productId'] ??
               '';
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra != null && extra['product'] != null) {
+            final product = extra['product'] as Product;
+            RouteStateCache.product = product;
+            RouteStateCache.arrivalDay = extra['arrivalDay'] as String?;
+            RouteStateCache.isSub = extra['isSub'] as bool?;
+            return ItemDetails(
+              product: product,
+              arrivalDay: extra['arrivalDay'] as String? ?? product.arrivalDate ?? '',
+              isSub: extra['isSub'] as bool? ?? false,
+            );
+          }
           if (productId.isEmpty) {
             return const NavBar();
           }
@@ -373,15 +391,35 @@ Widget _buildProductFromId(String productId) {
         productMap['product_id'] = productDoc.id;
         productMap['id'] = productDoc.id;
         final product = Product.fromMap(productMap);
+        RouteStateCache.product = product;
 
         return ItemDetails(
           product: product,
-          arrivalDay: productMap['arrivalDay'] ?? '',
+          arrivalDay: productMap['arrivalDay'] ?? product.arrivalDate ?? '',
           isSub: false,
         );
-      } catch (e) {
-        debugPrint('Error parsing product from deep link: $e');
-        return const NavBar();
+      } catch (e, stack) {
+        debugPrint('Error parsing product from deep link ($productId): $e\n$stack');
+        return Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                if (GoRouter.of(context).canPop()) {
+                  GoRouter.of(context).pop();
+                } else {
+                  GoRouter.of(context).go(Routes.navBar);
+                }
+              },
+            ),
+          ),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text('상품 정보를 불러오는 중 오류가 발생했습니다.\n($e)'),
+            ),
+          ),
+        );
       }
     },
   );

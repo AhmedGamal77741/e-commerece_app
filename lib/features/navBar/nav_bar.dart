@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
@@ -175,29 +176,6 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
           return;
         }
 
-        if (!prereqs.hasBankAccount) {
-          if (!mounted) return;
-          final result = await Navigator.of(context).push<bool>(
-            MaterialPageRoute(
-              builder: (context) => const NoBankAccountScreen(source: 'shop'),
-            ),
-          );
-          if (result != true) {
-            final nowHasAccount = await navBarService.hasBankAccount(user.uid);
-            if (!nowHasAccount) return;
-          }
-        }
-
-        if (!prereqs.hasReceiptData) {
-          if (!mounted) return;
-          final result = await Navigator.of(context).push<dynamic>(
-            MaterialPageRoute(
-              builder: (context) => const ReceiptSetupScreen(source: 'shop'),
-            ),
-          );
-          if (result != true && result != 'skip') return;
-        }
-
         if (!prereqs.hasDefaultAddress) {
           if (!mounted) return;
           final result = await context.pushNamed<bool>(
@@ -264,9 +242,8 @@ class _NavBarState extends ConsumerState<NavBar> with TickerProviderStateMixin {
           }
           return;
         }
-        // Double-tap confirmed → exit
-        // ignore: use_build_context_synchronously
-        Navigator.of(context).pop();
+        // Double-tap confirmed → exit app cleanly via SystemNavigator
+        await SystemNavigator.pop();
       },
       child: Scaffold(
         // Isolated Consumer: only this subtree rebuilds when auth/profile streams emit.

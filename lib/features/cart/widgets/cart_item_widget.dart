@@ -4,7 +4,6 @@ import 'package:ecommerece_app/core/theming/styles.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -65,14 +64,21 @@ class CartItemWidget extends ConsumerWidget {
 
         return InkWell(
           onTap: () async {
-            String arrivalTime = await getArrivalDay(
-              product.meridiem,
-              product.baselineTime,
-            );
-            
+            String arrivalTime = '';
+            try {
+              arrivalTime = await getArrivalDay(
+                product.meridiem,
+                product.baselineTime,
+              );
+            } catch (_) {}
+            if (arrivalTime.isEmpty) {
+              arrivalTime = product.arrivalDate ?? '';
+            }
+
             if (context.mounted) {
               context.pushNamed(
-                Routes.itemDetailsScreen,
+                'productDetails',
+                pathParameters: {'productId': product.productId},
                 extra: {
                   'product': product,
                   'arrivalDay': arrivalTime,

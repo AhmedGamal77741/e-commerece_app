@@ -41,6 +41,8 @@ dependencies:
   firebase_storage: ^12.4.5
   flutter:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   flutter_contacts: ^1.1.9+2
   flutter_image_compress: ^2.4.0
   flutter_inappwebview: ^6.1.5

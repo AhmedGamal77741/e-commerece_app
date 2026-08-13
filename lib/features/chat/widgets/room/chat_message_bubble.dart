@@ -1,6 +1,5 @@
 import 'package:ecommerece_app/core/cache/user_cache.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/models/message_model.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
@@ -26,6 +25,8 @@ class MessageBubble extends ConsumerWidget {
   final VoidCallback onReply;
   final bool interactable;
   final bool isDeleted;
+  final bool showAvatarAndName;
+  final bool showTime;
 
   const MessageBubble({
     super.key,
@@ -36,6 +37,8 @@ class MessageBubble extends ConsumerWidget {
     required this.onReply,
     required this.interactable,
     required this.isDeleted,
+    this.showAvatarAndName = true,
+    this.showTime = true,
   });
 
   @override
@@ -45,7 +48,7 @@ class MessageBubble extends ConsumerWidget {
       onLongPress: interactable ? () => _showMessageOptions(context) : null,
       child: Padding(
         padding: EdgeInsets.only(
-          bottom: 6.h,
+          bottom: 4.h,
           left: isMe ? 52.w : 0,
           right: isMe ? 0 : 52.w,
         ),
@@ -55,15 +58,18 @@ class MessageBubble extends ConsumerWidget {
               isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
             if (!isMe) ...[
-              _Avatar(senderId: message.senderId, isDeleted: isDeleted),
-              SizedBox(width: 6.w),
+              if (showAvatarAndName) ...[
+                _Avatar(senderId: message.senderId, isDeleted: isDeleted),
+                SizedBox(width: 6.w),
+              ] else
+                const SizedBox(width: 38),
             ],
             Flexible(
               child: Column(
                 crossAxisAlignment:
                     isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
-                  if (!isMe)
+                  if (!isMe && showAvatarAndName)
                     Padding(
                       padding: EdgeInsets.only(left: 4.w, bottom: 3.h),
                       child: isDeleted
@@ -116,20 +122,21 @@ class MessageBubble extends ConsumerWidget {
                     ],
                   ),
 
-                  Padding(
-                    padding: EdgeInsets.only(
-                      top: 3.h,
-                      left: isMe ? 0 : 4.w,
-                      right: isMe ? 4.w : 0,
-                    ),
-                    child: Text(
-                      _formatTime(message.timestamp),
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        color: Colors.grey[400],
+                  if (showTime)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: 3.h,
+                        left: isMe ? 0 : 4.w,
+                        right: isMe ? 4.w : 0,
+                      ),
+                      child: Text(
+                        _formatTime(message.timestamp),
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: Colors.grey[400],
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -278,7 +285,10 @@ class _BubbleContent extends ConsumerWidget {
                 bool isSub = await isUserSubscribed();
                 if (!context.mounted) return;
                 context.pushNamed(
-                  Routes.itemDetailsScreen,
+                  'productDetails',
+                  pathParameters: {
+                    'productId': message.productData!.productId,
+                  },
                   extra: {
                     'product': message.productData!,
                     'isSub': isSub,

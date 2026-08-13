@@ -5,7 +5,6 @@ import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
-import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/natural_aspect_page_view.dart';
@@ -15,8 +14,16 @@ import 'package:ecommerece_app/core/widgets/full_screen_image_viewer.dart';
 class CommentBubble extends ConsumerStatefulWidget {
   final Map<String, dynamic> item;
   final bool isMe;
+  final bool showAvatarAndName;
+  final bool showTime;
 
-  const CommentBubble({super.key, required this.item, required this.isMe});
+  const CommentBubble({
+    super.key,
+    required this.item,
+    required this.isMe,
+    this.showAvatarAndName = true,
+    this.showTime = true,
+  });
 
   @override
   ConsumerState<CommentBubble> createState() => _CommentBubbleState();
@@ -43,41 +50,46 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
   Widget build(BuildContext context) {
     final item = widget.item;
     final isMe = widget.isMe;
+    final showAvatarAndName = widget.showAvatarAndName;
+    final showTime = widget.showTime;
     final theme = Theme.of(context);
-    
+
     double maxW = MediaQuery.of(context).size.width - 120.w;
     if (maxW > 400.w) maxW = 400.w;
-    
+
     return Padding(
-      padding: EdgeInsets.only(bottom: 6.h, left: isMe ? 52.w : 0, right: isMe ? 0 : 52.w),
+      padding: EdgeInsets.only(bottom: 4.h, left: isMe ? 52.w : 0, right: isMe ? 0 : 52.w),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           if (!isMe) ...[
-            GestureDetector(
-              onTap: () => context.pushNamed(Routes.profileTabScreen, extra: {'userId': item['senderId']}),
-              child: Container(
-                width: 40.w,
-                height: 40.h,
-                decoration: ShapeDecoration(
-                  image: DecorationImage(
-                    image: (item['senderImage'] as String).isNotEmpty
-                        ? safeNetworkImageProvider(item['senderImage'])
-                        : const AssetImage('assets/avatar.png') as ImageProvider,
-                    fit: BoxFit.cover,
+            if (showAvatarAndName) ...[
+              GestureDetector(
+                onTap: () => context.pushNamed(Routes.profileTabScreen, extra: {'userId': item['senderId']}),
+                child: Container(
+                  width: 40.w,
+                  height: 40.h,
+                  decoration: ShapeDecoration(
+                    image: DecorationImage(
+                      image: (item['senderImage'] as String).isNotEmpty
+                          ? safeNetworkImageProvider(item['senderImage'])
+                          : const AssetImage('assets/avatar.png') as ImageProvider,
+                      fit: BoxFit.cover,
+                    ),
+                    shape: const OvalBorder(),
                   ),
-                  shape: const OvalBorder(),
                 ),
               ),
-            ),
-            SizedBox(width: 6.w),
+              SizedBox(width: 6.w),
+            ] else
+              SizedBox(width: 46.w),
           ],
           Flexible(
             child: Column(
               crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                if (!isMe)
+                if (!isMe && showAvatarAndName)
                   Padding(
                     padding: EdgeInsets.only(left: 4.w, bottom: 3.h),
                     child: UserNameHeader(
@@ -146,16 +158,17 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                                 postTitle: '${item['productData'].pricePoints[0].price} 원',
                                 authorName: item['productData'].productName,
                                 onTap: () async {
-                                  final navigator = Navigator.of(context);
                                   bool isSub = await isUserSubscribed();
-                                  navigator.push(
-                                    MaterialPageRoute(
-                                      builder: (_) => ItemDetails(
-                                        product: item['productData'],
-                                        isSub: isSub,
-                                        arrivalDay: item['productData'].arrivalDate ?? '',
-                                      ),
-                                    ),
+                                  if (!context.mounted) return;
+                                  final product = item['productData'];
+                                  context.pushNamed(
+                                    'productDetails',
+                                    pathParameters: {'productId': product.productId},
+                                    extra: {
+                                      'product': product,
+                                      'isSub': isSub,
+                                      'arrivalDay': product.arrivalDate ?? '',
+                                    },
                                   );
                                 },
                               ),
@@ -189,13 +202,14 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                     ),
                   ],
                 ),
-                Padding(
-                  padding: EdgeInsets.only(top: 3.h, left: isMe ? 0 : 4.w, right: isMe ? 4.w : 0),
-                  child: Text(
-                    _formatTime(item['timestamp'] as DateTime),
-                    style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                if (showTime)
+                  Padding(
+                    padding: EdgeInsets.only(top: 3.h, left: isMe ? 0 : 4.w, right: isMe ? 4.w : 0),
+                    child: Text(
+                      _formatTime(item['timestamp'] as DateTime),
+                      style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
                   ),
-                ),
               ],
             ),
           ),

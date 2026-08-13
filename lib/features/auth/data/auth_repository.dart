@@ -55,6 +55,9 @@ class AuthRepository {
     final cleanEmail = email.trim();
     if (cleanEmail.isEmpty) return false;
 
+    final lowerEmail = cleanEmail.toLowerCase();
+
+    // 1. Direct match with entered email
     final query =
         await usersCollection
             .where('email', isEqualTo: cleanEmail)
@@ -64,13 +67,30 @@ class AuthRepository {
       return true;
     }
 
-    if (cleanEmail != cleanEmail.toLowerCase()) {
+    // 2. Direct match with lowercased email
+    if (cleanEmail != lowerEmail) {
       final queryLower =
           await usersCollection
-              .where('email', isEqualTo: cleanEmail.toLowerCase())
+              .where('email', isEqualTo: lowerEmail)
               .limit(1)
               .get();
       if (queryLower.docs.isNotEmpty) {
+        return true;
+      }
+    }
+
+    // 3. Match with capitalized email (e.g., User@domain.com)
+    final capitalized =
+        lowerEmail.isNotEmpty
+            ? '${lowerEmail[0].toUpperCase()}${lowerEmail.substring(1)}'
+            : lowerEmail;
+    if (capitalized != cleanEmail && capitalized != lowerEmail) {
+      final queryCap =
+          await usersCollection
+              .where('email', isEqualTo: capitalized)
+              .limit(1)
+              .get();
+      if (queryCap.docs.isNotEmpty) {
         return true;
       }
     }

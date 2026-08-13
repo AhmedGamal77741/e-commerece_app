@@ -33,119 +33,63 @@ class DirectChatTile extends ConsumerWidget {
     required BuildContext tileContext,
     required WidgetRef ref,
   }) {
-    final RenderBox box = tileContext.findRenderObject() as RenderBox;
-    final Offset offset = box.localToGlobal(Offset.zero);
-    final Size tileSize = box.size;
-    final screenWidth = MediaQuery.of(tileContext).size.width;
-    final screenHeight = MediaQuery.of(tileContext).size.height;
-
-    const double popupWidth = 200;
-    const double popupHeight = 160;
-
-    double left = offset.dx + tileSize.width - popupWidth - 8;
-    double top = offset.dy + (tileSize.height / 2) - (popupHeight / 2);
-
-    if (left < 8) left = 8;
-    if (left + popupWidth > screenWidth - 8) {
-      left = screenWidth - popupWidth - 8;
-    }
-    if (top < 8) top = 8;
-    if (top + popupHeight > screenHeight - 20) {
-      top = screenHeight - popupHeight - 20;
-    }
-
     showDialog(
       context: tileContext,
-      barrierColor: Colors.transparent,
-      barrierDismissible: false,
-      builder: (_) => Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () => Navigator.pop(tileContext),
-              child: Container(color: Colors.transparent),
+      builder:
+          (dialogCtx) => Dialog(
+            backgroundColor: Colors.white,
+            insetPadding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 24.h),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.r),
             ),
-          ),
-          Positioned(
-            left: left,
-            top: top,
-            width: popupWidth,
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(height: 16.h),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w),
-                      child: Text(
-                        displayName,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black,
-                        ),
+            child: Container(
+              width: 260.w,
+              padding: EdgeInsets.symmetric(vertical: 20.h),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                    child: Text(
+                      displayName,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
                       ),
                     ),
-                    SizedBox(height: 10.h),
-                    Divider(
-                      color: Colors.grey[200],
-                      thickness: 1,
-                      height: 1,
-                    ),
-                    _buildMenuOption(
-                      label: '차단하기',
-                      onTap: () async {
-                        final navigator = Navigator.of(tileContext);
-                        navigator.pop();
-                        if (userId.isEmpty) return;
-                        await ref
-                            .read(feedControllerProvider.notifier)
-                            .blockUser(userIdToBlock: userId);
-                      },
-                    ),
-                    Divider(
-                      color: Colors.grey[100],
-                      thickness: 1,
-                      height: 1,
-                      indent: 16.w,
-                      endIndent: 16.w,
-                    ),
-                    _buildMenuOption(
-                      label: '나가기',
-                      isLast: true,
-                      onTap: () async {
-                        final navigator = Navigator.of(tileContext);
-                        navigator.pop();
-                        await ref
-                            .read(chatControllerProvider.notifier)
-                            .softDeleteChatForCurrentUser(chat.id);
-                      },
-                    ),
-                    SizedBox(height: 8.h),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: 14.h),
+                  Divider(color: Colors.grey[200], thickness: 1, height: 1),
+                  _buildMenuOption(
+                    label: '차단하기',
+                    onTap: () async {
+                      Navigator.pop(dialogCtx);
+                      if (userId.isEmpty) return;
+                      await ref
+                          .read(feedControllerProvider.notifier)
+                          .blockUser(userIdToBlock: userId);
+                    },
+                  ),
+                  Divider(color: Colors.grey[200], thickness: 1, height: 1),
+                  _buildMenuOption(
+                    label: '나가기',
+                    labelColor: Colors.red[600],
+                    isLast: true,
+                    onTap: () async {
+                      Navigator.pop(dialogCtx);
+                      await ref
+                          .read(chatControllerProvider.notifier)
+                          .softDeleteChatForCurrentUser(chat.id);
+                    },
+                  ),
+                ],
               ),
             ),
           ),
-        ],
-      ),
     );
   }
 
@@ -188,24 +132,19 @@ class DirectChatTile extends ConsumerWidget {
       builder: (tileContext) {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () {
-              context.pushNamed(
-                Routes.chatScreen,
-                pathParameters: {'id': chat.id},
-                extra: {
-                  'name': displayName,
-                  'isDeleted': isDeleted,
+          child: Row(
+            children: [
+              InkWell(
+                borderRadius: BorderRadius.circular(25),
+                onTap: () {
+                  if (userId.isNotEmpty && !isDeleted) {
+                    context.pushNamed(
+                      Routes.profileTabScreen,
+                      extra: {'userId': userId},
+                    );
+                  }
                 },
-              );
-            },
-            onLongPress: () {
-              _showChatMenu(tileContext: tileContext, ref: ref);
-            },
-            child: Row(
-              children: [
-                CircleAvatar(
+                child: CircleAvatar(
                   radius: 25,
                   backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
                       ? safeNetworkImageProvider(avatarUrl!)
@@ -220,38 +159,63 @@ class DirectChatTile extends ConsumerWidget {
                         )
                       : null,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () {
+                    context.pushNamed(
+                      Routes.chatScreen,
+                      pathParameters: {'id': chat.id},
+                      extra: {
+                        'name': displayName,
+                        'isDeleted': isDeleted,
+                      },
+                    );
+                  },
+                  onLongPress: () {
+                    _showChatMenu(tileContext: tileContext, ref: ref);
+                  },
+                  child: Row(
                     children: [
-                      UserNameHeader(
-                        userId: userId,
-                        accountName: realName ?? displayName,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      if (chat.lastMessage != null &&
-                          chat.lastMessage!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          chat.lastMessage!,
-                          style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            UserNameHeader(
+                              userId: userId,
+                              accountName: realName ?? displayName,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            if (chat.lastMessage != null &&
+                                chat.lastMessage!.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                chat.lastMessage!,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[500],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
                         ),
-                      ],
+                      ),
+                      if (unread > 0)
+                        Image.asset(
+                          'assets/notification_dot.png',
+                          width: 25.w,
+                          height: 25.h,
+                        ),
                     ],
                   ),
                 ),
-                if (unread > 0)
-                  Image.asset(
-                    'assets/notification_dot.png',
-                    width: 25.w,
-                    height: 25.h,
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },

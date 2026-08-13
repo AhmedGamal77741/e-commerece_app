@@ -3,7 +3,9 @@ import 'package:ecommerece_app/core/cache/user_cache.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
+import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
+import 'package:ecommerece_app/features/chat/widgets/friends/friends_modals.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
@@ -20,121 +22,81 @@ class GroupChatTile extends ConsumerWidget {
     required WidgetRef ref,
   }) {
     final currentUserId = ref.read(currentUserIdProvider);
-    final RenderBox box = tileContext.findRenderObject() as RenderBox;
-    final Offset offset = box.localToGlobal(Offset.zero);
-    final Size tileSize = box.size;
-    final screenWidth = MediaQuery.of(tileContext).size.width;
-    final screenHeight = MediaQuery.of(tileContext).size.height;
-
-    final double popupWidth = 220.w;
-    final double popupHeight = 210.h;
-
-    double left = offset.dx + tileSize.width - popupWidth - 8.w;
-    double top = offset.dy + (tileSize.height / 2) - (popupHeight / 2);
-
-    if (left < 8.w) left = 8.w;
-    if (left + popupWidth > screenWidth - 8.w) {
-      left = screenWidth - popupWidth - 8.w;
-    }
-    if (top < 8.h) top = 8.h;
-    if (top + popupHeight > screenHeight - 20.h) {
-      top = screenHeight - popupHeight - 20.h;
-    }
 
     showDialog(
       context: tileContext,
-      barrierColor: Colors.transparent,
-      barrierDismissible: false,
       builder:
-          (_) => Stack(
-            children: [
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(tileContext),
-                  child: Container(color: Colors.transparent),
-                ),
-              ),
-              Positioned(
-                left: left,
-                top: top,
-                width: popupWidth,
-                child: Material(
-                  color: Colors.transparent,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
-                          blurRadius: 20.r,
-                          spreadRadius: 2.r,
-                          offset: Offset(0, 4.h),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(height: 20.h),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12.w),
-                          child: GroupChatNameText(
-                            chat: chat,
-                            currentUserId: currentUserId,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 22.sp,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10.h),
-                        Divider(
-                          color: Colors.grey[200],
-                          thickness: 1,
-                          height: 1,
-                        ),
-                        _buildMenuOption(
-                          label: '사진 변경',
-                          onTap: () async {
-                            Navigator.pop(tileContext);
-                            await _changeGroupImage(tileContext, ref);
-                          },
-                        ),
-                        Divider(
-                          color: Colors.grey[200],
-                          thickness: 1,
-                          height: 1,
-                        ),
-                        _buildMenuOption(
-                          label: '이름 변경',
-                          onTap: () {
-                            Navigator.pop(tileContext);
-                            _showRenameDialog(tileContext, ref);
-                          },
-                        ),
-                        Divider(
-                          color: Colors.grey[200],
-                          thickness: 1,
-                          height: 1,
-                        ),
-                        _buildMenuOption(
-                          label: '나가기',
-                          isLast: true,
-                          onTap: () {
-                            Navigator.pop(tileContext);
-                            _confirmLeaveGroup(tileContext, ref);
-                          },
-                        ),
-                        SizedBox(height: 8.h),
-                      ],
+          (dialogCtx) => Dialog(
+            backgroundColor: Colors.white,
+            insetPadding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 24.h),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            child: Container(
+              width: 260.w,
+              padding: EdgeInsets.symmetric(vertical: 20.h),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                    child: GroupChatNameText(
+                      chat: chat,
+                      currentUserId: currentUserId,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
-                ),
+                  SizedBox(height: 14.h),
+                  Divider(color: Colors.grey[200], thickness: 1, height: 1),
+                  _buildMenuOption(
+                    label: '친구 초대',
+                    onTap: () {
+                      Navigator.pop(dialogCtx);
+                      final aliases =
+                          ref.read(aliasesProvider).value ??
+                          <String, String>{};
+                      showInviteFriendsDialog(
+                        context: tileContext,
+                        ref: ref,
+                        chat: chat,
+                        aliases: aliases,
+                      );
+                    },
+                  ),
+                  Divider(color: Colors.grey[200], thickness: 1, height: 1),
+                  _buildMenuOption(
+                    label: '사진 변경',
+                    onTap: () async {
+                      Navigator.pop(dialogCtx);
+                      await _changeGroupImage(tileContext, ref);
+                    },
+                  ),
+                  Divider(color: Colors.grey[200], thickness: 1, height: 1),
+                  _buildMenuOption(
+                    label: '이름 변경',
+                    onTap: () {
+                      Navigator.pop(dialogCtx);
+                      _showRenameDialog(tileContext, ref);
+                    },
+                  ),
+                  Divider(color: Colors.grey[200], thickness: 1, height: 1),
+                  _buildMenuOption(
+                    label: '나가기',
+                    labelColor: Colors.red[600],
+                    isLast: true,
+                    onTap: () {
+                      Navigator.pop(dialogCtx);
+                      _confirmLeaveGroup(tileContext, ref);
+                    },
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
     );
   }
@@ -265,11 +227,45 @@ class GroupChatTile extends ConsumerWidget {
               .uploadImageToFirebaseStorageHome();
       if (newImageUrl.isEmpty) return;
 
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (ctx) => const PopScope(
+                canPop: false,
+                child: Center(
+                  child: Card(
+                    color: Colors.white,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 20,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(color: Colors.black),
+                          SizedBox(width: 16),
+                          Text(
+                            '사진 변경 중...',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+        );
+      }
+
       await ref
           .read(chatControllerProvider.notifier)
           .updateGroupChatImage(chat.id, newImageUrl);
 
       if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // pop loading modal
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('그룹 사진을 변경했습니다'),
@@ -279,6 +275,9 @@ class GroupChatTile extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('사진 변경 실패: $e')));

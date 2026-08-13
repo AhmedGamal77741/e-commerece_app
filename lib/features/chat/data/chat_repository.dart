@@ -10,6 +10,8 @@ import '../models/chat_room_model.dart';
 import '../models/message_model.dart';
 import 'friends_repository.dart';
 
+import 'package:ecommerece_app/core/services/notification_service.dart';
+
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   return ChatRepository(
     firestore: ref.watch(firestoreProvider),
@@ -372,6 +374,15 @@ class ChatRepository {
       if (participantId != currentUserId) {
         updatedUnreadCount[participantId] =
             (updatedUnreadCount[participantId] ?? 0) + 1;
+
+        NotificationService.instance.sendInAppNotification(
+          recipientId: participantId,
+          type: 'chat',
+          title: user.name,
+          body: lastMessageText,
+          chatRoomId: chatRoomId,
+          senderId: currentUserId,
+        );
       }
     }
 

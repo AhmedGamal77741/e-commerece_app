@@ -2,13 +2,14 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 Future<String> getArrivalDay(String meridiem, int baseHour) async {
-  await initializeDateFormatting('ko_KR');
+  try {
+    await initializeDateFormatting('ko_KR');
 
-  meridiem = meridiem.toUpperCase();
+    meridiem = meridiem.trim().toUpperCase();
 
-  if (meridiem.isEmpty || baseHour < 1 || baseHour > 12) {
-    throw ArgumentError("Invalid meridiem or hour");
-  }
+    if (meridiem.isEmpty || baseHour < 1 || baseHour > 12) {
+      return '';
+    }
 
   DateTime now = DateTime.now();
   int nowHour = int.parse(DateFormat('hh').format(now));
@@ -63,17 +64,21 @@ Future<String> getArrivalDay(String meridiem, int baseHour) async {
     result = "도착일: $dayName";
   }
 
-  return result;
+    return result;
+  } catch (_) {
+    return '';
+  }
 }
 
 Future<String> getArrivalDay2(String meridiem, int baseHour) async {
-  await initializeDateFormatting('ko_KR');
+  try {
+    await initializeDateFormatting('ko_KR');
 
-  meridiem = meridiem.toUpperCase();
+    meridiem = meridiem.trim().toUpperCase();
 
-  if (meridiem.isEmpty || baseHour < 1 || baseHour > 12) {
-    throw ArgumentError("Invalid meridiem or hour");
-  }
+    if (meridiem.isEmpty || baseHour < 1 || baseHour > 12) {
+      return '';
+    }
 
   DateTime now = DateTime.now();
   int nowHour = int.parse(DateFormat('hh').format(now));
@@ -116,4 +121,7 @@ Future<String> getArrivalDay2(String meridiem, int baseHour) async {
       '${arrivalDate.month}/${arrivalDate.day}(${weekdayAbbrMap[arrivalDate.weekday]}) 도착예정';
 
   return formattedDate;
+  } catch (_) {
+    return '';
+  }
 }

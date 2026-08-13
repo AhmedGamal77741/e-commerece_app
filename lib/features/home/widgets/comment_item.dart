@@ -179,7 +179,10 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                     bool isSub = await isUserSubscribed();
                                     if (!context.mounted) return;
                                     context.pushNamed(
-                                      Routes.itemDetailsScreen,
+                                      'productDetails',
+                                      pathParameters: {
+                                        'productId': widget.comment.productData!.productId,
+                                      },
                                       extra: {
                                         'product': widget.comment.productData!,
                                         'isSub': isSub,
@@ -187,7 +190,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                             widget
                                                 .comment
                                                 .productData!
-                                                .arrivalDate!,
+                                                .arrivalDate ?? '',
                                       },
                                     );
                                   },

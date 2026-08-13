@@ -12,3 +12,18 @@
 <FilesMatch "\.(js|wasm|png|jpg|jpeg|gif|ico|ttf|woff|woff2|css)$">
     Header set Cache-Control "max-age=31536000, public, immutable"
 </FilesMatch>
+
+# SPA Fallback & Open Graph Generator for Product links
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Route /product/* to product_preview.php for dynamic Open Graph tags
+    RewriteRule ^product/([a-zA-Z0-9_-]+)$ product_preview.php?productId=$1 [QSA,L]
+    
+    RewriteRule ^index\.html$ - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /index.html [L]
+</IfModule>
+

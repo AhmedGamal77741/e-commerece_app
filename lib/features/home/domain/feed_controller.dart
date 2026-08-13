@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/home/data/feed_repository.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ecommerece_app/core/services/notification_service.dart';
 
 // Stream Providers for reactive feed data
 final userProfileDocProvider = StreamProvider.family<DocumentSnapshot?, String>(
@@ -635,6 +636,22 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
 
     try {
       await batch.commit();
+
+      final postDoc = await postRef.get();
+      final postOwnerId = postDoc.data()?['userId'] as String?;
+      if (postOwnerId != null &&
+          postOwnerId.isNotEmpty &&
+          postOwnerId != currentUser.uid) {
+        NotificationService.instance.sendInAppNotification(
+          recipientId: postOwnerId,
+          type: 'comment',
+          title: '새 댓글',
+          body: '${userData?.name ?? '누군가'}님이 게시글에 댓글을 남겼습니다: $text',
+          postId: postId,
+          commentId: commentRef.id,
+          senderId: currentUser.uid,
+        );
+      }
     } catch (e) {
       debugPrint('Error: $e');
     }

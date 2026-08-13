@@ -1,4 +1,5 @@
 import 'package:ecommerece_app/core/models/product_model.dart';
+import 'package:ecommerece_app/core/helpers/web_meta_updater.dart';
 import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 
@@ -38,6 +39,7 @@ class _ItemDetailsState extends ConsumerState<ItemDetails> {
   @override
   void initState() {
     super.initState();
+    WebMetaUpdater.updateProductMeta(widget.product);
     final defaultIndex = widget.product.pricePoints.indexWhere(
       (pricePoint) => pricePoint.quantity == 1,
     );

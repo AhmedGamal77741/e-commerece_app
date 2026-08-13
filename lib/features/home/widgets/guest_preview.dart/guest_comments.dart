@@ -8,7 +8,6 @@ import 'package:ecommerece_app/features/chat/widgets/chat_post_share.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item_components/natural_aspect_page_view.dart';
-import 'package:ecommerece_app/features/shop/item_details.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -413,19 +412,17 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
                                     '${item.productData!.pricePoints[0].price} 원',
                                 authorName: item.productData!.productName,
                                 onTap: () async {
-                                  final navigator = Navigator.of(context);
                                   bool isSub = await isUserSubscribed();
-                                  navigator.push(
-                                    MaterialPageRoute(
-                                      builder:
-                                          (_) => ItemDetails(
-                                            product: item.productData!,
-                                            isSub: isSub,
-                                            arrivalDay:
-                                                item.productData!.arrivalDate ??
-                                                '',
-                                          ),
-                                    ),
+                                  if (!context.mounted) return;
+                                  final product = item.productData!;
+                                  context.pushNamed(
+                                    'productDetails',
+                                    pathParameters: {'productId': product.productId},
+                                    extra: {
+                                      'product': product,
+                                      'isSub': isSub,
+                                      'arrivalDay': product.arrivalDate ?? '',
+                                    },
                                   );
                                 },
                               ),

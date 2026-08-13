@@ -1,5 +1,7 @@
+import 'package:flutter/services.dart';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -13,12 +15,27 @@ import 'package:ecommerece_app/features/chat/services/contacts_service.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ecommerece_app/core/helpers/error_logger.dart';
 
+import 'package:ecommerece_app/core/services/notification_service.dart';
+
 late AppLinks _appLinks;
 late GoRouter _router;
 
 void main() async {
+  usePathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
   await ScreenUtil.ensureScreenSize();
+
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+      systemNavigationBarColor: Color(0xFFEEEEEE),
+      systemNavigationBarDividerColor: Color(0xFFEEEEEE),
+      systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarContrastEnforced: false,
+    ),
+  );
 
   // Set production-ready image cache limits (200 MB and 1000 images max)
   // This balances seamless scroll-up caching (holding ~100-130 downsampled images) with RAM safety on low-end devices.
@@ -52,6 +69,7 @@ void main() async {
       androidProvider: AndroidProvider.debug,
       appleProvider: AppleProvider.debug,
     );
+    await NotificationService.instance.init();
   }
 
   _router = AppRouter.router;
@@ -92,11 +110,23 @@ void _handleDeepLinks() {
 void _routeDeepLink(Uri uri) {
   debugPrint('Routing deep link: ${uri.path} | Query: ${uri.queryParameters}');
 
-  // ── Product routes: /product/:productId ───────────────────────────────────
+  // ── Product routes: /product/:productId or /item-details ─────────────────
   if (uri.path.startsWith('/product/')) {
     final productId = uri.pathSegments.length > 1 ? uri.pathSegments[1] : '';
     if (productId.isNotEmpty) {
       debugPrint('Navigating to product: $productId');
+      _router.pushNamed(
+        'productDetails',
+        pathParameters: {'productId': productId},
+      );
+      return;
+    }
+  }
+
+  if (uri.path == '/item-details' || uri.path == Routes.itemDetailsScreen) {
+    final productId = uri.queryParameters['productId'] ?? '';
+    if (productId.isNotEmpty) {
+      debugPrint('Navigating to item-details product: $productId');
       _router.pushNamed(
         'productDetails',
         pathParameters: {'productId': productId},

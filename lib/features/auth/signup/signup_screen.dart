@@ -8,7 +8,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -288,16 +287,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             }
                             if (_formKey.currentState!.validate()) {
                               MyUser myUser = MyUser.empty;
-                              myUser.email = emailController.text;
+                              myUser.email = emailController.text.trim();
                               myUser.name = nameController.text.trim();
                               myUser.isPrivate = isPrivate;
                               imgUrl.isEmpty
                                   ? myUser.url = "https://i.ibb.co/mrVrHy7z/avatar.png"
                                   : myUser.url = imgUrl;
                               myUser.phoneNumber = phoneController.text;
-
-                              final prefs = await SharedPreferences.getInstance();
-                              await prefs.setBool('show_bank_prompt_after_login', true);
 
                               await ref.read(authNotifierProvider.notifier).signUp(
                                 myUser,

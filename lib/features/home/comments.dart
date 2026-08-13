@@ -143,11 +143,40 @@ class _CommentsState extends ConsumerState<Comments> {
                             !_isSameDay(item['timestamp'], chatItems[index + 1]['timestamp']);
                         final key = _bubbleKeys.putIfAbsent(item['id'], () => GlobalKey());
 
+                        // Grouping: show avatar/name only on the oldest comment of a consecutive sequence
+                        final bool showAvatarAndName = index == 0 ||
+                            item['isPost'] == true ||
+                            chatItems[index - 1]['isPost'] == true ||
+                            chatItems[index - 1]['senderId'] != item['senderId'];
+
+                        // Grouping: show timestamp only on the newest comment of a minute sequence
+                        bool showTime = true;
+                        if (index < chatItems.length - 1) {
+                          final nextNewerItem = chatItems[index + 1];
+                          final DateTime itemTs = item['timestamp'];
+                          final DateTime nextTs = nextNewerItem['timestamp'];
+                          final isSameSenderAsNext = nextNewerItem['senderId'] == item['senderId'];
+                          final isSameMinuteAsNext = nextTs.hour == itemTs.hour && nextTs.minute == itemTs.minute;
+
+                          if (isSameSenderAsNext &&
+                              isSameMinuteAsNext &&
+                              !showDate &&
+                              item['isPost'] != true &&
+                              nextNewerItem['isPost'] != true) {
+                            showTime = false;
+                          }
+                        }
+
                         return Column(
                           key: key,
                           children: [
                             if (showDate) _DateSeparator(date: item['timestamp']),
-                            CommentBubble(item: item, isMe: isMe),
+                            CommentBubble(
+                              item: item,
+                              isMe: isMe,
+                              showAvatarAndName: showAvatarAndName,
+                              showTime: showTime,
+                            ),
                           ],
                         );
                       });

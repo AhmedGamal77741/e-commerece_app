@@ -4,7 +4,6 @@ import 'package:ecommerece_app/features/address/domain/address_controller.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AddAddressScreen extends ConsumerStatefulWidget {
@@ -171,7 +170,6 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
             fontWeight: FontWeight.w400,
           ),
         ),
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
         // ── Skip action — only shown when launched from NavBar gate ──────
         actions:
             widget.showSkip

@@ -30,7 +30,13 @@ class ShareService {
     }
   }
 
-  static Future<void> shareProduct(String productId, String productName, {BuildContext? context}) async {
+  static Future<void> shareProduct(
+    String productId,
+    String productName, {
+    String? imageUrl,
+    String? description,
+    BuildContext? context,
+  }) async {
     final link = '$_appDomain/product/$productId';
     await Clipboard.setData(ClipboardData(text: link));
     if (context != null && context.mounted) {

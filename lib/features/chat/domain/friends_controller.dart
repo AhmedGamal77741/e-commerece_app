@@ -21,6 +21,10 @@ final brandsProvider = StreamProvider<List<MyUser>>((ref) {
   return friendsRepository.getBrandsStream();
 });
 
+final aliasesProvider = StreamProvider<Map<String, String>>((ref) {
+  return ref.watch(friendsControllerProvider.notifier).getAliasesStream();
+});
+
 final friendsControllerProvider = AsyncNotifierProvider<FriendsController, void>(() {
   return FriendsController();
 });

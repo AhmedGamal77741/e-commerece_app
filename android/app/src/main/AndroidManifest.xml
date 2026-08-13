@@ -37,35 +37,31 @@
     <data android:scheme="kakao1e581c3375b98383bc0a3411254ef1fb" android:host="oauth"/>
   </intent-filter>
   
-  <!-- Deep links for www.pang2chocolate.com -->
+  <!-- Deep links for www.pang2chocolate.com and pang2chocolate.com -->
   <intent-filter android:autoVerify="true">
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
-    <data
-      android:scheme="https"
-      android:host="www.pang2chocolate.com"
-      android:pathPrefix="/product" />
+    <data android:scheme="https" android:host="www.pang2chocolate.com" android:pathPrefix="/product" />
+    <data android:scheme="https" android:host="pang2chocolate.com" android:pathPrefix="/product" />
+    <data android:scheme="https" android:host="www.pang2chocolate.com" android:pathPrefix="/item-details" />
+    <data android:scheme="https" android:host="pang2chocolate.com" android:pathPrefix="/item-details" />
   </intent-filter>
 
   <intent-filter android:autoVerify="true">
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
-    <data
-      android:scheme="https"
-      android:host="www.pang2chocolate.com"
-      android:pathPrefix="/comment" />
+    <data android:scheme="https" android:host="www.pang2chocolate.com" android:pathPrefix="/comment" />
+    <data android:scheme="https" android:host="pang2chocolate.com" android:pathPrefix="/comment" />
   </intent-filter>
 
   <intent-filter android:autoVerify="true">
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
-    <data
-      android:scheme="https"
-      android:host="www.pang2chocolate.com"
-      android:pathPrefix="/bank-registered" />
+    <data android:scheme="https" android:host="www.pang2chocolate.com" android:pathPrefix="/bank-registered" />
+    <data android:scheme="https" android:host="pang2chocolate.com" android:pathPrefix="/bank-registered" />
   </intent-filter>
 
 </activity>

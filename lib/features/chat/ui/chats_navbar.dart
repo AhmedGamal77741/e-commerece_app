@@ -2,7 +2,6 @@
 import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/ui/direct_chats_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/friends_screen.dart';
 import 'package:ecommerece_app/features/chat/ui/group_chats_screen.dart';
@@ -98,26 +97,6 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
     context.pushNamed(Routes.editScreen, extra: {'initialTab': _selectedIndex});
   }
 
-  Future<void> _contactAdmin() async {
-    try {
-      final chatRoomId =
-          await ref
-              .read(chatControllerProvider.notifier)
-              .createDirectChatRoomWithAdmin();
-      if (!mounted) return;
-      context.pushNamed(
-        Routes.chatScreen,
-        pathParameters: {'id': chatRoomId},
-        extra: {'name': 'Admin'},
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
-    }
-  }
-
   /// Shown when no user is signed in
   Widget _buildSignInPrompt() {
     return Scaffold(
@@ -194,7 +173,6 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
 
   Widget _buildNormalPillRow() {
     final bool onFriendsTab = _selectedIndex == 0;
-    final bool onDirectChatsTab = _selectedIndex == 1;
 
     return Row(
       key: const ValueKey('pills'),
@@ -222,25 +200,6 @@ class _ChatsNavbarState extends ConsumerState<ChatsNavbar>
                       'assets/search_icon.png',
                       width: 30.r,
                       height: 30.r,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: BoxConstraints(
-                      minWidth: 28.w,
-                      minHeight: 28.h,
-                    ),
-                  )
-                  : const SizedBox(width: 0),
-        ),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child:
-              onDirectChatsTab
-                  ? IconButton(
-                    onPressed: _contactAdmin,
-                    icon: Icon(
-                      Icons.contact_support_outlined,
-                      color: const Color.fromARGB(255, 172, 171, 171),
-                      size: 30.sp,
                     ),
                     padding: EdgeInsets.zero,
                     constraints: BoxConstraints(

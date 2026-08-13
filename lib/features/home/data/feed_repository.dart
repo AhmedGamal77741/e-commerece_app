@@ -8,6 +8,7 @@ import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:ecommerece_app/core/services/notification_service.dart';
 
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {
   return FeedRepository(
@@ -32,9 +33,10 @@ class FeedRepository {
 
   Stream<QuerySnapshot> getUsersChunkStream(List<String> userIds) {
     if (userIds.isEmpty) return const Stream.empty();
+    final safeIds = userIds.length > 30 ? userIds.sublist(0, 30) : userIds;
     return _firestore
         .collection('users')
-        .where('userId', whereIn: userIds)
+        .where('userId', whereIn: safeIds)
         .snapshots();
   }
 
@@ -471,6 +473,32 @@ class FeedRepository {
       });
 
       await batch.commit();
+
+      // Notify followers/friends
+      try {
+        final authorDoc =
+            await _firestore.collection('users').doc(currentUser.uid).get();
+        final authorName = authorDoc.data()?['name'] ?? '알 수 없음';
+
+        final followersSnap = await _firestore
+            .collection('users')
+            .doc(currentUser.uid)
+            .collection('followers')
+            .get();
+
+        for (final followerDoc in followersSnap.docs) {
+          NotificationService.instance.sendInAppNotification(
+            recipientId: followerDoc.id,
+            type: 'post',
+            title: '새 게시글',
+            body: '$authorName님이 새 게시글을 작성했습니다.',
+            postId: newPostRef.id,
+            senderId: currentUser.uid,
+          );
+        }
+      } catch (e) {
+        debugPrint('Error notifying followers on new post: $e');
+      }
     } catch (e) {
       rethrow; // Re-throw to handle in UI
     }
@@ -965,9 +993,10 @@ class FeedRepository {
         _firestore.collection('__empty__').snapshots() as QuerySnapshot,
       );
     }
+    final safeIds = userIds.length > 30 ? userIds.sublist(0, 30) : userIds;
     return _firestore
         .collection('users')
-        .where(FieldPath.documentId, whereIn: userIds)
+        .where(FieldPath.documentId, whereIn: safeIds)
         .snapshots();
   }
 

@@ -1,3 +1,5 @@
+import 'package:go_router/go_router.dart';
+import 'package:ecommerece_app/core/routing/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
@@ -55,9 +57,16 @@ class _NotificationsState extends ConsumerState<Notifications> {
                           notifications[index].data() as Map<String, dynamic>;
                       return ListTile(
                         onTap: () {
+                          final chatRoomId = (data['chatRoomId']) as String?;
                           final postId = (data['postId']) as String?;
                           final commentId = (data['commentId']) as String?;
-                          if (postId != null && postId.isNotEmpty) {
+
+                          if (chatRoomId != null && chatRoomId.isNotEmpty) {
+                            context.pushNamed(
+                              Routes.chatScreen,
+                              pathParameters: {'id': chatRoomId},
+                            );
+                          } else if (postId != null && postId.isNotEmpty) {
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,

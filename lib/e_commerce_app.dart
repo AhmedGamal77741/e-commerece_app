@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:ecommerece_app/core/routing/app_router.dart';
 import 'package:ecommerece_app/core/theming/colors.dart';
 import 'package:flutter/foundation.dart';
@@ -89,6 +90,21 @@ class _EcommerceAppState extends State<EcommerceApp> {
           appBarTheme: const AppBarTheme(
             backgroundColor: ColorsManager.primary,
             surfaceTintColor: Colors.transparent,
+            systemOverlayStyle: SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+              statusBarBrightness: Brightness.light,
+              systemNavigationBarColor: ColorsManager.primary,
+              systemNavigationBarDividerColor: ColorsManager.primary,
+              systemNavigationBarIconBrightness: Brightness.dark,
+              systemNavigationBarContrastEnforced: false,
+            ),
+          ),
+          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+            backgroundColor: ColorsManager.primary,
+          ),
+          navigationBarTheme: const NavigationBarThemeData(
+            backgroundColor: ColorsManager.primary,
           ),
           unselectedWidgetColor: Colors.grey,
           radioTheme: RadioThemeData(
@@ -167,6 +183,21 @@ class _EcommerceAppState extends State<EcommerceApp> {
                 appBarTheme: const AppBarTheme(
                   backgroundColor: ColorsManager.primary,
                   surfaceTintColor: Colors.transparent,
+                  systemOverlayStyle: SystemUiOverlayStyle(
+                    statusBarColor: Colors.transparent,
+                    statusBarIconBrightness: Brightness.dark,
+                    statusBarBrightness: Brightness.light,
+                    systemNavigationBarColor: ColorsManager.primary,
+                    systemNavigationBarDividerColor: ColorsManager.primary,
+                    systemNavigationBarIconBrightness: Brightness.dark,
+                    systemNavigationBarContrastEnforced: false,
+                  ),
+                ),
+                bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                  backgroundColor: ColorsManager.primary,
+                ),
+                navigationBarTheme: const NavigationBarThemeData(
+                  backgroundColor: ColorsManager.primary,
                 ),
                 unselectedWidgetColor: Colors.grey,
                 radioTheme: RadioThemeData(
@@ -193,6 +224,20 @@ class _EcommerceAppState extends State<EcommerceApp> {
               ),
               debugShowCheckedModeBanner: false,
               routerConfig: AppRouter.router,
+              builder: (context, child) {
+                return AnnotatedRegion<SystemUiOverlayStyle>(
+                  value: const SystemUiOverlayStyle(
+                    statusBarColor: Colors.transparent,
+                    statusBarIconBrightness: Brightness.dark,
+                    statusBarBrightness: Brightness.light,
+                    systemNavigationBarColor: ColorsManager.primary,
+                    systemNavigationBarDividerColor: ColorsManager.primary,
+                    systemNavigationBarIconBrightness: Brightness.dark,
+                    systemNavigationBarContrastEnforced: false,
+                  ),
+                  child: child!,
+                );
+              },
             ),
       );
     }

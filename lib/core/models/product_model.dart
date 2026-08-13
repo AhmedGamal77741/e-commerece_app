@@ -159,11 +159,9 @@ class Product {
 
   factory Product.fromMap(Map<String, dynamic> map) {
     final rawPricePoints = map['pricePoints'] as List?;
-    final parsedPricePoints =
-        rawPricePoints
-            ?.map(
-              (pp) => PricePoint.fromMap(Map<String, dynamic>.from(pp as Map)),
-            )
+    final parsedPricePoints = rawPricePoints
+            ?.where((pp) => pp != null && pp is Map)
+            .map((pp) => PricePoint.fromMap(Map<String, dynamic>.from(pp as Map)))
             .toList() ??
         [];
     final firstPrice =
@@ -172,33 +170,33 @@ class Product {
             : toDouble(map['price']);
 
     return Product(
-      product_id: map['product_id'] ?? map['id'] ?? '',
-      productName: map['productName'] ?? '',
+      product_id: (map['product_id'] ?? map['id'] ?? '').toString(),
+      productName: map['productName'] ?? map['name'] ?? '',
       instructions: map['instructions'] ?? '',
       description: map['description'] ?? map['storageInfo'] ?? '',
-      stock: map['stock'] ?? 0,
+      stock: (map['stock'] is num) ? (map['stock'] as num).toInt() : (int.tryParse(map['stock']?.toString() ?? '') ?? 0),
       supplyPrice: toDouble(map['supplyPrice']),
       price: firstPrice,
-      baselineTime: map['baselineTime'] ?? 0,
+      baselineTime: (map['baselineTime'] is num) ? (map['baselineTime'] as num).toInt() : 0,
       meridiem: map['meridiem'] ?? 'AM',
-      imgUrl: map['imgUrl'],
-      imgUrls: List<String?>.from(map['imgUrls'] ?? []),
+      imgUrl: map['imgUrl'] as String?,
+      imgUrls: (map['imgUrls'] as List?)?.map((e) => e?.toString()).toList() ?? [],
       sellerName: map['sellerName'] ?? '',
       category: map['category'] ?? '',
-      categoryList: List<String>.from(map['categoryList'] ?? []),
+      categoryList: (map['categoryList'] as List?)?.map((e) => e.toString()).toList() ?? [],
       pricePoints: parsedPricePoints,
       freeShipping: map['freeShipping'] ?? false,
-      deliveryManagerId: map['deliveryManagerId'] ?? '',
+      deliveryManagerId: map['deliveryManagerId'] as String? ?? '',
       deliveryPrice: toDouble(map['deliveryPrice']),
       marginRate: toDouble(map['marginRate']),
       shippingFee: toDouble(map['shippingFee']),
       estimatedSettlement: toDouble(map['estimatedSettlement']),
-      estimatedSettlementDate: map['estimatedSettlementDate'] ?? '',
-      address: map['address'] as Map<String, dynamic>?,
-      arrivalDate: map['arrivalDate'],
-      createdAt: map['createdAt'],
+      estimatedSettlementDate: map['estimatedSettlementDate'] as String? ?? '',
+      address: map['address'] != null && map['address'] is Map ? Map<String, dynamic>.from(map['address'] as Map) : null,
+      arrivalDate: map['arrivalDate'] as String?,
+      createdAt: map['createdAt'] is Timestamp ? map['createdAt'] as Timestamp : null,
       memo: map['memo'] ?? '',
-      favBy: List<String>.from(map['favBy'] ?? []),
+      favBy: (map['favBy'] as List?)?.map((e) => e.toString()).toList() ?? [],
       taxType: map['taxType'] ?? '과세',
       shippingMethod: map['shippingMethod'] as String? ??
           (map['address'] != null ? '지역배송' : '택배배송'),
