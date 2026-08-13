@@ -15,6 +15,7 @@ class InputBar extends StatelessWidget {
   final VoidCallback onPickImage;
   final VoidCallback onSend;
   final bool autofocus;
+  final bool isUploading;
 
   const InputBar({
     super.key,
@@ -23,6 +24,7 @@ class InputBar extends StatelessWidget {
     required this.onPickImage,
     required this.onSend,
     this.autofocus = false,
+    this.isUploading = false,
   });
 
   bool get _isDesktopOrWeb {
@@ -51,7 +53,7 @@ class InputBar extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     GestureDetector(
-                      onTap: onPickImage,
+                      onTap: isUploading ? null : onPickImage,
                       child: Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: 10.w,
@@ -60,14 +62,14 @@ class InputBar extends StatelessWidget {
                         child: Icon(
                           Icons.add,
                           size: 20.sp,
-                          color: Colors.grey[500],
+                          color: isUploading ? Colors.grey[300] : Colors.grey[500],
                         ),
                       ),
                     ),
                     Expanded(
                       child: Focus(
                         onKeyEvent: (node, event) {
-                          if (_isDesktopOrWeb) {
+                          if (_isDesktopOrWeb && !isUploading) {
                             if (event is KeyDownEvent &&
                                 event.logicalKey == LogicalKeyboardKey.enter) {
                               if (HardwareKeyboard.instance.isShiftPressed) {
@@ -85,6 +87,7 @@ class InputBar extends StatelessWidget {
                         },
                         child: TextField(
                           controller: controller,
+                          enabled: !isUploading,
                           autofocus: autofocus,
                           maxLines: 4,
                           minLines: 1,
@@ -114,7 +117,7 @@ class InputBar extends StatelessWidget {
               valueListenable: controller,
               builder: (context, value, child) {
                 final bool showButton =
-                    value.text.trim().isNotEmpty || pickedImage != null;
+                    value.text.trim().isNotEmpty || pickedImage != null || isUploading;
 
                 return AnimatedSize(
                   duration: const Duration(milliseconds: 180),
@@ -124,7 +127,7 @@ class InputBar extends StatelessWidget {
                           ? Padding(
                             padding: EdgeInsets.only(left: 8.w),
                             child: GestureDetector(
-                              onTap: onSend,
+                              onTap: isUploading ? null : onSend,
                               child: Container(
                                 width: 40.w,
                                 height: 40.w,
@@ -132,11 +135,22 @@ class InputBar extends StatelessWidget {
                                   color: _kSendActive,
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(
-                                  Icons.arrow_upward_rounded,
-                                  size: 20.sp,
-                                  color: Colors.white,
-                                ),
+                                child: isUploading
+                                    ? Center(
+                                        child: SizedBox(
+                                          width: 18.w,
+                                          height: 18.w,
+                                          child: const CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.arrow_upward_rounded,
+                                        size: 20.sp,
+                                        color: Colors.white,
+                                      ),
                               ),
                             ),
                           )

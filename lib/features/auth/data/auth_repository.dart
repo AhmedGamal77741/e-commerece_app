@@ -3,9 +3,9 @@ import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/core/helpers/image_upload_helper.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(
@@ -144,72 +144,18 @@ class AuthRepository {
   /// Upload an image to Firebase Storage and return the download URL
   Future<String> uploadProfileImage(XFile image, String userId) async {
     final originalBytes = await image.readAsBytes();
-    
-    // Detect HEIC/HEIF magic bytes (even if extension is renamed/incorrect)
-    bool isHeic = false;
-    if (originalBytes.length >= 12) {
-      try {
-        final ftyp = String.fromCharCodes(originalBytes.sublist(4, 8));
-        final brand = String.fromCharCodes(originalBytes.sublist(8, 12));
-        if (ftyp == 'ftyp' && 
-            (brand.startsWith('hei') || 
-             brand.startsWith('mif1') || 
-             brand.startsWith('msf1') || 
-             brand.startsWith('hvc') || 
-             brand.startsWith('hevc'))) {
-          isHeic = true;
-        }
-      } catch (_) {}
-    }
+    final preparedData = await ImageUploadHelper.prepareImageForUpload(
+      rawBytes: originalBytes,
+      originalName: image.name,
+      minWidth: 200,
+      minHeight: 200,
+      quality: 80,
+    );
 
-    if (isHeic && kIsWeb) {
-      throw Exception('HEIC/HEIF 이미지 형식은 웹에서 지원되지 않습니다. JPG나 PNG 이미지를 업로드해 주세요.');
-    }
-
-    Uint8List uploadBytes;
-    try {
-      final compressedBytes = await FlutterImageCompress.compressWithList(
-        originalBytes,
-        minWidth: 200,
-        minHeight: 200,
-        quality: 80,
-        format: CompressFormat.jpeg,
-      );
-      uploadBytes = compressedBytes;
-    } catch (e) {
-      uploadBytes = originalBytes;
-    }
-
-    final String originalName = image.name;
-    final int dotIndex = originalName.lastIndexOf('.');
-    final String originalExtension = dotIndex != -1 
-        ? originalName.substring(dotIndex).toLowerCase() 
-        : '';
-
-    String contentType = 'image/jpeg';
-    String finalExtension = '.jpg';
-
-    // If it was HEIC and compressed successfully to JPEG, it is now image/jpeg.
-    // Otherwise, check other formats or throw.
-    if (uploadBytes == originalBytes) {
-      if (originalExtension == '.png') {
-        contentType = 'image/png';
-        finalExtension = '.png';
-      } else if (originalExtension == '.webp') {
-        contentType = 'image/webp';
-        finalExtension = '.webp';
-      } else if (originalExtension == '.gif') {
-        contentType = 'image/gif';
-        finalExtension = '.gif';
-      } else if (isHeic || originalExtension == '.heic' || originalExtension == '.heif') {
-        throw Exception('Failed to compress/convert HEIC profile image to JPEG');
-      }
-    }
-
-    final storageRef = _storage.ref().child('user_profile_images').child('$userId$finalExtension');
+    final storageRef = _storage.ref().child('user_profile_images').child('$userId${preparedData.extension}');
     final uploadTask = await storageRef.putData(
-      uploadBytes,
-      SettableMetadata(contentType: contentType),
+      preparedData.bytes,
+      SettableMetadata(contentType: preparedData.contentType),
     );
     final downloadUrl = await uploadTask.ref.getDownloadURL();
     return downloadUrl;

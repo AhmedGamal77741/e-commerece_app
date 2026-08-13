@@ -175,7 +175,7 @@ class _PostItemState extends ConsumerState<PostItem> with AutomaticKeepAliveClie
         widget.postData ??
         ref.watch(
           feedControllerProvider.select((asyncList) {
-            final list = asyncList.value;
+            final list = asyncList.unwrapPrevious().value;
             if (list == null) return null;
             for (var p in list) {
               if (p['postId'] == widget.postId) return p;

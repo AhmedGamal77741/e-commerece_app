@@ -26,7 +26,7 @@ class HomeFeedTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final postIdsAsync = ref.watch(
       feedControllerProvider.select((asyncList) {
-        return asyncList.whenData(
+        return asyncList.unwrapPrevious().whenData(
           (list) =>
               list.map((p) => p['postId'] as String? ?? 'unknown').toList(),
         );

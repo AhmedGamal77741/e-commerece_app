@@ -82,7 +82,7 @@ class UserCategoriesBar extends StatelessWidget {
 
 final userFilteredPostIdsProvider = Provider.family<List<String>, ({String userId, String? categoryId})>((ref, arg) {
   final allPostsAsync = ref.watch(feedControllerProvider);
-  final allPosts = allPostsAsync.value ?? [];
+  final allPosts = allPostsAsync.unwrapPrevious().value ?? [];
   return allPosts
       .where((p) => p['userId'] == arg.userId && (arg.categoryId == null || p['categoryId'] == arg.categoryId))
       .map((p) => (p['postId'] ?? p['id'] ?? '').toString())

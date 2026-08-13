@@ -90,7 +90,7 @@ class _GuestPostItemState extends ConsumerState<GuestPostItem> with AutomaticKee
         widget.postId ?? widget.post?['postId'] ?? 'unknown';
     final postData = widget.post ??
         ref.watch(feedControllerProvider.select((asyncList) {
-          final list = asyncList.value;
+          final list = asyncList.unwrapPrevious().value;
           if (list == null) return null;
           for (var p in list) {
             if (p['postId'] == targetPostId) return p;

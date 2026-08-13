@@ -8,6 +8,7 @@ import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:ecommerece_app/core/helpers/image_upload_helper.dart';
 import 'package:ecommerece_app/core/services/notification_service.dart';
 
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {
@@ -522,24 +523,6 @@ class FeedRepository {
     }
   }
 
-  String _lookupMimeType(String extension) {
-    switch (extension.toLowerCase()) {
-      case '.png':
-        return 'image/png';
-      case '.webp':
-        return 'image/webp';
-      case '.gif':
-        return 'image/gif';
-      case '.heic':
-      case '.heif':
-        return 'image/heic';
-      case '.jpeg':
-      case '.jpg':
-      default:
-        return 'image/jpeg';
-    }
-  }
-
   Future<Map<String, dynamic>> _prepareUploadData({
     required XFile file,
     required String uid,
@@ -549,70 +532,26 @@ class FeedRepository {
     final int dotIndex = originalName.lastIndexOf('.');
     final String baseName =
         dotIndex != -1 ? originalName.substring(0, dotIndex) : originalName;
-    final String originalExtension =
-        dotIndex != -1 ? originalName.substring(dotIndex).toLowerCase() : '';
     final String cleanedBaseName = baseName.replaceAll(
       RegExp(r'[^a-zA-Z0-9]'),
       '',
     );
 
     final Uint8List rawBytes = await file.readAsBytes();
-
-    // Detect HEIC/HEIF magic bytes (even if extension is renamed/incorrect)
-    bool isHeic = false;
-    if (rawBytes.length >= 12) {
-      try {
-        final ftyp = String.fromCharCodes(rawBytes.sublist(4, 8));
-        final brand = String.fromCharCodes(rawBytes.sublist(8, 12));
-        if (ftyp == 'ftyp' && 
-            (brand.startsWith('hei') || 
-             brand.startsWith('mif1') || 
-             brand.startsWith('msf1') || 
-             brand.startsWith('hvc') || 
-             brand.startsWith('hevc'))) {
-          isHeic = true;
-        }
-      } catch (_) {}
-    }
-
-    if (isHeic && kIsWeb) {
-      throw Exception('HEIC/HEIF 이미지 형식은 웹에서 지원되지 않습니다. JPG나 PNG 이미지를 업로드해 주세요.');
-    }
-
-    Uint8List uploadBytes;
-    String finalExtension;
-    String contentType;
-
-    try {
-      final Uint8List compressed = await FlutterImageCompress.compressWithList(
-        rawBytes,
-        minWidth: 1080,
-        minHeight: 1080,
-        quality: 82,
-        format: CompressFormat.jpeg,
-      );
-      uploadBytes = compressed;
-      finalExtension = '.jpg';
-      contentType = 'image/jpeg';
-    } catch (e) {
-      uploadBytes = rawBytes;
-      finalExtension = originalExtension;
-      contentType = _lookupMimeType(originalExtension);
-      if (isHeic || originalExtension.toLowerCase() == '.heic' ||
-          originalExtension.toLowerCase() == '.heif') {
-        throw Exception('Failed to compress/convert HEIC image to JPEG: $e');
-      }
-    }
+    final preparedData = await ImageUploadHelper.prepareImageForUpload(
+      rawBytes: rawBytes,
+      originalName: originalName,
+    );
 
     final String timestamp = DateTime.now().microsecondsSinceEpoch.toString();
     final String indexSuffix = index != null ? '_$index' : '';
     final String fileName =
-        '$timestamp${indexSuffix}_${uid}_$cleanedBaseName$finalExtension';
+        '$timestamp${indexSuffix}_${uid}_$cleanedBaseName${preparedData.extension}';
 
     return {
-      'bytes': uploadBytes,
+      'bytes': preparedData.bytes,
       'fileName': fileName,
-      'metadata': SettableMetadata(contentType: contentType),
+      'metadata': SettableMetadata(contentType: preparedData.contentType),
     };
   }
 

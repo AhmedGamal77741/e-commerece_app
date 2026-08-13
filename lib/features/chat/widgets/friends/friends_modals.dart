@@ -8,8 +8,10 @@ import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart'
 import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
-import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:ecommerece_app/core/helpers/image_upload_helper.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 // ─── Multi-field user search ──────────────────────────────────────────────
 
@@ -929,6 +931,7 @@ Future<void> showCreateGroupDialog({
   Timer? debounce;
   List<String> selectedUserIds = [];
   String? groupImagePath;
+  bool isUploadingGroupImage = false;
   String groupSearch = '';
   await showDialog(
     context: context,
@@ -991,14 +994,68 @@ Future<void> showCreateGroupDialog({
                                     // ── Group image picker ──
                                     GestureDetector(
                                       onTap: () async {
-                                        groupImagePath =
-                                            await ref
-                                                .read(
-                                                  feedControllerProvider
-                                                      .notifier,
-                                                )
-                                                .uploadImageToFirebaseStorageHome();
-                                        setDialogState(() {});
+                                        if (isUploadingGroupImage) return;
+                                        final picker = ImagePicker();
+                                        final image = await picker.pickImage(
+                                          source: ImageSource.gallery,
+                                        );
+                                        if (image == null) return;
+
+                                        setDialogState(() {
+                                          isUploadingGroupImage = true;
+                                        });
+
+                                        try {
+                                          final currentUserId =
+                                              consumerRef.read(
+                                                currentUserIdProvider,
+                                              );
+                                          final rawBytes =
+                                              await image.readAsBytes();
+                                          final previewBytes =
+                                              await ImageUploadHelper.preparePreviewBytes(
+                                                rawBytes,
+                                                image.name,
+                                              );
+
+                                          final mimeType =
+                                              ImageUploadHelper.lookupMimeType(
+                                                image.name,
+                                              );
+                                          final ext =
+                                              mimeType == 'image/png'
+                                                  ? 'png'
+                                                  : 'jpg';
+                                          final fileName =
+                                              'group_chat_${DateTime.now().millisecondsSinceEpoch}_$currentUserId.$ext';
+
+                                          final storageRef = FirebaseStorage
+                                              .instance
+                                              .ref()
+                                              .child('uploads')
+                                              .child(fileName);
+
+                                          final uploadTask = storageRef.putData(
+                                            previewBytes,
+                                            SettableMetadata(
+                                              contentType: mimeType,
+                                            ),
+                                          );
+
+                                          final snapshot = await uploadTask;
+                                          final newUrl =
+                                              await snapshot.ref
+                                                  .getDownloadURL();
+                                          groupImagePath = newUrl;
+                                        } catch (e) {
+                                          debugPrint(
+                                            'Error uploading group image: $e',
+                                          );
+                                        } finally {
+                                          setDialogState(() {
+                                            isUploadingGroupImage = false;
+                                          });
+                                        }
                                       },
                                       child: CircleAvatar(
                                         radius: 40.r,
@@ -1010,13 +1067,23 @@ Future<void> showCreateGroupDialog({
                                                 )
                                                 : null,
                                         child:
-                                            groupImagePath == null
-                                                ? Icon(
-                                                  Icons.image_outlined,
-                                                  size: 32.sp,
-                                                  color: Colors.grey[400],
+                                            isUploadingGroupImage
+                                                ? SizedBox(
+                                                  width: 28.w,
+                                                  height: 28.w,
+                                                  child:
+                                                      const CircularProgressIndicator(
+                                                        color: Colors.black,
+                                                        strokeWidth: 2.5,
+                                                      ),
                                                 )
-                                                : null,
+                                                : (groupImagePath == null
+                                                    ? Icon(
+                                                      Icons.image_outlined,
+                                                      size: 32.sp,
+                                                      color: Colors.grey[400],
+                                                    )
+                                                    : null),
                                       ),
                                     ),
                                     SizedBox(height: 10.h),

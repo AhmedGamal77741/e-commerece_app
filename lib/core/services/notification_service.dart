@@ -1,7 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  if (kDebugMode) {
+    print('Handling background FCM message: ${message.messageId}');
+  }
+}
 
 class NotificationService {
   NotificationService._privateConstructor();
@@ -19,7 +29,26 @@ class NotificationService {
     _initialized = true;
 
     try {
-      // 1. Request Push Notification permissions
+      // 0. Register background messaging handler
+      if (!kIsWeb) {
+        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      }
+
+      // 1. Explicitly request Android runtime notification permission (POST_NOTIFICATIONS)
+      if (!kIsWeb) {
+        try {
+          final status = await Permission.notification.status;
+          if (!status.isGranted) {
+            await Permission.notification.request();
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('Android notification permission request info: $e');
+          }
+        }
+      }
+
+      // 2. Request Push Notification permissions
       final settings = await _fcm.requestPermission(
         alert: true,
         badge: true,
@@ -59,6 +88,13 @@ class NotificationService {
           print('Foreground FCM Message received: ${message.notification?.title}');
         }
       });
+
+      // 7. Handle message when user taps notification from background
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        if (kDebugMode) {
+          print('FCM Message opened app: ${message.notification?.title}');
+        }
+      });
     } catch (e) {
       if (kDebugMode) {
         print('Error initializing NotificationService: $e');
@@ -70,7 +106,29 @@ class NotificationService {
     final user = _auth.currentUser;
     if (user == null) return;
     try {
-      final token = await _fcm.getToken();
+      String? token;
+      if (kIsWeb) {
+        try {
+          token = await _fcm.getToken(
+            vapidKey:
+                'BMxY_KRLCi-zPnzBt2_zopKfWFHQvBhOkErjM_bKsPjh1KJPZywqsBIlO0xinCqcbOBrqhsplIbUkVUf2tm8weY',
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            print('FCM Web token with VAPID key info: $e');
+          }
+          try {
+            token = await _fcm.getToken();
+          } catch (fallbackErr) {
+            if (kDebugMode) {
+              print('FCM Web token fallback info: $fallbackErr');
+            }
+          }
+        }
+      } else {
+        token = await _fcm.getToken();
+      }
+
       if (token != null && token.isNotEmpty) {
         await _saveTokenToFirestore(token);
       }

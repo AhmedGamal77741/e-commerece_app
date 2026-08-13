@@ -1,6 +1,5 @@
 // screens/chat_screen.dart
 
-import 'package:ecommerece_app/core/helpers/loading_dialog.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_room_state_controller.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_input_bar.dart';
 import 'package:ecommerece_app/features/chat/widgets/room/blocked_bar.dart';
@@ -78,29 +77,121 @@ class ChatScreen extends ConsumerWidget {
                               ),
                             );
                           }
+                          if (state.isPreparingImage) {
+                            return Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[300],
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const CircularProgressIndicator(
+                                            color: Colors.black54,
+                                            strokeWidth: 3,
+                                          ),
+                                          SizedBox(height: 12.h),
+                                          Text(
+                                            '이미지 로딩 중...',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                              fontSize: 13.sp,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: GestureDetector(
+                                      onTap: controller.clearPickedImage,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.6),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        padding: const EdgeInsets.all(6),
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
                           if (state.pickedImageBytes != null) {
                             return Padding(
                               padding: const EdgeInsets.all(12),
                               child: Stack(
                                 children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Image.memory(
-                                      state.pickedImageBytes as Uint8List,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 0,
-                                    right: 0,
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
+                                  Positioned.fill(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Image.memory(
+                                        state.pickedImageBytes as Uint8List,
+                                        fit: BoxFit.cover,
                                       ),
-                                      onPressed: controller.clearPickedImage,
                                     ),
                                   ),
+                                  if (state.isUploading)
+                                    Positioned.fill(
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.5),
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 3,
+                                            ),
+                                            SizedBox(height: 12.h),
+                                            Text(
+                                              '업로드 중...',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 13.sp,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  if (!state.isUploading)
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: GestureDetector(
+                                        onTap: controller.clearPickedImage,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withValues(alpha: 0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          padding: const EdgeInsets.all(6),
+                                          child: const Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
                             );
@@ -275,15 +366,11 @@ class ChatScreen extends ConsumerWidget {
                       InputBar(
                         controller: controller.messageController,
                         pickedImage: state.pickedImage,
+                        isUploading: state.isUploading || state.isPreparingImage,
                         onPickImage: controller.pickImage,
                         onSend: () async {
                           if (state.pickedImage != null) {
-                            showLoadingDialog(context);
-                            try {
-                              await controller.sendImageMessage();
-                            } finally {
-                              if (context.mounted) Navigator.pop(context);
-                            }
+                            await controller.sendImageMessage();
                           } else {
                             await controller.sendMessage();
                           }

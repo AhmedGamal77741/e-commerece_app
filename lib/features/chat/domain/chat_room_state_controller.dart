@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:ecommerece_app/core/helpers/image_picker_helper.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:ecommerece_app/core/helpers/image_upload_helper.dart';
 
 class ChatRoomState {
   final XFile? pickedImage;
@@ -26,6 +27,8 @@ class ChatRoomState {
   final bool roomDeleted;
   final Map<String, String> aliases;
   final String otherUserId;
+  final bool isUploading;
+  final bool isPreparingImage;
 
   ChatRoomState({
     this.pickedImage,
@@ -41,6 +44,8 @@ class ChatRoomState {
     this.roomDeleted = false,
     this.aliases = const {},
     this.otherUserId = '',
+    this.isUploading = false,
+    this.isPreparingImage = false,
   });
 
   ChatRoomState copyWith({
@@ -60,6 +65,8 @@ class ChatRoomState {
     bool? roomDeleted,
     Map<String, String>? aliases,
     String? otherUserId,
+    bool? isUploading,
+    bool? isPreparingImage,
   }) {
     return ChatRoomState(
       pickedImage: clearPickedImage ? null : (pickedImage ?? this.pickedImage),
@@ -79,6 +86,8 @@ class ChatRoomState {
       roomDeleted: roomDeleted ?? this.roomDeleted,
       aliases: aliases ?? this.aliases,
       otherUserId: otherUserId ?? this.otherUserId,
+      isUploading: isUploading ?? this.isUploading,
+      isPreparingImage: isPreparingImage ?? this.isPreparingImage,
     );
   }
 }
@@ -240,13 +249,37 @@ class ChatRoomStateController extends StateNotifier<ChatRoomState> {
   Future<void> pickImage() async {
     final picked = await ImagePickerHelper.pickImage();
     if (picked != null) {
-      final bytes = await picked.readAsBytes();
-      state = state.copyWith(pickedImage: picked, pickedImageBytes: bytes);
+      state = state.copyWith(
+        pickedImage: picked,
+        isPreparingImage: true,
+        clearPickedImageBytes: true,
+      );
+      try {
+        final rawBytes = await picked.readAsBytes();
+        final previewBytes =
+            await ImageUploadHelper.preparePreviewBytes(rawBytes, picked.name);
+        state = state.copyWith(
+          pickedImageBytes: previewBytes,
+          isPreparingImage: false,
+        );
+      } catch (e) {
+        debugPrint('Error preparing image preview in chat: $e');
+        state = state.copyWith(
+          clearPickedImage: true,
+          clearPickedImageBytes: true,
+          isPreparingImage: false,
+        );
+      }
     }
   }
 
   void clearPickedImage() {
-    state = state.copyWith(clearPickedImage: true, clearPickedImageBytes: true);
+    state = state.copyWith(
+      clearPickedImage: true,
+      clearPickedImageBytes: true,
+      isPreparingImage: false,
+      isUploading: false,
+    );
   }
 
   Future<void> unblockUser(String otherUserId) async {
@@ -267,12 +300,9 @@ class ChatRoomStateController extends StateNotifier<ChatRoomState> {
   }
 
   Future<void> sendImageMessage() async {
-    if (state.pickedImageBytes == null) return;
+    if (state.pickedImageBytes == null || state.isUploading) return;
     final String timestamp = DateTime.now().microsecondsSinceEpoch.toString();
-    final fileName = '${timestamp}_$currentUserId.jpg';
-    final storageRef = FirebaseStorage.instance.ref().child(
-      'chat_images/$fileName',
-    );
+    final originalName = state.pickedImage?.name ?? 'chat_image.jpg';
 
     final content = messageController.text.trim();
     final imageBytes = state.pickedImageBytes!;
@@ -280,30 +310,27 @@ class ChatRoomStateController extends StateNotifier<ChatRoomState> {
 
     messageController.clear();
     state = state.copyWith(
-      clearPickedImage: true,
-      clearPickedImageBytes: true,
+      isUploading: true,
       clearReplyToMessage: true,
     );
 
     try {
-      Uint8List uploadBytes;
-      try {
-        final Uint8List compressed =
-            await FlutterImageCompress.compressWithList(
-              imageBytes,
-              minWidth: 1080,
-              minHeight: 1080,
-              quality: 82,
-              format: CompressFormat.jpeg,
-            );
-        uploadBytes = compressed;
-      } catch (e) {
-        uploadBytes = imageBytes;
-      }
+      final preparedData = await ImageUploadHelper.prepareImageForUpload(
+        rawBytes: imageBytes,
+        originalName: originalName,
+        minWidth: 1080,
+        minHeight: 1080,
+        quality: 82,
+      );
+
+      final fileName = '${timestamp}_$currentUserId${preparedData.extension}';
+      final storageRef = FirebaseStorage.instance.ref().child(
+        'chat_images/$fileName',
+      );
 
       final UploadTask task = storageRef.putData(
-        uploadBytes,
-        SettableMetadata(contentType: 'image/jpeg'),
+        preparedData.bytes,
+        SettableMetadata(contentType: preparedData.contentType),
       );
       final TaskSnapshot snapshot = await task;
       final url = await snapshot.ref.getDownloadURL();
@@ -318,8 +345,14 @@ class ChatRoomStateController extends StateNotifier<ChatRoomState> {
       await ref
           .read(chatControllerProvider.notifier)
           .resetDeletedBy(chatRoomId);
+      state = state.copyWith(
+        clearPickedImage: true,
+        clearPickedImageBytes: true,
+        isUploading: false,
+      );
     } catch (e) {
       debugPrint('Error sending image message: $e');
+      state = state.copyWith(isUploading: false);
     }
   }
 

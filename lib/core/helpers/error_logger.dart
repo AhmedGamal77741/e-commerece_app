@@ -44,6 +44,12 @@ class ErrorLogger {
     required dynamic error,
     StackTrace? stackTrace,
   }) async {
+    // Ignore harmless Flutter Web engine disposal assertions
+    final errStr = error.toString();
+    if (errStr.contains('EngineFlutterView') || errStr.contains('!isDisposed')) {
+      return;
+    }
+
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
       final platform = kIsWeb ? 'web' : defaultTargetPlatform.name;

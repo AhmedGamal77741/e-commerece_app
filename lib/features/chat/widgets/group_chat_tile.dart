@@ -6,11 +6,15 @@ import 'package:ecommerece_app/features/chat/domain/chat_controller.dart';
 import 'package:ecommerece_app/features/chat/domain/friends_controller.dart';
 import 'package:ecommerece_app/features/chat/models/chat_room_model.dart';
 import 'package:ecommerece_app/features/chat/widgets/friends/friends_modals.dart';
-import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import 'package:image_picker/image_picker.dart';
+import 'package:ecommerece_app/core/helpers/image_upload_helper.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class GroupChatTile extends ConsumerWidget {
   final ChatRoomModel chat;
@@ -221,11 +225,9 @@ class GroupChatTile extends ConsumerWidget {
 
   Future<void> _changeGroupImage(BuildContext context, WidgetRef ref) async {
     try {
-      final newImageUrl =
-          await ref
-              .read(feedControllerProvider.notifier)
-              .uploadImageToFirebaseStorageHome();
-      if (newImageUrl.isEmpty) return;
+      final picker = ImagePicker();
+      final image = await picker.pickImage(source: ImageSource.gallery);
+      if (image == null) return;
 
       if (context.mounted) {
         showDialog(
@@ -248,8 +250,11 @@ class GroupChatTile extends ConsumerWidget {
                           CircularProgressIndicator(color: Colors.black),
                           SizedBox(width: 16),
                           Text(
-                            '사진 변경 중...',
-                            style: TextStyle(color: Colors.black),
+                            '사진 변환 및 업로드 중...',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -259,6 +264,34 @@ class GroupChatTile extends ConsumerWidget {
               ),
         );
       }
+
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUserId == null) throw Exception("User not logged in");
+
+      final rawBytes = await image.readAsBytes();
+      final previewBytes = await ImageUploadHelper.preparePreviewBytes(
+        rawBytes,
+        image.name,
+      );
+
+      final mimeType = ImageUploadHelper.lookupMimeType(image.name);
+
+      final ext = mimeType == 'image/png' ? 'png' : 'jpg';
+      final fileName =
+          'group_chat_${DateTime.now().millisecondsSinceEpoch}_$currentUserId.$ext';
+
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('uploads')
+          .child(fileName);
+
+      final uploadTask = storageRef.putData(
+        previewBytes,
+        SettableMetadata(contentType: mimeType),
+      );
+
+      final snapshot = await uploadTask;
+      final newImageUrl = await snapshot.ref.getDownloadURL();
 
       await ref
           .read(chatControllerProvider.notifier)

@@ -7,7 +7,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/auth/signup/data/models/user_model.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:ecommerece_app/core/helpers/image_upload_helper.dart';
 
 class CommentsState {
   final Map<String, dynamic>? postData;
@@ -37,7 +37,7 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
     }
 
     Map<String, dynamic>? postData;
-    final feedState = ref.read(feedControllerProvider).value;
+    final feedState = ref.read(feedControllerProvider).unwrapPrevious().value;
     if (feedState != null) {
       for (var p in feedState) {
         if (p['postId'] == postId || p['id'] == postId) {
@@ -87,39 +87,39 @@ class CommentsNotifier extends AsyncNotifier<CommentsState> {
     if (imageFile != null || imageBytes != null) {
       try {
         final String timestamp = DateTime.now().microsecondsSinceEpoch.toString();
-        final String fileName = '${timestamp}_$currentUserId.jpg';
-        final storageRef = FirebaseStorage.instance.ref().child('chat_images/$fileName');
 
         Uint8List rawBytes;
+        String originalName = 'comment_image.jpg';
         if (kIsWeb && imageBytes != null) {
           rawBytes = imageBytes;
         } else if (imageFile != null) {
           rawBytes = await imageFile.readAsBytes();
+          originalName = imageFile.path;
+        } else if (imageBytes != null) {
+          rawBytes = imageBytes;
         } else {
           throw Exception("No valid image data");
         }
 
-        Uint8List uploadBytes;
-        try {
-          final Uint8List compressed = await FlutterImageCompress.compressWithList(
-            rawBytes,
-            minWidth: 1080,
-            minHeight: 1080,
-            quality: 82,
-            format: CompressFormat.jpeg,
-          );
-          uploadBytes = compressed;
-        } catch (e) {
-          uploadBytes = rawBytes;
-        }
+        final preparedData = await ImageUploadHelper.prepareImageForUpload(
+          rawBytes: rawBytes,
+          originalName: originalName,
+          minWidth: 1080,
+          minHeight: 1080,
+          quality: 82,
+        );
+
+        final String fileName = '${timestamp}_$currentUserId${preparedData.extension}';
+        final storageRef = FirebaseStorage.instance.ref().child('chat_images/$fileName');
 
         final UploadTask task = storageRef.putData(
-          uploadBytes,
-          SettableMetadata(contentType: 'image/jpeg'),
+          preparedData.bytes,
+          SettableMetadata(contentType: preparedData.contentType),
         );
         imageUrl = await (await task).ref.getDownloadURL();
       } catch (e) {
-        debugPrint('Error: $e');
+        debugPrint('Error uploading comment image: $e');
+        rethrow;
       }
     }
 

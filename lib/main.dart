@@ -65,12 +65,20 @@ void main() async {
   await ContactService().loadContactNameMap();
 
   if (!kIsWeb) {
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.debug,
-      appleProvider: AppleProvider.debug,
-    );
-    await NotificationService.instance.init();
+    try {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider:
+            kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+        appleProvider:
+            kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('FirebaseAppCheck initialization info: $e');
+      }
+    }
   }
+  await NotificationService.instance.init();
 
   _router = AppRouter.router;
 

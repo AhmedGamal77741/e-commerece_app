@@ -201,15 +201,23 @@ class FeedController extends AsyncNotifier<List<Map<String, dynamic>>> {
       ref.watch(hiddenFriendsListProvider(user.uid));
     }
 
-    final postsAsync = ref.watch(allPostsStreamProvider);
+    ref.listen<AsyncValue<List<QueryDocumentSnapshot>>>(
+      allPostsStreamProvider,
+      (previous, next) async {
+        final docs = next.value;
+        if (docs != null && state.hasValue) {
+          try {
+            final newPosts = await _fetchPage(docs);
+            state = AsyncData(newPosts);
+          } catch (e) {
+            debugPrint('Error updating feed stream: $e');
+          }
+        }
+      },
+    );
 
-    if (postsAsync.isLoading && !postsAsync.hasValue) {
-      final docs = await ref.read(allPostsStreamProvider.future);
-      return _fetchPage(docs);
-    }
-
-    final docs = postsAsync.value ?? [];
-    return _fetchPage(docs);
+    final initialDocs = await ref.read(allPostsStreamProvider.future);
+    return _fetchPage(initialDocs);
   }
 
   Future<List<Map<String, dynamic>>> _fetchPage(

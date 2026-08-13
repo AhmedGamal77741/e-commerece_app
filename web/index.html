@@ -70,6 +70,39 @@
 </head>
 
 <body>
+  <!-- HEIC to JPEG conversion library for Flutter Web -->
+  <script src="https://unpkg.com/heic2any@0.0.4/dist/heic2any.min.js"></script>
+  <script>
+    async function convertHeicToJpegWeb(bytes) {
+      try {
+        var blob = new Blob([bytes], { type: 'image/heic' });
+        var converted = await heic2any({
+          blob: blob,
+          toType: 'image/jpeg',
+          quality: 0.82
+        });
+        var singleBlob = Array.isArray(converted) ? converted[0] : converted;
+        var arrayBuffer = await singleBlob.arrayBuffer();
+        return new Uint8Array(arrayBuffer);
+      } catch (err) {
+        console.error('heic2any conversion error:', err);
+        throw err;
+      }
+    }
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('firebase-messaging-sw.js')
+          .then(function(registration) {
+            console.log('FCM Service Worker registered with scope:', registration.scope);
+          })
+          .catch(function(err) {
+            console.warn('FCM Service Worker registration failed:', err);
+          });
+      });
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 
