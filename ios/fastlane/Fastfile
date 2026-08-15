@@ -6,13 +6,31 @@ default_platform(:ios)
 platform :ios do
   desc "Load App Store Connect API Key"
   private_lane :api_key do
-    app_store_connect_api_key(
-      key_id: "DPS3R5Z5UP",
-      issuer_id: "b22c166a-71fa-4826-9663-e925e4960d2e",
-      key_filepath: File.expand_path("AuthKey_DPS3R5Z5UP.p8", __dir__),
-      duration: 1200,
-      in_house: false
-    )
+    key_path = File.expand_path("AuthKey_DPS3R5Z5UP.p8", __dir__)
+    if !File.exist?(key_path) && ENV['APP_STORE_CONNECT_API_KEY_BASE64']
+      require 'base64'
+      File.write(key_path, Base64.decode64(ENV['APP_STORE_CONNECT_API_KEY_BASE64']))
+    end
+
+    if File.exist?(key_path)
+      app_store_connect_api_key(
+        key_id: "DPS3R5Z5UP",
+        issuer_id: "b22c166a-71fa-4826-9663-e925e4960d2e",
+        key_filepath: key_path,
+        duration: 1200,
+        in_house: false
+      )
+    elsif ENV['APP_STORE_CONNECT_API_KEY_KEY']
+      app_store_connect_api_key(
+        key_id: "DPS3R5Z5UP",
+        issuer_id: "b22c166a-71fa-4826-9663-e925e4960d2e",
+        key_content: ENV['APP_STORE_CONNECT_API_KEY_KEY'],
+        duration: 1200,
+        in_house: false
+      )
+    else
+      UI.user_error!("AuthKey_DPS3R5Z5UP.p8 file not found at #{key_path}")
+    end
   end
 
   desc "Verify App Store Connect API Key connection"
