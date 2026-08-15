@@ -15,11 +15,18 @@ workflows:
         script: |
           flutter config --no-enable-swift-package-manager
           flutter pub get
-          cd ios && bundle install && pod install
-      - name: Build & Deploy via Fastlane
+          cd ios && pod install
+      - name: Set up code signing settings on Xcode project
         script: |
-          cd ios
-          bundle exec fastlane beta
+          xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=ios/ExportOptions.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - ~/.fastlane/logs/**/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
