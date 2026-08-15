@@ -7,16 +7,13 @@ workflows:
     integrations:
       app_store_connect: AppStoreKey
       
-    # Codemagic will now automatically log in, fetch the profiles we created earlier, 
-    # and generate the export options file for you.
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
       ruby: default
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.pang2chocolate.app
+      vars:
+        APP_ID: "com.pang2chocolate.app"
         
     scripts:
       - name: Install dependencies
@@ -25,15 +22,23 @@ workflows:
           flutter pub get
           cd ios && pod install
           
-      - name: Apply Profiles to Xcode
+      - name: Fetch and Create Profiles dynamically
         script: |
-          # This injects the downloaded certificates into your now-unlocked project file
+          keychain initialize
+          
+          # This forces Apple to generate the certificates and profiles on the spot!
+          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_DEVELOPMENT --create
+          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_STORE --create
+          
+          keychain add-certificates
+          
+          # This injects them into your now-fixed Xcode project and generates the plist
           xcode-project use-profiles
           
       - name: Build IPA
         script: |
-          # Flutter builds the app using the certificates Codemagic prepared
-          flutter build ipa --release --export-options-plist=$CM_EXPORT_OPTIONS
+          # Flutter uses the generated plist to build flawlessly
+          flutter build ipa --release --export-options-plist=$HOME/export_options.plist
           
     artifacts:
       - build/ios/ipa/*.ipa
