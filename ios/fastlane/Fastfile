@@ -61,13 +61,6 @@ platform :ios do
   desc "Build and upload release to TestFlight"
   lane :beta do
     key = api_key
-    export_plist = File.expand_path("../ExportOptions.plist", __dir__)
-
-    profile_path = File.expand_path("../AppStore_com.pang2chocolate.app.mobileprovision", __dir__)
-    if File.exist?(profile_path)
-      sh("mkdir -p ~/Library/MobileDevice/Provisioning\\ Profiles")
-      sh("cp '#{profile_path}' ~/Library/MobileDevice/Provisioning\\ Profiles/88053e93-9681-4679-a244-95ff009ad688.mobileprovision")
-    end
 
     get_certificates(api_key: key, development: false)
     get_provisioning_profile(
@@ -76,6 +69,15 @@ platform :ios do
       development: false
     )
 
+    profile_uuid = Actions.lane_context[Actions::SharedValues::SIGH_UUID]
+    profile_name = Actions.lane_context[Actions::SharedValues::SIGH_NAME] || "com.pang2chocolate.app AppStore"
+    profile_path = Actions.lane_context[Actions::SharedValues::SIGH_PROFILE_PATH]
+
+    if profile_path && profile_uuid
+      sh("mkdir -p ~/Library/MobileDevice/Provisioning\\ Profiles")
+      sh("cp '#{profile_path}' ~/Library/MobileDevice/Provisioning\\ Profiles/#{profile_uuid}.mobileprovision")
+    end
+
     sh("flutter config --no-enable-swift-package-manager", cd: "../..")
     sh("flutter build ios --release --no-codesign", cd: "../..")
 
@@ -83,8 +85,15 @@ platform :ios do
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
       export_method: "app-store",
-      export_options: export_plist,
-      xcargs: "DEVELOPMENT_TEAM='2JL9LPS2CM' -allowProvisioningUpdates",
+      export_options: {
+        method: "app-store",
+        signingStyle: "manual",
+        teamID: "2JL9LPS2CM",
+        provisioningProfiles: {
+          "com.pang2chocolate.app" => profile_name
+        }
+      },
+      xcargs: "DEVELOPMENT_TEAM='2JL9LPS2CM' PROVISIONING_PROFILE_SPECIFIER='#{profile_uuid}' CODE_SIGN_IDENTITY='Apple Distribution' -allowProvisioningUpdates",
       output_directory: "../build/ios/ipa",
       output_name: "pang2chocolate.ipa"
     )
