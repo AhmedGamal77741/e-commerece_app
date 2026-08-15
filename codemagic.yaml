@@ -4,7 +4,7 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
     
-    # This block links your uploaded API key to this workflow
+    # Links your uploaded API key to this workflow
     integrations:
       app_store_connect: AppStoreKey
       
@@ -18,22 +18,37 @@ workflows:
         bundle_identifier: com.pang2chocolate.app
       vars:
         APP_ID: "com.pang2chocolate.app"
+        
     scripts:
       - name: Install dependencies
         script: |
           flutter config --no-enable-swift-package-manager
           flutter pub get
           cd ios && pod install
+          
       - name: Set up code signing settings on Xcode project
         script: |
+          # 1. Initialize the temporary build keychain
+          keychain initialize
+          
+          # 2. Fetch the profile from Apple (and create it if it's missing)
+          app-store-connect fetch-signing-files "com.pang2chocolate.app" --type IOS_APP_STORE --create
+          
+          # 3. Add the fetched certificates to the keychain
+          keychain add-certificates
+          
+          # 4. Apply them to your Xcode project
           xcode-project use-profiles
+          
       - name: Build IPA
         script: |
-          flutter build ipa --release \
-            --export-options-plist=ios/ExportOptions.plist
+          # Removed the plist flag so it uses the dynamic signing we just set up
+          flutter build ipa --release
+          
     artifacts:
       - build/ios/ipa/*.ipa
       - ~/.fastlane/logs/**/*.log
+      
     publishing:
       app_store_connect:
         auth: integration
