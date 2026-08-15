@@ -61,7 +61,22 @@ platform :ios do
   desc "Build and upload release to TestFlight"
   lane :beta do
     key = api_key
-    key_path = File.expand_path("AuthKey_DPS3R5Z5UP.p8", __dir__)
+
+    get_certificates(api_key: key, development: false)
+    get_provisioning_profile(
+      api_key: key,
+      app_identifier: "com.pang2chocolate.app",
+      development: false
+    )
+
+    profile_uuid = Actions.lane_context[Actions::SharedValues::SIGH_UUID]
+    profile_name = Actions.lane_context[Actions::SharedValues::SIGH_NAME] || "com.pang2chocolate.app AppStore"
+    profile_path = Actions.lane_context[Actions::SharedValues::SIGH_PROFILE_PATH]
+
+    if profile_path && profile_uuid
+      sh("mkdir -p ~/Library/MobileDevice/Provisioning\\ Profiles")
+      sh("cp '#{profile_path}' ~/Library/MobileDevice/Provisioning\\ Profiles/#{profile_uuid}.mobileprovision")
+    end
 
     sh("flutter config --no-enable-swift-package-manager", cd: "../..")
     sh("flutter build ios --release --no-codesign", cd: "../..")
@@ -72,10 +87,13 @@ platform :ios do
       export_method: "app-store",
       export_options: {
         method: "app-store",
-        signingStyle: "automatic",
-        teamID: "2JL9LPS2CM"
+        signingStyle: "manual",
+        teamID: "2JL9LPS2CM",
+        provisioningProfiles: {
+          "com.pang2chocolate.app" => profile_name
+        }
       },
-      xcargs: "DEVELOPMENT_TEAM='2JL9LPS2CM' -allowProvisioningUpdates -authenticationKeyID DPS3R5Z5UP -authenticationKeyIssuerID b22c166a-71fa-4826-9663-e925e4960d2e -authenticationKeyPath '#{key_path}'",
+      xcargs: "DEVELOPMENT_TEAM='2JL9LPS2CM' PROVISIONING_PROFILE_SPECIFIER='#{profile_uuid}' CODE_SIGN_IDENTITY='Apple Distribution' -allowProvisioningUpdates",
       output_directory: "../build/ios/ipa",
       output_name: "pang2chocolate.ipa"
     )
