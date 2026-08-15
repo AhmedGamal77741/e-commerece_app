@@ -7,7 +7,6 @@ workflows:
     integrations:
       app_store_connect: AppStoreKey
       
-    # 1. Notice ios_signing is GONE again!
     environment:
       flutter: stable
       xcode: latest
@@ -23,25 +22,25 @@ workflows:
           flutter pub get
           cd ios && pod install
           
-      - name: Set up code signing settings on Xcode project
+      - name: Force Bundle ID and set up code signing
         script: |
-          # 2. We use the CLI to fetch/create the profiles
+          # 1. This FORCES your Xcode project to use the correct Bundle ID, just in case it was wrong
+          sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = .*/PRODUCT_BUNDLE_IDENTIFIER = ${APP_ID};/g" ios/Runner.xcodeproj/project.pbxproj
+          
           keychain initialize
-          app-store-connect fetch-signing-files "com.pang2chocolate.app" --type IOS_APP_DEVELOPMENT --create
-          app-store-connect fetch-signing-files "com.pang2chocolate.app" --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_DEVELOPMENT --create
+          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_STORE --create
           keychain add-certificates
           
-          # This disables Automatic Code Signing in Xcode
-          xcode-project use-profiles
+          # 2. We explicitly tell Codemagic to target Runner.xcodeproj so it doesn't get confused by Pods
+          xcode-project use-profiles --project ios/Runner.xcodeproj
           
       - name: Build Flutter framework
         script: |
-          # 3. We build the Flutter code WITHOUT trying to sign it
           flutter build ios --release --no-codesign
           
       - name: Package and Sign IPA
         script: |
-          # 4. We use Codemagic's native Xcode tool to package the IPA and sign it with our fetched profiles
           xcode-project build-ipa --workspace "ios/Runner.xcworkspace" --scheme "Runner"
           
     artifacts:
