@@ -1,0 +1,4 @@
+# App Store Connect & iOS App Configuration
+app_identifier("com.pang2chocolate.app") # The bundle identifier of your app
+
+# Note: Authentication is managed dynamically via App Store Connect API Key in Fastfile

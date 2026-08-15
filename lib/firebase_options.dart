@@ -72,7 +72,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '944685668832',
     projectId: 'e-commerce-app-34fb2',
     storageBucket: 'e-commerce-app-34fb2.firebasestorage.app',
-    iosBundleId: 'com.pang2chocolate.pang2chocolate',
+    iosBundleId: 'com.pang2chocolate.app',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

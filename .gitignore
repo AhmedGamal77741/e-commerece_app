@@ -119,6 +119,19 @@ android/app/build.gradle.kts
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
 
+# Fastlane
+*.p8
+*.cer
+*.certSigningRequest
+*.p12
+*.mobileprovision
+**/fastlane/AuthKey_*.p8
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots
+**/fastlane/readme.md
+**/vendor/bundle
+
 # macOS
 **/Flutter/ephemeral/
 **/Pods/

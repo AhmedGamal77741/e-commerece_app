@@ -1,0 +1,112 @@
+ENV['LC_ALL'] ||= 'en_US.UTF-8'
+ENV['LANG'] ||= 'en_US.UTF-8'
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Load App Store Connect API Key"
+  private_lane :api_key do
+    app_store_connect_api_key(
+      key_id: "DPS3R5Z5UP",
+      issuer_id: "b22c166a-71fa-4826-9663-e925e4960d2e",
+      key_filepath: File.expand_path("AuthKey_DPS3R5Z5UP.p8", __dir__),
+      duration: 1200,
+      in_house: false
+    )
+  end
+
+  desc "Verify App Store Connect API Key connection"
+  lane :test_key do
+    key = api_key
+    UI.success("Successfully loaded App Store Connect API Key (Key ID: #{key[:key_id]})")
+  end
+
+  desc "Build Flutter release IPA via Gym"
+  lane :build do
+    key = api_key
+    export_plist = File.expand_path("../ExportOptions.plist", __dir__)
+
+    sh("flutter build ios --release --no-codesign", cd: "../..")
+
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      export_options: export_plist,
+      xcargs: "-allowProvisioningUpdates",
+      output_directory: "../build/ios/ipa",
+      output_name: "pang2chocolate.ipa"
+    )
+  end
+
+  desc "Build and upload release to TestFlight"
+  lane :beta do
+    key = api_key
+    export_plist = File.expand_path("../ExportOptions.plist", __dir__)
+
+    sh("flutter build ios --release --no-codesign", cd: "../..")
+
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      export_options: export_plist,
+      xcargs: "-allowProvisioningUpdates",
+      output_directory: "../build/ios/ipa",
+      output_name: "pang2chocolate.ipa"
+    )
+
+    upload_to_testflight(
+      api_key: key,
+      ipa: "../build/ios/ipa/pang2chocolate.ipa",
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "Build and deploy release to App Store Connect"
+  lane :release do
+    key = api_key
+
+    sh("flutter build ios --release --no-codesign", cd: "../..")
+
+    get_certificates(api_key: key, development: false)
+
+    get_provisioning_profile(
+      api_key: key,
+      app_identifier: "com.pang2chocolate.app",
+      development: false
+    )
+
+    profile_uuid = Actions.lane_context[Actions::SharedValues::SIGH_UUID]
+    profile_name = Actions.lane_context[Actions::SharedValues::SIGH_NAME] || "com.pang2chocolate.app AppStore"
+    profile_path = Actions.lane_context[Actions::SharedValues::SIGH_PROFILE_PATH]
+
+    if profile_path && profile_uuid
+      sh("mkdir -p ~/Library/MobileDevice/Provisioning\\ Profiles")
+      sh("cp '#{profile_path}' ~/Library/MobileDevice/Provisioning\\ Profiles/#{profile_uuid}.mobileprovision")
+    end
+
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      export_options: {
+        method: "app-store",
+        signingStyle: "manual",
+        teamID: "2JL9LPS2CM",
+        provisioningProfiles: {
+          "com.pang2chocolate.app" => profile_name
+        }
+      },
+      xcargs: "DEVELOPMENT_TEAM='2JL9LPS2CM'",
+      output_directory: "../build/ios/ipa",
+      output_name: "pang2chocolate.ipa"
+    )
+
+    upload_to_testflight(
+      api_key: key,
+      ipa: "../build/ios/ipa/pang2chocolate.ipa",
+      skip_waiting_for_build_processing: true
+    )
+  end
+end
