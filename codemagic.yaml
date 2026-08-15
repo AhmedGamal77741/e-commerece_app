@@ -22,22 +22,21 @@ workflows:
           flutter pub get
           cd ios && pod install
           
-      - name: Fetch and Create Profiles dynamically
+      - name: Fetch and Create App Store Profile ONLY
         script: |
           keychain initialize
           
-          # This forces Apple to generate the certificates and profiles on the spot!
-          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_DEVELOPMENT --create
+          # 1. We ONLY fetch the App Store profile. We deleted the Development line!
           app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_STORE --create
           
           keychain add-certificates
           
-          # This injects them into your now-fixed Xcode project and generates the plist
+          # 2. This forces Xcode to use the App Store profile for every phase of the build
           xcode-project use-profiles
           
       - name: Build IPA
         script: |
-          # Flutter uses the generated plist to build flawlessly
+          # 3. Flutter will now strictly use Distribution signing and output the IPA
           flutter build ipa --release --export-options-plist=$HOME/export_options.plist
           
     artifacts:
