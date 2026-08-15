@@ -63,6 +63,19 @@ platform :ios do
     key = api_key
     export_plist = File.expand_path("../ExportOptions.plist", __dir__)
 
+    profile_path = File.expand_path("../AppStore_com.pang2chocolate.app.mobileprovision", __dir__)
+    if File.exist?(profile_path)
+      sh("mkdir -p ~/Library/MobileDevice/Provisioning\\ Profiles")
+      sh("cp '#{profile_path}' ~/Library/MobileDevice/Provisioning\\ Profiles/88053e93-9681-4679-a244-95ff009ad688.mobileprovision")
+    end
+
+    get_certificates(api_key: key, development: false)
+    get_provisioning_profile(
+      api_key: key,
+      app_identifier: "com.pang2chocolate.app",
+      development: false
+    )
+
     sh("flutter config --no-enable-swift-package-manager", cd: "../..")
     sh("flutter build ios --release --no-codesign", cd: "../..")
 
@@ -71,7 +84,7 @@ platform :ios do
       scheme: "Runner",
       export_method: "app-store",
       export_options: export_plist,
-      xcargs: "-allowProvisioningUpdates",
+      xcargs: "DEVELOPMENT_TEAM='2JL9LPS2CM' -allowProvisioningUpdates",
       output_directory: "../build/ios/ipa",
       output_name: "pang2chocolate.ipa"
     )
