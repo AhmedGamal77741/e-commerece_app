@@ -44,6 +44,7 @@ platform :ios do
     key = api_key
     export_plist = File.expand_path("../ExportOptions.plist", __dir__)
 
+    sh("flutter config --no-enable-swift-package-manager", cd: "../..")
     sh("flutter build ios --release --no-codesign", cd: "../..")
 
     build_app(
@@ -62,6 +63,7 @@ platform :ios do
     key = api_key
     export_plist = File.expand_path("../ExportOptions.plist", __dir__)
 
+    sh("flutter config --no-enable-swift-package-manager", cd: "../..")
     sh("flutter build ios --release --no-codesign", cd: "../..")
 
     build_app(
@@ -85,6 +87,7 @@ platform :ios do
   lane :release do
     key = api_key
 
+    sh("flutter config --no-enable-swift-package-manager", cd: "../..")
     sh("flutter build ios --release --no-codesign", cd: "../..")
 
     get_certificates(api_key: key, development: false)
