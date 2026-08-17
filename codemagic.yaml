@@ -26,17 +26,15 @@ workflows:
         script: |
           keychain initialize
           
-          # 1. We ONLY fetch the App Store profile. We deleted the Development line!
-          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_STORE --create
+          # Pass the integration name so Codemagic knows which API key to use
+          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_STORE --create --integration "AppStoreKey"
           
           keychain add-certificates
           
-          # 2. This forces Xcode to use the App Store profile for every phase of the build
           xcode-project use-profiles
           
       - name: Build IPA
         script: |
-          # 3. Flutter will now strictly use Distribution signing and output the IPA
           flutter build ipa --release --export-options-plist=$HOME/export_options.plist
           
     artifacts:
