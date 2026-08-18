@@ -25,6 +25,12 @@ workflows:
           cd ios
           bundle install
           pod install
+
+      - name: Fetch and initialize signing files
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_STORE --create --integration "AppStoreKey"
+          keychain add-certificates
           
       - name: Build & Deploy with Fastlane
         script: |
