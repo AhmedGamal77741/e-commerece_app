@@ -29,8 +29,8 @@ workflows:
       - name: Fetch and initialize signing files
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_STORE --create
           keychain add-certificates
+          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_STORE --ignore-missing-certs
           
       - name: Build & Deploy with Fastlane
         script: |
@@ -69,8 +69,8 @@ workflows:
       - name: Fetch and Create App Store Profile
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_STORE --create
           keychain add-certificates
+          app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_STORE --ignore-missing-certs
           xcode-project use-profiles
           
       - name: Build IPA
