@@ -12,9 +12,8 @@ workflows:
       xcode: latest
       cocoapods: default
       ruby: default
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.pang2chocolate.app
+      groups:
+        - signing_credentials
       vars:
         APP_ID: "com.pang2chocolate.app"
         
@@ -26,6 +25,19 @@ workflows:
           cd ios
           bundle install
           pod install
+
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          # Decode certificate from env var and import into keychain
+          echo $CM_CERTIFICATE | base64 --decode > /tmp/certificate.p12
+          keychain add-certificates \
+            --certificate /tmp/certificate.p12 \
+            --certificate-password $CM_CERTIFICATE_PASSWORD
+          # Install provisioning profile from repo
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i ios/AppStore_com.pang2chocolate.app.mobileprovision))
+          cp ios/AppStore_com.pang2chocolate.app.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
 
       - name: Build & Deploy with Fastlane
         script: |
