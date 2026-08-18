@@ -64,15 +64,20 @@ platform :ios do
   lane :beta do
     key = api_key
 
-    get_certificates(api_key: key, development: false)
-    get_provisioning_profile(
-      api_key: key,
-      app_identifier: "com.pang2chocolate.app",
-      development: false
-    )
+    begin
+      get_certificates(api_key: key, development: false)
+      get_provisioning_profile(
+        api_key: key,
+        app_identifier: "com.pang2chocolate.app",
+        development: false
+      )
+    rescue => e
+      UI.important("Could not fetch certificates/profile online: #{e.message}")
+      UI.important("Using local distribution certificates and provisioning profile.")
+    end
 
     profile_uuid = Actions.lane_context[Actions::SharedValues::SIGH_UUID]
-    profile_name = Actions.lane_context[Actions::SharedValues::SIGH_NAME] || "com.pang2chocolate.app AppStore"
+    profile_name = Actions.lane_context[Actions::SharedValues::SIGH_NAME] || "com.pang2chocolate.app AppStore 1786985142"
     profile_path = Actions.lane_context[Actions::SharedValues::SIGH_PROFILE_PATH]
 
     if profile_path && profile_uuid
@@ -123,16 +128,20 @@ platform :ios do
     sh("flutter config --no-enable-swift-package-manager", cd: "../..")
     sh("flutter build ios --release --no-codesign", cd: "../..")
 
-    get_certificates(api_key: key, development: false)
-
-    get_provisioning_profile(
-      api_key: key,
-      app_identifier: "com.pang2chocolate.app",
-      development: false
-    )
+    begin
+      get_certificates(api_key: key, development: false)
+      get_provisioning_profile(
+        api_key: key,
+        app_identifier: "com.pang2chocolate.app",
+        development: false
+      )
+    rescue => e
+      UI.important("Could not fetch certificates/profile online: #{e.message}")
+      UI.important("Using local distribution certificates and provisioning profile.")
+    end
 
     profile_uuid = Actions.lane_context[Actions::SharedValues::SIGH_UUID]
-    profile_name = Actions.lane_context[Actions::SharedValues::SIGH_NAME] || "com.pang2chocolate.app AppStore"
+    profile_name = Actions.lane_context[Actions::SharedValues::SIGH_NAME] || "com.pang2chocolate.app AppStore 1786985142"
     profile_path = Actions.lane_context[Actions::SharedValues::SIGH_PROFILE_PATH]
 
     if profile_path && profile_uuid
