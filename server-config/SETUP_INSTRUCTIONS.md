@@ -1,64 +1,65 @@
 # Deep Link Server Configuration Guide
 
-## ⚠️ IMPORTANT: Getting Your Android SHA256 Fingerprint
-
-Before uploading these files, you MUST get your app's SHA256 fingerprint.
-
-### For Debug Build (Testing):
-Run this command in PowerShell:
-```powershell
-keytool -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android
-```
-
-Look for the line: **SHA256: XXXX:XXXX:XXXX...**
-
-### For Release Build (Production):
-You'll need the SHA256 from your signing keystore. Contact your team lead for this.
-
----
-
 ## 📋 Files to Upload to Your Server
 
-### 1. assetlinks.json
-- **Destination:** `https://www.pang2chocolate.com/.well-known/assetlinks.json`
-- **Content-Type:** application/json
-- **Action:** 
-  1. Open `assetlinks.json` file
-  2. Replace `YOUR_SHA256_FINGERPRINT_HERE` with your actual SHA256 fingerprint
-  3. Upload to your server
+Both files must be placed in the `/.well-known/` directory on your server:
+- `https://www.pang2chocolate.com/.well-known/apple-app-site-association`
+- `https://www.pang2chocolate.com/.well-known/assetlinks.json`
 
-### 2. apple-app-site-association
-- **Destination:** `https://www.pang2chocolate.com/.well-known/apple-app-site-association`
+Also ensure these same files are accessible on the non-www domain:
+- `https://pang2chocolate.com/.well-known/apple-app-site-association`
+- `https://pang2chocolate.com/.well-known/assetlinks.json`
+
+### 1. apple-app-site-association (iOS Universal Links)
 - **NO file extension** (no .json)
-- **Content-Type:** application/json
-- **Action:**
-  1. Open `apple-app-site-association` file
-  2. Replace `TEAMID` with your Apple Team ID (10-character code)
-  3. If you don't have it, check your Apple Developer Account or ask your team
-  4. Upload to your server
+- **Content-Type:** `application/json`
+- **Team ID:** `2JL9LPS2CM`
+- **App ID:** `2JL9LPS2CM.com.pang2chocolate.app`
+- **Supported paths:** `/product/*`, `/item-details*`, `/comment*`, `/bank-registered*`
 
-### 3. Verify Files Are Accessible
-After upload, test these URLs in your browser:
-- `https://www.pang2chocolate.com/.well-known/assetlinks.json` - should download as JSON
-- `https://www.pang2chocolate.com/.well-known/apple-app-site-association` - should show JSON content
+### 2. assetlinks.json (Android App Links)
+- **Content-Type:** `application/json`
+- **Package name:** `com.pang2chocolate.pang2chocolate`
+- **SHA256 fingerprint:** `07:91:C4:F5:3B:8A:E2:F3:C5:D1:38:60:B9:C6:43:E4:12:59:7A:96:C9:4E:37:52:B8:CF:D7:67:FE:11:3C:10`
 
----
-
-## 🔍 How to Find Your Apple Team ID
-
-1. Go to https://developer.apple.com/account/
-2. Sign in with your Apple ID
-3. Click "Membership" in the sidebar
-4. Look for "Team ID" - it's a 10-character code (e.g., ABCD1E2F3G)
+> **Note:** If your release signing key changes, you must update the SHA256 fingerprint.
 
 ---
 
-## Next Steps (After Uploading)
+## ✅ Verification
 
-Once you've uploaded these files and verified they're accessible:
-1. We'll update your Android manifest
-2. We'll update your iOS configuration
-3. We'll enhance Flutter's deep link handling
-4. We'll test everything
+After uploading, verify the files are accessible:
 
-**Let me know when you've uploaded these files and found your Apple Team ID!**
+### iOS (Apple CDN check, may take up to 24h to update):
+```
+https://app-site-association.cdn-apple.com/a/v1/www.pang2chocolate.com
+```
+
+### Android:
+```
+https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://www.pang2chocolate.com&relation=delegate_permission/common.handle_all_urls
+```
+
+### Direct file check:
+```
+curl -I https://www.pang2chocolate.com/.well-known/apple-app-site-association
+curl -I https://www.pang2chocolate.com/.well-known/assetlinks.json
+```
+
+---
+
+## 🔧 iOS Setup Checklist
+
+1. ✅ `Runner.entitlements` created with Associated Domains (`applinks:www.pang2chocolate.com`, `applinks:pang2chocolate.com`)
+2. ✅ `project.pbxproj` updated with `CODE_SIGN_ENTITLEMENTS`
+3. ✅ `Info.plist` has `FlutterDeepLinkingEnabled = true`
+4. ⬜ **Enable "Associated Domains" capability** in Apple Developer Portal:
+   - Go to https://developer.apple.com/account/resources/identifiers → select `com.pang2chocolate.app`
+   - Enable **Associated Domains**
+   - Regenerate / re-download provisioning profile
+5. ⬜ Upload `apple-app-site-association` to server
+
+## 🔧 Android Setup Checklist
+
+1. ✅ `AndroidManifest.xml` has `android:autoVerify="true"` intent filters
+2. ⬜ Upload `assetlinks.json` to server

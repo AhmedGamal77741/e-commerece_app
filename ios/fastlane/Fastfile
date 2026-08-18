@@ -181,4 +181,20 @@ platform :ios do
       skip_waiting_for_build_processing: true
     )
   end
+
+  desc "Upload metadata and screenshots to App Store Connect"
+  lane :update_metadata do
+    key = api_key
+
+    deliver(
+      api_key: key,
+      app_identifier: "com.pang2chocolate.app",
+      skip_binary_upload: true,
+      skip_app_version_update: true,
+      force: true,
+      overwrite_screenshots: true,
+      metadata_path: "./fastlane/metadata",
+      screenshots_path: "./fastlane/screenshots"
+    )
+  end
 end

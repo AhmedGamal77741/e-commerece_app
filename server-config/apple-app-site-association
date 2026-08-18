@@ -3,10 +3,12 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAMID.com.example.ecommereceApp",
+        "appID": "2JL9LPS2CM.com.pang2chocolate.app",
         "paths": [
           "/product/*",
-          "/comment*"
+          "/item-details*",
+          "/comment*",
+          "/bank-registered*"
         ]
       }
     ]
