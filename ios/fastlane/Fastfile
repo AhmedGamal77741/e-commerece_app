@@ -193,6 +193,7 @@ platform :ios do
       skip_app_version_update: true,
       force: true,
       overwrite_screenshots: true,
+      run_precheck_before_submit: false,
       metadata_path: "./fastlane/metadata",
       screenshots_path: "./fastlane/screenshots"
     )
