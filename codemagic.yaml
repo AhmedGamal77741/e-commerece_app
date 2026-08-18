@@ -1,6 +1,6 @@
 workflows:
-  ios-release:
-    name: Flutter iOS TestFlight Release
+  ios-fastlane-release:
+    name: Flutter iOS Fastlane TestFlight Release
     instance_type: mac_mini_m2
     max_build_duration: 60
     
@@ -12,6 +12,44 @@ workflows:
       xcode: latest
       cocoapods: default
       ruby: default
+      groups:
+        - AppStore_Distribution_Cert
+      vars:
+        APP_ID: "com.pang2chocolate.app"
+        
+    scripts:
+      - name: Install dependencies & Ruby gems
+        script: |
+          flutter config --no-enable-swift-package-manager
+          flutter pub get
+          cd ios
+          bundle install
+          pod install
+          
+      - name: Build & Deploy with Fastlane
+        script: |
+          cd ios
+          bundle exec fastlane beta
+          
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - ~/.fastlane/logs/**/*.log
+
+  ios-native-release:
+    name: Flutter iOS Native Codemagic TestFlight Release
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    
+    integrations:
+      app_store_connect: AppStoreKey
+      
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ruby: default
+      groups:
+        - AppStore_Distribution_Cert
       vars:
         APP_ID: "com.pang2chocolate.app"
         
@@ -22,15 +60,11 @@ workflows:
           flutter pub get
           cd ios && pod install
           
-      - name: Fetch and Create App Store Profile ONLY
+      - name: Fetch and Create App Store Profile
         script: |
           keychain initialize
-          
-          # Pass the integration name so Codemagic knows which API key to use
           app-store-connect fetch-signing-files "${APP_ID}" --type IOS_APP_STORE --create --integration "AppStoreKey"
-          
           keychain add-certificates
-          
           xcode-project use-profiles
           
       - name: Build IPA
@@ -39,7 +73,6 @@ workflows:
           
     artifacts:
       - build/ios/ipa/*.ipa
-      - ~/.fastlane/logs/**/*.log
       
     publishing:
       app_store_connect:

@@ -1,3 +1,5 @@
+Encoding.default_external = Encoding::UTF_8
+Encoding.default_internal = Encoding::UTF_8
 ENV['LC_ALL'] ||= 'en_US.UTF-8'
 ENV['LANG'] ||= 'en_US.UTF-8'
 
@@ -78,6 +80,15 @@ platform :ios do
       sh("cp '#{profile_path}' ~/Library/MobileDevice/Provisioning\\ Profiles/#{profile_uuid}.mobileprovision")
     end
 
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      targets: ["Runner"],
+      team_id: "2JL9LPS2CM",
+      profile_name: profile_name,
+      code_sign_identity: "Apple Distribution"
+    )
+
     sh("flutter config --no-enable-swift-package-manager", cd: "../..")
     sh("flutter build ios --release --no-codesign", cd: "../..")
 
@@ -93,7 +104,7 @@ platform :ios do
           "com.pang2chocolate.app" => profile_name
         }
       },
-      xcargs: "DEVELOPMENT_TEAM='2JL9LPS2CM' PROVISIONING_PROFILE_SPECIFIER='#{profile_uuid}' CODE_SIGN_IDENTITY='Apple Distribution' -allowProvisioningUpdates",
+      xcargs: "DEVELOPMENT_TEAM='2JL9LPS2CM' CODE_SIGN_IDENTITY='Apple Distribution' -allowProvisioningUpdates",
       output_directory: "../build/ios/ipa",
       output_name: "pang2chocolate.ipa"
     )
@@ -128,6 +139,15 @@ platform :ios do
       sh("mkdir -p ~/Library/MobileDevice/Provisioning\\ Profiles")
       sh("cp '#{profile_path}' ~/Library/MobileDevice/Provisioning\\ Profiles/#{profile_uuid}.mobileprovision")
     end
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      targets: ["Runner"],
+      team_id: "2JL9LPS2CM",
+      profile_name: profile_name,
+      code_sign_identity: "Apple Distribution"
+    )
 
     build_app(
       workspace: "Runner.xcworkspace",
