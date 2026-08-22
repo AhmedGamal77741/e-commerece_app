@@ -31,7 +31,9 @@ class ContactService {
       throw Exception('Contact permission denied');
     }
 
-    final contacts = await FlutterContacts.getContacts(withProperties: true);
+    final contacts = await FlutterContacts.getAll(
+      properties: {ContactProperty.phone, ContactProperty.name},
+    );
     return contacts
         .where((contact) => contact.phones.isNotEmpty == true)
         .toList();
@@ -147,7 +149,7 @@ class ContactService {
     for (final contact in contacts) {
       for (final phone in contact.phones) {
         for (final normalized in expandEgKrNumber(phone.number)) {
-          phoneToName[normalized] = contact.displayName;
+          phoneToName[normalized] = contact.displayName ?? '';
         }
       }
     }
