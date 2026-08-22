@@ -61,25 +61,6 @@ void main() async {
     return true;
   };
 
-  // Pre-load contact name map on startup to prevent async disk I/O during list scrolling
-  await ContactService().loadContactNameMap();
-
-  if (!kIsWeb) {
-    try {
-      await FirebaseAppCheck.instance.activate(
-        androidProvider:
-            kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-        appleProvider:
-            kDebugMode ? AppleProvider.debug : AppleProvider.appAttestWithDeviceCheckFallback,
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        print('FirebaseAppCheck initialization info: $e');
-      }
-    }
-  }
-  await NotificationService.instance.init();
-
   _router = AppRouter.router;
 
   if (!kIsWeb) {
@@ -89,6 +70,29 @@ void main() async {
   }
 
   runApp(ProviderScope(child: EcommerceApp(appRouter: AppRouter())));
+
+  // Initialize background services asynchronously so startup is never blocked
+  ContactService().loadContactNameMap();
+
+  if (!kIsWeb) {
+    try {
+      FirebaseAppCheck.instance.activate(
+        androidProvider:
+            kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+        appleProvider:
+            kDebugMode ? AppleProvider.debug : AppleProvider.appAttestWithDeviceCheckFallback,
+      ).catchError((e) {
+        if (kDebugMode) {
+          print('FirebaseAppCheck initialization info: $e');
+        }
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('FirebaseAppCheck initialization info: $e');
+      }
+    }
+  }
+  NotificationService.instance.init();
 }
 
 void _handleInitialDeepLink() async {

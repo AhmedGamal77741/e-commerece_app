@@ -181,7 +181,22 @@ class NotificationService {
           }
         }
       } else {
-        token = await _fcm.getToken();
+        if (defaultTargetPlatform == TargetPlatform.iOS) {
+          final apnsToken = await _fcm.getAPNSToken().timeout(
+            const Duration(seconds: 3),
+            onTimeout: () => null,
+          );
+          if (apnsToken == null) {
+            if (kDebugMode) {
+              print('APNs token is not ready or running on iOS Simulator. Skipping FCM getToken.');
+            }
+            return;
+          }
+        }
+        token = await _fcm.getToken().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => null,
+        );
       }
 
       if (token != null && token.isNotEmpty) {
