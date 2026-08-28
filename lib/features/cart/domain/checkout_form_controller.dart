@@ -89,6 +89,8 @@ class CheckoutFormController
     extends AsyncNotifier<CheckoutFormState> {
   final deliveryAddressController = TextEditingController();
   final emailController = TextEditingController();
+  final phoneController = TextEditingController();
+  final businessNumberController = TextEditingController();
 
   final List<String> deliveryRequests = [
     '문앞',
@@ -103,6 +105,8 @@ class CheckoutFormController
     ref.onDispose(() {
       deliveryAddressController.dispose();
       emailController.dispose();
+      phoneController.dispose();
+      businessNumberController.dispose();
     });
 
     final paymentId = ref.watch(checkoutFormPaymentIdProvider);
@@ -142,6 +146,8 @@ class CheckoutFormController
         .loadCachedValues(uid);
     if (cachedData != null) {
       emailController.text = cachedData['email'] ?? '';
+      phoneController.text = cachedData['receiptPhone'] ?? cachedData['phone'] ?? '';
+      businessNumberController.text = cachedData['businessNumber'] ?? '';
 
       state = state.copyWith(
         invoiceeType: cachedData['invoiceeType'] ?? '사업자',
@@ -334,7 +340,9 @@ class CheckoutFormController
 
     final fields = {
       'email': emailController.text.trim(),
-      'selectedOption': 1,
+      'receiptPhone': phoneController.text.trim(),
+      'businessNumber': businessNumberController.text.trim(),
+      'selectedOption': stateValue.selectedOption,
       'deliveryAddressId': stateValue.address.id,
       'deliveryAddress': stateValue.address.address,
       'deliveryAddressDetail': stateValue.address.detailAddress,
@@ -354,6 +362,22 @@ class CheckoutFormController
   bool validateReceiptTypeFields(BuildContext context) {
     final stateValue = state.value;
     if (stateValue == null) return false;
+
+    if (stateValue.selectedOption == 1) {
+      if (phoneController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('휴대폰 번호를 입력해주세요')),
+        );
+        return false;
+      }
+    } else {
+      if (businessNumberController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('사업자등록번호를 입력해주세요')),
+        );
+        return false;
+      }
+    }
 
     if (emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

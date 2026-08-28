@@ -10,6 +10,7 @@ import 'package:ecommerece_app/features/cart/registered_screen.dart';
 import 'package:ecommerece_app/features/cart/cart.dart';
 import 'package:ecommerece_app/features/address/ui/address_list_screen.dart';
 import 'package:ecommerece_app/features/address/ui/add_address_screen.dart';
+import 'package:ecommerece_app/features/address/domain/models/address.dart';
 import 'package:ecommerece_app/features/home/add_post.dart';
 import 'package:ecommerece_app/features/home/comments.dart';
 import 'package:ecommerece_app/features/home/profile_tab.dart';
@@ -283,7 +284,10 @@ class AppRouter {
             path: Routes.addAddressScreen,
             builder: (context, state) {
               final extra = state.extra as Map<String, dynamic>?;
-              return AddAddressScreen(showSkip: extra?['showSkip'] ?? false);
+              return AddAddressScreen(
+                showSkip: extra?['showSkip'] ?? false,
+                initialAddress: extra?['address'] as Address?,
+              );
             },
           ),
           GoRoute(

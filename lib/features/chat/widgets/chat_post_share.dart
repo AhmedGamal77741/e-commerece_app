@@ -3,6 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/core/widgets/safe_network_image.dart';
 
+/// Helper function to safely extract an image URL from post data map,
+/// supporting both legacy `imgUrl` (String) and current `imgUrls` (List).
+String getPostImageUrl(Map<String, dynamic>? data) {
+  if (data == null) return '';
+  final imgUrl = data['imgUrl'];
+  if (imgUrl is String && imgUrl.isNotEmpty) {
+    return imgUrl;
+  }
+  final imageUrl = data['imageUrl'];
+  if (imageUrl is String && imageUrl.isNotEmpty) {
+    return imageUrl;
+  }
+  final imgUrls = data['imgUrls'];
+  if (imgUrls is List && imgUrls.isNotEmpty) {
+    return imgUrls.first.toString();
+  }
+  return '';
+}
+
 class ChatPostShareWidget extends ConsumerWidget {
   final String imageUrl;
   final String postTitle;
@@ -58,14 +77,20 @@ class ChatPostShareWidget extends ConsumerWidget {
                       ? ref.watch(userProfileDocProvider(authorName)).when(
                             data: (doc) {
                               final data = doc?.data() as Map<String, dynamic>?;
-                              final name = data?['name'] ?? 'Unknown';
+                              final name = data?['name'] as String? ?? (authorName.isNotEmpty ? authorName : 'Unknown');
                               return Text(
-                                name as String,
+                                name,
                                 style: const TextStyle(fontWeight: FontWeight.bold),
                               );
                             },
-                            loading: () => const Text("Loading..."),
-                            error: (_, __) => const Text('Error'),
+                            loading: () => Text(
+                              authorName.isNotEmpty ? authorName : "Loading...",
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            error: (_, __) => Text(
+                              authorName.isNotEmpty ? authorName : 'Unknown',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           )
                       : Text(
                         authorName,
@@ -91,3 +116,4 @@ class ChatPostShareWidget extends ConsumerWidget {
     );
   }
 }
+

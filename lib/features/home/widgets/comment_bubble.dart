@@ -125,11 +125,15 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                               if ((item['content'] as String).isNotEmpty) SizedBox(height: 6.h),
                               ChatPostShareWidget(
                                 type: 'post',
-                                imageUrl: item['postData']['imgUrl'] ?? '',
-                                authorName: item['postData']['userId'] ?? '',
-                                postTitle: item['postData']['text'] ?? '',
+                                imageUrl: getPostImageUrl(item['postData'] as Map<String, dynamic>?),
+                                authorName: (item['postData']['authorName'] as String?)?.isNotEmpty == true
+                                    ? item['postData']['authorName'] as String
+                                    : (item['postData']['userId'] as String? ?? ''),
+                                postTitle: item['postData']['text'] as String? ?? '',
                                 onTap: () {
-                                  if (item['postData']['postId'] != item['id'] || !item['isPost']) {
+                                  final postId = item['postData']['postId'] as String? ?? item['postData']['id'] as String? ?? '';
+                                  if (postId.isEmpty) return;
+                                  if (postId != item['id'] || !item['isPost']) {
                                     showModalBottomSheet(
                                       context: context,
                                       isScrollControlled: true,
@@ -142,7 +146,7 @@ class _CommentBubbleState extends ConsumerState<CommentBubble> {
                                         ),
                                         child: ClipRRect(
                                           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                                          child: Comments(postId: item['postData']['postId']),
+                                          child: Comments(postId: postId),
                                         ),
                                       ),
                                     );

@@ -1,6 +1,7 @@
 import 'package:ecommerece_app/features/cart/services/kakao_service.dart';
 import 'package:ecommerece_app/features/address/ui/address_search_dialog.dart';
 import 'package:ecommerece_app/features/address/domain/address_controller.dart';
+import 'package:ecommerece_app/features/address/domain/models/address.dart';
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,8 +11,13 @@ class AddAddressScreen extends ConsumerStatefulWidget {
   /// When true, a "나중에 추가하기" skip action appears in the AppBar.
   /// The NavBar passes true; the address-list screen passes false (or omits it).
   final bool showSkip;
+  final Address? initialAddress;
 
-  const AddAddressScreen({super.key, this.showSkip = false});
+  const AddAddressScreen({
+    super.key,
+    this.showSkip = false,
+    this.initialAddress,
+  });
 
   @override
   ConsumerState<AddAddressScreen> createState() => _AddAddressScreenState();
@@ -34,6 +40,20 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
   String? _detailAddressError;
 
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialAddress != null) {
+      final addr = widget.initialAddress!;
+      _nameController.text = addr.name;
+      _phoneController.text = addr.phone;
+      _addressController.text = addr.address;
+      _detailAddressController.text = addr.detailAddress;
+      _isDefaultAddress = addr.isDefault;
+      _address = addr.addressMap ?? {};
+    }
+  }
 
   @override
   void dispose() {
@@ -127,17 +147,37 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
         return;
       }
 
-      await ref.read(addressControllerProvider.notifier).addAddress(
-        name: _nameController.text.trim(),
-        phone: _phoneController.text.trim(),
-        address: _addressController.text.trim(),
-        detailAddress: _detailAddressController.text.trim(),
-        isDefaultAddress: _isDefaultAddress,
-        addressMap: _address,
-      );
+      if (widget.initialAddress != null) {
+        await ref.read(addressControllerProvider.notifier).updateAddress(
+          addressId: widget.initialAddress!.id,
+          name: _nameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          address: _addressController.text.trim(),
+          detailAddress: _detailAddressController.text.trim(),
+          isDefaultAddress: _isDefaultAddress,
+          addressMap: _address,
+        );
+      } else {
+        await ref.read(addressControllerProvider.notifier).addAddress(
+          name: _nameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          address: _addressController.text.trim(),
+          detailAddress: _detailAddressController.text.trim(),
+          isDefaultAddress: _isDefaultAddress,
+          addressMap: _address,
+        );
+      }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('배송지가 저장되었습니다')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.initialAddress != null
+                  ? '배송지 정보가 수정되었습니다'
+                  : '배송지가 저장되었습니다',
+            ),
+          ),
+        );
         Navigator.of(context).pop(true);
       }
     } catch (e) {
@@ -163,7 +203,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
           onPressed: () => Navigator.of(context).pop(false),
         ),
         title: Text(
-          '주문/결제',
+          widget.initialAddress != null ? '배송지 수정' : '배송지 추가',
           style: TextStyle(
             color: Colors.black,
             fontSize: 20.sp,
@@ -197,7 +237,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
               children: [
                 Center(
                   child: Text(
-                    '배송지 추가',
+                    widget.initialAddress != null ? '배송지 수정' : '배송지 추가',
                     style: TextStyle(
                       fontSize: 15.sp,
                       fontWeight: FontWeight.w500,

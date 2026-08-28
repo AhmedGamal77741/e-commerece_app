@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:ecommerece_app/firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:ecommerece_app/core/routing/app_router.dart';
 import 'package:ecommerece_app/core/routing/routes.dart';
@@ -25,6 +27,18 @@ class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+
+  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
+    'custom_sound_channel',
+    'Custom Sound Notifications',
+    description: 'Channel for custom sound push notifications',
+    importance: Importance.max,
+    playSound: true,
+    sound: RawResourceAndroidNotificationSound('custom_sound'),
+  );
+
   bool _initialized = false;
 
   Future<void> init() async {
@@ -37,6 +51,40 @@ class NotificationService {
         FirebaseMessaging.onBackgroundMessage(
           _firebaseMessagingBackgroundHandler,
         );
+
+        const androidSettings =
+            AndroidInitializationSettings('@mipmap/ic_launcher');
+        const iosSettings = DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
+        const initSettings = InitializationSettings(
+          android: androidSettings,
+          iOS: iosSettings,
+        );
+
+        await _localNotifications.initialize(
+          initSettings,
+          onDidReceiveNotificationResponse: (response) {
+            if (response.payload != null && response.payload!.isNotEmpty) {
+              try {
+                final data =
+                    Map<String, dynamic>.from(jsonDecode(response.payload!));
+                final message = RemoteMessage(data: data);
+                _handleMessageNavigation(message);
+              } catch (_) {}
+            }
+          },
+        );
+
+        final androidImplementation = _localNotifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
+        if (androidImplementation != null) {
+          await androidImplementation.createNotificationChannel(_channel);
+        }
       }
 
       // 1. Explicitly request Android runtime notification permission (POST_NOTIFICATIONS)
@@ -87,12 +135,42 @@ class NotificationService {
         }
       });
 
-      // 6. Handle foreground messages
+      // 6. Handle foreground messages with heads-up banner pop-up
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         if (kDebugMode) {
           print(
             'Foreground FCM Message received: ${message.notification?.title}',
           );
+        }
+        if (!kIsWeb) {
+          final notification = message.notification;
+          if (notification != null) {
+            _localNotifications.show(
+              notification.hashCode,
+              notification.title,
+              notification.body,
+              NotificationDetails(
+                android: AndroidNotificationDetails(
+                  _channel.id,
+                  _channel.name,
+                  channelDescription: _channel.description,
+                  importance: Importance.max,
+                  priority: Priority.high,
+                  playSound: true,
+                  sound:
+                      const RawResourceAndroidNotificationSound('custom_sound'),
+                  icon: '@mipmap/ic_launcher',
+                ),
+                iOS: const DarwinNotificationDetails(
+                  presentAlert: true,
+                  presentBadge: true,
+                  presentSound: true,
+                  sound: 'custom_sound.mp3',
+                ),
+              ),
+              payload: jsonEncode(message.data),
+            );
+          }
         }
       });
 
@@ -121,7 +199,7 @@ class NotificationService {
     }
   }
 
-  void _handleMessageNavigation(RemoteMessage message) {
+  Future<void> _handleMessageNavigation(RemoteMessage message) async {
     final data = message.data;
     if (data.isEmpty) return;
 
@@ -129,6 +207,7 @@ class NotificationService {
     final postId = data['postId']?.toString();
     final commentId = data['commentId']?.toString();
     final chatRoomId = data['chatRoomId']?.toString();
+    final senderId = data['senderId']?.toString();
 
     if (kDebugMode) {
       print(
@@ -141,12 +220,50 @@ class NotificationService {
 
     if (type == 'chat' || (chatRoomId != null && chatRoomId.isNotEmpty)) {
       if (chatRoomId != null && chatRoomId.isNotEmpty) {
-        AppRouter.router.push('/chat/$chatRoomId');
+        String partnerName = '채팅';
+        try {
+          final currentUid = _auth.currentUser?.uid;
+          final roomDoc =
+              await _firestore.collection('chatRooms').doc(chatRoomId).get();
+          if (roomDoc.exists && roomDoc.data() != null) {
+            final roomData = roomDoc.data()!;
+            final roomName = roomData['name'] as String?;
+            if (roomName != null && roomName.trim().isNotEmpty) {
+              partnerName = roomName;
+            } else {
+              final participants =
+                  List<String>.from(roomData['participants'] ?? []);
+              final otherUserId = participants.firstWhere(
+                (id) => id != currentUid,
+                orElse: () => senderId ?? '',
+              );
+              if (otherUserId.isNotEmpty) {
+                final userDoc =
+                    await _firestore.collection('users').doc(otherUserId).get();
+                if (userDoc.exists && userDoc.data() != null) {
+                  partnerName = userDoc.data()!['name'] ?? '채팅';
+                }
+              }
+            }
+          }
+        } catch (_) {}
+
+        AppRouter.router.pushNamed(
+          Routes.chatScreen,
+          pathParameters: {'id': chatRoomId},
+          extra: {'name': partnerName},
+        );
       }
     } else if (type == 'comment' ||
         type == 'post' ||
+        type == 'like' ||
         (postId != null && postId.isNotEmpty)) {
       if (postId != null && postId.isNotEmpty) {
+        // 1. Root: SNS Home feed
+        AppRouter.router.go(Routes.navBar);
+        // 2. Middle: Notifications tab
+        AppRouter.router.pushNamed(Routes.alertsScreen);
+        // 3. Top: Comment section modal for postId
         final queryParams = <String, String>{
           'postId': postId,
           if (commentId != null && commentId.isNotEmpty) 'commentId': commentId,

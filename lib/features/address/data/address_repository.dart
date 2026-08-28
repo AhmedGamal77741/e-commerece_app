@@ -87,6 +87,52 @@ class AddressRepository {
     await batch.commit();
   }
 
+  Future<void> updateAddress({
+    required String addressId,
+    required String name,
+    required String phone,
+    required String address,
+    required String detailAddress,
+    required bool isDefaultAddress,
+    required Map<String, dynamic> addressMap,
+  }) async {
+    final batch = _firestore.batch();
+    final docRef = _addressesCollection.doc(addressId);
+    final docSnap = await docRef.get();
+    final bool wasDefault = docSnap.exists && (docSnap.get('isDefault') == true);
+
+    if (isDefaultAddress && !wasDefault) {
+      final defaultAddresses =
+          await _addressesCollection.where('isDefault', isEqualTo: true).get();
+      for (var doc in defaultAddresses.docs) {
+        if (doc.id != addressId) {
+          batch.update(doc.reference, {'isDefault': false});
+        }
+      }
+    }
+
+    final updateData = <String, dynamic>{
+      'name': name,
+      'phone': phone,
+      'address': address,
+      'detailAddress': detailAddress,
+      'isDefault': isDefaultAddress,
+    };
+    if (addressMap.isNotEmpty) {
+      updateData['addressMap'] = addressMap;
+    }
+
+    batch.update(docRef, updateData);
+
+    if (isDefaultAddress) {
+      batch.update(_userDocument, {
+        'defaultAddressId': addressId,
+      });
+    }
+
+    await batch.commit();
+  }
+
   Future<bool> deleteAddress(String addressId) async {
     try {
       DocumentSnapshot userDoc = await _userDocument.get();

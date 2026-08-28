@@ -125,11 +125,15 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                   SizedBox(height: 6.h),
                                 ChatPostShareWidget(
                                   type: 'post',
-                                  imageUrl: widget.comment.postData!['imgUrl'],
+                                  imageUrl: getPostImageUrl(widget.comment.postData),
                                   authorName:
-                                      widget.comment.postData!['userId'],
-                                  postTitle: widget.comment.postData!['text'],
+                                      (widget.comment.postData!['authorName'] as String?)?.isNotEmpty == true
+                                          ? widget.comment.postData!['authorName'] as String
+                                          : (widget.comment.postData!['userId'] as String? ?? ''),
+                                  postTitle: widget.comment.postData!['text'] as String? ?? '',
                                   onTap: () {
+                                    final postId = widget.comment.postData!['postId'] as String? ?? widget.comment.postData!['id'] as String? ?? '';
+                                    if (postId.isEmpty) return;
                                     showModalBottomSheet(
                                       context: context,
                                       isScrollControlled: true,
@@ -154,10 +158,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                                     top: Radius.circular(20),
                                                   ),
                                               child: Comments(
-                                                postId:
-                                                    widget
-                                                        .comment
-                                                        .postData!['postId'],
+                                                postId: postId,
                                               ),
                                             ),
                                           ),

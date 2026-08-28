@@ -41,10 +41,15 @@ class _NotificationsState extends ConsumerState<Notifications> {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const SizedBox.shrink();
                   }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return Center(child: Text('알림이 없습니다.'));
+                  final notifications = snapshot.data!.docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return data['type'] != 'chat';
+                  }).toList();
+
+                  if (notifications.isEmpty) {
+                    return const Center(child: Text('알림이 없습니다.'));
                   }
-                  final notifications = snapshot.data!.docs;
+
                   return ListView.separated(
                     padding: EdgeInsets.symmetric(
                       horizontal: 5.w,

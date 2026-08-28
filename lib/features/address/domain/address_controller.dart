@@ -48,6 +48,27 @@ class AddressController extends AsyncNotifier<List<Address>> {
     );
   }
 
+  Future<void> updateAddress({
+    required String addressId,
+    required String name,
+    required String phone,
+    required String address,
+    required String detailAddress,
+    required bool isDefaultAddress,
+    required Map<String, dynamic> addressMap,
+  }) async {
+    final repo = ref.read(addressRepositoryProvider);
+    await repo.updateAddress(
+      addressId: addressId,
+      name: name,
+      phone: phone,
+      address: address,
+      detailAddress: detailAddress,
+      isDefaultAddress: isDefaultAddress,
+      addressMap: addressMap,
+    );
+  }
+
   Future<void> deleteAddress(String addressId) async {
     final repo = ref.read(addressRepositoryProvider);
     final success = await repo.deleteAddress(addressId);

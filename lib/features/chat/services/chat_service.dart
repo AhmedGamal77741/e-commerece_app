@@ -261,6 +261,11 @@ class ChatService {
             final data = Map<String, dynamic>.from(doc.data() as Map);
             data['id'] = doc.id;
             data['postId'] = doc.id;
+            if ((!data.containsKey('imgUrl') || data['imgUrl'] == null || (data['imgUrl'] as String).isEmpty) &&
+                data['imgUrls'] is List &&
+                (data['imgUrls'] as List).isNotEmpty) {
+              data['imgUrl'] = (data['imgUrls'] as List).first.toString();
+            }
             return data;
           }
         }

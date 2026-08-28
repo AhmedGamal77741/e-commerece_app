@@ -210,8 +210,17 @@ class CheckoutBottomSheets {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      ..._buildCashReceiptFields(controller),
-                      verticalSpace(10),
+                      Text(
+                        '현금영수증 발급 정보',
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      verticalSpace(16),
+                      ..._buildCashReceiptFields(controller, state.selectedOption),
+                      verticalSpace(16),
                       WideTextButton(
                         txt: '저장',
                         func: () async {
@@ -252,20 +261,100 @@ class CheckoutBottomSheets {
 
   static List<Widget> _buildCashReceiptFields(
     CheckoutFormController controller,
-  ) => [
-    UnderlineTextField(
-      controller: controller.emailController,
-      hintText: '이메일',
-      obscureText: false,
-      keyboardType: TextInputType.emailAddress,
-      validator: (val) {
-        if (val == null || val.trim().isEmpty) return '이메일을 입력해주세요';
-        if (!RegExp(r'^.+@.+\..+$').hasMatch(val.trim())) {
-          return '유효한 이메일을 입력해주세요';
-        }
-        return null;
-      },
-      onChanged: (_) => null,
-    ),
-  ];
+    int selectedOption,
+  ) {
+    Widget buildRadioOption(int value, String label) {
+      final isSelected = selectedOption == value;
+      return InkWell(
+        onTap: () => controller.setSelectedOption(value),
+        borderRadius: BorderRadius.circular(8.r),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.black : Colors.grey[100],
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(
+              color: isSelected ? Colors.black : Colors.grey[300]!,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isSelected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                size: 18.sp,
+                color: isSelected ? Colors.white : Colors.grey[600],
+              ),
+              SizedBox(width: 6.w),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'NotoSans',
+                  fontSize: 13.sp,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? Colors.white : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Expanded(child: buildRadioOption(1, '소득공제 (개인)')),
+          SizedBox(width: 10.w),
+          Expanded(child: buildRadioOption(2, '지출증빙 (사업자)')),
+        ],
+      ),
+      verticalSpace(16),
+      if (selectedOption == 1) ...[
+        UnderlineTextField(
+          controller: controller.phoneController,
+          hintText: '휴대폰 번호 (소득공제용)',
+          obscureText: false,
+          keyboardType: TextInputType.phone,
+          validator: (val) {
+            if (val == null || val.trim().isEmpty) return '휴대폰 번호를 입력해주세요';
+            return null;
+          },
+          onChanged: (_) => null,
+        ),
+        verticalSpace(12),
+      ] else ...[
+        UnderlineTextField(
+          controller: controller.businessNumberController,
+          hintText: '사업자등록번호 (지출증빙용)',
+          obscureText: false,
+          keyboardType: TextInputType.number,
+          validator: (val) {
+            if (val == null || val.trim().isEmpty) return '사업자등록번호를 입력해주세요';
+            return null;
+          },
+          onChanged: (_) => null,
+        ),
+        verticalSpace(12),
+      ],
+      UnderlineTextField(
+        controller: controller.emailController,
+        hintText: '수령 이메일',
+        obscureText: false,
+        keyboardType: TextInputType.emailAddress,
+        validator: (val) {
+          if (val == null || val.trim().isEmpty) return '이메일을 입력해주세요';
+          if (!RegExp(r'^.+@.+\..+$').hasMatch(val.trim())) {
+            return '유효한 이메일을 입력해주세요';
+          }
+          return null;
+        },
+        onChanged: (_) => null,
+      ),
+    ];
+  }
 }

@@ -244,10 +244,14 @@ class _BubbleContent extends ConsumerWidget {
             if (message.content.isNotEmpty) SizedBox(height: 6.h),
             ChatPostShareWidget(
               type: 'post',
-              imageUrl: message.postData!['imgUrl'],
-              authorName: message.postData!['userId'] ?? '',
-              postTitle: message.postData!['text'],
+              imageUrl: getPostImageUrl(message.postData),
+              authorName: (message.postData!['authorName'] as String?)?.isNotEmpty == true
+                  ? message.postData!['authorName'] as String
+                  : (message.postData!['userId'] as String? ?? ''),
+              postTitle: message.postData!['text'] as String? ?? '',
               onTap: () {
+                final postId = message.postData!['postId'] as String? ?? message.postData!['id'] as String? ?? '';
+                if (postId.isEmpty) return;
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
@@ -265,7 +269,7 @@ class _BubbleContent extends ConsumerWidget {
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(20),
                           ),
-                          child: Comments(postId: message.postData!['postId']),
+                          child: Comments(postId: postId),
                         ),
                       ),
                 );

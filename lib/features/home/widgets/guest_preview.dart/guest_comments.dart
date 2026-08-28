@@ -401,11 +401,15 @@ class _CommentBubbleState extends ConsumerState<_CommentBubble> {
                                 SizedBox(height: 6.h),
                               ChatPostShareWidget(
                                 type: 'post',
-                                imageUrl: item.postData!['imgUrl'] ?? '',
-                                authorName: item.postData!['userId'] ?? '',
-                                postTitle: item.postData!['text'] ?? '',
+                                imageUrl: getPostImageUrl(item.postData),
+                                authorName: (item.postData!['authorName'] as String?)?.isNotEmpty == true
+                                    ? item.postData!['authorName'] as String
+                                    : (item.postData!['userId'] as String? ?? ''),
+                                postTitle: item.postData!['text'] as String? ?? '',
                                 onTap: () async {
-                                  final doc = await ref.read(feedControllerProvider.notifier).getPostById(item.postData!['postId']);
+                                  final postId = item.postData!['postId'] as String? ?? item.postData!['id'] as String? ?? '';
+                                  if (postId.isEmpty) return;
+                                  final doc = await ref.read(feedControllerProvider.notifier).getPostById(postId);
                                   if (!context.mounted) return;
                                   if (doc != null) {
                                     final postMap = doc;

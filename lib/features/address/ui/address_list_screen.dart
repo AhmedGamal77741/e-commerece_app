@@ -88,6 +88,7 @@ class _AddressListScreenState extends ConsumerState<AddressListScreen> {
                   return AddressListItem(
                     address: address,
                     onTap: () => _selectAddress(address),
+                    onEdit: () => _navigateToEditAddressForm(context, address),
                   );
                 },
               );
@@ -108,6 +109,22 @@ class _AddressListScreenState extends ConsumerState<AddressListScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('배송지 정보가 저장되었습니다')));
+    }
+  }
+
+  void _navigateToEditAddressForm(
+    BuildContext context,
+    Address address,
+  ) async {
+    final result = await context.pushNamed<bool>(
+      Routes.addAddressScreen,
+      extra: {'address': address},
+    );
+
+    if (!context.mounted) return;
+
+    if (result == true) {
+      ref.read(addressControllerProvider.notifier).refreshAddresses();
     }
   }
 

@@ -64,10 +64,16 @@ Widget _buildFriendItem({
           );
           if (type == 'post') {
             final contentText = postData['text'] ?? '';
+            final mapToSend = Map<String, dynamic>.from(postData);
+            if ((!mapToSend.containsKey('imgUrl') || mapToSend['imgUrl'] == null || (mapToSend['imgUrl'] as String).isEmpty) &&
+                mapToSend['imgUrls'] is List &&
+                (mapToSend['imgUrls'] as List).isNotEmpty) {
+              mapToSend['imgUrl'] = (mapToSend['imgUrls'] as List).first.toString();
+            }
             ChatService().sendMessage(
               chatRoomId: chatRoomId,
               content: contentText.isEmpty ? url : '$url\n$contentText',
-              postData: postData,
+              postData: mapToSend,
             );
           } else if (type == 'product') {
             ChatService().sendMessage(

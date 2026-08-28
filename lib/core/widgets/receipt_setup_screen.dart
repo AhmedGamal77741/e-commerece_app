@@ -15,7 +15,10 @@ class ReceiptSetupScreen extends ConsumerStatefulWidget {
 
 class _ReceiptSetupScreenState extends ConsumerState<ReceiptSetupScreen> {
   // ── Receipt / invoice fields ──────────────────────────────────────────────
+  int selectedOption = 1; // 1 = 소득공제 (Income Deduction), 2 = 지출증빙 (Expense Proof)
   final emailController = TextEditingController();
+  final phoneController = TextEditingController();
+  final businessNumberController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
@@ -29,6 +32,8 @@ class _ReceiptSetupScreenState extends ConsumerState<ReceiptSetupScreen> {
   @override
   void dispose() {
     emailController.dispose();
+    phoneController.dispose();
+    businessNumberController.dispose();
     super.dispose();
   }
 
@@ -38,7 +43,10 @@ class _ReceiptSetupScreenState extends ConsumerState<ReceiptSetupScreen> {
         await ref.read(profileControllerProvider.notifier).getReceiptData();
     if (data == null || !mounted) return;
     setState(() {
+      selectedOption = data['selectedOption'] ?? 1;
       emailController.text = data['email'] ?? '';
+      phoneController.text = data['receiptPhone'] ?? data['phone'] ?? '';
+      businessNumberController.text = data['businessNumber'] ?? '';
     });
   }
 
@@ -50,7 +58,9 @@ class _ReceiptSetupScreenState extends ConsumerState<ReceiptSetupScreen> {
     try {
       await ref.read(profileControllerProvider.notifier).saveReceiptData({
         'email': emailController.text.trim(),
-        'selectedOption': 1,
+        'receiptPhone': phoneController.text.trim(),
+        'businessNumber': businessNumberController.text.trim(),
+        'selectedOption': selectedOption,
       });
 
       if (mounted) {
@@ -66,6 +76,46 @@ class _ReceiptSetupScreenState extends ConsumerState<ReceiptSetupScreen> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Widget _buildRadioOption({required int value, required String label}) {
+    final isSelected = selectedOption == value;
+    return InkWell(
+      onTap: () => setState(() => selectedOption = value),
+      borderRadius: BorderRadius.circular(8.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.grey[100],
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.grey[300]!,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
+              size: 18.sp,
+              color: isSelected ? Colors.white : Colors.grey[600],
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'NotoSans',
+                fontSize: 14.sp,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? Colors.white : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -106,7 +156,7 @@ class _ReceiptSetupScreenState extends ConsumerState<ReceiptSetupScreen> {
                   borderRadius: BorderRadius.circular(10.r),
                 ),
                 child: Text(
-                  '결제 및 구독을 이용하려면\n현금영수증 수령 이메일을 먼저 등록해주세요.',
+                  '결제 및 구독을 이용하려면\n현금영수증 정보를 먼저 등록해주세요.',
                   style: TextStyle(
                     fontFamily: 'NotoSans',
                     fontSize: 13.sp,
@@ -118,9 +168,49 @@ class _ReceiptSetupScreenState extends ConsumerState<ReceiptSetupScreen> {
               ),
               SizedBox(height: 24.h),
 
+              // ── Option Selector (소득공제 vs 지출증빙) ─────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(child: _buildRadioOption(value: 1, label: '소득공제 (개인)')),
+                  SizedBox(width: 12.w),
+                  Expanded(child: _buildRadioOption(value: 2, label: '지출증빙 (사업자)')),
+                ],
+              ),
+              SizedBox(height: 24.h),
+
+              // ── Input Fields depending on Option ────────────────────
+              if (selectedOption == 1) ...[
+                UnderlineTextField(
+                  controller: phoneController,
+                  hintText: '휴대폰 번호 (소득공제용)',
+                  obscureText: false,
+                  keyboardType: TextInputType.phone,
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) return '휴대폰 번호를 입력해주세요';
+                    return null;
+                  },
+                  onChanged: (_) => null,
+                ),
+                SizedBox(height: 16.h),
+              ] else ...[
+                UnderlineTextField(
+                  controller: businessNumberController,
+                  hintText: '사업자등록번호 (지출증빙용)',
+                  obscureText: false,
+                  keyboardType: TextInputType.number,
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) return '사업자등록번호를 입력해주세요';
+                    return null;
+                  },
+                  onChanged: (_) => null,
+                ),
+                SizedBox(height: 16.h),
+              ],
+
               UnderlineTextField(
                 controller: emailController,
-                hintText: '이메일',
+                hintText: '수령 이메일',
                 obscureText: false,
                 keyboardType: TextInputType.emailAddress,
                 validator: (val) {
