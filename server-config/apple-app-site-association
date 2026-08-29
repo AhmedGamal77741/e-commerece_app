@@ -8,9 +8,43 @@
           "/product/*",
           "/item-details*",
           "/comment*",
-          "/bank-registered*"
+          "/guest_comment*",
+          "/bank-registered*",
+          "/chat/*",
+          "*"
+        ],
+        "components": [
+          {
+            "/": "/product/*",
+            "comment": "Matches product details deep link"
+          },
+          {
+            "/": "/item-details*",
+            "comment": "Matches item details deep link"
+          },
+          {
+            "/": "/comment*",
+            "comment": "Matches post comment deep link"
+          },
+          {
+            "/": "/guest_comment*",
+            "comment": "Matches guest comment deep link"
+          },
+          {
+            "/": "/bank-registered*",
+            "comment": "Matches bank registration callback deep link"
+          },
+          {
+            "/": "/chat/*",
+            "comment": "Matches chat room deep link"
+          }
         ]
       }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "2JL9LPS2CM.com.pang2chocolate.app"
     ]
   }
 }
