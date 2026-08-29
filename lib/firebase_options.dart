@@ -68,7 +68,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCTUUNxtVGTr6Ao-K7H2Aq_uGBTDP9rDBE',
-    appId: '1:944685668832:ios:da00e1317212fba6eaf385',
+    appId: '1:944685668832:ios:f6127a6e4ffc44e5eaf385',
     messagingSenderId: '944685668832',
     projectId: 'e-commerce-app-34fb2',
     storageBucket: 'e-commerce-app-34fb2.firebasestorage.app',
