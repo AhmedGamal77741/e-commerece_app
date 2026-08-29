@@ -115,7 +115,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   verticalSpace(16),
                   Padding(
                     padding: EdgeInsets.only(bottom: 8.h),
-                    child: const Text('전화번호', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                    child: const Text('전화번호 (선택)', style: TextStyle(fontSize: 14, color: Colors.black87)),
                   ),
                   Container(
                     decoration: BoxDecoration(
@@ -126,17 +126,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       controller: phoneController,
                       keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(
+                        hintText: '010-0000-0000 (선택)',
+                        hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                       ),
                       validator: (val) {
-                        if (val == null || val.isEmpty) {
-                          return '전화번호를 입력하세요';
+                        if (val == null || val.trim().isEmpty) {
+                          return null;
                         }
                         final koreanReg = RegExp(
                           r'^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$',
                         );
-                        if (!koreanReg.hasMatch(val)) {
+                        if (!koreanReg.hasMatch(val.trim())) {
                           return '유효한 한국 전화번호를 입력하세요';
                         }
                         return null;
@@ -293,7 +295,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               imgUrl.isEmpty
                                   ? myUser.url = "https://i.ibb.co/mrVrHy7z/avatar.png"
                                   : myUser.url = imgUrl;
-                              myUser.phoneNumber = phoneController.text;
+                              myUser.phoneNumber = phoneController.text.trim().isEmpty
+                                  ? null
+                                  : phoneController.text.trim();
 
                               await ref.read(authNotifierProvider.notifier).signUp(
                                 myUser,

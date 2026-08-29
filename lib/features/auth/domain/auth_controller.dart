@@ -78,8 +78,8 @@ class AuthNotifier extends AsyncNotifier<void> {
       try {
         final results = await Future.wait([
           _authRepository.isNicknameTaken(myUser.name),
-          if (myUser.phoneNumber != null)
-            _authRepository.isPhoneNumberTaken(myUser.phoneNumber!)
+          if (myUser.phoneNumber != null && myUser.phoneNumber!.trim().isNotEmpty)
+            _authRepository.isPhoneNumberTaken(myUser.phoneNumber!.trim())
           else
             Future.value(false),
         ]);
