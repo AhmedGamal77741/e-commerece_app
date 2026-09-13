@@ -7,10 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class CheckoutReceiptOption extends ConsumerWidget {
   final VoidCallback onShowBottomSheet;
 
-  const CheckoutReceiptOption({
-    super.key,
-    required this.onShowBottomSheet,
-  });
+  const CheckoutReceiptOption({super.key, required this.onShowBottomSheet});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,21 +44,14 @@ class CheckoutReceiptOption extends ConsumerWidget {
               verticalSpace(5),
               Text(
                 detailText,
-                style: TextStyle(
-                  fontSize: 15.sp,
-                  color: Colors.grey[800],
-                ),
+                style: TextStyle(fontSize: 15.sp, color: Colors.grey[800]),
               ),
             ],
           ),
         ),
         IconButton(
           onPressed: onShowBottomSheet,
-          icon: Icon(
-            Icons.arrow_forward_ios,
-            size: 30.r,
-            color: Colors.black,
-          ),
+          icon: Icon(Icons.arrow_forward_ios, size: 30.r, color: Colors.black),
         ),
       ],
     );
