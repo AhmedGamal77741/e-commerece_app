@@ -185,13 +185,12 @@ class _EditGroupChatsTabState extends ConsumerState<EditGroupChatsTab> {
                           color: ColorsManager.primary,
                           child: child,
                         ),
-                    onReorder:
+                    onReorderItem:
                         canReorder
                             ? (oldIdx, newIdx) {
                               final reordered = List<ChatRoomModel>.from(
                                 allGroups,
                               );
-                              if (newIdx > oldIdx) newIdx--;
                               final item = reordered.removeAt(oldIdx);
                               reordered.insert(newIdx, item);
                               _reorderGroups(uid, reordered);

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/shop/shop_search.dart';
@@ -333,7 +334,7 @@ class _HomeFeedSearchTab extends ConsumerWidget {
 
         return ListView.builder(
           itemCount: state.posts.length,
-          cacheExtent: 1200,
+          scrollCacheExtent: const ScrollCacheExtent.pixels(1200),
           addAutomaticKeepAlives: false,
           addRepaintBoundaries: false,
           itemBuilder: (context, index) {

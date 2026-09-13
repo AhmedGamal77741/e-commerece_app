@@ -20,7 +20,7 @@ class ImagePickerGrid extends ConsumerWidget {
       child: ReorderableListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: images.length,
-        onReorder: (oldIndex, newIndex) {
+        onReorderItem: (oldIndex, newIndex) {
           ref.read(addPostNotifierProvider.notifier).reorderImages(oldIndex, newIndex);
         },
         buildDefaultDragHandles: false,

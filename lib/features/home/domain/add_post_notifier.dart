@@ -298,7 +298,6 @@ class AddPostNotifier extends Notifier<AddPostState> {
   
   void reorderImages(int oldIndex, int newIndex) {
      final newImages = List<UploadableImage>.from(state.images);
-     if (newIndex > oldIndex) newIndex -= 1;
      final item = newImages.removeAt(oldIndex);
      newImages.insert(newIndex, item);
      state = state.copyWith(images: newImages);

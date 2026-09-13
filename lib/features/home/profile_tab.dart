@@ -12,6 +12,7 @@ import 'package:ecommerece_app/features/auth/domain/auth_controller.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/domain/follow_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ProfileTab extends ConsumerStatefulWidget {
@@ -254,7 +255,7 @@ class _PostsPageState extends ConsumerState<_PostsPage>
         final bool isGuest = ref.watch(currentUserProvider).value == null;
         return ListView.builder(
           itemCount: posts.length,
-          cacheExtent: 1200,
+          scrollCacheExtent: const ScrollCacheExtent.pixels(1200),
           itemBuilder: (context, index) {
             final doc = posts[index];
             final post = doc.data() as Map<String, dynamic>;

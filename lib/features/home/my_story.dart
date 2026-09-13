@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/rendering.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerece_app/core/helpers/loading_service.dart';
@@ -302,7 +303,7 @@ class _PostsPageState extends ConsumerState<_PostsPage>
 
         return ListView.builder(
           itemCount: posts.length,
-          cacheExtent: 1200,
+          scrollCacheExtent: const ScrollCacheExtent.pixels(1200),
           itemBuilder: (context, index) {
             final doc = posts[index];
             final postData = doc.data() as Map<String, dynamic>;

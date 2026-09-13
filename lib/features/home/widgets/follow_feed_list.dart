@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
@@ -121,7 +122,7 @@ class FollowingPostsList extends ConsumerWidget {
 
     return ListView.builder(
       controller: scrollController,
-      cacheExtent: 1200,
+      scrollCacheExtent: const ScrollCacheExtent.pixels(1200),
       addAutomaticKeepAlives: true,
       addRepaintBoundaries: false,
       physics: const AlwaysScrollableScrollPhysics(),

@@ -245,9 +245,8 @@ class _EditContactsTabState extends ConsumerState<EditContactsTab> {
                                               color: ColorsManager.primary,
                                               child: child,
                                             ),
-                                    onReorder: (oldIdx, newIdx) {
+                                    onReorderItem: (oldIdx, newIdx) {
                                       final reordered = List<MyUser>.from(favorites);
-                                      if (newIdx > oldIdx) newIdx--;
                                       final item = reordered.removeAt(oldIdx);
                                       reordered.insert(newIdx, item);
                                       _reorderFavorites(uid, reordered);

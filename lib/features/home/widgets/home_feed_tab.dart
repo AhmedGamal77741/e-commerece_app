@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ecommerece_app/features/home/domain/feed_controller.dart';
 import 'package:ecommerece_app/features/home/widgets/post_item.dart';
@@ -46,7 +47,7 @@ class HomeFeedTab extends ConsumerWidget {
 
     return ListView.builder(
       controller: scrollController,
-      cacheExtent: 1200,
+      scrollCacheExtent: const ScrollCacheExtent.pixels(1200),
       addAutomaticKeepAlives: true,
       addRepaintBoundaries: false,
       itemCount: postIds.length + 1,
