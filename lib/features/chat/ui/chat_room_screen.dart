@@ -1,5 +1,4 @@
-// screens/chat_screen.dart
-
+import 'package:ecommerece_app/core/services/notification_service.dart';
 import 'package:ecommerece_app/features/chat/models/message_model.dart';
 import 'package:ecommerece_app/features/chat/domain/chat_room_state_controller.dart';
 import 'package:ecommerece_app/features/chat/widgets/chat_input_bar.dart';
@@ -15,7 +14,7 @@ import 'package:go_router/go_router.dart';
 
 const _kBgColor = Color(0xFFF2F2F2);
 
-class ChatScreen extends ConsumerWidget {
+class ChatScreen extends ConsumerStatefulWidget {
   final String chatRoomId;
   final String chatRoomName;
   final bool isDeleted;
@@ -26,14 +25,33 @@ class ChatScreen extends ConsumerWidget {
     this.isDeleted = false,
   });
 
+  @override
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(chatRoomStateControllerProvider(chatRoomId));
+  void initState() {
+    super.initState();
+    NotificationService.instance.setActiveChatRoom(widget.chatRoomId);
+  }
+
+  @override
+  void dispose() {
+    NotificationService.instance.setActiveChatRoom(null);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(
+      chatRoomStateControllerProvider(widget.chatRoomId),
+    );
     final controller = ref.read(
-      chatRoomStateControllerProvider(chatRoomId).notifier,
+      chatRoomStateControllerProvider(widget.chatRoomId).notifier,
     );
 
     return PopScope(
@@ -47,8 +65,8 @@ class ChatScreen extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: _kBgColor,
         appBar: ChatRoomAppBar(
-          chatRoomName: chatRoomName,
-          chatRoomId: chatRoomId,
+          chatRoomName: widget.chatRoomName,
+          chatRoomId: widget.chatRoomId,
         ),
         body:
             state.loadingBlockState
@@ -275,8 +293,8 @@ class ChatScreen extends ConsumerWidget {
                                             controller.setReplyToMessage(message),
                                     interactable:
                                         !(state.blocked || state.isBlocked) &&
-                                        !isDeleted,
-                                    isDeleted: isDeleted,
+                                        !widget.isDeleted,
+                                    isDeleted: widget.isDeleted,
                                     showAvatarAndName: showAvatarAndName,
                                     showTime: showTime,
                                   ),
@@ -352,11 +370,11 @@ class ChatScreen extends ConsumerWidget {
                       BlockedBar(
                         blocked: state.blocked,
                         isBlocked: state.isBlocked,
-                        chatRoomId: chatRoomId,
+                        chatRoomId: widget.chatRoomId,
                         currentUserId: controller.currentUserId,
                         onUnblock: controller.unblockUser,
                       )
-                    else if (isDeleted || state.roomDeleted)
+                    else if (widget.isDeleted || state.roomDeleted)
                       Container(
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(vertical: 20.h),

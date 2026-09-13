@@ -1,4 +1,5 @@
 import 'package:ecommerece_app/core/providers/firebase_providers.dart';
+import 'package:ecommerece_app/core/services/notification_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final unreadChatRoomsProvider = StreamProvider.autoDispose<bool>((ref) {
@@ -12,6 +13,7 @@ final unreadChatRoomsProvider = StreamProvider.autoDispose<bool>((ref) {
   return firestore
       .collection('chatRooms')
       .where('participants', arrayContains: uid)
+      .orderBy('lastMessageTime', descending: true)
       .limit(50)
       .snapshots()
       .map((snapshot) {
@@ -120,6 +122,7 @@ class NavBarService {
   }
 
   Future<void> signOut() async {
+    await NotificationService.instance.clearUserToken();
     await ref.read(authProvider).signOut();
   }
 }

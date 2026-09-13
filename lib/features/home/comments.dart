@@ -1,3 +1,4 @@
+import 'package:ecommerece_app/core/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +32,18 @@ class _CommentsState extends ConsumerState<Comments> {
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+
+  @override
+  void initState() {
+    super.initState();
+    NotificationService.instance.setActiveCommentPost(widget.postId);
+  }
+
+  @override
+  void dispose() {
+    NotificationService.instance.setActiveCommentPost(null);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

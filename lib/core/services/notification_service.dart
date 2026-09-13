@@ -40,6 +40,16 @@ class NotificationService {
   );
 
   bool _initialized = false;
+  String? activeChatRoomId;
+  String? activeCommentPostId;
+
+  void setActiveChatRoom(String? chatRoomId) {
+    activeChatRoomId = chatRoomId;
+  }
+
+  void setActiveCommentPost(String? postId) {
+    activeCommentPostId = postId;
+  }
 
   Future<void> init() async {
     if (_initialized) return;
@@ -142,6 +152,39 @@ class NotificationService {
             'Foreground FCM Message received: ${message.notification?.title}',
           );
         }
+
+        final data = message.data;
+        final type = data['type']?.toString();
+        final chatRoomId = data['chatRoomId']?.toString();
+        final postId = data['postId']?.toString();
+
+        // Suppress notification if user is currently inside the relevant Chat screen
+        if ((type == 'chat' || (chatRoomId != null && chatRoomId.isNotEmpty)) &&
+            chatRoomId != null &&
+            chatRoomId == activeChatRoomId) {
+          if (kDebugMode) {
+            print(
+              'Suppressing FCM notification: user is currently inside chatRoomId=$chatRoomId',
+            );
+          }
+          return;
+        }
+
+        // Suppress notification if user is currently inside the relevant Comments screen
+        if ((type == 'comment' ||
+                type == 'post' ||
+                type == 'like' ||
+                (postId != null && postId.isNotEmpty)) &&
+            postId != null &&
+            postId == activeCommentPostId) {
+          if (kDebugMode) {
+            print(
+              'Suppressing FCM notification: user is currently inside comment postId=$postId',
+            );
+          }
+          return;
+        }
+
         if (!kIsWeb) {
           final notification = message.notification;
           if (notification != null) {
@@ -381,6 +424,29 @@ class NotificationService {
     } catch (e) {
       if (kDebugMode) {
         print('Error sending in-app notification to $recipientId: $e');
+      }
+    }
+  }
+
+  /// Clear user's FCM token from Firestore and delete device FCM token on logout
+  Future<void> clearUserToken() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).update({
+          'fcmToken': FieldValue.delete(),
+        });
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error removing FCM token from Firestore on logout: $e');
+        }
+      }
+    }
+    try {
+      await _fcm.deleteToken();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error deleting FCM token on logout: $e');
       }
     }
   }

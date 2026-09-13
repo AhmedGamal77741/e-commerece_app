@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ecommerece_app/core/services/notification_service.dart';
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   return ProfileRepository(FirebaseAuth.instance, FirebaseFirestore.instance);
@@ -27,6 +28,7 @@ class ProfileRepository {
       'deletedAt': DateTime.now().toIso8601String(),
     });
 
+    await NotificationService.instance.clearUserToken();
     await _auth.signOut();
   }
 
@@ -44,6 +46,7 @@ class ProfileRepository {
   }
 
   Future<void> signOut() async {
+    await NotificationService.instance.clearUserToken();
     await _auth.signOut();
   }
 

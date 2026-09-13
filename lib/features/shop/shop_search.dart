@@ -82,7 +82,7 @@ class ShopSearch extends ConsumerWidget {
       padding: EdgeInsets.symmetric(horizontal: 12.w),
       child: ListView.separated(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        findChildIndexCallback: (Key key) {
+        findItemIndexCallback: (Key key) {
           final valueKey = key as ValueKey<String>;
           final index = sortedProducts.indexWhere(
             (p) => p.productId == valueKey.value,

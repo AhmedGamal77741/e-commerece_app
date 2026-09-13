@@ -6,6 +6,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ecommerece_app/core/helpers/payment_helpers.dart';
 import 'package:ecommerece_app/features/cart/domain/bank_controller.dart';
 import 'package:ecommerece_app/features/cart/domain/checkout_form_controller.dart';
 import 'package:ecommerece_app/features/cart/widgets/checkout_shared/checkout_section_card.dart';
@@ -207,23 +209,29 @@ class BuyNowContent extends ConsumerWidget {
                   return false;
                 }
 
-                if (bankAccounts.isEmpty || state.selectedBankIndex < 0) {
-                  CheckoutBottomSheets.showBankAccountBottomSheet(context, ref);
-                  return false;
-                }
+                final userEmail = FirebaseAuth.instance.currentUser?.email;
+                final isBypass = isPaymentBypassEmail(userEmail) ||
+                    isPaymentBypassEmail(controller.emailController.text);
 
-                final payerId =
-                    bankAccounts[state.selectedBankIndex]['payerId']
-                        as String? ??
-                    '';
-                if (payerId.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return false;
+                if (!isBypass) {
+                  if (bankAccounts.isEmpty || state.selectedBankIndex < 0) {
+                    CheckoutBottomSheets.showBankAccountBottomSheet(context, ref);
+                    return false;
+                  }
+
+                  final payerId =
+                      bankAccounts[state.selectedBankIndex]['payerId']
+                          as String? ??
+                      '';
+                  if (payerId.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return false;
+                  }
                 }
                 return true;
               },

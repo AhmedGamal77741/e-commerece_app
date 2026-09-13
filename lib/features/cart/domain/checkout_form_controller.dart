@@ -9,7 +9,7 @@ import 'package:ecommerece_app/features/address/domain/models/address.dart';
 import 'package:ecommerece_app/features/cart/domain/checkout_controller.dart';
 import 'package:ecommerece_app/features/cart/domain/bank_controller.dart';
 import 'package:ecommerece_app/features/cart/domain/cart_controller.dart';
-import 'package:ecommerece_app/features/cart/data/cart_repository.dart';
+import 'package:ecommerece_app/core/helpers/payment_helpers.dart';
 
 class CheckoutFormState {
   final String invoiceeType;
@@ -420,14 +420,26 @@ class CheckoutFormController
       onError('배송지를 먼저 등록해주세요');
       return;
     }
-    if (bankAccounts.isEmpty || stateValue.selectedBankIndex < 0) {
-      onError('계좌를 선택해주세요');
-      return;
+    final currentUserEmail = FirebaseAuth.instance.currentUser?.email;
+    final isBypass = isPaymentBypassEmail(currentUserEmail) ||
+        isPaymentBypassEmail(emailController.text);
+
+    if (!isBypass) {
+      if (bankAccounts.isEmpty || stateValue.selectedBankIndex < 0) {
+        onError('계좌를 선택해주세요');
+        return;
+      }
     }
 
-    final payerId =
-        bankAccounts[stateValue.selectedBankIndex]['payerId'] as String? ?? '';
-    if (payerId.isEmpty) {
+    final String payerId;
+    if (bankAccounts.isNotEmpty && stateValue.selectedBankIndex >= 0) {
+      payerId = bankAccounts[stateValue.selectedBankIndex]['payerId'] as String? ??
+          (isBypass ? 'BYPASS_TEST_PAYER' : '');
+    } else {
+      payerId = isBypass ? 'BYPASS_TEST_PAYER' : '';
+    }
+
+    if (!isBypass && payerId.isEmpty) {
       onError('계좌 정보가 올바르지 않습니다. 계좌를 다시 등록해주세요.');
       return;
     }
@@ -484,66 +496,17 @@ class CheckoutFormController
       final result = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (result['success'] == true) {
-        try {
-          List<Map<String, dynamic>> items;
-          if (isCartCheckout) {
-            final cartSnap = await ref.read(cartRepositoryProvider).userCartStream(uid).first;
-            items = cartSnap.docs.map((d) => {'docId': d.id, ...d.data()}).toList();
-          } else {
-            items = [
-              {
-                'product_id': stateValue.pendingBuynowData?['product_id'],
-                'productName': stateValue.pendingBuynowData?['product_name'],
-                'quantity': stateValue.pendingBuynowData?['quantity'],
-                'pricePointIndex': stateValue.pendingBuynowData?['pricePointIndex'],
-                'price': stateValue.pendingBuynowData?['price'],
-                'imgUrl': stateValue.pendingBuynowData?['imgUrl'],
-              },
-            ];
-          }
-
-          // For cart checkout, we need the total price from the cart, not the pendingBuynowData price
-          final totalPrice = isCartCheckout
-              ? ref.read(cartTotalProvider)
-              : stateValue.pendingPrice;
-
-          final orderData = {
-            'address': stateValue.address.toFirestore(),
-            'totalPrice': totalPrice,
-            'buyerName': stateValue.address.name,
-            'buyerEmail': emailController.text.trim(),
-            'buyerPhone': stateValue.address.phone,
-            'deliveryInstructions':
-                stateValue.selectedRequest == '직접입력'
-                    ? stateValue.manualRequest
-                    : stateValue.selectedRequest,
-          };
-          
-          await ref
-              .read(checkoutControllerProvider.notifier)
-              .processCheckoutTransaction(
-                uid: uid,
-                paymentId: paymentId,
-                items: items,
-                orderData: orderData,
-                isCartCheckout: isCartCheckout,
-              );
-
-          if (result['cashReceiptIssued'] == true && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('현금 영수증이 성공적으로 발급되었습니다.'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-
-          onSuccess();
-        } catch (e) {
-          state = AsyncData(stateValue.copyWith(isProcessing: false));
-          onError(e.toString().replaceAll('Exception: ', ''));
+        if (result['cashReceiptIssued'] == true && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('현금 영수증이 성공적으로 발급되었습니다.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
         }
+
+        onSuccess();
       } else {
         String msg = result['message'] as String? ?? '결제에 실패했습니다. 다시 시도해 주세요.';
         msg = msg.replaceAll(RegExp(r'^\[.*?\]\s*'), '').replaceAll(RegExp(r'^\d+\s*-\s*'), '');
